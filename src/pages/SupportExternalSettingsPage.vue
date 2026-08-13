@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
-import { useRouter } from "vue-router";
-import Button from "primevue/button";
-import Checkbox from "primevue/checkbox";
-import Dialog from "primevue/dialog";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { supportExternalWorkSource } from "@/features/support-external-work/api/support-external-work-source";
-import { createSupportExternalSettingsController } from "@/features/support-external-work/model/use-support-external-settings";
-import { resolveApiOrigin } from "@/shared/api/http/axios-instance";
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Checkbox from 'primevue/checkbox';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { supportExternalWorkSource } from '@/features/support-external-work/api/support-external-work-source';
+import { createSupportExternalSettingsController } from '@/features/support-external-work/model/use-support-external-settings';
+import { resolveApiOrigin } from '@/shared/api/http/axios-instance';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -23,15 +23,14 @@ const canManage = computed(
     !accessDenied.value &&
     hasProjectPermission(
       auth.project?.effectivePermissionCodes ?? [],
-      "project.support.external_work.manage",
+      'project.support.external_work.manage',
     ),
 );
 
 function openOAuth(launchPath: string): void {
-  if (!launchPath.startsWith("/api/v1/support/external-work/oauth/launch/"))
-    return;
+  if (!launchPath.startsWith('/api/v1/support/external-work/oauth/launch/')) return;
   const target = `${resolveApiOrigin(import.meta.env.VITE_API_BASE_URL)}${launchPath}`;
-  window.open(target, "_blank", "noopener,noreferrer");
+  window.open(target, '_blank', 'noopener,noreferrer');
 }
 
 const controller = createSupportExternalSettingsController(
@@ -55,8 +54,8 @@ const controller = createSupportExternalSettingsController(
         // logout clears local authority before the remote request; navigation is mandatory.
       } finally {
         await router.replace({
-          path: "/login",
-          query: { redirect: "/support/settings/integrations" },
+          path: '/login',
+          query: { redirect: '/support/settings/integrations' },
         });
       }
     },
@@ -64,42 +63,42 @@ const controller = createSupportExternalSettingsController(
   supportExternalWorkSource,
 );
 
-const fallbackDestinationId = ref("");
-const fallbackFormId = ref("");
-const formRevision = ref("");
-const mappingDisplayName = ref("");
+const fallbackDestinationId = ref('');
+const fallbackFormId = ref('');
+const formRevision = ref('');
+const mappingDisplayName = ref('');
 const creatingMapping = ref(false);
 const requesterRequired = ref(false);
-const previewCaseKind = ref("SUPPORT");
-const previewPriority = ref<"LOW" | "MEDIUM" | "HIGH" | "URGENT">("HIGH");
+const previewCaseKind = ref('SUPPORT');
+const previewPriority = ref<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('HIGH');
 const previewPriorityOptions = [
-  { label: "Низкий", value: "LOW" },
-  { label: "Средний", value: "MEDIUM" },
-  { label: "Высокий", value: "HIGH" },
-  { label: "Срочный", value: "URGENT" },
+  { label: 'Низкий', value: 'LOW' },
+  { label: 'Средний', value: 'MEDIUM' },
+  { label: 'Высокий', value: 'HIGH' },
+  { label: 'Срочный', value: 'URGENT' },
 ];
-const confirmAction = ref<"DISABLE" | "REVOKE" | null>(null);
+const confirmAction = ref<'DISABLE' | 'REVOKE' | null>(null);
 const rollbackRevisionId = ref<string | null>(null);
 const rollbackReason = ref<
-  "INCIDENT_RECOVERY" | "CONFIGURATION_REGRESSION" | "PROVIDER_SCHEMA_ROLLBACK"
->("CONFIGURATION_REGRESSION");
+  'INCIDENT_RECOVERY' | 'CONFIGURATION_REGRESSION' | 'PROVIDER_SCHEMA_ROLLBACK'
+>('CONFIGURATION_REGRESSION');
 const rollbackReasonOptions = [
-  { label: "Восстановление после инцидента", value: "INCIDENT_RECOVERY" },
-  { label: "Ошибка в настройках", value: "CONFIGURATION_REGRESSION" },
+  { label: 'Восстановление после инцидента', value: 'INCIDENT_RECOVERY' },
+  { label: 'Ошибка в настройках', value: 'CONFIGURATION_REGRESSION' },
   {
-    label: "Изменилась структура внешней системы",
-    value: "PROVIDER_SCHEMA_ROLLBACK",
+    label: 'Изменилась структура внешней системы',
+    value: 'PROVIDER_SCHEMA_ROLLBACK',
   },
 ];
 function capabilityLabel(value: string): string {
   return (
     {
-      CATALOG: "чтение каталога",
-      REFRESH: "обновление каталога",
-      CREATE: "создание внешних задач",
-      COMMENT: "добавление комментариев",
-      UNLINK: "удаление связи",
-    }[value] ?? "дополнительная возможность"
+      CATALOG: 'чтение каталога',
+      REFRESH: 'обновление каталога',
+      CREATE: 'создание внешних задач',
+      COMMENT: 'добавление комментариев',
+      UNLINK: 'удаление связи',
+    }[value] ?? 'дополнительная возможность'
   );
 }
 const confirmVisible = computed({
@@ -121,7 +120,7 @@ const connectionCards = computed(() => [
     provider: connection.provider,
     connection,
   })),
-  ...(["JSM", "HELPDESK"] as const).map((provider) => ({
+  ...(['JSM', 'HELPDESK'] as const).map((provider) => ({
     key: `add-${provider}`,
     provider,
     connection: null,
@@ -145,13 +144,11 @@ const formOptions = computed(() => {
 });
 const tenantOptions = computed(() =>
   controller.oauthTenants.value.map((tenant) => ({
-    label: tenant.siteUrl
-      ? `${tenant.label} · ${tenant.siteUrl}`
-      : tenant.label,
+    label: tenant.siteUrl ? `${tenant.label} · ${tenant.siteUrl}` : tenant.label,
     value: tenant.id,
   })),
 );
-const selectedTenant = ref("");
+const selectedTenant = ref('');
 
 watch(
   () =>
@@ -162,36 +159,32 @@ watch(
     ] as const,
   ([draft, conflictDraft, selectedMappingId]) => {
     if (conflictDraft?.mappingId === selectedMappingId) {
-      fallbackDestinationId.value =
-        conflictDraft.body.definition.fallback.destinationId;
-      fallbackFormId.value =
-        conflictDraft.body.definition.fallback.formId ?? "";
+      fallbackDestinationId.value = conflictDraft.body.definition.fallback.destinationId;
+      fallbackFormId.value = conflictDraft.body.definition.fallback.formId ?? '';
       formRevision.value = conflictDraft.body.formRevision;
-      requesterRequired.value =
-        conflictDraft.body.definition.fallback.requesterRequired ?? false;
+      requesterRequired.value = conflictDraft.body.definition.fallback.requesterRequired ?? false;
       return;
     }
     if (!draft) {
-      fallbackDestinationId.value = "";
-      fallbackFormId.value = "";
-      formRevision.value = "";
+      fallbackDestinationId.value = '';
+      fallbackFormId.value = '';
+      formRevision.value = '';
       requesterRequired.value = false;
       return;
     }
     fallbackDestinationId.value = draft.draft.definition.fallback.destinationId;
-    fallbackFormId.value = draft.draft.definition.fallback.formId ?? "";
+    fallbackFormId.value = draft.draft.definition.fallback.formId ?? '';
     formRevision.value = draft.draft.formRevision;
-    requesterRequired.value =
-      draft.draft.definition.fallback.requesterRequired ?? false;
+    requesterRequired.value = draft.draft.definition.fallback.requesterRequired ?? false;
   },
   { immediate: true },
 );
 
 watch(
   () => [
-    auth.user?.id ?? "",
-    auth.project?.id ?? "",
-    [...(auth.project?.effectivePermissionCodes ?? [])].sort().join(","),
+    auth.user?.id ?? '',
+    auth.project?.id ?? '',
+    [...(auth.project?.effectivePermissionCodes ?? [])].sort().join(','),
   ],
   () => {
     accessDenied.value = false;
@@ -201,7 +194,7 @@ watch(
     }
     void controller.load();
   },
-  { immediate: true, flush: "sync" },
+  { immediate: true, flush: 'sync' },
 );
 
 onBeforeUnmount(() => controller.reset());
@@ -209,20 +202,20 @@ onBeforeUnmount(() => controller.reset());
 function lifecycleLabel(value: string): string {
   return (
     {
-      ACTIVE: "Подключено",
-      DEGRADED: "Работает с ограничениями",
-      REAUTH_REQUIRED: "Требуется повторный вход",
-      DISABLED: "Отключено",
-      REVOKED: "Доступ отозван",
-    }[value] ?? "Состояние подключения не распознано"
+      ACTIVE: 'Подключено',
+      DEGRADED: 'Работает с ограничениями',
+      REAUTH_REQUIRED: 'Требуется повторный вход',
+      DISABLED: 'Отключено',
+      REVOKED: 'Доступ отозван',
+    }[value] ?? 'Состояние подключения не распознано'
   );
 }
 
 function lifecycleSeverity(value: string) {
-  if (value === "ACTIVE") return "success";
-  if (value === "DEGRADED" || value === "REAUTH_REQUIRED") return "warn";
-  if (value === "REVOKED") return "danger";
-  return "secondary";
+  if (value === 'ACTIVE') return 'success';
+  if (value === 'DEGRADED' || value === 'REAUTH_REQUIRED') return 'warn';
+  if (value === 'REVOKED') return 'danger';
+  return 'secondary';
 }
 
 async function chooseConnection(connectionId: string): Promise<void> {
@@ -231,34 +224,30 @@ async function chooseConnection(connectionId: string): Promise<void> {
 }
 
 function formatTime(value: string | null | undefined): string {
-  if (!value) return "Не подтверждена";
-  return new Intl.DateTimeFormat("ru", {
-    dateStyle: "medium",
-    timeStyle: "short",
+  if (!value) return 'Не подтверждена';
+  return new Intl.DateTimeFormat('ru', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
   }).format(new Date(value));
 }
 
 function publicationKindLabel(value: string): string {
-  if (value === "ROLLBACK") return "возврат версии";
-  if (value === "PUBLISH") return "публикация";
-  return "операция не распознана";
+  if (value === 'ROLLBACK') return 'возврат версии';
+  if (value === 'PUBLISH') return 'публикация';
+  return 'операция не распознана';
 }
 
 function matchKindLabel(value: string): string {
-  if (value === "RULE") return "По правилу";
-  if (value === "FALLBACK") return "По умолчанию";
-  return "Способ не распознан";
+  if (value === 'RULE') return 'По правилу';
+  if (value === 'FALLBACK') return 'По умолчанию';
+  return 'Способ не распознан';
 }
 
 async function saveDraft(): Promise<void> {
   const draft = controller.mappingDraft.value;
-  if (!draft || !fallbackDestinationId.value || !formRevision.value.trim())
-    return;
+  if (!draft || !fallbackDestinationId.value || !formRevision.value.trim()) return;
   await controller.saveMapping({
-    catalogSnapshotId:
-      controller.catalog.value?.snapshot.id ??
-      draft.draft.catalogSnapshotId ??
-      "",
+    catalogSnapshotId: controller.catalog.value?.snapshot.id ?? draft.draft.catalogSnapshotId ?? '',
     formRevision: formRevision.value.trim(),
     definition: {
       rules: draft.draft.definition.rules,
@@ -299,7 +288,7 @@ async function createMapping(): Promise<void> {
     },
   });
   if (!controller.error.value) {
-    mappingDisplayName.value = "";
+    mappingDisplayName.value = '';
     creatingMapping.value = false;
   }
 }
@@ -307,21 +296,20 @@ async function createMapping(): Promise<void> {
 async function selectTenant(): Promise<void> {
   if (!selectedTenant.value) return;
   await controller.selectOAuthTenant(selectedTenant.value);
-  selectedTenant.value = "";
+  selectedTenant.value = '';
 }
 
 async function applyConfirmedAction(): Promise<void> {
   const action = confirmAction.value;
   confirmAction.value = null;
-  if (action === "DISABLE") await controller.disableSelectedConnection();
-  if (action === "REVOKE") await controller.revokeSelectedConnection();
+  if (action === 'DISABLE') await controller.disableSelectedConnection();
+  if (action === 'REVOKE') await controller.revokeSelectedConnection();
 }
 
 async function applyRollback(): Promise<void> {
   const revisionId = rollbackRevisionId.value;
   rollbackRevisionId.value = null;
-  if (revisionId)
-    await controller.rollbackMapping(revisionId, rollbackReason.value);
+  if (revisionId) await controller.rollbackMapping(revisionId, rollbackReason.value);
 }
 </script>
 
@@ -332,9 +320,8 @@ async function applyRollback(): Promise<void> {
         <span class="kicker">Поддержка · Настройки</span>
         <h1>Интеграции с внешними системами</h1>
         <p>
-          Данные для входа в JSM и HelpDesk и служебное состояние авторизации
-          через внешнюю систему (OAuth) хранятся только на сервере и не попадают
-          в браузер.
+          Данные для входа в JSM и HelpDesk и служебное состояние авторизации через внешнюю систему
+          (OAuth) хранятся только на сервере и не попадают в браузер.
         </p>
       </div>
       <Button
@@ -410,9 +397,7 @@ async function applyRollback(): Promise<void> {
               'connection-card--selected':
                 card.connection?.id === controller.selectedConnectionId.value,
             }"
-            :aria-pressed="
-              card.connection?.id === controller.selectedConnectionId.value
-            "
+            :aria-pressed="card.connection?.id === controller.selectedConnectionId.value"
             @click="
               card.connection
                 ? chooseConnection(card.connection.id)
@@ -420,28 +405,18 @@ async function applyRollback(): Promise<void> {
             "
           >
             <span class="provider-mark" aria-hidden="true">{{
-              card.provider === "JSM" ? "J" : "H"
+              card.provider === 'JSM' ? 'J' : 'H'
             }}</span>
             <span class="connection-copy">
-              <strong>{{
-                card.connection?.displayName ?? `Добавить ${card.provider}`
-              }}</strong>
+              <strong>{{ card.connection?.displayName ?? `Добавить ${card.provider}` }}</strong>
               <small>{{
-                card.connection
-                  ? card.connection.tenantIdentity
-                  : "Новый сайт или учётная запись"
+                card.connection ? card.connection.tenantIdentity : 'Новый сайт или учётная запись'
               }}</small>
             </span>
             <Tag
-              :value="
-                card.connection
-                  ? lifecycleLabel(card.connection.lifecycle)
-                  : 'Добавить'
-              "
+              :value="card.connection ? lifecycleLabel(card.connection.lifecycle) : 'Добавить'"
               :severity="
-                card.connection
-                  ? lifecycleSeverity(card.connection.lifecycle)
-                  : 'secondary'
+                card.connection ? lifecycleSeverity(card.connection.lifecycle) : 'secondary'
               "
             />
           </button>
@@ -461,14 +436,8 @@ async function applyRollback(): Promise<void> {
                 <h2>{{ controller.selectedConnection.value.displayName }}</h2>
               </div>
               <Tag
-                :value="
-                  lifecycleLabel(controller.selectedConnection.value.lifecycle)
-                "
-                :severity="
-                  lifecycleSeverity(
-                    controller.selectedConnection.value.lifecycle,
-                  )
-                "
+                :value="lifecycleLabel(controller.selectedConnection.value.lifecycle)"
+                :severity="lifecycleSeverity(controller.selectedConnection.value.lifecycle)"
               />
             </div>
             <dl class="status-rail">
@@ -483,8 +452,8 @@ async function applyRollback(): Promise<void> {
                 <dd>
                   {{
                     controller.selectedConnection.value.credentialConfigured
-                      ? "Настроены"
-                      : "Нужна авторизация"
+                      ? 'Настроены'
+                      : 'Нужна авторизация'
                   }}
                 </dd>
               </div>
@@ -500,7 +469,7 @@ async function applyRollback(): Promise<void> {
                   {{
                     controller.selectedConnection.value.capabilities.verified
                       .map(capabilityLabel)
-                      .join(", ") || "Возможности ещё не подтверждены"
+                      .join(', ') || 'Возможности ещё не подтверждены'
                   }}
                 </dd>
               </div>
@@ -541,8 +510,8 @@ async function applyRollback(): Promise<void> {
               <div>
                 <strong>Авторизация открыта</strong>
                 <p>
-                  После завершения авторизации выберите нужный сайт или учётную
-                  запись. Служебные данные здесь не показываются.
+                  После завершения авторизации выберите нужный сайт или учётную запись. Служебные
+                  данные здесь не показываются.
                 </p>
               </div>
               <Button
@@ -562,11 +531,7 @@ async function applyRollback(): Promise<void> {
                 option-value="value"
                 placeholder="Выберите сайт"
               />
-              <Button
-                label="Подтвердить"
-                :disabled="!selectedTenant"
-                @click="selectTenant"
-              />
+              <Button label="Подтвердить" :disabled="!selectedTenant" @click="selectTenant" />
             </div>
           </article>
 
@@ -578,14 +543,8 @@ async function applyRollback(): Promise<void> {
               </div>
               <Tag
                 v-if="controller.catalog.value"
-                :value="
-                  controller.catalog.value.snapshot.stale
-                    ? 'Устарел'
-                    : 'Актуален'
-                "
-                :severity="
-                  controller.catalog.value.snapshot.stale ? 'warn' : 'success'
-                "
+                :value="controller.catalog.value.snapshot.stale ? 'Устарел' : 'Актуален'"
+                :severity="controller.catalog.value.snapshot.stale ? 'warn' : 'success'"
               />
             </div>
             <template v-if="controller.loadingDetail.value">
@@ -595,14 +554,11 @@ async function applyRollback(): Promise<void> {
             <template v-else-if="controller.catalog.value">
               <div class="sync-readout">
                 <span>Последняя успешная синхронизация</span>
-                <strong>{{
-                  formatTime(controller.catalog.value.snapshot.fetchedAt)
-                }}</strong>
+                <strong>{{ formatTime(controller.catalog.value.snapshot.fetchedAt) }}</strong>
               </div>
               <ul class="destination-list">
                 <li
-                  v-for="destination in controller.catalog.value.catalog
-                    ?.destinations ?? []"
+                  v-for="destination in controller.catalog.value.catalog?.destinations ?? []"
                   :key="destination.id"
                 >
                   <span>{{ destination.label }}</span
@@ -625,10 +581,7 @@ async function applyRollback(): Promise<void> {
         </section>
       </Transition>
 
-      <section
-        class="mapping-section panel-surface"
-        aria-labelledby="mapping-title"
-      >
+      <section class="mapping-section panel-surface" aria-labelledby="mapping-title">
         <div class="section-heading">
           <div>
             <span class="kicker">Правила с версиями</span>
@@ -665,8 +618,7 @@ async function applyRollback(): Promise<void> {
           class="mapping-editor mapping-editor--create"
         >
           <p class="empty-copy">
-            Опубликованных правил пока нет. Создайте черновик на основе
-            подтверждённого каталога.
+            Опубликованных правил пока нет. Создайте черновик на основе подтверждённого каталога.
           </p>
           <div class="field">
             <label for="mapping-name">Название набора правил</label
@@ -677,8 +629,7 @@ async function applyRollback(): Promise<void> {
             ><InputText id="mapping-create-revision" v-model="formRevision" />
           </div>
           <div class="field">
-            <label for="mapping-create-destination"
-              >Назначение по умолчанию</label
+            <label for="mapping-create-destination">Назначение по умолчанию</label
             ><Select
               input-id="mapping-create-destination"
               v-model="fallbackDestinationId"
@@ -724,38 +675,33 @@ async function applyRollback(): Promise<void> {
           <div class="mapping-summary">
             <div>
               <span>Набор правил</span
-              ><strong>{{
-                controller.selectedMapping.value.displayName
-              }}</strong>
+              ><strong>{{ controller.selectedMapping.value.displayName }}</strong>
             </div>
             <div>
               <span>Версия на сервере</span
-              ><strong class="tabular">{{
-                controller.selectedMapping.value.version
-              }}</strong>
+              ><strong class="tabular">{{ controller.selectedMapping.value.version }}</strong>
             </div>
             <div>
               <span>Черновик</span
               ><strong>{{
                 controller.mappingDraft.value
                   ? `Черновик №${controller.mappingDraft.value.draft.revisionNumber}`
-                  : "Нет черновика"
+                  : 'Нет черновика'
               }}</strong>
             </div>
             <div>
               <span>Публикация</span
               ><strong>{{
                 controller.selectedMapping.value.publishedRevisionId
-                  ? "Есть опубликованная версия"
-                  : "Не опубликовано"
+                  ? 'Есть опубликованная версия'
+                  : 'Не опубликовано'
               }}</strong>
             </div>
           </div>
           <div v-if="controller.mappingDraft.value" class="mapping-editor">
             <Message
               v-if="
-                controller.conflictDraft.value?.mappingId ===
-                controller.selectedMappingId.value
+                controller.conflictDraft.value?.mappingId === controller.selectedMappingId.value
               "
               severity="warn"
               :closable="false"
@@ -795,22 +741,16 @@ async function applyRollback(): Promise<void> {
               />
             </div>
             <label class="checkbox-row"
-              ><Checkbox
-                v-model="requesterRequired"
-                binary
-                input-id="requester-required"
-              /><span
+              ><Checkbox v-model="requesterRequired" binary input-id="requester-required" /><span
                 >Заявитель обязателен при создании внешней задачи</span
               ></label
             >
             <div class="rule-rail">
               <span>Правила черновика</span>
-              <strong>{{
-                controller.mappingDraft.value.draft.definition.rules.length
-              }}</strong>
+              <strong>{{ controller.mappingDraft.value.draft.definition.rules.length }}</strong>
               <small
-                >Редактор сохраняет защищённые значения полей и меняет только
-                назначение по умолчанию.</small
+                >Редактор сохраняет защищённые значения полей и меняет только назначение по
+                умолчанию.</small
               >
             </div>
             <div class="action-row">
@@ -874,22 +814,14 @@ async function applyRollback(): Promise<void> {
           />
 
           <div
-            v-if="
-              controller.validation.value ||
-              controller.preview.value ||
-              controller.diff.value
-            "
+            v-if="controller.validation.value || controller.preview.value || controller.diff.value"
             class="evidence-grid"
             aria-live="polite"
           >
             <article v-if="controller.validation.value">
               <span>Проверка</span
-              ><strong
-                >Пройдено ·
-                {{ controller.validation.value.ruleCount }} правил</strong
-              ><small>{{
-                formatTime(controller.validation.value.validatedAt)
-              }}</small>
+              ><strong>Пройдено · {{ controller.validation.value.ruleCount }} правил</strong
+              ><small>{{ formatTime(controller.validation.value.validatedAt) }}</small>
             </article>
             <article v-if="controller.preview.value">
               <span>Предварительный просмотр</span
@@ -903,11 +835,9 @@ async function applyRollback(): Promise<void> {
               ><strong>{{
                 controller.diff.value.changed
                   ? `${controller.diff.value.changes.length} изменений`
-                  : "Без изменений"
+                  : 'Без изменений'
               }}</strong
-              ><small
-                >Черновик №{{ controller.diff.value.toRevisionNumber }}</small
-              >
+              ><small>Черновик №{{ controller.diff.value.toRevisionNumber }}</small>
             </article>
           </div>
 
@@ -941,23 +871,15 @@ async function applyRollback(): Promise<void> {
     <Dialog
       v-model:visible="confirmVisible"
       modal
-      :header="
-        confirmAction === 'REVOKE'
-          ? 'Отозвать доступ?'
-          : 'Отключить подключение?'
-      "
+      :header="confirmAction === 'REVOKE' ? 'Отозвать доступ?' : 'Отключить подключение?'"
       :style="{ width: 'min(460px, calc(100vw - 32px))' }"
     >
       <p>
-        Новые внешние команды остановятся. Обращения Lola и уже сохранённые
-        записи о командах не удалятся.
+        Новые внешние команды остановятся. Обращения Lola и уже сохранённые записи о командах не
+        удалятся.
       </p>
       <template #footer
-        ><Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="confirmAction = null" /><Button
+        ><Button label="Отмена" severity="secondary" text @click="confirmAction = null" /><Button
           :label="confirmAction === 'REVOKE' ? 'Отозвать' : 'Отключить'"
           severity="danger"
           @click="applyConfirmedAction"
@@ -969,10 +891,7 @@ async function applyRollback(): Promise<void> {
       header="Вернуть прежние правила"
       :style="{ width: 'min(480px, calc(100vw - 32px))' }"
     >
-      <p>
-        Сервер создаст новую опубликованную версию на основе выбранной. История
-        не изменится.
-      </p>
+      <p>Сервер создаст новую опубликованную версию на основе выбранной. История не изменится.</p>
       <Select
         v-model="rollbackReason"
         :options="rollbackReasonOptions"

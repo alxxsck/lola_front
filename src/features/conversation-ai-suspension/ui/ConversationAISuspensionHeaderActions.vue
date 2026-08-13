@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import Button from "primevue/button";
-import Tag from "primevue/tag";
-import type { ConversationAISuspensionEntry } from "../model/conversation-ai-suspension.store";
-import { isConversationAISuspended } from "../model/suspension-state";
+import { computed } from 'vue';
+import Button from 'primevue/button';
+import Tag from 'primevue/tag';
+import type { ConversationAISuspensionEntry } from '../model/conversation-ai-suspension.store';
+import { isConversationAISuspended } from '../model/suspension-state';
 
 const props = withDefaults(
   defineProps<{
@@ -29,12 +29,9 @@ const active = computed(
   () =>
     !props.entry.error &&
     !props.entry.locallyExpired &&
-    isConversationAISuspended(
-      props.entry.summary,
-      Date.now() + props.entry.serverOffsetMs,
-    ),
+    isConversationAISuspended(props.entry.summary, Date.now() + props.entry.serverOffsetMs),
 );
-const hasHistory = computed(() => props.entry.summary.version !== "0");
+const hasHistory = computed(() => props.entry.summary.version !== '0');
 const hasActions = computed(
   () =>
     (props.canManage && props.conversationOpen) ||
@@ -44,12 +41,7 @@ const hasActions = computed(
 </script>
 
 <template>
-  <Tag
-    v-if="active && !hideActiveStatus"
-    value="AI приостановлен"
-    severity="warn"
-    rounded
-  />
+  <Tag v-if="active && !hideActiveStatus" value="AI приостановлен" severity="warn" rounded />
   <div v-else-if="hasActions" class="ai-suspension-header-actions">
     <Button
       v-if="!active && canManage && conversationOpen"
@@ -127,7 +119,7 @@ const hasActions = computed(
     font-size: 0;
   }
   .ai-suspension-header-actions__start :deep(.p-button-label::after) {
-    content: "AI · пауза";
+    content: 'AI · пауза';
     font-size: 11px;
   }
 }

@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch } from 'vue';
 import type {
   SupportCaseSearchFilters,
   SupportSearchScope,
-} from "@/features/support-search/api/support-search-source";
-import type { SupportSearchRouteState } from "@/features/support-search/model/support-search-route";
+} from '@/features/support-search/api/support-search-source';
+import type { SupportSearchRouteState } from '@/features/support-search/model/support-search-route';
 import {
   isoToLocalDateTime,
   localDateTimeToIso,
   normalizeSearchTimeRange,
-} from "@/features/support-search/model/support-search-time";
+} from '@/features/support-search/model/support-search-time';
 
 const props = defineProps<{
   modelValue: SupportSearchRouteState;
@@ -19,90 +19,90 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "update:modelValue": [state: SupportSearchRouteState];
+  'update:modelValue': [state: SupportSearchRouteState];
   submit: [state: SupportSearchRouteState];
   close: [];
 }>();
 const timeFrom = ref(
   props.modelValue.filters.timeRange?.from
     ? isoToLocalDateTime(props.modelValue.filters.timeRange.from)
-    : "",
+    : '',
 );
 const timeTo = ref(
   props.modelValue.filters.timeRange?.to
     ? isoToLocalDateTime(props.modelValue.filters.timeRange.to)
-    : "",
+    : '',
 );
 watch(
   () => props.modelValue.filters.timeRange,
   (value) => {
-    timeFrom.value = value?.from ? isoToLocalDateTime(value.from) : "";
-    timeTo.value = value?.to ? isoToLocalDateTime(value.to) : "";
+    timeFrom.value = value?.from ? isoToLocalDateTime(value.from) : '';
+    timeTo.value = value?.to ? isoToLocalDateTime(value.to) : '';
   },
 );
 
 const scopeLabels: Record<SupportSearchScope, string> = {
-  CASES: "Обращения",
-  CONVERSATIONS: "Диалоги",
-  MESSAGES: "Сообщения",
-  END_USERS: "Пользователи",
+  CASES: 'Обращения',
+  CONVERSATIONS: 'Диалоги',
+  MESSAGES: 'Сообщения',
+  END_USERS: 'Пользователи',
 };
 const statusLabels: Record<string, string> = {
-  OPEN: "Открыто",
-  IN_PROGRESS: "В работе",
-  WAITING_END_USER: "Ждём пользователя",
-  WAITING_SYSTEM: "Ждём систему",
-  WAITING_ADMIN: "Нужен оператор",
-  RESOLVED: "Решено",
-  UNRESOLVED: "Не решено",
-  CANCELLED: "Отменено",
+  OPEN: 'Открыто',
+  IN_PROGRESS: 'В работе',
+  WAITING_END_USER: 'Ждём пользователя',
+  WAITING_SYSTEM: 'Ждём систему',
+  WAITING_ADMIN: 'Нужен оператор',
+  RESOLVED: 'Решено',
+  UNRESOLVED: 'Не решено',
+  CANCELLED: 'Отменено',
 };
 const priorityLabels: Record<string, string> = {
-  LOW: "Низкий",
-  NORMAL: "Обычный",
-  HIGH: "Высокий",
-  URGENT: "Срочный",
-  CRITICAL: "Критический",
+  LOW: 'Низкий',
+  NORMAL: 'Обычный',
+  HIGH: 'Высокий',
+  URGENT: 'Срочный',
+  CRITICAL: 'Критический',
 };
 const sortLabels: Record<string, string> = {
-  RELEVANCE: "Релевантность",
-  ACTIVITY_AT: "Последняя активность",
-  PRIORITY: "Приоритет",
-  SLA_DUE_AT: "Срок SLA",
-  WAITING_SINCE: "Время ожидания",
-  UNREAD_COUNT: "Непрочитанные",
-  CREATED_AT: "Дата создания",
+  RELEVANCE: 'Релевантность',
+  ACTIVITY_AT: 'Последняя активность',
+  PRIORITY: 'Приоритет',
+  SLA_DUE_AT: 'Срок SLA',
+  WAITING_SINCE: 'Время ожидания',
+  UNREAD_COUNT: 'Непрочитанные',
+  CREATED_AT: 'Дата создания',
 };
 const assignmentStateLabels: Record<string, string> = {
-  ASSIGNED: "Назначено",
-  UNASSIGNED: "Без назначения",
+  ASSIGNED: 'Назначено',
+  UNASSIGNED: 'Без назначения',
 };
 const slaStateLabels: Record<string, string> = {
-  ON_TRACK: "В норме",
-  AT_RISK: "Под риском",
-  BREACHED: "Нарушен",
-  NOT_CONFIGURED: "Не настроен",
+  ON_TRACK: 'В норме',
+  AT_RISK: 'Под риском',
+  BREACHED: 'Нарушен',
+  NOT_CONFIGURED: 'Не настроен',
 };
 const waitingSideLabels: Record<string, string> = {
-  END_USER: "пользователя",
-  SUPPORT: "поддержку",
-  SYSTEM: "систему",
-  NONE: "никого",
+  END_USER: 'пользователя',
+  SUPPORT: 'поддержку',
+  SYSTEM: 'систему',
+  NONE: 'никого',
 };
 const channelLabels: Record<string, string> = {
-  TEXT: "Текст",
-  VOICE: "Голос",
-  CMS: "Панель управления",
+  TEXT: 'Текст',
+  VOICE: 'Голос',
+  CMS: 'Панель управления',
 };
 const categoryLabels: Record<string, string> = {
-  INFORMATION_REQUEST: "Информация",
-  PROBLEM_RESOLUTION: "Решение проблемы",
-  DECISION_SUPPORT: "Помощь с решением",
-  ACTION_REQUEST: "Запрос действия",
-  FEEDBACK: "Обратная связь",
-  OTHER: "Другое",
+  INFORMATION_REQUEST: 'Информация',
+  PROBLEM_RESOLUTION: 'Решение проблемы',
+  DECISION_SUPPORT: 'Помощь с решением',
+  ACTION_REQUEST: 'Запрос действия',
+  FEEDBACK: 'Обратная связь',
+  OTHER: 'Другое',
 };
-const unknownFilterValue = "значение не распознано";
+const unknownFilterValue = 'значение не распознано';
 
 const chips = computed(() => {
   const filters = props.modelValue.filters;
@@ -137,61 +137,49 @@ const chips = computed(() => {
     ...(filters.conversationIds ?? []).map((value) => `Диалог: ${value}`),
     ...(filters.messageIds ?? []).map((value) => `Сообщение: ${value}`),
     ...(filters.endUserIds ?? []).map((value) => `Пользователь: ${value}`),
-    ...(filters.externalEndUserIds ?? []).map(
-      (value) => `Внешний идентификатор: ${value}`,
-    ),
+    ...(filters.externalEndUserIds ?? []).map((value) => `Внешний идентификатор: ${value}`),
     ...(filters.unreadState
-      ? [filters.unreadState === "UNREAD" ? "Непрочитанные" : "Прочитанные"]
+      ? [filters.unreadState === 'UNREAD' ? 'Непрочитанные' : 'Прочитанные']
       : []),
     ...(filters.draftState
-      ? [filters.draftState === "HAS_DRAFT" ? "Есть черновик" : "Без черновика"]
+      ? [filters.draftState === 'HAS_DRAFT' ? 'Есть черновик' : 'Без черновика']
       : []),
     ...(filters.deliveryState
-      ? [
-          filters.deliveryState === "PROBLEM"
-            ? "Ошибка доставки"
-            : "Доставка без ошибок",
-        ]
+      ? [filters.deliveryState === 'PROBLEM' ? 'Ошибка доставки' : 'Доставка без ошибок']
       : []),
     ...(filters.timeRange?.from ? [`С: ${filters.timeRange.from}`] : []),
     ...(filters.timeRange?.to ? [`До: ${filters.timeRange.to}`] : []),
-    ...(props.modelValue.sort.field !== "RELEVANCE"
-      ? [sortLabels[props.modelValue.sort.field] ?? "Сортировка не распознана"]
+    ...(props.modelValue.sort.field !== 'RELEVANCE'
+      ? [sortLabels[props.modelValue.sort.field] ?? 'Сортировка не распознана']
       : []),
   ];
 });
 
 function update(patch: Partial<SupportSearchRouteState>): void {
-  emit("update:modelValue", { ...props.modelValue, ...patch });
+  emit('update:modelValue', { ...props.modelValue, ...patch });
 }
 
 function changeScope(event: Event): void {
   const scope = (event.target as HTMLSelectElement).value as SupportSearchScope;
   update({
     scope,
-    filters: scope === "CASES" ? props.modelValue.filters : {},
-    sort: { field: "RELEVANCE", direction: "DESC" },
+    filters: scope === 'CASES' ? props.modelValue.filters : {},
+    sort: { field: 'RELEVANCE', direction: 'DESC' },
   });
 }
 
 function closePopover(event: Event): void {
-  (event.currentTarget as HTMLElement)
-    .closest("details")
-    ?.removeAttribute("open");
+  (event.currentTarget as HTMLElement).closest('details')?.removeAttribute('open');
 }
 
-function updateFilter(
-  key: keyof SupportCaseSearchFilters,
-  value: string,
-  array = false,
-): void {
+function updateFilter(key: keyof SupportCaseSearchFilters, value: string, array = false): void {
   const filters = { ...props.modelValue.filters };
   if (!value) delete filters[key];
   else
     Object.assign(filters, {
       [key]: array
         ? value
-            .split(",")
+            .split(',')
             .map((item) => item.trim())
             .filter(Boolean)
         : value,
@@ -199,24 +187,20 @@ function updateFilter(
   update({ filters });
 }
 
-function updateSingleFilter(
-  key: keyof SupportCaseSearchFilters,
-  value: string,
-): void {
+function updateSingleFilter(key: keyof SupportCaseSearchFilters, value: string): void {
   const filters = { ...props.modelValue.filters };
   if (!value) delete filters[key];
   else Object.assign(filters, { [key]: [value] });
   update({ filters });
 }
 
-function updateTimeRange(key: "from" | "to", value: string): void {
-  if (key === "from") timeFrom.value = value;
+function updateTimeRange(key: 'from' | 'to', value: string): void {
+  if (key === 'from') timeFrom.value = value;
   else timeTo.value = value;
   const filters = { ...props.modelValue.filters };
   const fromIso = localDateTimeToIso(timeFrom.value);
   const toIso = localDateTimeToIso(timeTo.value);
-  const range =
-    fromIso && toIso ? normalizeSearchTimeRange(fromIso, toIso) : undefined;
+  const range = fromIso && toIso ? normalizeSearchTimeRange(fromIso, toIso) : undefined;
   if (range) filters.timeRange = range;
   else delete filters.timeRange;
   update({ filters });
@@ -226,22 +210,18 @@ function updateSortField(value: string): void {
   update({
     sort: {
       ...props.modelValue.sort,
-      field: value as SupportSearchRouteState["sort"]["field"],
+      field: value as SupportSearchRouteState['sort']['field'],
     },
   });
 }
 
 function submit(): void {
-  emit("submit", props.modelValue);
+  emit('submit', props.modelValue);
 }
 </script>
 
 <template>
-  <section
-    class="search-rail"
-    :class="{ active }"
-    aria-label="Поиск по поддержке"
-  >
+  <section class="search-rail" :class="{ active }" aria-label="Поиск по поддержке">
     <form class="search-form" role="search" @submit.prevent="submit">
       <i class="pi pi-search" aria-hidden="true" />
       <input
@@ -256,10 +236,7 @@ function submit(): void {
       />
       <span v-if="!active" class="search-shortcut" aria-hidden="true">⌘ K</span>
       <button type="submit" class="search-submit" :disabled="loading">
-        <i
-          :class="loading ? 'pi pi-spin pi-spinner' : 'pi pi-arrow-right'"
-          aria-hidden="true"
-        />
+        <i :class="loading ? 'pi pi-spin pi-spinner' : 'pi pi-arrow-right'" aria-hidden="true" />
         <span class="sr-only">Искать</span>
       </button>
     </form>
@@ -267,16 +244,8 @@ function submit(): void {
     <div v-if="active && !locked" class="search-controls">
       <label class="scope-control">
         <span class="sr-only">Область поиска</span>
-        <select
-          :value="modelValue.scope"
-          aria-label="Область поиска"
-          @change="changeScope"
-        >
-          <option
-            v-for="(label, value) in scopeLabels"
-            :key="value"
-            :value="value"
-          >
+        <select :value="modelValue.scope" aria-label="Область поиска" @change="changeScope">
+          <option v-for="(label, value) in scopeLabels" :key="value" :value="value">
             {{ label }}
           </option>
         </select>
@@ -290,11 +259,7 @@ function submit(): void {
         <div class="filter-grid">
           <div class="filter-grid-heading">
             <strong>Фильтры обращений</strong>
-            <button
-              type="button"
-              aria-label="Закрыть фильтры"
-              @click="closePopover"
-            >
+            <button type="button" aria-label="Закрыть фильтры" @click="closePopover">
               <i class="pi pi-times" aria-hidden="true" />
             </button>
           </div>
@@ -302,19 +267,10 @@ function submit(): void {
             >Статус
             <select
               :value="modelValue.filters.statuses?.[0] ?? ''"
-              @change="
-                updateSingleFilter(
-                  'statuses',
-                  ($event.target as HTMLSelectElement).value,
-                )
-              "
+              @change="updateSingleFilter('statuses', ($event.target as HTMLSelectElement).value)"
             >
               <option value="">Любой</option>
-              <option
-                v-for="(label, value) in statusLabels"
-                :key="value"
-                :value="value"
-              >
+              <option v-for="(label, value) in statusLabels" :key="value" :value="value">
                 {{ label }}
               </option>
             </select>
@@ -323,19 +279,10 @@ function submit(): void {
             >Приоритет
             <select
               :value="modelValue.filters.priorities?.[0] ?? ''"
-              @change="
-                updateSingleFilter(
-                  'priorities',
-                  ($event.target as HTMLSelectElement).value,
-                )
-              "
+              @change="updateSingleFilter('priorities', ($event.target as HTMLSelectElement).value)"
             >
               <option value="">Любой</option>
-              <option
-                v-for="(label, value) in priorityLabels"
-                :key="value"
-                :value="value"
-              >
+              <option v-for="(label, value) in priorityLabels" :key="value" :value="value">
                 {{ label }}
               </option>
             </select>
@@ -345,10 +292,7 @@ function submit(): void {
             <select
               :value="modelValue.filters.assignmentStates?.[0] ?? ''"
               @change="
-                updateSingleFilter(
-                  'assignmentStates',
-                  ($event.target as HTMLSelectElement).value,
-                )
+                updateSingleFilter('assignmentStates', ($event.target as HTMLSelectElement).value)
               "
             >
               <option value="">Любое</option>
@@ -360,12 +304,7 @@ function submit(): void {
             >SLA
             <select
               :value="modelValue.filters.slaStates?.[0] ?? ''"
-              @change="
-                updateSingleFilter(
-                  'slaStates',
-                  ($event.target as HTMLSelectElement).value,
-                )
-              "
+              @change="updateSingleFilter('slaStates', ($event.target as HTMLSelectElement).value)"
             >
               <option value="">Любой</option>
               <option value="ON_TRACK">В норме</option>
@@ -379,10 +318,7 @@ function submit(): void {
             <select
               :value="modelValue.filters.waitingSides?.[0] ?? ''"
               @change="
-                updateSingleFilter(
-                  'waitingSides',
-                  ($event.target as HTMLSelectElement).value,
-                )
+                updateSingleFilter('waitingSides', ($event.target as HTMLSelectElement).value)
               "
             >
               <option value="">Любая сторона</option>
@@ -396,12 +332,7 @@ function submit(): void {
             >Состояние чтения
             <select
               :value="modelValue.filters.unreadState ?? ''"
-              @change="
-                updateFilter(
-                  'unreadState',
-                  ($event.target as HTMLSelectElement).value,
-                )
-              "
+              @change="updateFilter('unreadState', ($event.target as HTMLSelectElement).value)"
             >
               <option value="">Любое</option>
               <option value="UNREAD">Непрочитанные</option>
@@ -412,12 +343,7 @@ function submit(): void {
             >Черновик
             <select
               :value="modelValue.filters.draftState ?? ''"
-              @change="
-                updateFilter(
-                  'draftState',
-                  ($event.target as HTMLSelectElement).value,
-                )
-              "
+              @change="updateFilter('draftState', ($event.target as HTMLSelectElement).value)"
             >
               <option value="">Любой</option>
               <option value="HAS_DRAFT">Есть</option>
@@ -428,12 +354,7 @@ function submit(): void {
             >Доставка
             <select
               :value="modelValue.filters.deliveryState ?? ''"
-              @change="
-                updateFilter(
-                  'deliveryState',
-                  ($event.target as HTMLSelectElement).value,
-                )
-              "
+              @change="updateFilter('deliveryState', ($event.target as HTMLSelectElement).value)"
             >
               <option value="">Любая</option>
               <option value="PROBLEM">Есть проблема</option>
@@ -444,12 +365,7 @@ function submit(): void {
             >Канал
             <select
               :value="modelValue.filters.channels?.[0] ?? ''"
-              @change="
-                updateSingleFilter(
-                  'channels',
-                  ($event.target as HTMLSelectElement).value,
-                )
-              "
+              @change="updateSingleFilter('channels', ($event.target as HTMLSelectElement).value)"
             >
               <option value="">Любой</option>
               <option value="TEXT">Текст</option>
@@ -462,36 +378,21 @@ function submit(): void {
             <input
               :value="modelValue.filters.queueIds?.join(', ') ?? ''"
               placeholder="Идентификаторы через запятую"
-              @change="
-                updateFilter(
-                  'queueIds',
-                  ($event.target as HTMLInputElement).value,
-                  true,
-                )
-              "
+              @change="updateFilter('queueIds', ($event.target as HTMLInputElement).value, true)"
           /></label>
           <label
             >Темы
             <input
               :value="modelValue.filters.topicCodes?.join(', ') ?? ''"
               placeholder="Коды через запятую"
-              @change="
-                updateFilter(
-                  'topicCodes',
-                  ($event.target as HTMLInputElement).value,
-                  true,
-                )
-              "
+              @change="updateFilter('topicCodes', ($event.target as HTMLInputElement).value, true)"
           /></label>
           <label
             >Категория
             <select
               :value="modelValue.filters.categoryCodes?.[0] ?? ''"
               @change="
-                updateSingleFilter(
-                  'categoryCodes',
-                  ($event.target as HTMLSelectElement).value,
-                )
+                updateSingleFilter('categoryCodes', ($event.target as HTMLSelectElement).value)
               "
             >
               <option value="">Любая</option>
@@ -508,26 +409,14 @@ function submit(): void {
             <input
               :value="modelValue.filters.languages?.join(', ') ?? ''"
               placeholder="ru, en"
-              @change="
-                updateFilter(
-                  'languages',
-                  ($event.target as HTMLInputElement).value,
-                  true,
-                )
-              "
+              @change="updateFilter('languages', ($event.target as HTMLInputElement).value, true)"
           /></label>
           <label
             >Команды
             <input
               :value="modelValue.filters.teamIds?.join(', ') ?? ''"
               placeholder="Идентификаторы через запятую"
-              @change="
-                updateFilter(
-                  'teamIds',
-                  ($event.target as HTMLInputElement).value,
-                  true,
-                )
-              "
+              @change="updateFilter('teamIds', ($event.target as HTMLInputElement).value, true)"
           /></label>
           <label
             >Операторы
@@ -535,11 +424,7 @@ function submit(): void {
               :value="modelValue.filters.assigneeCmsUserIds?.join(', ') ?? ''"
               placeholder="Идентификаторы через запятую"
               @change="
-                updateFilter(
-                  'assigneeCmsUserIds',
-                  ($event.target as HTMLInputElement).value,
-                  true,
-                )
+                updateFilter('assigneeCmsUserIds', ($event.target as HTMLInputElement).value, true)
               "
           /></label>
           <label
@@ -547,21 +432,14 @@ function submit(): void {
             <input
               type="datetime-local"
               :value="timeFrom"
-              @change="
-                updateTimeRange(
-                  'from',
-                  ($event.target as HTMLInputElement).value,
-                )
-              "
+              @change="updateTimeRange('from', ($event.target as HTMLInputElement).value)"
           /></label>
           <label
             >До
             <input
               type="datetime-local"
               :value="timeTo"
-              @change="
-                updateTimeRange('to', ($event.target as HTMLInputElement).value)
-              "
+              @change="updateTimeRange('to', ($event.target as HTMLInputElement).value)"
           /></label>
         </div>
       </details>
@@ -582,37 +460,20 @@ function submit(): void {
               <i class="pi pi-times" aria-hidden="true" />
             </button>
           </div>
-          <label
-            v-if="
-              modelValue.scope === 'CASES' || modelValue.scope === 'MESSAGES'
-            "
+          <label v-if="modelValue.scope === 'CASES' || modelValue.scope === 'MESSAGES'"
             >Обращения
             <input
               :value="modelValue.filters.caseIds?.join(', ') ?? ''"
               placeholder="По одному через запятую"
-              @change="
-                updateFilter(
-                  'caseIds',
-                  ($event.target as HTMLInputElement).value,
-                  true,
-                )
-              "
+              @change="updateFilter('caseIds', ($event.target as HTMLInputElement).value, true)"
           /></label>
-          <label
-            v-if="
-              modelValue.scope === 'CONVERSATIONS' ||
-              modelValue.scope === 'MESSAGES'
-            "
+          <label v-if="modelValue.scope === 'CONVERSATIONS' || modelValue.scope === 'MESSAGES'"
             >Диалоги
             <input
               :value="modelValue.filters.conversationIds?.join(', ') ?? ''"
               placeholder="По одному через запятую"
               @change="
-                updateFilter(
-                  'conversationIds',
-                  ($event.target as HTMLInputElement).value,
-                  true,
-                )
+                updateFilter('conversationIds', ($event.target as HTMLInputElement).value, true)
               "
           /></label>
           <label v-if="modelValue.scope === 'MESSAGES'"
@@ -620,26 +481,14 @@ function submit(): void {
             <input
               :value="modelValue.filters.messageIds?.join(', ') ?? ''"
               placeholder="По одному через запятую"
-              @change="
-                updateFilter(
-                  'messageIds',
-                  ($event.target as HTMLInputElement).value,
-                  true,
-                )
-              "
+              @change="updateFilter('messageIds', ($event.target as HTMLInputElement).value, true)"
           /></label>
           <label
             >Пользователи
             <input
               :value="modelValue.filters.endUserIds?.join(', ') ?? ''"
               placeholder="По одному через запятую"
-              @change="
-                updateFilter(
-                  'endUserIds',
-                  ($event.target as HTMLInputElement).value,
-                  true,
-                )
-              "
+              @change="updateFilter('endUserIds', ($event.target as HTMLInputElement).value, true)"
           /></label>
           <label
             >Внешний идентификатор
@@ -647,41 +496,23 @@ function submit(): void {
               :value="modelValue.filters.externalEndUserIds?.join(', ') ?? ''"
               placeholder="Точное значение"
               @change="
-                updateFilter(
-                  'externalEndUserIds',
-                  ($event.target as HTMLInputElement).value,
-                  true,
-                )
+                updateFilter('externalEndUserIds', ($event.target as HTMLInputElement).value, true)
               "
           /></label>
-          <template
-            v-if="
-              modelValue.scope !== 'CASES' && modelValue.scope !== 'END_USERS'
-            "
-          >
+          <template v-if="modelValue.scope !== 'CASES' && modelValue.scope !== 'END_USERS'">
             <label
               >С
               <input
                 type="datetime-local"
                 :value="timeFrom"
-                @change="
-                  updateTimeRange(
-                    'from',
-                    ($event.target as HTMLInputElement).value,
-                  )
-                "
+                @change="updateTimeRange('from', ($event.target as HTMLInputElement).value)"
             /></label>
             <label
               >До
               <input
                 type="datetime-local"
                 :value="timeTo"
-                @change="
-                  updateTimeRange(
-                    'to',
-                    ($event.target as HTMLInputElement).value,
-                  )
-                "
+                @change="updateTimeRange('to', ($event.target as HTMLInputElement).value)"
             /></label>
           </template>
         </div>
@@ -708,9 +539,7 @@ function submit(): void {
         v-if="modelValue.scope !== 'END_USERS'"
         type="button"
         class="direction-button"
-        :aria-label="
-          modelValue.sort.direction === 'ASC' ? 'По возрастанию' : 'По убыванию'
-        "
+        :aria-label="modelValue.sort.direction === 'ASC' ? 'По возрастанию' : 'По убыванию'"
         @click="
           update({
             sort: {
@@ -722,9 +551,7 @@ function submit(): void {
       >
         <i
           :class="
-            modelValue.sort.direction === 'ASC'
-              ? 'pi pi-sort-amount-up'
-              : 'pi pi-sort-amount-down'
+            modelValue.sort.direction === 'ASC' ? 'pi pi-sort-amount-up' : 'pi pi-sort-amount-down'
           "
           aria-hidden="true"
         />
@@ -892,7 +719,7 @@ function submit(): void {
   list-style: none;
 }
 .filter-popover summary::marker {
-  content: "";
+  content: '';
 }
 .filter-popover summary::-webkit-details-marker {
   display: none;

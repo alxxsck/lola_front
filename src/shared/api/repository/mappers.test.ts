@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 import type {
   EndUserResponseDto,
   EventCatalogDefinitionResponseDto,
@@ -7,8 +7,8 @@ import type {
   ScenarioRunResponseDto,
   UiElementResponseDto,
   ProjectAuditEventResponseDto,
-} from "@/shared/api/generated/models";
-import { supportWorkspaceContractFixtures } from "./fixtures/support-workspace-contract-fixtures";
+} from '@/shared/api/generated/models';
+import { supportWorkspaceContractFixtures } from './fixtures/support-workspace-contract-fixtures';
 import {
   mapActiveSessions,
   mapAuditEvent,
@@ -23,312 +23,312 @@ import {
   toCreateUiElementDto,
   toUpdateProjectSettingsDto,
   toUpdateUiElementDto,
-} from "./mappers";
+} from './mappers';
 
-describe("repository domain mappers", () => {
-  it("keeps stable and revision Event identities distinct", () => {
+describe('repository domain mappers', () => {
+  it('keeps stable and revision Event identities distinct', () => {
     const mapped = mapEventDefinition({
-      id: "event-revision-2",
-      revisionId: "event-revision-2",
-      definitionKeyId: "event-key-1",
-      currentRevisionId: "event-revision-2",
-      projectId: "project-1",
-      code: "deposit",
-      name: "Deposit",
+      id: 'event-revision-2',
+      revisionId: 'event-revision-2',
+      definitionKeyId: 'event-key-1',
+      currentRevisionId: 'event-revision-2',
+      projectId: 'project-1',
+      code: 'deposit',
+      name: 'Deposit',
       description: null,
       version: 2,
-      payloadSchema: { type: "object" },
+      payloadSchema: { type: 'object' },
       enabled: true,
       clientIngestible: false,
       countsAsActivity: true,
       policyVersion: 1,
-      policyUpdatedAt: "now",
-      metadataUpdatedAt: "now",
-      origin: "CUSTOM",
+      policyUpdatedAt: 'now',
+      metadataUpdatedAt: 'now',
+      origin: 'CUSTOM',
       readOnly: false,
-      lifecycle: "ACTIVE",
+      lifecycle: 'ACTIVE',
       archivedAt: null,
       isCurrent: true,
-      createdAt: "now",
-      updatedAt: "now",
+      createdAt: 'now',
+      updatedAt: 'now',
     } as EventCatalogDefinitionResponseDto);
 
-    expect(mapped.id).toBe("event-revision-2");
-    expect(mapped.definitionKeyId).toBe("event-key-1");
+    expect(mapped.id).toBe('event-revision-2');
+    expect(mapped.definitionKeyId).toBe('event-key-1');
   });
 
-  it("maps the project contract without leaking backend-only fields", () => {
+  it('maps the project contract without leaking backend-only fields', () => {
     const dto: ProjectResponseDto = {
-      id: "project-1",
+      id: 'project-1',
       version: 1,
-      organizationId: "org-1",
-      name: "Retenive",
-      slug: "retenive",
-      status: "ACTIVE",
-      publicKey: "public",
-      serverKeyPrefix: "secret-prefix",
-      defaultLocale: "ru",
-      supportedLocales: ["ru"],
-      assistantName: "Retenive",
-      systemPrompt: "Help",
-      voiceInstructions: "Speak warmly",
-      settings: { timezone: "UTC" },
-      createdAt: "now",
-      updatedAt: "now",
+      organizationId: 'org-1',
+      name: 'Retenive',
+      slug: 'retenive',
+      status: 'ACTIVE',
+      publicKey: 'public',
+      serverKeyPrefix: 'secret-prefix',
+      defaultLocale: 'ru',
+      supportedLocales: ['ru'],
+      assistantName: 'Retenive',
+      systemPrompt: 'Help',
+      voiceInstructions: 'Speak warmly',
+      settings: { timezone: 'UTC' },
+      createdAt: 'now',
+      updatedAt: 'now',
     };
     expect(mapProject(dto)).toEqual(
       expect.objectContaining({
-        id: "project-1",
-        voiceInstructions: "Speak warmly",
-        settings: { timezone: "UTC" },
+        id: 'project-1',
+        voiceInstructions: 'Speak warmly',
+        settings: { timezone: 'UTC' },
       }),
     );
-    expect(mapProject(dto)).not.toHaveProperty("serverKeyPrefix");
+    expect(mapProject(dto)).not.toHaveProperty('serverKeyPrefix');
   });
 
-  it("preserves message ordinal and immutable author snapshot", () => {
+  it('preserves message ordinal and immutable author snapshot', () => {
     const message = mapConversationMessage({
-      id: "message-17",
-      threadId: "conversation-1",
+      id: 'message-17',
+      threadId: 'conversation-1',
       ordinal: 17,
-      role: "ADMIN",
-      status: "COMPLETED",
-      text: "Проверяю результат",
-      contentState: "ACTIVE",
+      role: 'ADMIN',
+      status: 'COMPLETED',
+      text: 'Проверяю результат',
+      contentState: 'ACTIVE',
       contentVersion: 1,
       revisionNumber: 1,
       attachments: [],
       macroProvenance: {
-        macroId: "macro-1",
-        revisionId: "revision-3",
+        macroId: 'macro-1',
+        revisionId: 'revision-3',
         revisionNumber: 3,
         edited: true,
-        usedAt: "2026-08-06T10:00:00.000Z",
+        usedAt: '2026-08-06T10:00:00.000Z',
       },
       knowledgeProvenance: {
-        documentId: "document-1",
-        revisionId: "knowledge-revision-3",
+        documentId: 'document-1',
+        revisionId: 'knowledge-revision-3',
         revisionNumber: 3,
-        mode: "QUOTE",
+        mode: 'QUOTE',
         edited: true,
-        citedAt: "2026-08-06T10:00:00.000Z",
+        citedAt: '2026-08-06T10:00:00.000Z',
       },
-      createdAt: "2026-08-06T10:00:00.000Z",
-      updatedAt: "2026-08-06T10:00:00.000Z",
+      createdAt: '2026-08-06T10:00:00.000Z',
+      updatedAt: '2026-08-06T10:00:00.000Z',
       author: {
-        type: "CMS_USER",
-        cmsUserId: "cms-1",
-        displayName: "Анна Оператор",
-        avatarUrl: "https://cdn.example/avatar.png",
+        type: 'CMS_USER',
+        cmsUserId: 'cms-1',
+        displayName: 'Анна Оператор',
+        avatarUrl: 'https://cdn.example/avatar.png',
       },
       delivery: {
-        id: "delivery-1",
-        channel: "SDK_REALTIME",
-        status: "DELIVERING",
+        id: 'delivery-1',
+        channel: 'SDK_REALTIME',
+        status: 'DELIVERING',
         generation: 1,
         version: 1,
         errorCode: null,
         retryEligible: false,
         allowedActions: [],
-        acceptedAt: "2026-08-06T10:00:01.000Z",
-        interactionSessionId: "session-1",
-        commandIds: ["command-1"],
+        acceptedAt: '2026-08-06T10:00:01.000Z',
+        interactionSessionId: 'session-1',
+        commandIds: ['command-1'],
       },
     });
 
     expect(message.authorSnapshot).toEqual({
-      type: "CMS_USER",
-      cmsUserId: "cms-1",
-      displayName: "Анна Оператор",
-      avatarUrl: "https://cdn.example/avatar.png",
+      type: 'CMS_USER',
+      cmsUserId: 'cms-1',
+      displayName: 'Анна Оператор',
+      avatarUrl: 'https://cdn.example/avatar.png',
     });
     expect(message.delivery).toEqual({
-      id: "delivery-1",
-      channel: "SDK_REALTIME",
-      status: "DELIVERING",
+      id: 'delivery-1',
+      channel: 'SDK_REALTIME',
+      status: 'DELIVERING',
       generation: 1,
       version: 1,
       errorCode: null,
       retryEligible: false,
       allowedActions: [],
-      acceptedAt: "2026-08-06T10:00:01.000Z",
-      interactionSessionId: "session-1",
-      commandIds: ["command-1"],
+      acceptedAt: '2026-08-06T10:00:01.000Z',
+      interactionSessionId: 'session-1',
+      commandIds: ['command-1'],
     });
     expect(message.macroProvenance).toEqual({
-      macroId: "macro-1",
-      revisionId: "revision-3",
+      macroId: 'macro-1',
+      revisionId: 'revision-3',
       revisionNumber: 3,
       edited: true,
-      usedAt: "2026-08-06T10:00:00.000Z",
+      usedAt: '2026-08-06T10:00:00.000Z',
     });
     expect(message.knowledgeProvenance).toEqual({
-      documentId: "document-1",
-      revisionId: "knowledge-revision-3",
+      documentId: 'document-1',
+      revisionId: 'knowledge-revision-3',
       revisionNumber: 3,
-      mode: "QUOTE",
+      mode: 'QUOTE',
       edited: true,
-      citedAt: "2026-08-06T10:00:00.000Z",
+      citedAt: '2026-08-06T10:00:00.000Z',
     });
   });
 
-  it("rejects an unknown delivery state instead of leaking it into UI state", () => {
+  it('rejects an unknown delivery state instead of leaking it into UI state', () => {
     expect(() =>
       mapConversationMessage(
         supportWorkspaceContractFixtures.unknownDeliveryStatusMessage as unknown as Parameters<
           typeof mapConversationMessage
         >[0],
       ),
-    ).toThrow("unknown delivery status");
+    ).toThrow('unknown delivery status');
   });
 
-  it("only sends editable project fields", () => {
+  it('only sends editable project fields', () => {
     expect(
       toUpdateProjectSettingsDto({
-        id: "immutable",
+        id: 'immutable',
         version: 7,
-        slug: "immutable",
-        publicKey: "immutable",
-        name: "Updated",
-        voiceInstructions: "  Speak slowly.\nPause.  ",
-        settings: { description: "New" },
+        slug: 'immutable',
+        publicKey: 'immutable',
+        name: 'Updated',
+        voiceInstructions: '  Speak slowly.\nPause.  ',
+        settings: { description: 'New' },
       }),
     ).toEqual({
       expectedVersion: 7,
-      name: "Updated",
-      voiceInstructions: "  Speak slowly.\nPause.  ",
-      settings: { description: "New" },
+      name: 'Updated',
+      voiceInstructions: '  Speak slowly.\nPause.  ',
+      settings: { description: 'New' },
     });
   });
 
-  it("normalizes nullable response fields and preserves JSON payloads", () => {
+  it('normalizes nullable response fields and preserves JSON payloads', () => {
     const ui = mapUiElement({
-      id: "ui-1",
-      projectId: "project-1",
-      code: "home",
-      name: "Home",
-      kind: "PAGE",
+      id: 'ui-1',
+      projectId: 'project-1',
+      code: 'home',
+      name: 'Home',
+      kind: 'PAGE',
       selector: null,
-      route: "/home",
+      route: '/home',
       modalName: null,
       handler: null,
       config: { direct: true },
       enabled: true,
-      createdAt: "now",
-      updatedAt: "now",
+      createdAt: 'now',
+      updatedAt: 'now',
     } as unknown as UiElementResponseDto);
     const user = mapEndUser({
-      id: "user-1",
-      projectId: "project-1",
-      externalId: "external",
+      id: 'user-1',
+      projectId: 'project-1',
+      externalId: 'external',
       isGuest: false,
       locale: null,
       segment: null,
       profile: {},
       attributes: {},
       preferences: {},
-      lastSeenAt: "now",
-      createdAt: "now",
-      updatedAt: "now",
+      lastSeenAt: 'now',
+      createdAt: 'now',
+      updatedAt: 'now',
     } as EndUserResponseDto);
 
     expect(ui).toMatchObject({
-      route: "/home",
+      route: '/home',
       selector: undefined,
       config: { direct: true },
     });
     expect(user).toMatchObject({ locale: undefined, segment: undefined });
   });
 
-  it("maps modalName in both directions without using the deprecated handler as a binding", () => {
+  it('maps modalName in both directions without using the deprecated handler as a binding', () => {
     const modal = mapUiElement({
-      id: "ui-2",
-      projectId: "project-1",
-      code: "deposit_modal",
-      name: "Deposit",
-      kind: "MODAL",
+      id: 'ui-2',
+      projectId: 'project-1',
+      code: 'deposit_modal',
+      name: 'Deposit',
+      kind: 'MODAL',
       selector: null,
       route: null,
-      modalName: "deposit",
-      handler: "openDepositModal",
+      modalName: 'deposit',
+      handler: 'openDepositModal',
       config: {},
       enabled: true,
-      createdAt: "now",
-      updatedAt: "now",
+      createdAt: 'now',
+      updatedAt: 'now',
     } as unknown as UiElementResponseDto);
 
     expect(modal).toMatchObject({
-      modalName: "deposit",
-      handler: "openDepositModal",
+      modalName: 'deposit',
+      handler: 'openDepositModal',
     });
     expect(
       toCreateUiElementDto({
         code: modal.code,
         name: modal.name,
-        kind: "MODAL",
+        kind: 'MODAL',
         modalName: modal.modalName!,
       }),
     ).toEqual({
-      code: "deposit_modal",
-      name: "Deposit",
-      kind: "MODAL",
-      modalName: "deposit",
+      code: 'deposit_modal',
+      name: 'Deposit',
+      kind: 'MODAL',
+      modalName: 'deposit',
     });
   });
 
-  it("preserves bounded AI target exposure and its audit reason in generated DTOs", () => {
+  it('preserves bounded AI target exposure and its audit reason in generated DTOs', () => {
     const page = mapUiElement({
-      id: "ui-3",
-      projectId: "project-1",
-      code: "bonuses",
-      name: "Bonuses",
-      kind: "PAGE",
+      id: 'ui-3',
+      projectId: 'project-1',
+      code: 'bonuses',
+      name: 'Bonuses',
+      kind: 'PAGE',
       selector: null,
-      route: "/bonuses",
+      route: '/bonuses',
       modalName: null,
       handler: null,
       config: {},
       enabled: true,
       aiEnabled: true,
-      aiDescription: "The page where the user reviews available bonuses.",
-      aiAliases: ["rewards"],
-      createdAt: "now",
-      updatedAt: "now",
+      aiDescription: 'The page where the user reviews available bonuses.',
+      aiAliases: ['rewards'],
+      createdAt: 'now',
+      updatedAt: 'now',
     });
 
     expect(page).toMatchObject({
       aiEnabled: true,
-      aiDescription: "The page where the user reviews available bonuses.",
-      aiAliases: ["rewards"],
+      aiDescription: 'The page where the user reviews available bonuses.',
+      aiAliases: ['rewards'],
     });
     expect(
       toUpdateUiElementDto({
         aiEnabled: true,
-        aiDescription: "The page where the user reviews available bonuses.",
-        aiAliases: ["rewards"],
-        auditReason: "Expose bonuses target for OPEN_PAGE",
+        aiDescription: 'The page where the user reviews available bonuses.',
+        aiAliases: ['rewards'],
+        auditReason: 'Expose bonuses target for OPEN_PAGE',
       }),
     ).toEqual({
       aiEnabled: true,
-      aiDescription: "The page where the user reviews available bonuses.",
-      aiAliases: ["rewards"],
-      auditReason: "Expose bonuses target for OPEN_PAGE",
+      aiDescription: 'The page where the user reviews available bonuses.',
+      aiAliases: ['rewards'],
+      auditReason: 'Expose bonuses target for OPEN_PAGE',
     });
   });
 
-  it("maps operational DTOs into page-safe domain models", () => {
+  it('maps operational DTOs into page-safe domain models', () => {
     const event = mapEventLog({
-      id: "log-1",
-      projectId: "project-1",
-      eventDefinitionId: "event-1",
-      eventDefinitionKeyId: "event-key-1",
-      endUserId: "user-1",
-      source: "SERVER",
+      id: 'log-1',
+      projectId: 'project-1',
+      eventDefinitionId: 'event-1',
+      eventDefinitionKeyId: 'event-key-1',
+      endUserId: 'user-1',
+      source: 'SERVER',
       payload: { amount: 12 },
       context: {},
-      occurredAt: "now",
-      receivedAt: "now",
-      status: "PROCESSED",
+      occurredAt: 'now',
+      receivedAt: 'now',
+      status: 'PROCESSED',
       ingestionPolicyVersion: 3,
       ingestionPolicySnapshot: {
         enabled: true,
@@ -336,17 +336,17 @@ describe("repository domain mappers", () => {
         countsAsActivity: true,
       },
       eventDefinition: {
-        id: "event-1",
-        projectId: "project-1",
-        code: "deposit",
-        name: "Deposit",
+        id: 'event-1',
+        projectId: 'project-1',
+        code: 'deposit',
+        name: 'Deposit',
         version: 2,
       },
-      endUser: { id: "user-1", externalId: "customer-42" },
+      endUser: { id: 'user-1', externalId: 'customer-42' },
     } as unknown as EventLogResponseDto);
     expect(event).toMatchObject({
-      eventDefinitionId: "event-1",
-      eventDefinitionKeyId: "event-key-1",
+      eventDefinitionId: 'event-1',
+      eventDefinitionKeyId: 'event-key-1',
       eventVersion: 2,
       ingestionPolicyVersion: 3,
       ingestionPolicySnapshot: {
@@ -356,220 +356,220 @@ describe("repository domain mappers", () => {
       },
     });
     const run = mapScenarioRun({
-      id: "run-1",
-      projectId: "project-1",
-      scenarioId: "scenario-1",
-      eventLogId: "log-1",
-      endUserId: "user-1",
-      status: "RUNNING",
-      conversationPolicy: "reuse_active",
-      startedAt: "now",
+      id: 'run-1',
+      projectId: 'project-1',
+      scenarioId: 'scenario-1',
+      eventLogId: 'log-1',
+      endUserId: 'user-1',
+      status: 'RUNNING',
+      conversationPolicy: 'reuse_active',
+      startedAt: 'now',
       currentStep: 0,
-      scenario: { id: "scenario-1", code: "welcome", name: "Welcome" },
-      endUser: { id: "user-1", externalId: "customer-42" },
+      scenario: { id: 'scenario-1', code: 'welcome', name: 'Welcome' },
+      endUser: { id: 'user-1', externalId: 'customer-42' },
       steps: [
         {
-          id: "step-1",
+          id: 'step-1',
           position: 0,
-          nodeKey: "open-page",
-          actionType: "OPEN_PAGE",
-          executor: "FRONTEND",
-          status: "WAITING_ACK",
+          nodeKey: 'open-page',
+          actionType: 'OPEN_PAGE',
+          executor: 'FRONTEND',
+          status: 'WAITING_ACK',
           command: {
-            id: "command-1",
-            type: "OPEN_PAGE",
+            id: 'command-1',
+            type: 'OPEN_PAGE',
             sequence: 1,
-            status: "SENT",
-            createdAt: "now",
+            status: 'SENT',
+            createdAt: 'now',
           },
         },
       ],
     } as ScenarioRunResponseDto);
     const audit = mapAuditEvent({
-      id: "audit-1",
-      eventType: "iam.project_resource.changed",
+      id: 'audit-1',
+      eventType: 'iam.project_resource.changed',
       eventVersion: 1,
-      occurredAt: "2026-07-23T10:00:00.000Z",
+      occurredAt: '2026-07-23T10:00:00.000Z',
       actor: {
-        type: "CMS_USER",
-        id: "admin-1",
-        email: "owner@retenive.dev",
-        displayName: "Owner",
+        type: 'CMS_USER',
+        id: 'admin-1',
+        email: 'owner@retenive.dev',
+        displayName: 'Owner',
       },
-      target: { kind: "PROJECT", id: "project-1" },
-      requiredPermissionCode: "project.scenarios.write",
-      outcome: "SUCCESS",
+      target: { kind: 'PROJECT', id: 'project-1' },
+      requiredPermissionCode: 'project.scenarios.write',
+      outcome: 'SUCCESS',
       authorizationEvidence: {},
       reasonCode: null,
-      auditReason: "Save onboarding draft",
-      requestId: "request-1",
-      correlationId: "cms.save-draft",
-      ipAddress: "203.0.113.10",
-      userAgent: "CMS test",
+      auditReason: 'Save onboarding draft',
+      requestId: 'request-1',
+      correlationId: 'cms.save-draft',
+      ipAddress: '203.0.113.10',
+      userAgent: 'CMS test',
       before: null,
       after: null,
       metadata: {
-        source: "scenario-authoring",
+        source: 'scenario-authoring',
         details: {
-          resourceType: "SCENARIO",
-          resourceId: "scenario-1",
-          operation: "SAVE_DRAFT",
+          resourceType: 'SCENARIO',
+          resourceId: 'scenario-1',
+          operation: 'SAVE_DRAFT',
         },
       },
     } as ProjectAuditEventResponseDto);
 
     expect(event).toMatchObject({
-      eventCode: "deposit",
-      userExternalId: "customer-42",
+      eventCode: 'deposit',
+      userExternalId: 'customer-42',
       payload: { amount: 12 },
     });
     expect(run.steps[0]).toMatchObject({
-      status: "WAITING_ACK",
-      command: { id: "command-1", sequence: 1 },
+      status: 'WAITING_ACK',
+      command: { id: 'command-1', sequence: 1 },
     });
     expect(audit.actor).toEqual({
-      id: "admin-1",
-      type: "CMS_USER",
-      email: "owner@retenive.dev",
-      name: "Owner",
+      id: 'admin-1',
+      type: 'CMS_USER',
+      email: 'owner@retenive.dev',
+      name: 'Owner',
     });
     expect(audit).toMatchObject({
-      eventType: "iam.project_resource.changed",
-      operation: "SAVE_DRAFT",
-      outcome: "SUCCESS",
-      resourceType: "SCENARIO",
-      resourceId: "scenario-1",
-      target: { kind: "PROJECT", id: "project-1" },
-      occurredAt: "2026-07-23T10:00:00.000Z",
+      eventType: 'iam.project_resource.changed',
+      operation: 'SAVE_DRAFT',
+      outcome: 'SUCCESS',
+      resourceType: 'SCENARIO',
+      resourceId: 'scenario-1',
+      target: { kind: 'PROJECT', id: 'project-1' },
+      occurredAt: '2026-07-23T10:00:00.000Z',
     });
   });
 
-  it("deduplicates multiple connections of the same active session by latest heartbeat", () => {
+  it('deduplicates multiple connections of the same active session by latest heartbeat', () => {
     const sessions = mapActiveSessions({
-      id: "user-1",
-      externalId: "customer-1",
+      id: 'user-1',
+      externalId: 'customer-1',
       isGuest: false,
-      presence: "online",
+      presence: 'online',
       profile: {},
-      lastSeenAt: "2026-07-11T10:00:00.000Z",
+      lastSeenAt: '2026-07-11T10:00:00.000Z',
       activeConnectionCount: 2,
       activeSessionCount: 1,
       connections: [
         {
-          id: "connection-1",
-          sessionId: "session-1",
-          transport: "SOCKET_IO",
-          connectedAt: "2026-07-11T09:00:00.000Z",
-          lastHeartbeatAt: "2026-07-11T09:58:00.000Z",
+          id: 'connection-1',
+          sessionId: 'session-1',
+          transport: 'SOCKET_IO',
+          connectedAt: '2026-07-11T09:00:00.000Z',
+          lastHeartbeatAt: '2026-07-11T09:58:00.000Z',
         },
         {
-          id: "connection-2",
-          sessionId: "session-1",
-          transport: "ANY_CABLE",
-          connectedAt: "2026-07-11T09:05:00.000Z",
-          lastHeartbeatAt: "2026-07-11T10:00:00.000Z",
+          id: 'connection-2',
+          sessionId: 'session-1',
+          transport: 'ANY_CABLE',
+          connectedAt: '2026-07-11T09:05:00.000Z',
+          lastHeartbeatAt: '2026-07-11T10:00:00.000Z',
         },
       ],
     });
     expect(sessions).toHaveLength(1);
     expect(sessions[0]).toMatchObject({
-      id: "session-1",
-      userName: "customer-1",
-      device: "AnyCable",
-      status: "ONLINE",
+      id: 'session-1',
+      userName: 'customer-1',
+      device: 'AnyCable',
+      status: 'ONLINE',
     });
   });
 
-  it("maps admin conversation history into the UI domain", () => {
+  it('maps admin conversation history into the UI domain', () => {
     expect(
       mapConversation({
-        id: "conversation-1",
-        projectId: "project-1",
-        endUserId: "user-1",
+        id: 'conversation-1',
+        projectId: 'project-1',
+        endUserId: 'user-1',
         title: null,
-        status: "CLOSED",
-        createdAt: "2026-07-13T08:00:00.000Z",
-        updatedAt: "2026-07-13T09:00:00.000Z",
+        status: 'CLOSED',
+        createdAt: '2026-07-13T08:00:00.000Z',
+        updatedAt: '2026-07-13T09:00:00.000Z',
         _count: { messages: 2 },
         isCurrent: true,
         currentInteractionSessionCount: 2,
         aiSuspension: {
-          mode: "SUSPENDED",
-          lifecycle: "ACTIVE",
-          version: "90071992547409930",
-          suspendedUntil: "2026-07-20T14:00:00.000Z",
-          serverTime: "2026-07-20T13:00:00.000Z",
+          mode: 'SUSPENDED',
+          lifecycle: 'ACTIVE',
+          version: '90071992547409930',
+          suspendedUntil: '2026-07-20T14:00:00.000Z',
+          serverTime: '2026-07-20T13:00:00.000Z',
         },
         messages: [
           {
-            id: "message-2",
-            role: "ASSISTANT",
-            text: "Last",
-            createdAt: "2026-07-13T08:59:00.000Z",
+            id: 'message-2',
+            role: 'ASSISTANT',
+            text: 'Last',
+            createdAt: '2026-07-13T08:59:00.000Z',
           },
         ],
       }),
     ).toEqual(
       expect.objectContaining({
-        title: "Диалог без названия",
-        status: "ARCHIVED",
-        updatedAt: "2026-07-13T09:00:00.000Z",
+        title: 'Диалог без названия',
+        status: 'ARCHIVED',
+        updatedAt: '2026-07-13T09:00:00.000Z',
         messageCount: 2,
         isCurrent: true,
         currentInteractionSessionCount: 2,
-        lastMessageAt: "2026-07-13T08:59:00.000Z",
+        lastMessageAt: '2026-07-13T08:59:00.000Z',
         aiSuspension: {
-          mode: "SUSPENDED",
-          lifecycle: "ACTIVE",
-          version: "90071992547409930",
-          suspendedUntil: "2026-07-20T14:00:00.000Z",
-          serverTime: "2026-07-20T13:00:00.000Z",
+          mode: 'SUSPENDED',
+          lifecycle: 'ACTIVE',
+          version: '90071992547409930',
+          suspendedUntil: '2026-07-20T14:00:00.000Z',
+          serverTime: '2026-07-20T13:00:00.000Z',
         },
       }),
     );
     expect(
       mapConversationMessage({
-        id: "message-1",
-        threadId: "conversation-1",
+        id: 'message-1',
+        threadId: 'conversation-1',
         author: null,
         ordinal: 1,
-        role: "ASSISTANT",
-        status: "COMPLETED",
-        text: "Hello",
-        contentState: "ACTIVE",
+        role: 'ASSISTANT',
+        status: 'COMPLETED',
+        text: 'Hello',
+        contentState: 'ACTIVE',
         contentVersion: 1,
         revisionNumber: 1,
         attachments: [],
         macroProvenance: null,
         knowledgeProvenance: null,
-        createdAt: "2026-07-13T08:00:00.000Z",
-        updatedAt: "2026-07-13T08:00:00.000Z",
+        createdAt: '2026-07-13T08:00:00.000Z',
+        updatedAt: '2026-07-13T08:00:00.000Z',
       }),
     ).toEqual(
       expect.objectContaining({
-        conversationId: "conversation-1",
-        author: "ASSISTANT",
-        text: "Hello",
+        conversationId: 'conversation-1',
+        author: 'ASSISTANT',
+        text: 'Hello',
       }),
     );
     expect(
       mapConversationMessage({
-        id: "message-2",
-        threadId: "conversation-1",
+        id: 'message-2',
+        threadId: 'conversation-1',
         author: null,
         ordinal: 2,
-        role: "ASSISTANT",
-        status: "CANCELLED",
-        text: "Незавершённый ответ",
-        contentState: "ACTIVE",
+        role: 'ASSISTANT',
+        status: 'CANCELLED',
+        text: 'Незавершённый ответ',
+        contentState: 'ACTIVE',
         contentVersion: 1,
         revisionNumber: 1,
         attachments: [],
         macroProvenance: null,
         knowledgeProvenance: null,
-        createdAt: "2026-07-13T08:01:00.000Z",
-        updatedAt: "2026-07-13T08:01:00.000Z",
+        createdAt: '2026-07-13T08:01:00.000Z',
+        updatedAt: '2026-07-13T08:01:00.000Z',
       }).status,
-    ).toBe("CANCELLED");
+    ).toBe('CANCELLED');
   });
 });

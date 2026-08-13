@@ -9,7 +9,7 @@ import {
   eventQueryPolicyListItems,
   eventQueryPolicyListRequests,
   eventQueryPolicyPreview,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   ApplyEventQueryPolicyItemDto,
   ApplyEventQueryProjectPolicyDto,
@@ -18,9 +18,9 @@ import type {
   EventQueryPolicyListRequestsParams,
   PreviewEventQueryDto,
   StartCaseVerificationDto,
-} from "@/shared/api/generated/models";
-import { isMockMode } from "@/shared/config/data-mode";
-import { mockEventQueryRepository } from "./mock-event-query-repository";
+} from '@/shared/api/generated/models';
+import { isMockMode } from '@/shared/config/data-mode';
+import { mockEventQueryRepository } from './mock-event-query-repository';
 
 export const apiEventQueryRepository = {
   getPolicy(projectId: string) {
@@ -39,11 +39,7 @@ export const apiEventQueryRepository = {
     return eventQueryPolicyGetItem(projectId, definitionKeyId);
   },
 
-  applyItem(
-    projectId: string,
-    definitionKeyId: string,
-    input: ApplyEventQueryPolicyItemDto,
-  ) {
+  applyItem(projectId: string, definitionKeyId: string, input: ApplyEventQueryPolicyItemDto) {
     return eventQueryPolicyApplyItem(projectId, definitionKeyId, input);
   },
 
@@ -55,19 +51,11 @@ export const apiEventQueryRepository = {
     return eventQueryPolicyListRequests(projectId, params);
   },
 
-  estimateCaseVerification(
-    projectId: string,
-    caseId: string,
-    input: EstimateCaseVerificationDto,
-  ) {
+  estimateCaseVerification(projectId: string, caseId: string, input: EstimateCaseVerificationDto) {
     return caseVerificationEstimate(projectId, caseId, input);
   },
 
-  startCaseVerification(
-    projectId: string,
-    caseId: string,
-    input: StartCaseVerificationDto,
-  ) {
+  startCaseVerification(projectId: string, caseId: string, input: StartCaseVerificationDto) {
     return caseVerificationStart(projectId, caseId, input);
   },
 

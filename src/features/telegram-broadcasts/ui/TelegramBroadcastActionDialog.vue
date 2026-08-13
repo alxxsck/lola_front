@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Dialog from "primevue/dialog";
+import Dialog from 'primevue/dialog';
 
 defineProps<{
   open: boolean;
@@ -26,9 +26,7 @@ const emit = defineEmits<{ confirm: []; cancel: [] }>();
     <slot />
     <template #footer>
       <div class="dialog-actions">
-        <button type="button" class="secondary-button" @click="emit('cancel')">
-          Назад
-        </button>
+        <button type="button" class="secondary-button" @click="emit('cancel')">Назад</button>
         <button
           type="button"
           class="confirm-button"

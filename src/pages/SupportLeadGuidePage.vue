@@ -1,19 +1,20 @@
 <script setup lang="ts">
-import leadGuideSource from '../../docs/cms-support-lead-guide.ru.md?raw'
-import leadScreen from '../../docs/evidence/support-guides/lead-control.png?url'
-import { AdminGuidePage } from '@/features/documentation/ui'
+import leadGuideSource from '../../docs/cms-support-lead-guide.ru.md?raw';
+import leadScreen from '../../docs/evidence/support-guides/lead-control.png?url';
+import { AdminGuidePage } from '@/features/documentation/ui';
 
 const screen = {
   src: leadScreen,
   alt: 'Панель лида с показателями очереди, рисками и пакетным назначением',
   title: 'Панель лида',
-  caption: 'Сначала оцените очередь и SLA. Затем откройте причину риска и только после этого меняйте назначение.',
+  caption:
+    'Сначала оцените очередь и SLA. Затем откройте причину риска и только после этого меняйте назначение.',
   markers: [
     { x: 50, y: 39, label: 'Сводка по очереди, SLA, нагрузке и доставке' },
     { x: 43, y: 72, label: 'Доступность команды и дефицит ёмкости' },
     { x: 54, y: 95, label: 'Активные сигналы; ниже находится очередь рисков' },
   ],
-}
+};
 </script>
 
 <template>

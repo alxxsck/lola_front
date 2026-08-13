@@ -1,37 +1,37 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import SegmentSelect from "@/features/scenario-audience/ui/SegmentSelect.vue";
-import { ApiError } from "@/shared/api/http/api-error";
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import SegmentSelect from '@/features/scenario-audience/ui/SegmentSelect.vue';
+import { ApiError } from '@/shared/api/http/api-error';
 import type {
   ScenarioLocalizationCatalogResponseDto,
   ScenarioLocalizationPolicyDto,
   ScenarioTranslationCatalogResponseDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 import {
   applyTranslationResult,
   createTranslationJobController,
   type LocalizedText,
-} from "@/features/scenario-localization/model";
+} from '@/features/scenario-localization/model';
 import LocalizedField, {
   type TranslationUiState,
-} from "@/features/scenario-localization/ui/LocalizedField.vue";
+} from '@/features/scenario-localization/ui/LocalizedField.vue';
 import {
   compareDecimalStrings,
   formatDecimalMoney,
   type DecimalString,
-} from "@/shared/lib/decimal-money";
-import { aiAllowanceRepository } from "../api/ai-allowance-repository";
-import { allowanceCategoryLabel } from "../model/ai-allowance-presentation";
-import AiAllowanceAccrualRulesPanel from "./AiAllowanceAccrualRulesPanel.vue";
-import AiAllowanceAccrualReceiptsPanel from "./AiAllowanceAccrualReceiptsPanel.vue";
-import AiAllowanceDirectGrantPanel from "./AiAllowanceDirectGrantPanel.vue";
-import AiAllowanceReauthenticationAction from "./AiAllowanceReauthenticationAction.vue";
-import { isAllowanceReauthenticationRequired } from "../model/allowance-reauthentication";
+} from '@/shared/lib/decimal-money';
+import { aiAllowanceRepository } from '../api/ai-allowance-repository';
+import { allowanceCategoryLabel } from '../model/ai-allowance-presentation';
+import AiAllowanceAccrualRulesPanel from './AiAllowanceAccrualRulesPanel.vue';
+import AiAllowanceAccrualReceiptsPanel from './AiAllowanceAccrualReceiptsPanel.vue';
+import AiAllowanceDirectGrantPanel from './AiAllowanceDirectGrantPanel.vue';
+import AiAllowanceReauthenticationAction from './AiAllowanceReauthenticationAction.vue';
+import { isAllowanceReauthenticationRequired } from '../model/allowance-reauthentication';
 import {
   AI_ALLOWANCE_CATEGORIES,
   parseAllowanceUsd,
@@ -41,53 +41,51 @@ import {
   type AiAllowanceLowThresholdMode,
   type AiAllowancePeriodKind,
   type AiAllowanceProjectPolicyView,
-} from "../model/ai-allowance";
+} from '../model/ai-allowance';
 
 const MAX_CATEGORY_RULES = 2;
-const WARNING_FIELD_PATH = "allowance.warning";
-const EXHAUSTED_FIELD_PATH = "allowance.exhausted";
+const WARNING_FIELD_PATH = 'allowance.warning';
+const EXHAUSTED_FIELD_PATH = 'allowance.exhausted';
 const SPONSORED_CATEGORIES = new Set<AiAllowanceCategory>([
-  "AI_REVIEW",
-  "AI_ANALYSIS",
-  "CMS_AGENT",
-  "PROJECT_OVERHEAD",
+  'AI_REVIEW',
+  'AI_ANALYSIS',
+  'CMS_AGENT',
+  'PROJECT_OVERHEAD',
 ]);
 const CATEGORY_DESCRIPTIONS: Record<AiAllowanceCategory, string> = {
-  CHAT: "Расходы обычного текстового диалога с Retenive.",
-  VOICE: "Работа голосового режима разговора с Retenive.",
-  SPEECH: "Преобразование готового текста в аудио.",
-  MEMORY: "Создание и обновление краткой памяти о пользователе.",
+  CHAT: 'Расходы обычного текстового диалога с Retenive.',
+  VOICE: 'Работа голосового режима разговора с Retenive.',
+  SPEECH: 'Преобразование готового текста в аудио.',
+  MEMORY: 'Создание и обновление краткой памяти о пользователе.',
   AI_REVIEW:
-    "Автоматическая AI-проверка сообщений. Ручная проверка администратором сюда не относится.",
-  AI_ANALYSIS:
-    "AI-анализ данных и обращений, запущенный сценарием или сотрудником.",
-  CMS_AGENT: "Действия AI-помощника в административной панели.",
-  CASE_INTELLIGENCE: "AI-обработка и обобщение обращений пользователей.",
-  PROJECT_OVERHEAD:
-    "Фоновые AI-операции проекта, не относящиеся к конкретному пользователю.",
+    'Автоматическая AI-проверка сообщений. Ручная проверка администратором сюда не относится.',
+  AI_ANALYSIS: 'AI-анализ данных и обращений, запущенный сценарием или сотрудником.',
+  CMS_AGENT: 'Действия AI-помощника в административной панели.',
+  CASE_INTELLIGENCE: 'AI-обработка и обобщение обращений пользователей.',
+  PROJECT_OVERHEAD: 'Фоновые AI-операции проекта, не относящиеся к конкретному пользователю.',
 };
 const TIMEZONE_CITY_LABELS: Record<string, string> = {
-  UTC: "UTC",
-  "Europe/Madrid": "Мадрид",
-  "Europe/Lisbon": "Лиссабон",
-  "Europe/London": "Лондон",
-  "Europe/Paris": "Париж",
-  "Europe/Berlin": "Берлин",
-  "Europe/Rome": "Рим",
-  "Europe/Warsaw": "Варшава",
-  "Europe/Kyiv": "Киев",
-  "Europe/Moscow": "Москва",
-  "America/New_York": "Нью-Йорк",
-  "America/Chicago": "Чикаго",
-  "America/Denver": "Денвер",
-  "America/Los_Angeles": "Лос-Анджелес",
-  "America/Sao_Paulo": "Сан-Паулу",
-  "Asia/Dubai": "Дубай",
-  "Asia/Kolkata": "Калькутта",
-  "Asia/Bangkok": "Бангкок",
-  "Asia/Singapore": "Сингапур",
-  "Asia/Tokyo": "Токио",
-  "Australia/Sydney": "Сидней",
+  UTC: 'UTC',
+  'Europe/Madrid': 'Мадрид',
+  'Europe/Lisbon': 'Лиссабон',
+  'Europe/London': 'Лондон',
+  'Europe/Paris': 'Париж',
+  'Europe/Berlin': 'Берлин',
+  'Europe/Rome': 'Рим',
+  'Europe/Warsaw': 'Варшава',
+  'Europe/Kyiv': 'Киев',
+  'Europe/Moscow': 'Москва',
+  'America/New_York': 'Нью-Йорк',
+  'America/Chicago': 'Чикаго',
+  'America/Denver': 'Денвер',
+  'America/Los_Angeles': 'Лос-Анджелес',
+  'America/Sao_Paulo': 'Сан-Паулу',
+  'Asia/Dubai': 'Дубай',
+  'Asia/Kolkata': 'Калькутта',
+  'Asia/Bangkok': 'Бангкок',
+  'Asia/Singapore': 'Сингапур',
+  'Asia/Tokyo': 'Токио',
+  'Australia/Sydney': 'Сидней',
 };
 const ENFORCEMENT_OPTIONS: ReadonlyArray<{
   value: AiAllowanceEnforcementMode;
@@ -95,48 +93,47 @@ const ENFORCEMENT_OPTIONS: ReadonlyArray<{
   description: string;
 }> = [
   {
-    value: "DISABLED",
-    label: "Только учитывать расходы",
+    value: 'DISABLED',
+    label: 'Только учитывать расходы',
     description:
-      "Сохранять расходы, но не сравнивать их с лимитом и ничего не показывать пользователю.",
+      'Сохранять расходы, но не сравнивать их с лимитом и ничего не показывать пользователю.',
   },
   {
-    value: "SHADOW",
-    label: "Проверять незаметно",
+    value: 'SHADOW',
+    label: 'Проверять незаметно',
     description:
-      "Сравнивать расходы с лимитом только для внутренней аналитики. Работа AI не изменится.",
+      'Сравнивать расходы с лимитом только для внутренней аналитики. Работа AI не изменится.',
   },
   {
-    value: "SOFT",
-    label: "Предупреждать, но не блокировать",
-    description:
-      "Показать предупреждение пользователю и продолжить выполнять AI-операции.",
+    value: 'SOFT',
+    label: 'Предупреждать, но не блокировать',
+    description: 'Показать предупреждение пользователю и продолжить выполнять AI-операции.',
   },
   {
-    value: "HARD",
-    label: "Предупреждать и блокировать",
+    value: 'HARD',
+    label: 'Предупреждать и блокировать',
     description:
-      "После исчерпания лимита показать сообщение пользователю и остановить новые AI-операции.",
+      'После исчерпания лимита показать сообщение пользователю и остановить новые AI-операции.',
   },
 ];
 const PERIOD_OPTIONS: Array<{
   value: AiAllowancePeriodKind;
   label: string;
 }> = [
-  { value: "DAY", label: "День" },
-  { value: "MONTH", label: "Месяц" },
+  { value: 'DAY', label: 'День' },
+  { value: 'MONTH', label: 'Месяц' },
 ];
 const LOW_THRESHOLD_OPTIONS: Array<{
   value: AiAllowanceLowThresholdMode;
   label: string;
 }> = [
-  { value: "PERCENT", label: "Процент от лимита" },
-  { value: "ABSOLUTE_USD", label: "Сумма в долларах" },
+  { value: 'PERCENT', label: 'Процент от лимита' },
+  { value: 'ABSOLUTE_USD', label: 'Сумма в долларах' },
 ];
 
 type CategoryRuleDraft = {
   category: AiAllowanceCategory;
-  responsibility: "END_USER_ALLOWANCE" | "PROJECT_SPONSORED";
+  responsibility: 'END_USER_ALLOWANCE' | 'PROJECT_SPONSORED';
   capUsd: string;
   originalCapUsd: string;
   capEdited: boolean;
@@ -154,53 +151,53 @@ const props = defineProps<{
   defaultLocale?: string;
   supportedLocales?: string[];
 }>();
-const emit = defineEmits<{ "fresh-login": [] }>();
+const emit = defineEmits<{ 'fresh-login': [] }>();
 const policy = ref<AiAllowanceProjectPolicyView | null>(null);
 const loading = ref(false);
 const saving = ref(false);
 const plansLoading = ref(false);
-const revisionLoadingKey = ref("");
-const error = ref("");
-const loadedProjectId = ref("");
+const revisionLoadingKey = ref('');
+const error = ref('');
+const loadedProjectId = ref('');
 const dialogOpen = ref(false);
-const amount = ref("");
-const originalAmount = ref("");
+const amount = ref('');
+const originalAmount = ref('');
 const amountEdited = ref(false);
-const period = ref<AiAllowancePeriodKind>("DAY");
-const timezone = ref("UTC");
-const enforcement = ref<AiAllowanceEnforcementMode>("SOFT");
-const reason = ref("");
-const idempotencyKey = ref("");
+const period = ref<AiAllowancePeriodKind>('DAY');
+const timezone = ref('UTC');
+const enforcement = ref<AiAllowanceEnforcementMode>('SOFT');
+const reason = ref('');
+const idempotencyKey = ref('');
 const hardConfirmed = ref(false);
 const showEndUserExactUsd = ref(false);
-const lowThresholdMode = ref<AiAllowanceLowThresholdMode>("PERCENT");
-const lowThresholdValue = ref("10");
-const originalLowThresholdValue = ref("");
+const lowThresholdMode = ref<AiAllowanceLowThresholdMode>('PERCENT');
+const lowThresholdValue = ref('10');
+const originalLowThresholdValue = ref('');
 const lowThresholdEdited = ref(false);
-const formError = ref("");
-const editingProjectPolicyVersion = ref("");
+const formError = ref('');
+const editingProjectPolicyVersion = ref('');
 const configurationConflict = ref(false);
 const reauthenticationRequired = ref(false);
 const conflictRefreshing = ref(false);
 const namedDialogOpen = ref(false);
 const cohortDialogOpen = ref(false);
-const planKey = ref("");
-const planName = ref("");
-const dailyCap = ref("");
-const originalDailyCap = ref("");
+const planKey = ref('');
+const planName = ref('');
+const dailyCap = ref('');
+const originalDailyCap = ref('');
 const dailyCapEdited = ref(false);
 const warningTranslations = ref<LocalizedText>({});
 const useSystemWarning = ref(true);
 const exhaustedTranslations = ref<LocalizedText>({});
 const useSystemExhausted = ref(true);
-const translationError = ref("");
+const translationError = ref('');
 const messageTranslationStates = ref<Record<string, TranslationUiState>>({});
-const cohortScope = ref<"SEGMENT" | "LEVEL">("SEGMENT");
-const cohortId = ref("");
-const cohortPlanId = ref("");
+const cohortScope = ref<'SEGMENT' | 'LEVEL'>('SEGMENT');
+const cohortId = ref('');
+const cohortPlanId = ref('');
 const cohortPriority = ref(100);
-const effectiveFrom = ref("");
-const effectiveUntil = ref("");
+const effectiveFrom = ref('');
+const effectiveUntil = ref('');
 const categories = AI_ALLOWANCE_CATEGORIES;
 const categoryRules = ref<CategoryRuleDraft[]>([]);
 const preservedCategoryRules = ref<CategoryRuleDraft[]>([]);
@@ -209,13 +206,9 @@ let mutationGeneration = 0;
 
 const latestDefaultPlan = computed(
   () =>
-    policy.value?.plans.find(
-      (plan) => plan.id === policy.value?.defaultAssignment?.planId,
-    ) ?? null,
+    policy.value?.plans.find((plan) => plan.id === policy.value?.defaultAssignment?.planId) ?? null,
 );
-const latestDefaultRevision = computed(
-  () => latestDefaultPlan.value?.revisions[0] ?? null,
-);
+const latestDefaultRevision = computed(() => latestDefaultPlan.value?.revisions[0] ?? null);
 const canActivateHard = computed(
   () =>
     Boolean(policy.value?.runtimeGates.hardEnforcementApproved) &&
@@ -224,46 +217,41 @@ const canActivateHard = computed(
 const policyReady = computed(
   () => loadedProjectId.value === props.projectId && Boolean(policy.value),
 );
-const allowanceDefaultLocale = computed(
-  () => policy.value?.localization.defaultLocale ?? "ru",
-);
-const allowanceLocalizationCatalog =
-  computed<ScenarioLocalizationCatalogResponseDto>(() => {
-    const localization = policy.value?.localization;
-    const defaultLocale = localization?.defaultLocale ?? "ru";
-    const supportedLocales = localization?.supportedLocales ?? [defaultLocale];
-    return {
-      defaultLocale,
-      enabled: true,
-      locales: supportedLocales.map((code) => ({
-        code,
-        default: code === defaultLocale,
-        language: code.split("-")[0] ?? code,
-      })),
-      localizedValueSchemaVersion: 1,
-      paths: [],
-      policyModes: ["ALL_PROJECT_LOCALES", "SELECTED_LOCALES"],
-      version: 1,
-    };
-  });
-const allowanceTranslationCatalog =
-  computed<ScenarioTranslationCatalogResponseDto>(() => {
-    const supportedLocales =
-      policy.value?.localization.translationSupportedLocales ?? [];
-    return {
-      enabled:
-        supportedLocales.includes(allowanceDefaultLocale.value) &&
-        supportedLocales.some(
-          (locale) => locale !== allowanceDefaultLocale.value,
-        ),
-      maxBatchCharacters: 2000,
-      supportedSourceLocales: supportedLocales,
-      supportedTargetLocales: supportedLocales,
-    };
-  });
-const allowanceLocalizationPolicy = computed<ScenarioLocalizationPolicyDto>(
-  () => ({ version: 1, mode: "ALL_PROJECT_LOCALES", locales: [] }),
-);
+const allowanceDefaultLocale = computed(() => policy.value?.localization.defaultLocale ?? 'ru');
+const allowanceLocalizationCatalog = computed<ScenarioLocalizationCatalogResponseDto>(() => {
+  const localization = policy.value?.localization;
+  const defaultLocale = localization?.defaultLocale ?? 'ru';
+  const supportedLocales = localization?.supportedLocales ?? [defaultLocale];
+  return {
+    defaultLocale,
+    enabled: true,
+    locales: supportedLocales.map((code) => ({
+      code,
+      default: code === defaultLocale,
+      language: code.split('-')[0] ?? code,
+    })),
+    localizedValueSchemaVersion: 1,
+    paths: [],
+    policyModes: ['ALL_PROJECT_LOCALES', 'SELECTED_LOCALES'],
+    version: 1,
+  };
+});
+const allowanceTranslationCatalog = computed<ScenarioTranslationCatalogResponseDto>(() => {
+  const supportedLocales = policy.value?.localization.translationSupportedLocales ?? [];
+  return {
+    enabled:
+      supportedLocales.includes(allowanceDefaultLocale.value) &&
+      supportedLocales.some((locale) => locale !== allowanceDefaultLocale.value),
+    maxBatchCharacters: 2000,
+    supportedSourceLocales: supportedLocales,
+    supportedTargetLocales: supportedLocales,
+  };
+});
+const allowanceLocalizationPolicy = computed<ScenarioLocalizationPolicyDto>(() => ({
+  version: 1,
+  mode: 'ALL_PROJECT_LOCALES',
+  locales: [],
+}));
 const customMessageFieldPaths = computed(() => [
   ...(!useSystemWarning.value ? [WARNING_FIELD_PATH] : []),
   ...(!useSystemExhausted.value ? [EXHAUSTED_FIELD_PATH] : []),
@@ -275,7 +263,7 @@ const allowanceTranslationTargets = computed(() =>
 );
 const allowanceTranslationBusy = computed(() =>
   Object.values(messageTranslationStates.value).some((state) =>
-    ["PENDING", "RUNNING"].includes(state),
+    ['PENDING', 'RUNNING'].includes(state),
   ),
 );
 const canTranslateAllowanceContent = computed(
@@ -290,32 +278,31 @@ const canTranslateAllowanceContent = computed(
 );
 const lowThresholdDisplay = computed(() => {
   const configured = policy.value?.policy;
-  if (!configured) return "Не задан";
-  return configured.lowThresholdMode === "ABSOLUTE_USD"
+  if (!configured) return 'Не задан';
+  return configured.lowThresholdMode === 'ABSOLUTE_USD'
     ? formatMoney(configured.lowThresholdValue)
     : `${compactDecimal(configured.lowThresholdValue)}% от базового лимита`;
 });
 const currentEnforcementOption = computed(
   () =>
-    ENFORCEMENT_OPTIONS.find(
-      (option) => option.value === policy.value?.policy?.enforcementMode,
-    ) ?? ENFORCEMENT_OPTIONS[0]!,
+    ENFORCEMENT_OPTIONS.find((option) => option.value === policy.value?.policy?.enforcementMode) ??
+    ENFORCEMENT_OPTIONS[0]!,
 );
 const timezoneOptions = computed(() => {
   const supportedValuesOf = (
     Intl as typeof Intl & {
-      supportedValuesOf?: (key: "timeZone") => string[];
+      supportedValuesOf?: (key: 'timeZone') => string[];
     }
   ).supportedValuesOf;
-  const supported = supportedValuesOf?.("timeZone") ?? [
-    "UTC",
+  const supported = supportedValuesOf?.('timeZone') ?? [
+    'UTC',
     ...Object.keys(TIMEZONE_CITY_LABELS),
   ];
-  const values = new Set(["UTC", timezone.value, ...supported]);
+  const values = new Set(['UTC', timezone.value, ...supported]);
   return [...values]
     .filter(Boolean)
     .map((value) => ({ value, label: timezoneLabel(value) }))
-    .sort((left, right) => left.label.localeCompare(right.label, "ru"));
+    .sort((left, right) => left.label.localeCompare(right.label, 'ru'));
 });
 const categoryOptions = computed(() =>
   categories
@@ -329,20 +316,16 @@ const categoryOptions = computed(() =>
 );
 const hardUnavailableReason = computed(() =>
   policy.value?.runtimeGates.emergencyDisabled
-    ? "В проекте включено аварийное отключение блокировок."
-    : "Блокировка не разрешена в настройках окружения.",
+    ? 'В проекте включено аварийное отключение блокировок.'
+    : 'Блокировка не разрешена в настройках окружения.',
 );
 let translationProjectId = props.projectId;
 let translationControllerGeneration = 0;
 let translationRecoveryStarted = false;
-let messageTranslationController: ReturnType<
-  typeof makeMessageTranslationController
-> | null = props.canManage
-  ? makeMessageTranslationController(
-      translationProjectId,
-      translationControllerGeneration,
-    )
-  : null;
+let messageTranslationController: ReturnType<typeof makeMessageTranslationController> | null =
+  props.canManage
+    ? makeMessageTranslationController(translationProjectId, translationControllerGeneration)
+    : null;
 
 onBeforeUnmount(() => messageTranslationController?.dispose());
 
@@ -355,22 +338,19 @@ watch(
       translationControllerGeneration += 1;
       translationRecoveryStarted = false;
       messageTranslationController = props.canManage
-        ? makeMessageTranslationController(
-            projectId,
-            translationControllerGeneration,
-          )
+        ? makeMessageTranslationController(projectId, translationControllerGeneration)
         : null;
     }
     generation += 1;
     mutationGeneration += 1;
     policy.value = null;
-    loadedProjectId.value = "";
+    loadedProjectId.value = '';
     plansLoading.value = false;
-    revisionLoadingKey.value = "";
+    revisionLoadingKey.value = '';
     dialogOpen.value = false;
     namedDialogOpen.value = false;
     cohortDialogOpen.value = false;
-    editingProjectPolicyVersion.value = "";
+    editingProjectPolicyVersion.value = '';
     configurationConflict.value = false;
     conflictRefreshing.value = false;
     if (canRead) void load();
@@ -406,20 +386,17 @@ async function load(): Promise<void> {
   const requestGeneration = ++generation;
   const requestProjectId = props.projectId;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const next = await aiAllowanceRepository.projectPolicy(requestProjectId);
     const hydrated = await hydrateDefaultPlan(requestProjectId, next);
-    if (
-      requestGeneration === generation &&
-      requestProjectId === props.projectId
-    ) {
+    if (requestGeneration === generation && requestProjectId === props.projectId) {
       policy.value = hydrated;
       loadedProjectId.value = requestProjectId;
     }
   } catch (cause) {
     if (requestGeneration === generation)
-      error.value = message(cause, "Не удалось загрузить политику лимитов");
+      error.value = message(cause, 'Не удалось загрузить политику лимитов');
   } finally {
     if (requestGeneration === generation) loading.value = false;
   }
@@ -430,16 +407,12 @@ async function hydrateDefaultPlan(
   view: AiAllowanceProjectPolicyView,
 ): Promise<AiAllowanceProjectPolicyView> {
   const assignment = view.defaultAssignment;
-  if (!assignment || view.plans.some((plan) => plan.id === assignment.planId))
-    return view;
-  const page = await aiAllowanceRepository.planRevisions(projectId, "DEFAULT", {
+  if (!assignment || view.plans.some((plan) => plan.id === assignment.planId)) return view;
+  const page = await aiAllowanceRepository.planRevisions(projectId, 'DEFAULT', {
     limit: 1,
   });
-  if (
-    page.projectPolicyVersion !== view.projectPolicyVersion ||
-    page.plan.id !== assignment.planId
-  )
-    throw new Error("Default allowance plan changed while it was loading");
+  if (page.projectPolicyVersion !== view.projectPolicyVersion || page.plan.id !== assignment.planId)
+    throw new Error('Default allowance plan changed while it was loading');
   return {
     ...view,
     plans: [
@@ -477,9 +450,7 @@ async function loadMorePlans(): Promise<void> {
         await load();
         return;
       }
-      const plansById = new Map(
-        [...current.plans, ...next.plans].map((plan) => [plan.id, plan]),
-      );
+      const plansById = new Map([...current.plans, ...next.plans].map((plan) => [plan.id, plan]));
       policy.value = {
         ...current,
         plans: [...plansById.values()],
@@ -487,35 +458,27 @@ async function loadMorePlans(): Promise<void> {
       };
     }
   } catch (cause) {
-    if (
-      requestGeneration === generation &&
-      requestProjectId === props.projectId
-    )
-      error.value = message(cause, "Не удалось загрузить остальные варианты");
+    if (requestGeneration === generation && requestProjectId === props.projectId)
+      error.value = message(cause, 'Не удалось загрузить остальные варианты');
   } finally {
-    if (
-      requestGeneration === generation &&
-      requestProjectId === props.projectId
-    )
+    if (requestGeneration === generation && requestProjectId === props.projectId)
       plansLoading.value = false;
   }
 }
 async function loadMoreRevisions(
-  plan: AiAllowanceProjectPolicyView["plans"][number],
+  plan: AiAllowanceProjectPolicyView['plans'][number],
 ): Promise<void> {
   const cursor = plan.revisionsPageInfo.nextCursor;
   const current = policy.value;
-  if (!current || !policyReady.value || !cursor || revisionLoadingKey.value)
-    return;
+  if (!current || !policyReady.value || !cursor || revisionLoadingKey.value) return;
   const requestGeneration = generation;
   const requestProjectId = props.projectId;
   revisionLoadingKey.value = plan.key;
   try {
-    const page = await aiAllowanceRepository.planRevisions(
-      requestProjectId,
-      plan.key,
-      { limit: 25, cursor },
-    );
+    const page = await aiAllowanceRepository.planRevisions(requestProjectId, plan.key, {
+      limit: 25,
+      cursor,
+    });
     if (
       requestGeneration === generation &&
       requestProjectId === props.projectId &&
@@ -523,7 +486,7 @@ async function loadMoreRevisions(
       policy.value === current
     ) {
       if (page.projectPolicyVersion !== current.projectPolicyVersion) {
-        revisionLoadingKey.value = "";
+        revisionLoadingKey.value = '';
         await load();
         return;
       }
@@ -541,17 +504,11 @@ async function loadMoreRevisions(
       };
     }
   } catch (cause) {
-    if (
-      requestGeneration === generation &&
-      requestProjectId === props.projectId
-    )
-      error.value = message(cause, "Не удалось загрузить историю изменений");
+    if (requestGeneration === generation && requestProjectId === props.projectId)
+      error.value = message(cause, 'Не удалось загрузить историю изменений');
   } finally {
-    if (
-      requestGeneration === generation &&
-      requestProjectId === props.projectId
-    )
-      revisionLoadingKey.value = "";
+    if (requestGeneration === generation && requestProjectId === props.projectId)
+      revisionLoadingKey.value = '';
   }
 }
 
@@ -560,84 +517,71 @@ function openEditor(): void {
   if (!policyReady.value || !policy.value) return;
   editingProjectPolicyVersion.value = policy.value.projectPolicyVersion;
   const revision = latestDefaultRevision.value;
-  originalAmount.value = revision?.recurringAmountUsd ?? "";
-  amount.value = revision?.recurringAmountUsd
-    ? editableDecimal(revision.recurringAmountUsd)
-    : "";
+  originalAmount.value = revision?.recurringAmountUsd ?? '';
+  amount.value = revision?.recurringAmountUsd ? editableDecimal(revision.recurringAmountUsd) : '';
   amountEdited.value = false;
-  period.value = revision?.periodKind ?? "DAY";
-  timezone.value = policy.value?.policy?.timezone ?? "UTC";
-  enforcement.value = policy.value?.policy?.enforcementMode ?? "SOFT";
-  reason.value = "";
+  period.value = revision?.periodKind ?? 'DAY';
+  timezone.value = policy.value?.policy?.timezone ?? 'UTC';
+  enforcement.value = policy.value?.policy?.enforcementMode ?? 'SOFT';
+  reason.value = '';
   idempotencyKey.value = newIdempotencyKey();
   hardConfirmed.value = false;
-  showEndUserExactUsd.value =
-    policy.value?.policy?.showEndUserExactUsd ?? false;
-  lowThresholdMode.value = policy.value?.policy?.lowThresholdMode ?? "PERCENT";
-  originalLowThresholdValue.value =
-    policy.value?.policy?.lowThresholdValue ?? "10.000000000000";
+  showEndUserExactUsd.value = policy.value?.policy?.showEndUserExactUsd ?? false;
+  lowThresholdMode.value = policy.value?.policy?.lowThresholdMode ?? 'PERCENT';
+  originalLowThresholdValue.value = policy.value?.policy?.lowThresholdValue ?? '10.000000000000';
   lowThresholdValue.value = editableDecimal(
-    policy.value?.policy?.lowThresholdValue ?? "10.000000000000",
+    policy.value?.policy?.lowThresholdValue ?? '10.000000000000',
   );
   lowThresholdEdited.value = false;
-  formError.value = "";
+  formError.value = '';
   reauthenticationRequired.value = false;
-  translationError.value = "";
+  translationError.value = '';
   messageTranslationStates.value = {};
   configurationConflict.value = false;
   dialogOpen.value = true;
   const warningContent = policy.value?.policy?.warningContent;
   warningTranslations.value =
-    warningContent?.mode === "CUSTOM" ? { ...warningContent.translations } : {};
-  useSystemWarning.value = warningContent?.mode !== "CUSTOM";
+    warningContent?.mode === 'CUSTOM' ? { ...warningContent.translations } : {};
+  useSystemWarning.value = warningContent?.mode !== 'CUSTOM';
   const exhaustedContent = policy.value?.policy?.exhaustedContent;
   exhaustedTranslations.value =
-    exhaustedContent?.mode === "CUSTOM"
-      ? { ...exhaustedContent.translations }
-      : {};
-  useSystemExhausted.value = exhaustedContent?.mode !== "CUSTOM";
+    exhaustedContent?.mode === 'CUSTOM' ? { ...exhaustedContent.translations } : {};
+  useSystemExhausted.value = exhaustedContent?.mode !== 'CUSTOM';
   if (!translationRecoveryStarted && messageTranslationController) {
     translationRecoveryStarted = true;
     void messageTranslationController.recover();
   }
 }
 
-function openNamedEditor(
-  plan?: AiAllowanceProjectPolicyView["plans"][number],
-): void {
+function openNamedEditor(plan?: AiAllowanceProjectPolicyView['plans'][number]): void {
   if (!props.canManage) return;
   if (!policyReady.value || !policy.value) return;
   editingProjectPolicyVersion.value = policy.value.projectPolicyVersion;
   const revision = plan?.revisions[0];
-  planKey.value = plan?.key ?? "";
-  planName.value = plan?.name ?? "";
-  originalAmount.value = revision?.recurringAmountUsd ?? "";
-  amount.value = revision?.recurringAmountUsd
-    ? editableDecimal(revision.recurringAmountUsd)
-    : "";
+  planKey.value = plan?.key ?? '';
+  planName.value = plan?.name ?? '';
+  originalAmount.value = revision?.recurringAmountUsd ?? '';
+  amount.value = revision?.recurringAmountUsd ? editableDecimal(revision.recurringAmountUsd) : '';
   amountEdited.value = false;
-  period.value = revision?.periodKind ?? "MONTH";
-  originalDailyCap.value = revision?.dailyCapUsd ?? "";
-  dailyCap.value = revision?.dailyCapUsd
-    ? editableDecimal(revision.dailyCapUsd)
-    : "";
+  period.value = revision?.periodKind ?? 'MONTH';
+  originalDailyCap.value = revision?.dailyCapUsd ?? '';
+  dailyCap.value = revision?.dailyCapUsd ? editableDecimal(revision.dailyCapUsd) : '';
   dailyCapEdited.value = false;
-  reason.value = "";
+  reason.value = '';
   idempotencyKey.value = newIdempotencyKey();
-  formError.value = "";
+  formError.value = '';
   reauthenticationRequired.value = false;
   configurationConflict.value = false;
   const meaningfulRules = (revision?.categoryRules ?? [])
     .filter(
       (rule) =>
-        Boolean(rule.capUsd) ||
-        rule.responsibility !== defaultResponsibility(rule.category),
+        Boolean(rule.capUsd) || rule.responsibility !== defaultResponsibility(rule.category),
     )
     .map((rule) => ({
       category: rule.category,
       responsibility: rule.responsibility,
-      capUsd: rule.capUsd ? editableDecimal(rule.capUsd) : "",
-      originalCapUsd: rule.capUsd ?? "",
+      capUsd: rule.capUsd ? editableDecimal(rule.capUsd) : '',
+      originalCapUsd: rule.capUsd ?? '',
       capEdited: false,
     }));
   categoryRules.value = meaningfulRules.slice(0, MAX_CATEGORY_RULES);
@@ -647,39 +591,34 @@ function openNamedEditor(
 function openCohortEditor(): void {
   if (!props.canManage || !policyReady.value || !policy.value) return;
   editingProjectPolicyVersion.value = policy.value.projectPolicyVersion;
-  cohortScope.value = "SEGMENT";
-  cohortId.value = "";
-  cohortPlanId.value =
-    policy.value?.plans.find((plan) => plan.status === "ACTIVE")?.id ?? "";
+  cohortScope.value = 'SEGMENT';
+  cohortId.value = '';
+  cohortPlanId.value = policy.value?.plans.find((plan) => plan.status === 'ACTIVE')?.id ?? '';
   cohortPriority.value = 100;
   effectiveFrom.value = localInput(new Date());
-  effectiveUntil.value = "";
-  reason.value = "";
+  effectiveUntil.value = '';
+  reason.value = '';
   idempotencyKey.value = newIdempotencyKey();
-  formError.value = "";
+  formError.value = '';
   reauthenticationRequired.value = false;
   configurationConflict.value = false;
   cohortDialogOpen.value = true;
 }
 
 async function save(): Promise<void> {
-  if (!props.canManage) return fail("Операция больше недоступна.");
+  if (!props.canManage) return fail('Операция больше недоступна.');
   if (!editingProjectPolicyVersion.value)
-    return fail("Сначала загрузите актуальную конфигурацию проекта.");
-  const amountInput = effectiveDecimal(
-    amount.value,
-    originalAmount.value,
-    amountEdited.value,
-  );
+    return fail('Сначала загрузите актуальную конфигурацию проекта.');
+  const amountInput = effectiveDecimal(amount.value, originalAmount.value, amountEdited.value);
   const exactAmount = parseAllowanceUsd(amountInput);
   if (
     !exactAmount ||
     (amountEdited.value && !/^\d+(?:\.\d{1,2})?$/u.test(amount.value.trim())) ||
-    compareDecimalStrings(exactAmount, "0") < 0
+    compareDecimalStrings(exactAmount, '0') < 0
   )
-    return fail("Укажите лимит — не более двух знаков после запятой.");
+    return fail('Укажите лимит — не более двух знаков после запятой.');
   if (!validTimezone(timezone.value.trim()))
-    return fail("Выберите корректный часовой пояс из списка.");
+    return fail('Выберите корректный часовой пояс из списка.');
   const lowThresholdInput = effectiveDecimal(
     lowThresholdValue.value,
     originalLowThresholdValue.value,
@@ -688,16 +627,14 @@ async function save(): Promise<void> {
   const exactLowThreshold = parseAllowanceUsd(lowThresholdInput);
   if (
     !exactLowThreshold ||
-    (lowThresholdEdited.value &&
-      !/^\d+(?:\.\d{1,2})?$/u.test(lowThresholdValue.value.trim())) ||
-    compareDecimalStrings(exactLowThreshold, "0") <= 0 ||
-    (lowThresholdMode.value === "PERCENT" &&
-      compareDecimalStrings(exactLowThreshold, "100") > 0)
+    (lowThresholdEdited.value && !/^\d+(?:\.\d{1,2})?$/u.test(lowThresholdValue.value.trim())) ||
+    compareDecimalStrings(exactLowThreshold, '0') <= 0 ||
+    (lowThresholdMode.value === 'PERCENT' && compareDecimalStrings(exactLowThreshold, '100') > 0)
   )
     return fail(
-      lowThresholdMode.value === "PERCENT"
-        ? "Укажите процент от 0,01 до 100 — не более двух знаков после запятой."
-        : "Укажите сумму больше нуля — не более двух знаков после запятой.",
+      lowThresholdMode.value === 'PERCENT'
+        ? 'Укажите процент от 0,01 до 100 — не более двух знаков после запятой.'
+        : 'Укажите сумму больше нуля — не более двух знаков после запятой.',
     );
   if (!useSystemWarning.value && !customContent(warningTranslations.value))
     return fail(
@@ -708,17 +645,17 @@ async function save(): Promise<void> {
       `Заполните сообщение об исчерпании на основном языке (${allowanceDefaultLocale.value}) или включите стандартный текст Retenive.`,
     );
   if (reason.value.trim().length < 3 || reason.value.trim().length > 500)
-    return fail("Укажите причину изменения — от 3 до 500 символов.");
+    return fail('Укажите причину изменения — от 3 до 500 символов.');
   if (!idempotencyKey.value.trim() || idempotencyKey.value.length > 128)
-    return fail("Укажите Idempotency-Key длиной до 128 символов.");
-  if (enforcement.value === "HARD" && !canActivateHard.value)
-    return fail("Блокировку сейчас нельзя включить для этого проекта.");
-  if (enforcement.value === "HARD" && !hardConfirmed.value)
-    return fail("Подтвердите, что AI-операции можно блокировать.");
+    return fail('Укажите Idempotency-Key длиной до 128 символов.');
+  if (enforcement.value === 'HARD' && !canActivateHard.value)
+    return fail('Блокировку сейчас нельзя включить для этого проекта.');
+  if (enforcement.value === 'HARD' && !hardConfirmed.value)
+    return fail('Подтвердите, что AI-операции можно блокировать.');
   const requestGeneration = mutationGeneration;
   const requestProjectId = props.projectId;
   saving.value = true;
-  formError.value = "";
+  formError.value = '';
   configurationConflict.value = false;
   reauthenticationRequired.value = false;
   try {
@@ -727,13 +664,11 @@ async function save(): Promise<void> {
       {
         expectedProjectPolicyVersion: editingProjectPolicyVersion.value,
         amountUsd: exactAmount,
-        categoryRules: (latestDefaultRevision.value?.categoryRules ?? []).map(
-          (rule) => ({
-            category: rule.category,
-            responsibility: rule.responsibility,
-            ...(rule.capUsd ? { capUsd: rule.capUsd } : {}),
-          }),
-        ),
+        categoryRules: (latestDefaultRevision.value?.categoryRules ?? []).map((rule) => ({
+          category: rule.category,
+          responsibility: rule.responsibility,
+          ...(rule.capUsd ? { capUsd: rule.capUsd } : {}),
+        })),
         period: period.value,
         timezone: timezone.value.trim(),
         enforcementMode: enforcement.value,
@@ -742,10 +677,10 @@ async function save(): Promise<void> {
         showEndUserExactUsd: showEndUserExactUsd.value,
         reason: reason.value.trim(),
         warningContent: useSystemWarning.value
-          ? { mode: "SYSTEM" }
+          ? { mode: 'SYSTEM' }
           : customContent(warningTranslations.value),
         exhaustedContent: useSystemExhausted.value
-          ? { mode: "SYSTEM" }
+          ? { mode: 'SYSTEM' }
           : customContent(exhaustedTranslations.value),
       },
       idempotencyKey.value.trim(),
@@ -761,44 +696,31 @@ async function save(): Promise<void> {
     saving.value = false;
     await load();
   } catch (cause) {
-    if (
-      requestGeneration === mutationGeneration &&
-      requestProjectId === props.projectId
-    ) {
+    if (requestGeneration === mutationGeneration && requestProjectId === props.projectId) {
       configurationConflict.value = isConfigurationConflict(cause);
-      reauthenticationRequired.value =
-        isAllowanceReauthenticationRequired(cause);
+      reauthenticationRequired.value = isAllowanceReauthenticationRequired(cause);
       formError.value = reauthenticationRequired.value
-        ? ""
-        : mutationMessage(cause, "Не удалось сохранить политику лимитов");
+        ? ''
+        : mutationMessage(cause, 'Не удалось сохранить политику лимитов');
     }
   } finally {
-    if (
-      requestGeneration === mutationGeneration &&
-      requestProjectId === props.projectId
-    )
+    if (requestGeneration === mutationGeneration && requestProjectId === props.projectId)
       saving.value = false;
   }
 }
 
 async function saveNamed(): Promise<void> {
-  if (!props.canManage) return fail("Операция больше недоступна.");
+  if (!props.canManage) return fail('Операция больше недоступна.');
   if (!editingProjectPolicyVersion.value)
-    return fail("Сначала загрузите актуальную конфигурацию проекта.");
+    return fail('Сначала загрузите актуальную конфигурацию проекта.');
   const key = planKey.value.trim().toUpperCase();
   const exact = parseAllowanceUsd(
     effectiveDecimal(amount.value, originalAmount.value, amountEdited.value),
   );
-  const capInput = effectiveDecimal(
-    dailyCap.value,
-    originalDailyCap.value,
-    dailyCapEdited.value,
-  );
+  const capInput = effectiveDecimal(dailyCap.value, originalDailyCap.value, dailyCapEdited.value);
   const cap = capInput ? parseAllowanceUsd(capInput) : undefined;
-  if (!/^[A-Z][A-Z0-9_-]{0,99}$/.test(key) || key === "DEFAULT")
-    return fail(
-      "Ключ: A-Z, 0-9, _ или -, до 100 символов; DEFAULT зарезервирован.",
-    );
+  if (!/^[A-Z][A-Z0-9_-]{0,99}$/.test(key) || key === 'DEFAULT')
+    return fail('Ключ: A-Z, 0-9, _ или -, до 100 символов; DEFAULT зарезервирован.');
   if (
     planName.value.trim().length < 1 ||
     planName.value.trim().length > 160 ||
@@ -806,46 +728,32 @@ async function saveNamed(): Promise<void> {
     (amountEdited.value && !/^\d+(?:\.\d{1,2})?$/u.test(amount.value.trim()))
   )
     return fail(
-      "Проверьте название и лимит — в сумме допустимо не более двух знаков после запятой.",
+      'Проверьте название и лимит — в сумме допустимо не более двух знаков после запятой.',
     );
   if (
     capInput &&
-    (!cap ||
-      (dailyCapEdited.value &&
-        !/^\d+(?:\.\d{1,2})?$/u.test(dailyCap.value.trim())))
+    (!cap || (dailyCapEdited.value && !/^\d+(?:\.\d{1,2})?$/u.test(dailyCap.value.trim())))
   )
-    return fail(
-      "Проверьте дневное ограничение — не более двух знаков после запятой.",
-    );
-  if (period.value === "DAY" && cap && compareDecimalStrings(cap, exact) > 0)
-    return fail("Дневной максимум не может превышать общую сумму лимита.");
+    return fail('Проверьте дневное ограничение — не более двух знаков после запятой.');
+  if (period.value === 'DAY' && cap && compareDecimalStrings(cap, exact) > 0)
+    return fail('Дневной максимум не может превышать общую сумму лимита.');
   if (!validCommon()) return;
-  const rules = [...categoryRules.value, ...preservedCategoryRules.value].map(
-    (rule) => {
-      const ruleCap = effectiveDecimal(
-        rule.capUsd,
-        rule.originalCapUsd,
-        rule.capEdited,
-      );
-      return {
-        category: rule.category,
-        responsibility: rule.responsibility,
-        ...(ruleCap ? { capUsd: parseAllowanceUsd(ruleCap) } : {}),
-      };
-    },
-  );
+  const rules = [...categoryRules.value, ...preservedCategoryRules.value].map((rule) => {
+    const ruleCap = effectiveDecimal(rule.capUsd, rule.originalCapUsd, rule.capEdited);
+    return {
+      category: rule.category,
+      responsibility: rule.responsibility,
+      ...(ruleCap ? { capUsd: parseAllowanceUsd(ruleCap) } : {}),
+    };
+  });
   if (
-    rules.some((rule) => "capUsd" in rule && !rule.capUsd) ||
+    rules.some((rule) => 'capUsd' in rule && !rule.capUsd) ||
     categoryRules.value.some(
       (rule) =>
-        rule.capEdited &&
-        rule.capUsd.trim() &&
-        !/^\d+(?:\.\d{1,2})?$/u.test(rule.capUsd.trim()),
+        rule.capEdited && rule.capUsd.trim() && !/^\d+(?:\.\d{1,2})?$/u.test(rule.capUsd.trim()),
     )
   )
-    return fail(
-      "Проверьте ограничения выбранных категорий — не более двух знаков после запятой.",
-    );
+    return fail('Проверьте ограничения выбранных категорий — не более двух знаков после запятой.');
   const requestGeneration = mutationGeneration;
   const requestProjectId = props.projectId;
   saving.value = true;
@@ -877,45 +785,34 @@ async function saveNamed(): Promise<void> {
     saving.value = false;
     await load();
   } catch (cause) {
-    if (
-      requestGeneration === mutationGeneration &&
-      requestProjectId === props.projectId
-    ) {
+    if (requestGeneration === mutationGeneration && requestProjectId === props.projectId) {
       configurationConflict.value = isConfigurationConflict(cause);
-      reauthenticationRequired.value =
-        isAllowanceReauthenticationRequired(cause);
+      reauthenticationRequired.value = isAllowanceReauthenticationRequired(cause);
       formError.value = reauthenticationRequired.value
-        ? ""
-        : mutationMessage(cause, "Не удалось сохранить вариант");
+        ? ''
+        : mutationMessage(cause, 'Не удалось сохранить вариант');
     }
   } finally {
-    if (
-      requestGeneration === mutationGeneration &&
-      requestProjectId === props.projectId
-    )
+    if (requestGeneration === mutationGeneration && requestProjectId === props.projectId)
       saving.value = false;
   }
 }
 async function saveCohort(): Promise<void> {
-  if (!props.canManage) return fail("Операция больше недоступна.");
+  if (!props.canManage) return fail('Операция больше недоступна.');
   if (!editingProjectPolicyVersion.value)
-    return fail("Сначала загрузите актуальную конфигурацию проекта.");
+    return fail('Сначала загрузите актуальную конфигурацию проекта.');
   const id = cohortId.value.trim().toLowerCase();
   const from = localIso(effectiveFrom.value);
-  const until = effectiveUntil.value
-    ? localIso(effectiveUntil.value)
-    : undefined;
+  const until = effectiveUntil.value ? localIso(effectiveUntil.value) : undefined;
   const validCohortId =
-    cohortScope.value === "SEGMENT"
-      ? /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-          id,
-        )
+    cohortScope.value === 'SEGMENT'
+      ? /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)
       : /^[a-z0-9][a-z0-9._-]{0,99}$/.test(id);
   if (!validCohortId)
     return fail(
-      cohortScope.value === "SEGMENT"
-        ? "Выберите опубликованный сегмент."
-        : "Некорректный ID уровня.",
+      cohortScope.value === 'SEGMENT'
+        ? 'Выберите опубликованный сегмент.'
+        : 'Некорректный ID уровня.',
     );
   if (
     !cohortPlanId.value ||
@@ -925,7 +822,7 @@ async function saveCohort(): Promise<void> {
     !from ||
     (effectiveUntil.value && (!until || from >= until))
   )
-    return fail("Проверьте вариант лимита, приоритет и период назначения.");
+    return fail('Проверьте вариант лимита, приоритет и период назначения.');
   if (!validCommon()) return;
   const requestGeneration = mutationGeneration;
   const requestProjectId = props.projectId;
@@ -958,75 +855,56 @@ async function saveCohort(): Promise<void> {
     saving.value = false;
     await load();
   } catch (cause) {
-    if (
-      requestGeneration === mutationGeneration &&
-      requestProjectId === props.projectId
-    ) {
+    if (requestGeneration === mutationGeneration && requestProjectId === props.projectId) {
       configurationConflict.value = isConfigurationConflict(cause);
-      reauthenticationRequired.value =
-        isAllowanceReauthenticationRequired(cause);
+      reauthenticationRequired.value = isAllowanceReauthenticationRequired(cause);
       formError.value = reauthenticationRequired.value
-        ? ""
-        : mutationMessage(cause, "Не удалось назначить лимит группе");
+        ? ''
+        : mutationMessage(cause, 'Не удалось назначить лимит группе');
     }
   } finally {
-    if (
-      requestGeneration === mutationGeneration &&
-      requestProjectId === props.projectId
-    )
+    if (requestGeneration === mutationGeneration && requestProjectId === props.projectId)
       saving.value = false;
   }
 }
 function validCommon(): boolean {
   if (reason.value.trim().length < 3 || reason.value.trim().length > 500) {
-    fail("Причина должна содержать от 3 до 500 символов.");
+    fail('Причина должна содержать от 3 до 500 символов.');
     return false;
   }
   if (!idempotencyKey.value.trim() || idempotencyKey.value.length > 128) {
-    fail("Некорректный Idempotency-Key.");
+    fail('Некорректный Idempotency-Key.');
     return false;
   }
   return true;
 }
-function customContent(
-  value: LocalizedText,
-): AiAllowanceLocalizedContent | undefined {
+function customContent(value: LocalizedText): AiAllowanceLocalizedContent | undefined {
   const translations = Object.fromEntries(
     (policy.value?.localization.supportedLocales ?? [])
-      .map((locale) => [locale, value[locale]?.trim() ?? ""] as const)
+      .map((locale) => [locale, value[locale]?.trim() ?? ''] as const)
       .filter(([, text]) => text),
   );
   const defaultLocale = allowanceDefaultLocale.value;
   if (!translations[defaultLocale]) return undefined;
-  return { mode: "CUSTOM", defaultLocale, translations };
+  return { mode: 'CUSTOM', defaultLocale, translations };
 }
-function makeMessageTranslationController(
-  projectId: string,
-  controllerGeneration: number,
-) {
+function makeMessageTranslationController(projectId: string, controllerGeneration: number) {
   return createTranslationJobController({
-    context: () => ({ projectId, scenarioId: "allowance-policy" }),
+    context: () => ({ projectId, scenarioId: 'allowance-policy' }),
     getValue: messageContent,
     apply: (fieldPath, _locale, text, snapshot) => {
-      if (
-        projectId !== props.projectId ||
-        controllerGeneration !== translationControllerGeneration
-      )
-        return "STALE_SOURCE";
+      if (projectId !== props.projectId || controllerGeneration !== translationControllerGeneration)
+        return 'STALE_SOURCE';
       const result = applyTranslationResult({
         current: messageContent(fieldPath),
         snapshot,
         translatedText: text,
       });
-      if (result.outcome === "APPLIED")
-        setMessageContent(fieldPath, result.value);
+      if (result.outcome === 'APPLIED') setMessageContent(fieldPath, result.value);
       return result.outcome;
     },
     state: (fieldPath, locale, state) => {
-      if (
-        projectId !== props.projectId ||
-        controllerGeneration !== translationControllerGeneration
-      )
+      if (projectId !== props.projectId || controllerGeneration !== translationControllerGeneration)
         return;
       messageTranslationStates.value = {
         ...messageTranslationStates.value,
@@ -1036,9 +914,7 @@ function makeMessageTranslationController(
   });
 }
 function messageContent(fieldPath: string): LocalizedText {
-  return fieldPath === WARNING_FIELD_PATH
-    ? warningTranslations.value
-    : exhaustedTranslations.value;
+  return fieldPath === WARNING_FIELD_PATH ? warningTranslations.value : exhaustedTranslations.value;
 }
 function setMessageContent(fieldPath: string, value: LocalizedText): void {
   if (fieldPath === WARNING_FIELD_PATH) {
@@ -1047,9 +923,7 @@ function setMessageContent(fieldPath: string, value: LocalizedText): void {
   }
   exhaustedTranslations.value = value;
 }
-function translationStatesFor(
-  fieldPath: string,
-): Record<string, TranslationUiState> {
+function translationStatesFor(fieldPath: string): Record<string, TranslationUiState> {
   return Object.fromEntries(
     Object.entries(messageTranslationStates.value)
       .filter(([key]) => key.startsWith(`${fieldPath}:`))
@@ -1059,7 +933,7 @@ function translationStatesFor(
 function markTranslationManual(fieldPath: string, locale: string): void {
   messageTranslationStates.value = {
     ...messageTranslationStates.value,
-    [`${fieldPath}:${locale}`]: "MANUAL",
+    [`${fieldPath}:${locale}`]: 'MANUAL',
   };
 }
 async function translateAllContent(): Promise<void> {
@@ -1067,17 +941,14 @@ async function translateAllContent(): Promise<void> {
   const fieldPaths = customMessageFieldPaths.value;
   if (
     !fieldPaths.length ||
-    fieldPaths.some(
-      (fieldPath) => !messageContent(fieldPath)[sourceLocale]?.trim(),
-    )
+    fieldPaths.some((fieldPath) => !messageContent(fieldPath)[sourceLocale]?.trim())
   ) {
     translationError.value = `Сначала заполните все свои сообщения на основном языке (${sourceLocale}).`;
     return;
   }
   const targets = allowanceTranslationTargets.value;
   if (!targets.length) {
-    translationError.value =
-      "Для языков проекта автоматический перевод недоступен.";
+    translationError.value = 'Для языков проекта автоматический перевод недоступен.';
     return;
   }
   const filledTargets = targets.filter((locale) =>
@@ -1085,15 +956,13 @@ async function translateAllContent(): Promise<void> {
   );
   if (
     filledTargets.length &&
-    !window.confirm(
-      "Заменить уже заполненные переводы? Тексты на основном языке не изменятся.",
-    )
+    !window.confirm('Заменить уже заполненные переводы? Тексты на основном языке не изменятся.')
   )
     return;
-  translationError.value = "";
+  translationError.value = '';
   const controller = messageTranslationController;
   if (!controller) {
-    translationError.value = "Перевод сейчас недоступен.";
+    translationError.value = 'Перевод сейчас недоступен.';
     return;
   }
   try {
@@ -1103,25 +972,18 @@ async function translateAllContent(): Promise<void> {
       targets,
     });
   } catch (cause) {
-    translationError.value = message(cause, "Не удалось выполнить перевод.");
+    translationError.value = message(cause, 'Не удалось выполнить перевод.');
   }
 }
-async function retryTranslation(
-  fieldPath: string,
-  locale: string,
-): Promise<void> {
+async function retryTranslation(fieldPath: string, locale: string): Promise<void> {
   try {
     await messageTranslationController?.retry(fieldPath, locale);
   } catch (cause) {
-    translationError.value = message(cause, "Не удалось повторить перевод.");
+    translationError.value = message(cause, 'Не удалось повторить перевод.');
   }
 }
-function defaultResponsibility(
-  category: AiAllowanceCategory,
-): CategoryRuleDraft["responsibility"] {
-  return SPONSORED_CATEGORIES.has(category)
-    ? "PROJECT_SPONSORED"
-    : "END_USER_ALLOWANCE";
+function defaultResponsibility(category: AiAllowanceCategory): CategoryRuleDraft['responsibility'] {
+  return SPONSORED_CATEGORIES.has(category) ? 'PROJECT_SPONSORED' : 'END_USER_ALLOWANCE';
 }
 function addCategoryRule(): void {
   if (categoryRules.value.length >= MAX_CATEGORY_RULES) return;
@@ -1130,18 +992,15 @@ function addCategoryRule(): void {
   categoryRules.value.push({
     category,
     responsibility: defaultResponsibility(category),
-    capUsd: "",
-    originalCapUsd: "",
+    capUsd: '',
+    originalCapUsd: '',
     capEdited: false,
   });
 }
 function removeCategoryRule(index: number): void {
   categoryRules.value.splice(index, 1);
 }
-function changeRuleCategory(
-  index: number,
-  category: AiAllowanceCategory,
-): void {
+function changeRuleCategory(index: number, category: AiAllowanceCategory): void {
   const rule = categoryRules.value[index];
   if (!rule) return;
   rule.category = category;
@@ -1149,24 +1008,20 @@ function changeRuleCategory(
 }
 function timezoneLabel(value: string): string {
   const city =
-    TIMEZONE_CITY_LABELS[value] ??
-    value.split("/").at(-1)?.replaceAll("_", " ") ??
-    value;
-  let offset = "";
+    TIMEZONE_CITY_LABELS[value] ?? value.split('/').at(-1)?.replaceAll('_', ' ') ?? value;
+  let offset = '';
   try {
     offset =
-      new Intl.DateTimeFormat("ru-RU", {
+      new Intl.DateTimeFormat('ru-RU', {
         timeZone: value,
-        timeZoneName: "shortOffset",
+        timeZoneName: 'shortOffset',
       })
         .formatToParts()
-        .find((part) => part.type === "timeZoneName")?.value ?? "";
+        .find((part) => part.type === 'timeZoneName')?.value ?? '';
   } catch {
     // The current API value remains visible even if this browser cannot format it.
   }
-  return [city, city === value ? "" : value, offset]
-    .filter(Boolean)
-    .join(" · ");
+  return [city, city === value ? '' : value, offset].filter(Boolean).join(' · ');
 }
 function localInput(value: Date): string {
   const local = new Date(value.getTime() - value.getTimezoneOffset() * 60_000);
@@ -1174,61 +1029,51 @@ function localInput(value: Date): string {
 }
 function localIso(value: string): string | undefined {
   const date = new Date(value);
-  return value && Number.isFinite(date.valueOf())
-    ? date.toISOString()
-    : undefined;
+  return value && Number.isFinite(date.valueOf()) ? date.toISOString() : undefined;
 }
 
 function fail(value: string): void {
   formError.value = value;
 }
 function formatMoney(value: DecimalString): string {
-  return formatDecimalMoney(value, "USD");
+  return formatDecimalMoney(value, 'USD');
 }
 function planDisplayName(plan: { id: string; name: string }): string {
   const isDefault = plan.id === policy.value?.defaultAssignment?.planId;
-  const hasTechnicalDefaultName = /^(?:project[- ]?default|default)$/iu.test(
-    plan.name.trim(),
-  );
-  return isDefault && hasTechnicalDefaultName
-    ? "Общий лимит проекта"
-    : plan.name;
+  const hasTechnicalDefaultName = /^(?:project[- ]?default|default)$/iu.test(plan.name.trim());
+  return isDefault && hasTechnicalDefaultName ? 'Общий лимит проекта' : plan.name;
 }
 function compactDecimal(value: DecimalString): string {
-  const [whole, fraction = ""] = value.split(".");
-  const significantFraction = fraction.replace(/0+$/u, "");
+  const [whole, fraction = ''] = value.split('.');
+  const significantFraction = fraction.replace(/0+$/u, '');
   return significantFraction ? `${whole}.${significantFraction}` : whole!;
 }
 function editableDecimal(value: DecimalString): string {
   const match = /^(?<whole>\d+)(?:\.(?<fraction>\d+))?$/u.exec(value);
   if (!match?.groups) return compactDecimal(value);
   let whole = match.groups.whole!;
-  const fraction = match.groups.fraction ?? "";
-  let cents = Number(fraction.slice(0, 2).padEnd(2, "0"));
-  if ((fraction[2] ?? "0") >= "5") cents += 1;
+  const fraction = match.groups.fraction ?? '';
+  let cents = Number(fraction.slice(0, 2).padEnd(2, '0'));
+  if ((fraction[2] ?? '0') >= '5') cents += 1;
   if (cents === 100) {
     whole = incrementDecimalDigits(whole);
     cents = 0;
   }
-  const compactCents = String(cents).padStart(2, "0").replace(/0+$/u, "");
+  const compactCents = String(cents).padStart(2, '0').replace(/0+$/u, '');
   return compactCents ? `${whole}.${compactCents}` : whole;
 }
 function incrementDecimalDigits(value: string): string {
   const digits = [...value];
   for (let index = digits.length - 1; index >= 0; index -= 1) {
-    if (digits[index] !== "9") {
+    if (digits[index] !== '9') {
       digits[index] = String(Number(digits[index]) + 1);
-      return digits.join("");
+      return digits.join('');
     }
-    digits[index] = "0";
+    digits[index] = '0';
   }
-  return `1${digits.join("")}`;
+  return `1${digits.join('')}`;
 }
-function effectiveDecimal(
-  displayed: string,
-  original: string,
-  edited: boolean,
-): string {
+function effectiveDecimal(displayed: string, original: string, edited: boolean): string {
   return edited || !original ? displayed.trim() : original.trim();
 }
 function newIdempotencyKey(): string {
@@ -1237,7 +1082,7 @@ function newIdempotencyKey(): string {
 function validTimezone(value: string): boolean {
   if (!value || value.length > 100) return false;
   try {
-    new Intl.DateTimeFormat("en", { timeZone: value }).format();
+    new Intl.DateTimeFormat('en', { timeZone: value }).format();
     return true;
   } catch {
     return false;
@@ -1248,14 +1093,14 @@ function message(cause: unknown, fallback: string): string {
 }
 function mutationMessage(cause: unknown, fallback: string): string {
   return isConfigurationConflict(cause)
-    ? "Конфигурация лимитов уже изменилась. Форма сохранена — перезагрузите актуальную конфигурацию и повторите проверку."
+    ? 'Конфигурация лимитов уже изменилась. Форма сохранена — перезагрузите актуальную конфигурацию и повторите проверку.'
     : message(cause, fallback);
 }
 function isConfigurationConflict(cause: unknown): boolean {
   return (
     cause instanceof ApiError &&
     cause.status === 409 &&
-    cause.code === "AI_ALLOWANCE_CONFIGURATION_VERSION_CONFLICT"
+    cause.code === 'AI_ALLOWANCE_CONFIGURATION_VERSION_CONFLICT'
   );
 }
 async function refreshDraftVersion(): Promise<void> {
@@ -1274,21 +1119,12 @@ async function refreshDraftVersion(): Promise<void> {
     loadedProjectId.value = requestProjectId;
     editingProjectPolicyVersion.value = next.projectPolicyVersion;
     configurationConflict.value = false;
-    formError.value = "";
+    formError.value = '';
   } catch (cause) {
-    if (
-      requestGeneration === generation &&
-      requestProjectId === props.projectId
-    )
-      formError.value = message(
-        cause,
-        "Не удалось загрузить актуальную конфигурацию",
-      );
+    if (requestGeneration === generation && requestProjectId === props.projectId)
+      formError.value = message(cause, 'Не удалось загрузить актуальную конфигурацию');
   } finally {
-    if (
-      requestGeneration === generation &&
-      requestProjectId === props.projectId
-    )
+    if (requestGeneration === generation && requestProjectId === props.projectId)
       conflictRefreshing.value = false;
   }
 }
@@ -1300,22 +1136,16 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
 </script>
 
 <template>
-  <section
-    class="allowance-panel"
-    role="tabpanel"
-    aria-labelledby="ai-cost-tab-limits"
-  >
+  <section class="allowance-panel" role="tabpanel" aria-labelledby="ai-cost-tab-limits">
     <Message v-if="!canRead" severity="warn" :closable="false"
-      >Нет права <code>project.ai_allowance.read</code>. Политика и балансы
-      скрыты.</Message
+      >Нет права <code>project.ai_allowance.read</code>. Политика и балансы скрыты.</Message
     >
     <div v-if="!canRead && canManage" class="card direct-actions">
       <div>
         <h3>Операции управления</h3>
         <p>
-          Для безопасного изменения нужен актуальный номер версии. Выдайте право
-          чтения конфигурации или выполните операцию через API с проверенным
-          OCC-токеном.
+          Для безопасного изменения нужен актуальный номер версии. Выдайте право чтения конфигурации
+          или выполните операцию через API с проверенным OCC-токеном.
         </p>
       </div>
       <div class="heading-actions">
@@ -1338,8 +1168,8 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
         <span class="eyebrow">Лимиты для пользователей</span>
         <h2>Общий лимит проекта</h2>
         <p>
-          Здесь задаётся сумма, которую пользователь может потратить на AI за
-          день или месяц. В начале нового периода лимит обновляется.
+          Здесь задаётся сумма, которую пользователь может потратить на AI за день или месяц. В
+          начале нового периода лимит обновляется.
         </p>
       </div>
       <div class="heading-actions">
@@ -1383,8 +1213,8 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
           v-if="policy.policy?.enforcementMode === 'HARD' && canActivateHard"
           severity="error"
           :closable="false"
-          ><strong>Блокировка расходов включена.</strong> Когда лимит
-          закончится, новые AI-операции пользователя будут остановлены.</Message
+          ><strong>Блокировка расходов включена.</strong> Когда лимит закончится, новые AI-операции
+          пользователя будут остановлены.</Message
         >
         <div
           v-if="policy.runtimeGates.emergencyDisabled"
@@ -1395,9 +1225,9 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
           <div>
             <strong>Блокировка расходов временно отключена</strong>
             <span
-              >Расходы продолжают учитываться, но AI не остановится после
-              исчерпания лимита. Чтобы вернуть блокировку, администратор
-              окружения должен отключить аварийный режим на сервере.</span
+              >Расходы продолжают учитываться, но AI не остановится после исчерпания лимита. Чтобы
+              вернуть блокировку, администратор окружения должен отключить аварийный режим на
+              сервере.</span
             >
           </div>
         </div>
@@ -1410,18 +1240,15 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
           <div>
             <strong>Блокировка расходов недоступна</strong>
             <span
-              >Для этого окружения её ещё не разрешили. Администратор сервера
-              должен включить блокировку, после чего этот режим появится в
-              настройках лимита.</span
+              >Для этого окружения её ещё не разрешили. Администратор сервера должен включить
+              блокировку, после чего этот режим появится в настройках лимита.</span
             >
           </div>
         </div>
         <div class="policy-grid">
           <article>
             <small>Режим</small
-            ><strong class="mode-badge">{{
-              currentEnforcementOption.label
-            }}</strong
+            ><strong class="mode-badge">{{ currentEnforcementOption.label }}</strong
             ><span>{{ currentEnforcementOption.description }}</span>
           </article>
           <article>
@@ -1429,31 +1256,26 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
             ><strong>{{
               latestDefaultRevision
                 ? formatMoney(latestDefaultRevision.recurringAmountUsd)
-                : "Не настроен"
+                : 'Не настроен'
             }}</strong
             ><span>{{
               !latestDefaultRevision
-                ? "Задайте сумму и период."
-                : latestDefaultRevision.periodKind === "MONTH"
-                  ? "Обновляется каждый месяц."
-                  : "Обновляется каждый день."
+                ? 'Задайте сумму и период.'
+                : latestDefaultRevision.periodKind === 'MONTH'
+                  ? 'Обновляется каждый месяц.'
+                  : 'Обновляется каждый день.'
             }}</span>
           </article>
           <article>
             <small>Часовой пояс</small
-            ><strong>{{
-              timezoneLabel(policy.policy?.timezone ?? "UTC")
-            }}</strong
+            ><strong>{{ timezoneLabel(policy.policy?.timezone ?? 'UTC') }}</strong
             ><span>По нему начинается новый день или месяц лимита.</span>
           </article>
           <article>
             <small>Порог предупреждения</small
-            ><strong data-testid="allowance-low-threshold-summary">{{
-              lowThresholdDisplay
-            }}</strong
+            ><strong data-testid="allowance-low-threshold-summary">{{ lowThresholdDisplay }}</strong
             ><span
-              >Когда остаток достигнет этого значения, пользователь увидит
-              предупреждение.</span
+              >Когда остаток достигнет этого значения, пользователь увидит предупреждение.</span
             >
           </article>
         </div>
@@ -1462,8 +1284,8 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
             <div>
               <h3>Варианты лимита</h3>
               <p>
-                Общий вариант действует для всех пользователей. Дополнительные
-                варианты можно назначить отдельным группам.
+                Общий вариант действует для всех пользователей. Дополнительные варианты можно
+                назначить отдельным группам.
               </p>
             </div>
           </header>
@@ -1472,23 +1294,19 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
               <div>
                 <strong>{{ planDisplayName(plan) }}</strong
                 ><small
-                  >{{ plan.key }} ·
-                  {{ plan.status === "ACTIVE" ? "активен" : "в архиве" }}</small
+                  >{{ plan.key }} · {{ plan.status === 'ACTIVE' ? 'активен' : 'в архиве' }}</small
                 >
               </div>
               <div v-if="plan.revisions[0]">
                 <strong
                   >{{ formatMoney(plan.revisions[0].recurringAmountUsd) }} /
-                  {{
-                    plan.revisions[0].periodKind === "DAY" ? "день" : "месяц"
-                  }}</strong
+                  {{ plan.revisions[0].periodKind === 'DAY' ? 'день' : 'месяц' }}</strong
                 ><small
-                  >версия {{ plan.revisions[0].revisionNumber }} · максимум в
-                  день:
+                  >версия {{ plan.revisions[0].revisionNumber }} · максимум в день:
                   {{
                     plan.revisions[0].dailyCapUsd
                       ? formatMoney(plan.revisions[0].dailyCapUsd)
-                      : "нет"
+                      : 'нет'
                   }}</small
                 >
               </div>
@@ -1534,10 +1352,7 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
       :can-manage="Boolean(canManageAccrual)"
       @fresh-login="emit('fresh-login')"
     />
-    <AiAllowanceAccrualReceiptsPanel
-      v-if="canReadAccrualReceipts"
-      :project-id="projectId"
-    />
+    <AiAllowanceAccrualReceiptsPanel v-if="canReadAccrualReceipts" :project-id="projectId" />
   </section>
 
   <Dialog
@@ -1549,9 +1364,8 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
   >
     <form class="allowance-form" @submit.prevent="save">
       <p class="form-intro">
-        Лимит определяет, сколько проект выделяет каждому пользователю на AI за
-        один период. Расходы списываются из этой суммы до начала следующего
-        периода.
+        Лимит определяет, сколько проект выделяет каждому пользователю на AI за один период. Расходы
+        списываются из этой суммы до начала следующего периода.
       </p>
       <section
         class="primary-limit-card"
@@ -1661,9 +1475,7 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
               inputmode="decimal"
               autocomplete="off"
               @input="lowThresholdEdited = true"
-            /><span>{{
-              lowThresholdMode === "PERCENT" ? "%" : "$"
-            }}</span></span
+            /><span>{{ lowThresholdMode === 'PERCENT' ? '%' : '$' }}</span></span
           >
         </label>
       </div>
@@ -1694,25 +1506,16 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
         <summary>
           <span
             ><strong>Предупреждение о низком остатке</strong
-            ><small
-              >Текст, который пользователь увидит при достижении порога.</small
-            ></span
+            ><small>Текст, который пользователь увидит при достижении порога.</small></span
           >
           <i class="pi pi-chevron-down" aria-hidden="true" />
         </summary>
         <div class="accordion-content">
           <label class="checkbox-card">
-            <input
-              v-model="useSystemWarning"
-              data-testid="use-system-warning"
-              type="checkbox"
-            />
+            <input v-model="useSystemWarning" data-testid="use-system-warning" type="checkbox" />
             <span
               ><strong>Использовать стандартный текст Retenive</strong
-              ><small
-                >Retenive покажет готовое предупреждение на языке
-                пользователя.</small
-              ></span
+              ><small>Retenive покажет готовое предупреждение на языке пользователя.</small></span
             >
           </label>
           <LocalizedField
@@ -1738,10 +1541,7 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
         <summary>
           <span
             ><strong>Сообщение об исчерпании лимита</strong
-            ><small
-              >Текст, который пользователь увидит, когда квота
-              закончится.</small
-            ></span
+            ><small>Текст, который пользователь увидит, когда квота закончится.</small></span
           >
           <i class="pi pi-chevron-down" aria-hidden="true" />
         </summary>
@@ -1754,9 +1554,7 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
             />
             <span
               ><strong>Использовать стандартный текст Retenive</strong
-              ><small
-                >Retenive покажет готовое сообщение на языке пользователя.</small
-              ></span
+              ><small>Retenive покажет готовое сообщение на языке пользователя.</small></span
             >
           </label>
           <LocalizedField
@@ -1778,10 +1576,7 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
           />
         </div>
       </details>
-      <div
-        v-if="customMessageFieldPaths.length"
-        class="allowance-translation-toolbar"
-      >
+      <div v-if="customMessageFieldPaths.length" class="allowance-translation-toolbar">
         <Button
           data-testid="translate-allowance-content"
           label="Перевести на все языки"
@@ -1795,50 +1590,34 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
         <span
           ><strong>AI-перевод сообщений</strong
           ><small
-            >Retenive переведёт свои тексты на языки проекта одним запросом. Вы
-            сможете проверить и изменить результат перед сохранением.</small
+            >Retenive переведёт свои тексты на языки проекта одним запросом. Вы сможете проверить и
+            изменить результат перед сохранением.</small
           ></span
         >
       </div>
-      <small v-if="translationError" class="field-error" role="alert">{{
-        translationError
-      }}</small>
-      <Message
-        v-if="enforcement === 'HARD' && canActivateHard"
-        severity="error"
-        :closable="false"
-        >После исчерпания лимита новые AI-операции пользователя будут
-        остановлены.<label class="hard-confirm"
-          ><input
-            id="hard-enforcement-confirmation"
-            v-model="hardConfirmed"
-            type="checkbox"
-          />
-          Я подтверждаю, что AI-операции можно блокировать</label
+      <small v-if="translationError" class="field-error" role="alert">{{ translationError }}</small>
+      <Message v-if="enforcement === 'HARD' && canActivateHard" severity="error" :closable="false"
+        >После исчерпания лимита новые AI-операции пользователя будут остановлены.<label
+          class="hard-confirm"
+          ><input id="hard-enforcement-confirmation" v-model="hardConfirmed" type="checkbox" /> Я
+          подтверждаю, что AI-операции можно блокировать</label
         ></Message
       >
       <Message v-else-if="!canActivateHard" severity="warn" :closable="false"
-        ><strong>Блокировка сейчас недоступна.</strong>
-        {{ hardUnavailableReason }}</Message
+        ><strong>Блокировка сейчас недоступна.</strong> {{ hardUnavailableReason }}</Message
       >
       <label class="visibility-toggle" for="show-end-user-exact-usd">
-        <input
-          id="show-end-user-exact-usd"
-          v-model="showEndUserExactUsd"
-          type="checkbox"
-        />
+        <input id="show-end-user-exact-usd" v-model="showEndUserExactUsd" type="checkbox" />
         <span
           ><strong>Показывать пользователю остаток в долларах</strong>
           <small
-            >Значение появится только после отдельного включения этой
-            возможности в окружении проекта.</small
+            >Значение появится только после отдельного включения этой возможности в окружении
+            проекта.</small
           ></span
         >
       </label>
       <label>
-        <span class="field-label"
-          >Причина изменения <span aria-hidden="true">*</span></span
-        >
+        <span class="field-label">Причина изменения <span aria-hidden="true">*</span></span>
         <textarea
           v-model="reason"
           rows="2"
@@ -1847,13 +1626,10 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
           required
         />
         <small
-          >Будет сохранена в истории изменений, чтобы коллеги понимали причину
-          изменения.</small
+          >Будет сохранена в истории изменений, чтобы коллеги понимали причину изменения.</small
         >
       </label>
-      <small v-if="formError" class="field-error" role="alert">{{
-        formError
-      }}</small>
+      <small v-if="formError" class="field-error" role="alert">{{ formError }}</small>
       <Button
         v-if="configurationConflict"
         label="Загрузить актуальную версию"
@@ -1887,8 +1663,8 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
   >
     <form class="allowance-form" @submit.prevent="saveNamed">
       <p class="form-intro">
-        Вариант лимита можно назначить отдельной группе пользователей. Каждое
-        изменение сохраняется в истории.
+        Вариант лимита можно назначить отдельной группе пользователей. Каждое изменение сохраняется
+        в истории.
       </p>
       <div class="form-row">
         <label
@@ -1899,17 +1675,13 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
             maxlength="100"
           /><small>Короткий уникальный код, например PREMIUM.</small></label
         ><label
-          ><span class="field-label">Название</span
-          ><input v-model="planName" maxlength="160"
+          ><span class="field-label">Название</span><input v-model="planName" maxlength="160"
         /></label>
       </div>
       <div class="form-row">
         <label
           ><span class="field-label">Лимит в долларах</span
-          ><input
-            v-model="amount"
-            inputmode="decimal"
-            @input="amountEdited = true" /></label
+          ><input v-model="amount" inputmode="decimal" @input="amountEdited = true" /></label
         ><label
           ><span class="field-label">Период лимита</span
           ><select v-model="period">
@@ -1920,33 +1692,27 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
       </div>
       <label
         ><span class="field-label"
-          >Максимум расходов в день
-          <span class="optional">необязательно</span></span
-        ><input
-          v-model="dailyCap"
-          inputmode="decimal"
-          @input="dailyCapEdited = true"
-        /><small>Оставьте пустым, если достаточно общей суммы.</small></label
+          >Максимум расходов в день <span class="optional">необязательно</span></span
+        ><input v-model="dailyCap" inputmode="decimal" @input="dailyCapEdited = true" /><small
+          >Оставьте пустым, если достаточно общей суммы.</small
+        ></label
       >
       <details class="form-accordion">
         <summary>
           <span
             ><strong>Исключения для типов AI-операций</strong
-            ><small
-              >По умолчанию все операции используют обычные правила
-              варианта.</small
-            ></span
+            ><small>По умолчанию все операции используют обычные правила варианта.</small></span
           >
           <i class="pi pi-chevron-down" aria-hidden="true" />
         </summary>
         <div class="accordion-content category-exceptions">
           <p>
-            Добавляйте исключения только там, где расходы нужно учитывать иначе.
-            Не более двух исключений.
+            Добавляйте исключения только там, где расходы нужно учитывать иначе. Не более двух
+            исключений.
           </p>
           <p v-if="preservedCategoryRules.length" class="legacy-rule-note">
-            Старые исключения ({{ preservedCategoryRules.length }}) сохранятся
-            без изменений и не займут новые слоты.
+            Старые исключения ({{ preservedCategoryRules.length }}) сохранятся без изменений и не
+            займут новые слоты.
           </p>
           <div
             v-for="(rule, index) in categoryRules"
@@ -1975,22 +1741,15 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
             <label>
               <span class="field-label">Кто оплачивает</span>
               <select v-model="rule.responsibility">
-                <option value="END_USER_ALLOWANCE">
-                  Из лимита пользователя
-                </option>
+                <option value="END_USER_ALLOWANCE">Из лимита пользователя</option>
                 <option value="PROJECT_SPONSORED">Из бюджета проекта</option>
               </select>
             </label>
             <label>
               <span class="field-label"
-                >Отдельный лимит в долларах
-                <span class="optional">необязательно</span></span
+                >Отдельный лимит в долларах <span class="optional">необязательно</span></span
               >
-              <input
-                v-model="rule.capUsd"
-                inputmode="decimal"
-                @input="rule.capEdited = true"
-              />
+              <input v-model="rule.capUsd" inputmode="decimal" @input="rule.capEdited = true" />
             </label>
             <Button
               label="Удалить"
@@ -2007,18 +1766,13 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
             icon="pi pi-plus"
             type="button"
             outlined
-            :disabled="
-              categoryRules.length >= MAX_CATEGORY_RULES ||
-              !categoryOptions.length
-            "
+            :disabled="categoryRules.length >= MAX_CATEGORY_RULES || !categoryOptions.length"
             @click="addCategoryRule"
           />
         </div>
       </details>
       <label>
-        <span class="field-label"
-          >Причина изменения <span aria-hidden="true">*</span></span
-        >
+        <span class="field-label">Причина изменения <span aria-hidden="true">*</span></span>
         <textarea
           v-model="reason"
           rows="2"
@@ -2028,9 +1782,7 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
         />
         <small>Будет сохранена в истории изменений.</small>
       </label>
-      <small v-if="formError" class="field-error" role="alert">{{
-        formError
-      }}</small>
+      <small v-if="formError" class="field-error" role="alert">{{ formError }}</small>
       <AiAllowanceReauthenticationAction
         :required="reauthenticationRequired"
         @fresh-login="emit('fresh-login')"
@@ -2045,12 +1797,11 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
         @click="refreshDraftVersion"
       />
       <footer>
-        <Button
-          label="Отмена"
-          text
-          type="button"
-          @click="namedDialogOpen = false"
-        /><Button label="Сохранить изменения" type="submit" :loading="saving" />
+        <Button label="Отмена" text type="button" @click="namedDialogOpen = false" /><Button
+          label="Сохранить изменения"
+          type="submit"
+          :loading="saving"
+        />
       </footer>
     </form>
   </Dialog>
@@ -2063,9 +1814,9 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
   >
     <form class="allowance-form" @submit.prevent="saveCohort">
       <p class="form-intro">
-        Выберите сегмент или уровень пользователей и вариант лимита, который
-        будет для них действовать. Если подходит несколько назначений,
-        применяется назначение с большим приоритетом.
+        Выберите сегмент или уровень пользователей и вариант лимита, который будет для них
+        действовать. Если подходит несколько назначений, применяется назначение с большим
+        приоритетом.
       </p>
       <div class="form-row">
         <label
@@ -2081,20 +1832,16 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
           :disabled="saving"
         />
         <label v-else
-          >Уровень<input
-            v-model="cohortId"
-            maxlength="100"
-            placeholder="gold"
-          /><small>Постоянный ID уровня</small></label
+          >Уровень<input v-model="cohortId" maxlength="100" placeholder="gold" /><small
+            >Постоянный ID уровня</small
+          ></label
         >
       </div>
       <label
         >Вариант лимита<select v-model="cohortPlanId">
           <option value="" disabled>Выберите вариант</option>
           <option
-            v-for="plan in policy?.plans.filter(
-              (item) => item.status === 'ACTIVE',
-            )"
+            v-for="plan in policy?.plans.filter((item) => item.status === 'ACTIVE')"
             :key="plan.id"
             :value="plan.id"
           >
@@ -2102,25 +1849,14 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
           </option>
         </select></label
       ><label
-        >Приоритет<input
-          v-model.number="cohortPriority"
-          type="number"
-          min="0"
-          max="1000000"
+        >Приоритет<input v-model.number="cohortPriority" type="number" min="0" max="1000000"
       /></label>
       <div class="form-row">
         <label>С<input v-model="effectiveFrom" type="datetime-local" /></label
-        ><label
-          >До (необязательно)<input
-            v-model="effectiveUntil"
-            type="datetime-local"
-        /></label>
+        ><label>До (необязательно)<input v-model="effectiveUntil" type="datetime-local" /></label>
       </div>
-      <label
-        >Причина<textarea v-model="reason" rows="3" maxlength="500" /></label
-      ><small v-if="formError" class="field-error" role="alert">{{
-        formError
-      }}</small>
+      <label>Причина<textarea v-model="reason" rows="3" maxlength="500" /></label
+      ><small v-if="formError" class="field-error" role="alert">{{ formError }}</small>
       <AiAllowanceReauthenticationAction
         :required="reauthenticationRequired"
         @fresh-login="emit('fresh-login')"
@@ -2135,12 +1871,11 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
         @click="refreshDraftVersion"
       />
       <footer>
-        <Button
-          label="Отмена"
-          text
-          type="button"
-          @click="cohortDialogOpen = false"
-        /><Button label="Назначить" type="submit" :loading="saving" />
+        <Button label="Отмена" text type="button" @click="cohortDialogOpen = false" /><Button
+          label="Назначить"
+          type="submit"
+          :loading="saving"
+        />
       </footer>
     </form>
   </Dialog>
@@ -2166,10 +1901,7 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
   border-radius: 10px;
 }
 .category-grid label {
-  grid-template-columns: minmax(130px, 1fr) minmax(170px, 1.4fr) minmax(
-      100px,
-      0.8fr
-    );
+  grid-template-columns: minmax(130px, 1fr) minmax(170px, 1.4fr) minmax(100px, 0.8fr);
   align-items: center;
 }
 .category-grid legend {
@@ -2212,8 +1944,7 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
   align-items: flex-start;
   gap: 10px;
   padding: 14px 16px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-warning) 40%, var(--border-default));
+  border: 1px solid color-mix(in srgb, var(--status-warning) 40%, var(--border-default));
   border-radius: 11px;
   background: var(--status-warning-soft);
   color: var(--status-warning-text);
@@ -2231,11 +1962,7 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
   font-weight: 600;
 }
 .gate-warning.emergency {
-  border-color: color-mix(
-    in srgb,
-    var(--status-danger) 40%,
-    var(--border-default)
-  );
+  border-color: color-mix(in srgb, var(--status-danger) 40%, var(--border-default));
   background: var(--status-danger-soft);
   color: var(--status-danger-text);
 }
@@ -2384,8 +2111,7 @@ function acceptProjectPolicyVersion(projectPolicyVersion: string): void {
   justify-content: space-between;
   gap: 24px;
   padding: 18px 20px;
-  border: 1px solid
-    color-mix(in srgb, var(--action-primary) 24%, var(--border-default));
+  border: 1px solid color-mix(in srgb, var(--action-primary) 24%, var(--border-default));
   border-radius: 14px;
   background: color-mix(in srgb, var(--action-primary) 6%, var(--surface-card));
   box-shadow: inset 3px 0 0 var(--action-primary);

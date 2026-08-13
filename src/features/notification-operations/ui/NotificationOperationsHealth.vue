@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { NotificationOperationsHealth } from "../model/notification-operations";
+import type { NotificationOperationsHealth } from '../model/notification-operations';
 
 defineProps<{
   health: NotificationOperationsHealth | null;
@@ -7,22 +7,22 @@ defineProps<{
 }>();
 
 const providerLabels = {
-  SLACK_WEBHOOK: "Slack",
-  TELEGRAM_OPERATIONAL: "Telegram operational",
-  TELEGRAM_PRODUCT: "Telegram product",
+  SLACK_WEBHOOK: 'Slack',
+  TELEGRAM_OPERATIONAL: 'Telegram operational',
+  TELEGRAM_PRODUCT: 'Telegram product',
 } as const;
 
 const providerStateLabels = {
-  HEALTHY: "Работает",
-  DEGRADED: "Деградация",
-  STOPPED: "Остановлен",
+  HEALTHY: 'Работает',
+  DEGRADED: 'Деградация',
+  STOPPED: 'Остановлен',
 } as const;
 
 const queueLabels = {
-  OPERATIONAL_NOTIFICATION: "Operational notification",
-  TELEGRAM_PERSONAL: "Telegram personal",
-  TELEGRAM_BROADCAST: "Telegram broadcast",
-  OTHER: "Другая очередь",
+  OPERATIONAL_NOTIFICATION: 'Operational notification',
+  TELEGRAM_PERSONAL: 'Telegram personal',
+  TELEGRAM_BROADCAST: 'Telegram broadcast',
+  OTHER: 'Другая очередь',
 } as const;
 
 function formatAge(seconds: number): string {
@@ -32,11 +32,9 @@ function formatAge(seconds: number): string {
 }
 
 function formatDate(value: string | null): string {
-  if (!value) return "Ещё не выполнялась";
+  if (!value) return 'Ещё не выполнялась';
   const date = new Date(value);
-  return Number.isFinite(date.getTime())
-    ? date.toLocaleString("ru-RU")
-    : "Недоступно";
+  return Number.isFinite(date.getTime()) ? date.toLocaleString('ru-RU') : 'Недоступно';
 }
 </script>
 
@@ -51,18 +49,14 @@ function formatDate(value: string | null): string {
         Снимок {{ formatDate(health.observedAt) }}
       </time>
     </div>
-    <p v-if="loading && !health" role="status" aria-live="polite">
-      Загружаем безопасный снимок…
-    </p>
+    <p v-if="loading && !health" role="status" aria-live="polite">Загружаем безопасный снимок…</p>
     <template v-else-if="health">
       <div class="metric-grid" aria-label="Сводные показатели доставки">
         <article>
-          <span>Постоянные ошибки</span
-          ><strong>{{ health.permanentCount }}</strong>
+          <span>Постоянные ошибки</span><strong>{{ health.permanentCount }}</strong>
         </article>
         <article>
-          <span>Неоднозначный результат</span
-          ><strong>{{ health.ambiguousCount }}</strong>
+          <span>Неоднозначный результат</span><strong>{{ health.ambiguousCount }}</strong>
         </article>
         <article>
           <span>Подавлено</span><strong>{{ health.suppressedCount }}</strong>
@@ -87,10 +81,7 @@ function formatDate(value: string | null): string {
         <section aria-labelledby="quota-health-title">
           <h3 id="quota-health-title">Telegram admission</h3>
           <ul>
-            <li
-              v-for="admission in health.telegramProductAdmission"
-              :key="admission.scope"
-            >
+            <li v-for="admission in health.telegramProductAdmission" :key="admission.scope">
               <span>{{ admission.scope }}</span>
               <strong>
                 {{ admission.exhaustedBucketCount }} exhausted · максимум
@@ -104,11 +95,7 @@ function formatDate(value: string | null): string {
         </section>
       </div>
 
-      <div
-        class="table-scroll"
-        tabindex="0"
-        aria-label="Таблица здоровья очередей доставки"
-      >
+      <div class="table-scroll" tabindex="0" aria-label="Таблица здоровья очередей доставки">
         <table>
           <caption>
             Очереди и попытки за окно наблюдения
@@ -145,9 +132,7 @@ function formatDate(value: string | null): string {
       <section class="retention" aria-labelledby="retention-health-title">
         <div>
           <h3 id="retention-health-title">Retention · только просмотр</h3>
-          <p>
-            Сколько записей будет необратимо очищено следующими bounded batches.
-          </p>
+          <p>Сколько записей будет необратимо очищено следующими bounded batches.</p>
         </div>
         <dl>
           <div>
@@ -250,10 +235,10 @@ function formatDate(value: string | null): string {
 .health-details strong {
   text-align: right;
 }
-[data-state="DEGRADED"] {
+[data-state='DEGRADED'] {
   color: var(--status-warning-text);
 }
-[data-state="STOPPED"] {
+[data-state='STOPPED'] {
   color: var(--status-danger-text);
 }
 .table-scroll {

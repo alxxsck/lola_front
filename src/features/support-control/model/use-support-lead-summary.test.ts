@@ -1,11 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
-import type { SupportLeadSummary } from "@/features/support-control/api/support-lead-source";
-import { ApiError } from "@/shared/api/http/api-error";
-import { createSupportLeadSummaryController } from "./use-support-lead-summary";
+import { describe, expect, it, vi } from 'vitest';
+import type { SupportLeadSummary } from '@/features/support-control/api/support-lead-source';
+import { ApiError } from '@/shared/api/http/api-error';
+import { createSupportLeadSummaryController } from './use-support-lead-summary';
 
 const summary: SupportLeadSummary = {
-  computedAt: "2026-08-06T10:00:00.000Z",
-  freshnessState: "READY",
+  computedAt: '2026-08-06T10:00:00.000Z',
+  freshnessState: 'READY',
   actionableBacklog: { unassignedCount: 1, oldestUnassignedAgeMs: null },
   sla: { atRiskCount: 1, breachedCount: 0, oldestDueAgeMs: null },
   workforce: {
@@ -14,8 +14,8 @@ const summary: SupportLeadSummary = {
     currentWorkloadUnits: 1,
     maximumCapacityUnits: 2,
   },
-  delivery: { pendingCount: 0, outcomeUnknownCount: 0, state: "AVAILABLE" },
-  projectionHealth: { deadLetterCount: 0, retryCount: 0, state: "AVAILABLE" },
+  delivery: { pendingCount: 0, outcomeUnknownCount: 0, state: 'AVAILABLE' },
+  projectionHealth: { deadLetterCount: 0, retryCount: 0, state: 'AVAILABLE' },
 };
 
 function deferred<T>() {
@@ -26,9 +26,9 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-describe("support lead summary controller", () => {
-  it("does not commit a stale summary after a project switch", async () => {
-    let projectId = "project-1";
+describe('support lead summary controller', () => {
+  it('does not commit a stale summary after a project switch', async () => {
+    let projectId = 'project-1';
     const pending = deferred<SupportLeadSummary>();
     const controller = createSupportLeadSummaryController(
       { projectId: () => projectId, canRead: () => true },
@@ -36,37 +36,35 @@ describe("support lead summary controller", () => {
     );
 
     const load = controller.load();
-    projectId = "project-2";
+    projectId = 'project-2';
     pending.resolve(summary);
     await load;
 
     expect(controller.summary.value).toBeNull();
-    expect(controller.error.value).toBe("");
+    expect(controller.error.value).toBe('');
   });
 
-  it("shows a safe error instead of retaining a previous project summary", async () => {
+  it('shows a safe error instead of retaining a previous project summary', async () => {
     const controller = createSupportLeadSummaryController(
-      { projectId: () => "project-1", canRead: () => true },
-      { readSummary: vi.fn().mockRejectedValue(new Error("forbidden")) },
+      { projectId: () => 'project-1', canRead: () => true },
+      { readSummary: vi.fn().mockRejectedValue(new Error('forbidden')) },
     );
 
     await controller.load();
 
     expect(controller.summary.value).toBeNull();
-    expect(controller.error.value).toBe(
-      "Не удалось загрузить операционный обзор",
-    );
+    expect(controller.error.value).toBe('Не удалось загрузить операционный обзор');
   });
 
-  it("aborts the obsolete request and purges the snapshot when access is revoked", async () => {
+  it('aborts the obsolete request and purges the snapshot when access is revoked', async () => {
     let allowed = true;
     const abort = vi.fn();
     const pending = new Promise<SupportLeadSummary>(() => undefined);
     const controller = createSupportLeadSummaryController(
-      { projectId: () => "project-1", canRead: () => allowed },
+      { projectId: () => 'project-1', canRead: () => allowed },
       {
         readSummary: vi.fn((_, signal?: AbortSignal) => {
-          signal?.addEventListener("abort", abort, { once: true });
+          signal?.addEventListener('abort', abort, { once: true });
           return pending;
         }),
       },
@@ -81,23 +79,23 @@ describe("support lead summary controller", () => {
     expect(controller.loading.value).toBe(false);
   });
 
-  it("purges the summary and delegates permission recovery after a 403", async () => {
+  it('purges the summary and delegates permission recovery after a 403', async () => {
     const onForbidden = vi.fn();
     const controller = createSupportLeadSummaryController(
       {
-        projectId: () => "project-1",
+        projectId: () => 'project-1',
         canRead: () => true,
         onForbidden,
       },
       {
-        readSummary: vi.fn().mockRejectedValue(new ApiError(403, "forbidden")),
+        readSummary: vi.fn().mockRejectedValue(new ApiError(403, 'forbidden')),
       },
     );
 
     await controller.load();
 
     expect(controller.summary.value).toBeNull();
-    expect(controller.error.value).toBe("");
+    expect(controller.error.value).toBe('');
     expect(onForbidden).toHaveBeenCalledOnce();
   });
 });

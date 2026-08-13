@@ -1,14 +1,11 @@
-import { ref } from "vue";
-import type { CmsRealtimeState } from "@/shared/realtime/cms-realtime-contract";
+import { ref } from 'vue';
+import type { CmsRealtimeState } from '@/shared/realtime/cms-realtime-contract';
 
 interface SupportWorkspaceRealtimePort {
   activateProject(projectId: string): Promise<void>;
   watchConversation(conversationId: string): Promise<boolean>;
   unwatchConversation(conversationId?: string): void;
-  subscribe(
-    eventNames: string[],
-    handler: (value: unknown) => void | Promise<void>,
-  ): () => void;
+  subscribe(eventNames: string[], handler: (value: unknown) => void | Promise<void>): () => void;
   reconcile(handler: () => void | Promise<void>): () => void;
   onState(handler: (state: CmsRealtimeState) => void): () => void;
   setConversationTyping(isTyping: boolean): Promise<boolean>;
@@ -58,12 +55,10 @@ interface SupportWorkspaceLiveOptions {
   currentMessageOrdinal?: () => number;
   hasDraft?: () => boolean;
   onAccessRevoked?(): void | Promise<void>;
-  recordTelemetry?(
-    payload: Record<string, string | number | boolean>,
-  ): void;
+  recordTelemetry?(payload: Record<string, string | number | boolean>): void;
 }
 
-export type SupportWorkspaceRecoveryCause = "HINT" | "GAP" | "RECONNECT";
+export type SupportWorkspaceRecoveryCause = 'HINT' | 'GAP' | 'RECONNECT';
 
 interface ScopedConversationEvent {
   projectId: string;
@@ -71,21 +66,12 @@ interface ScopedConversationEvent {
   eventSequence?: bigint;
 }
 
-function scopedConversationEvent(
-  value: unknown,
-): ScopedConversationEvent | null {
-  if (!value || typeof value !== "object") return null;
+function scopedConversationEvent(value: unknown): ScopedConversationEvent | null {
+  if (!value || typeof value !== 'object') return null;
   const event = value as Record<string, unknown>;
-  if (
-    typeof event.projectId !== "string" ||
-    typeof event.conversationId !== "string"
-  )
-    return null;
+  if (typeof event.projectId !== 'string' || typeof event.conversationId !== 'string') return null;
   let eventSequence: bigint | undefined;
-  if (
-    typeof event.eventSequence === "string" &&
-    /^[1-9][0-9]*$/.test(event.eventSequence)
-  ) {
+  if (typeof event.eventSequence === 'string' && /^[1-9][0-9]*$/.test(event.eventSequence)) {
     eventSequence = BigInt(event.eventSequence);
   }
   return {
@@ -100,24 +86,22 @@ function collaborationScope(value: unknown): {
   conversationId: string;
   event: Record<string, unknown>;
 } | null {
-  if (!value || typeof value !== "object") return null;
+  if (!value || typeof value !== 'object') return null;
   const event = value as Record<string, unknown>;
-  if (
-    typeof event.projectId !== "string" ||
-    typeof event.conversationId !== "string"
-  ) return null;
+  if (typeof event.projectId !== 'string' || typeof event.conversationId !== 'string') return null;
   return { projectId: event.projectId, conversationId: event.conversationId, event };
 }
 
 function viewer(value: unknown) {
-  if (!value || typeof value !== "object") return null;
+  if (!value || typeof value !== 'object') return null;
   const item = value as Record<string, unknown>;
   if (
-    typeof item.cmsUserId !== "string" ||
-    typeof item.displayName !== "string" ||
-    typeof item.generation !== "string" ||
-    typeof item.expiresAt !== "string"
-  ) return null;
+    typeof item.cmsUserId !== 'string' ||
+    typeof item.displayName !== 'string' ||
+    typeof item.generation !== 'string' ||
+    typeof item.expiresAt !== 'string'
+  )
+    return null;
   return {
     cmsUserId: item.cmsUserId,
     displayName: item.displayName,
@@ -134,26 +118,24 @@ export function createSupportWorkspaceLiveController(
   options: SupportWorkspaceLiveOptions,
   client: SupportWorkspaceRealtimePort,
 ) {
-  const state = ref<CmsRealtimeState>("DISCONNECTED");
+  const state = ref<CmsRealtimeState>('DISCONNECTED');
   let projectId: string | undefined;
   let conversationId: string | undefined;
   let generation = 0;
   let lastDeliveryEventSequence: bigint | undefined;
   let reconcileTimer: ReturnType<typeof setTimeout> | undefined;
-  let pendingRecoveryCause: SupportWorkspaceRecoveryCause = "HINT";
+  let pendingRecoveryCause: SupportWorkspaceRecoveryCause = 'HINT';
   let draftActive = false;
   let typingActive = false;
   let typingIdleTimer: ReturnType<typeof setTimeout> | undefined;
   let typingActivityRevision = 0;
 
-  function scheduleReconcile(
-    cause: SupportWorkspaceRecoveryCause = "HINT",
-  ): void {
+  function scheduleReconcile(cause: SupportWorkspaceRecoveryCause = 'HINT'): void {
     const requestGeneration = generation;
     const requestProjectId = projectId;
     const requestConversationId = conversationId;
     if (!requestProjectId || !requestConversationId) return;
-    if (cause === "GAP" || cause === "RECONNECT") pendingRecoveryCause = cause;
+    if (cause === 'GAP' || cause === 'RECONNECT') pendingRecoveryCause = cause;
     if (reconcileTimer) return;
     reconcileTimer = setTimeout(() => {
       reconcileTimer = undefined;
@@ -164,21 +146,19 @@ export function createSupportWorkspaceLiveController(
       )
         return;
       const recoveryCause = pendingRecoveryCause;
-      pendingRecoveryCause = "HINT";
+      pendingRecoveryCause = 'HINT';
       const startedAt = performance.now();
       void Promise.allSettled([
         options.reconcile(recoveryCause),
         options.collaboration?.reconcile() ?? Promise.resolve(),
       ]).then((results) => {
-        const failed = results.filter(
-          (result) => result.status === "rejected",
-        ).length;
+        const failed = results.filter((result) => result.status === 'rejected').length;
         options.recordTelemetry?.({
-          operation: "realtime_reconcile",
-          outcome: failed ? "failed" : "recovered",
+          operation: 'realtime_reconcile',
+          outcome: failed ? 'failed' : 'recovered',
           duration_ms: Math.round(performance.now() - startedAt),
-          recovered: recoveryCause !== "HINT" && failed === 0,
-          mismatch_count: recoveryCause === "GAP" ? 1 : 0,
+          recovered: recoveryCause !== 'HINT' && failed === 0,
+          mismatch_count: recoveryCause === 'GAP' ? 1 : 0,
         });
       });
     }, 120);
@@ -186,26 +166,22 @@ export function createSupportWorkspaceLiveController(
 
   const unsubscribeEvents = client.subscribe(
     [
-      "conversation.message.upserted.v1",
-      "conversation.message.translation.upserted.v1",
-      "conversation.message.delivery.upserted.v1",
-      "conversation.message.delivery.revoked.v1",
+      'conversation.message.upserted.v1',
+      'conversation.message.translation.upserted.v1',
+      'conversation.message.delivery.upserted.v1',
+      'conversation.message.delivery.revoked.v1',
     ],
     (value) => {
       const event = scopedConversationEvent(value);
-      if (
-        !event ||
-        event.projectId !== projectId ||
-        event.conversationId !== conversationId
-      )
+      if (!event || event.projectId !== projectId || event.conversationId !== conversationId)
         return;
-      let recoveryCause: SupportWorkspaceRecoveryCause = "HINT";
+      let recoveryCause: SupportWorkspaceRecoveryCause = 'HINT';
       if (event.eventSequence !== undefined) {
         if (
           lastDeliveryEventSequence !== undefined &&
           event.eventSequence > lastDeliveryEventSequence + 1n
         ) {
-          recoveryCause = "GAP";
+          recoveryCause = 'GAP';
         }
         if (
           lastDeliveryEventSequence === undefined ||
@@ -219,24 +195,18 @@ export function createSupportWorkspaceLiveController(
   );
   const unsubscribeCollaboration = client.subscribe(
     [
-      "conversation.viewers.snapshot.v1",
-      "conversation.typing.hint.v1",
-      "conversation.watch.revoked.v1",
+      'conversation.viewers.snapshot.v1',
+      'conversation.typing.hint.v1',
+      'conversation.watch.revoked.v1',
     ],
     (value) => {
       const scoped = collaborationScope(value);
+      if (!scoped || scoped.projectId !== projectId || scoped.conversationId !== conversationId)
+        return;
       if (
-        !scoped ||
-        scoped.projectId !== projectId ||
-        scoped.conversationId !== conversationId
-      ) return;
-      if (
-        "reason" in scoped.event &&
-        typeof scoped.event.generation === "string" &&
-        client.revokeConversationWatch(
-          scoped.conversationId,
-          scoped.event.generation,
-        )
+        'reason' in scoped.event &&
+        typeof scoped.event.generation === 'string' &&
+        client.revokeConversationWatch(scoped.conversationId, scoped.event.generation)
       ) {
         draftActive = false;
         typingActive = false;
@@ -249,7 +219,7 @@ export function createSupportWorkspaceLiveController(
       }
       if (
         Array.isArray(scoped.event.viewers) &&
-        typeof scoped.event.generation === "string" &&
+        typeof scoped.event.generation === 'string' &&
         /^(?:0|[1-9][0-9]{0,18})$/.test(scoped.event.generation)
       ) {
         const viewers = scoped.event.viewers.map(viewer);
@@ -265,10 +235,10 @@ export function createSupportWorkspaceLiveController(
       const actor = viewer(scoped.event.actor);
       if (
         actor &&
-        typeof scoped.event.generation === "string" &&
-        typeof scoped.event.watchGeneration === "string" &&
-        typeof scoped.event.isTyping === "boolean" &&
-        typeof scoped.event.expiresAt === "string"
+        typeof scoped.event.generation === 'string' &&
+        typeof scoped.event.watchGeneration === 'string' &&
+        typeof scoped.event.isTyping === 'boolean' &&
+        typeof scoped.event.expiresAt === 'string'
       ) {
         options.collaboration?.applyTypingHint({
           projectId: scoped.projectId,
@@ -282,9 +252,7 @@ export function createSupportWorkspaceLiveController(
       }
     },
   );
-  const unsubscribeReconcile = client.reconcile(() =>
-    scheduleReconcile("RECONNECT"),
-  );
+  const unsubscribeReconcile = client.reconcile(() => scheduleReconcile('RECONNECT'));
   const unsubscribeState = client.onState((nextState) => {
     state.value = nextState;
   });
@@ -300,17 +268,14 @@ export function createSupportWorkspaceLiveController(
     projectId = nextProjectId;
     conversationId = nextConversationId;
     lastDeliveryEventSequence = undefined;
-    pendingRecoveryCause = "HINT";
+    pendingRecoveryCause = 'HINT';
     draftActive = false;
     typingActive = false;
     typingActivityRevision += 1;
     if (typingIdleTimer) clearTimeout(typingIdleTimer);
     typingIdleTimer = undefined;
     options.collaboration?.reset();
-    if (
-      previousConversationId &&
-      previousConversationId !== nextConversationId
-    ) {
+    if (previousConversationId && previousConversationId !== nextConversationId) {
       client.unwatchConversation(previousConversationId);
     }
     if (!nextProjectId || !nextConversationId) return;
@@ -330,14 +295,11 @@ export function createSupportWorkspaceLiveController(
     );
     if (draftActive || options.hasDraft?.()) {
       draftActive = true;
-      options.collaboration?.setDraftActive(
-        true,
-        options.currentMessageOrdinal?.() ?? 0,
-      );
+      options.collaboration?.setDraftActive(true, options.currentMessageOrdinal?.() ?? 0);
       await options.collaboration?.reconcile();
       options.recordTelemetry?.({
-        operation: "draft_recovery",
-        outcome: "restored",
+        operation: 'draft_recovery',
+        outcome: 'restored',
         duration_ms: 0,
         recovered: true,
       });
@@ -348,14 +310,11 @@ export function createSupportWorkspaceLiveController(
     if (!projectId || !conversationId) return;
     if (draftActive === active) return;
     draftActive = active;
-    options.collaboration?.setDraftActive(
-      active,
-      options.currentMessageOrdinal?.() ?? 0,
-    );
+    options.collaboration?.setDraftActive(active, options.currentMessageOrdinal?.() ?? 0);
     if (active) await options.collaboration?.reconcile();
     options.recordTelemetry?.({
-      operation: "draft_state",
-      outcome: active ? "active" : "cleared",
+      operation: 'draft_state',
+      outcome: active ? 'active' : 'cleared',
       duration_ms: 0,
       recovered: false,
     });
@@ -381,7 +340,8 @@ export function createSupportWorkspaceLiveController(
         !projectId ||
         !conversationId ||
         !typingActive
-      ) return;
+      )
+        return;
       typingActive = false;
       void client.setConversationTyping(false);
     }, 4_000);

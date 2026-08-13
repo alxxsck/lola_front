@@ -5,23 +5,20 @@ import {
   formatTokenCount,
   pluralizeRu,
   type AiUsageCategoryBreakdown,
-} from '../ai-usage.model'
+} from '../ai-usage.model';
 
 const props = defineProps<{
-  usage?: AiUsageCategoryBreakdown
-  fallbackCurrency?: string
-}>()
+  usage?: AiUsageCategoryBreakdown;
+  fallbackCurrency?: string;
+}>();
 
 function operationCount(value: number) {
-  return `${formatTokenCount(value)} ${pluralizeRu(value, 'операция', 'операции', 'операций')}`
+  return `${formatTokenCount(value)} ${pluralizeRu(value, 'операция', 'операции', 'операций')}`;
 }
 </script>
 
 <template>
-  <section
-    class="ai-usage-slice voice-slice"
-    aria-labelledby="voice-usage-title"
-  >
+  <section class="ai-usage-slice voice-slice" aria-labelledby="voice-usage-title">
     <header class="slice-header">
       <div>
         <span class="provider-kicker">Realtime</span>
@@ -65,13 +62,11 @@ function operationCount(value: number) {
   gap: 10px;
   padding: 11px 13px;
   margin: 12px 0 0;
-  border: 1px solid
-    color-mix(in srgb, var(--status-accent) 24%, var(--border-default));
+  border: 1px solid color-mix(in srgb, var(--status-accent) 24%, var(--border-default));
   border-radius: 12px;
   background: var(--status-accent-soft);
   color: var(--status-accent-text);
   font-size: 0.7rem;
   line-height: 1.45;
 }
-
 </style>

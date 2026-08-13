@@ -1,29 +1,36 @@
-import { computed, ref } from "vue";
-import { mount } from "@vue/test-utils";
-import PrimeVue from "primevue/config";
-import { describe, expect, it, vi } from "vitest";
-import type { SupportAssignmentSnapshot } from "@/features/support-case-assignment/api/support-assignment-source";
-import SupportAssignmentDesk from "./SupportAssignmentDesk.vue";
+import { computed, ref } from 'vue';
+import { mount } from '@vue/test-utils';
+import PrimeVue from 'primevue/config';
+import { describe, expect, it, vi } from 'vitest';
+import type { SupportAssignmentSnapshot } from '@/features/support-case-assignment/api/support-assignment-source';
+import SupportAssignmentDesk from './SupportAssignmentDesk.vue';
 
 function controller() {
   return {
     caseSnapshot: ref<SupportAssignmentSnapshot | null>({
-      caseId: "case-1",
+      caseId: 'case-1',
       caseVersion: 9,
       caseReadToken: '"sc1.private"',
-      assignmentState: "ASSIGNED" as const,
+      assignmentState: 'ASSIGNED' as const,
       currentAssignment: {
-        id: "assignment-1",
+        id: 'assignment-1',
         version: 3,
         actionEtag: '"sa1.private"',
       },
-      workforceRevision: { id: "workforce-1", number: 4 },
-      actions: { claim: false, assign: false, assignWithOverride: false, release: true, transfer: true, transferWithOverride: false },
+      workforceRevision: { id: 'workforce-1', number: 4 },
+      actions: {
+        claim: false,
+        assign: false,
+        assignWithOverride: false,
+        release: true,
+        transfer: true,
+        transferWithOverride: false,
+      },
       teams: [],
     }),
     caseLoading: ref(false),
     mutating: ref(false),
-    error: ref(""),
+    error: ref(''),
     unknownOutcome: ref(false),
     draft: ref(null),
     canRetry: computed(() => false),
@@ -37,7 +44,7 @@ function controller() {
     offers: ref([]),
     offerLoading: ref(false),
     offerChangingId: ref(null),
-    offerError: ref(""),
+    offerError: ref(''),
     offerUnknownOutcome: ref(false),
     offerCanRetry: computed(() => false),
     loadOffers: vi.fn(),
@@ -47,79 +54,73 @@ function controller() {
 }
 
 const selectedAssignment = {
-  id: "assignment-1",
-  operatorName: "Анна",
-  teamName: "Платежи",
+  id: 'assignment-1',
+  operatorName: 'Анна',
+  teamName: 'Платежи',
   version: 3,
   actionEtag: '"sa1.private"',
 };
 
-describe("SupportAssignmentDesk", () => {
-  it("shows the current owner without exposing assignment actions to a read-only role", () => {
+describe('SupportAssignmentDesk', () => {
+  it('shows the current owner without exposing assignment actions to a read-only role', () => {
     const wrapper = mount(SupportAssignmentDesk, {
       props: {
         assignment: selectedAssignment,
-        claimantLabel: "Не загружен",
-        viewersLabel: "Не загружены",
-        availabilityLabel: "Нет права на просмотр",
+        claimantLabel: 'Не загружен',
+        viewersLabel: 'Не загружены',
+        availabilityLabel: 'Нет права на просмотр',
       },
       global: { plugins: [PrimeVue] },
     });
 
-    expect(wrapper.get("[data-assignment-state]").text()).toContain(
-      "Анна · Платежи",
-    );
-    expect(wrapper.find("[data-assignment-actions]").exists()).toBe(false);
-    expect(wrapper.find("button").exists()).toBe(false);
+    expect(wrapper.get('[data-assignment-state]').text()).toContain('Анна · Платежи');
+    expect(wrapper.find('[data-assignment-actions]').exists()).toBe(false);
+    expect(wrapper.find('button').exists()).toBe(false);
   });
 
-  it("keeps assignment, claimant, viewers and availability as distinct states", () => {
+  it('keeps assignment, claimant, viewers and availability as distinct states', () => {
     const wrapper = mount(SupportAssignmentDesk, {
       props: {
         controller: controller() as never,
         assignment: selectedAssignment,
-        claimantLabel: "Максим · эскалация",
-        viewersLabel: "Presence ещё не подключён",
-        availabilityLabel: "Доступен для новых обращений",
+        claimantLabel: 'Максим · эскалация',
+        viewersLabel: 'Presence ещё не подключён',
+        availabilityLabel: 'Доступен для новых обращений',
       },
       global: { plugins: [PrimeVue] },
     });
 
-    expect(wrapper.get("[data-assignment-state]").text()).toContain("Анна");
-    expect(wrapper.get("[data-claimant-state]").text()).toContain("Максим");
-    expect(wrapper.get("[data-viewers-state]").text()).toContain("Presence");
-    expect(wrapper.get("[data-availability-state]").text()).toContain(
-      "Доступен",
-    );
+    expect(wrapper.get('[data-assignment-state]').text()).toContain('Анна');
+    expect(wrapper.get('[data-claimant-state]').text()).toContain('Максим');
+    expect(wrapper.get('[data-viewers-state]').text()).toContain('Presence');
+    expect(wrapper.get('[data-availability-state]').text()).toContain('Доступен');
     expect(wrapper.get("button[aria-label='Снять назначение']")).toBeDefined();
-    expect(wrapper.find("button[aria-label='Передать назначение']").exists()).toBe(
-      false,
-    );
-    expect(wrapper.html()).not.toContain("sa1.private");
-    expect(wrapper.html()).not.toContain("sc1.private");
+    expect(wrapper.find("button[aria-label='Передать назначение']").exists()).toBe(false);
+    expect(wrapper.html()).not.toContain('sa1.private');
+    expect(wrapper.html()).not.toContain('sc1.private');
   });
 
-  it("keeps the audited release draft outside the transport call until confirmation", async () => {
+  it('keeps the audited release draft outside the transport call until confirmation', async () => {
     const assignment = controller();
     const wrapper = mount(SupportAssignmentDesk, {
       props: {
         controller: assignment as never,
         assignment: selectedAssignment,
-        claimantLabel: "Не назначен",
-        viewersLabel: "Presence ещё не подключён",
-        availabilityLabel: "Доступен",
+        claimantLabel: 'Не назначен',
+        viewersLabel: 'Presence ещё не подключён',
+        availabilityLabel: 'Доступен',
       },
       global: {
         plugins: [PrimeVue],
         stubs: {
           Dialog: {
-            props: ["visible", "header"],
+            props: ['visible', 'header'],
             template:
               '<section v-if="visible" role="dialog"><h2>{{ header }}</h2><slot /><slot name="footer" /></section>',
           },
           Select: {
-            props: ["modelValue", "options", "optionLabel", "optionValue"],
-            emits: ["update:modelValue"],
+            props: ['modelValue', 'options', 'optionLabel', 'optionValue'],
+            emits: ['update:modelValue'],
             template:
               '<select :value="modelValue" v-bind="$attrs" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="option in options" :key="option[optionValue]" :value="option[optionValue]">{{ option[optionLabel] }}</option></select>',
           },
@@ -127,41 +128,51 @@ describe("SupportAssignmentDesk", () => {
       },
     });
 
-    await wrapper.get("button[aria-label='Снять назначение']").trigger("click");
-    expect(wrapper.get("[role='dialog']").text()).toContain("Снять назначение");
+    await wrapper.get("button[aria-label='Снять назначение']").trigger('click');
+    expect(wrapper.get("[role='dialog']").text()).toContain('Снять назначение');
     await wrapper
       .get("textarea[aria-label='Комментарий к снятию назначения']")
-      .setValue("Завершение смены");
-    await wrapper
-      .get("button[aria-label='Подтвердить снятие назначения']")
-      .trigger("click");
+      .setValue('Завершение смены');
+    await wrapper.get("button[aria-label='Подтвердить снятие назначения']").trigger('click');
 
     expect(assignment.setDraft).toHaveBeenCalledWith({
-      kind: "RELEASE",
-      reasonCode: "WORK_RETURNED",
-      reasonNote: "Завершение смены",
+      kind: 'RELEASE',
+      reasonCode: 'WORK_RETURNED',
+      reasonNote: 'Завершение смены',
     });
     expect(assignment.submit).toHaveBeenCalledOnce();
   });
 
-  it("uses only eligible Team and operator options for transfer", async () => {
+  it('uses only eligible Team and operator options for transfer', async () => {
     const assignment = controller();
     assignment.canRelease = computed(() => false);
     assignment.canTransfer = computed(() => true);
     assignment.caseSnapshot.value!.teams = [
       {
-        id: "team-2",
-        code: "VIP",
-        name: "VIP",
-        actions: { claim: false, assign: false, assignWithOverride: false, transfer: true, transferWithOverride: false },
+        id: 'team-2',
+        code: 'VIP',
+        name: 'VIP',
+        actions: {
+          claim: false,
+          assign: false,
+          assignWithOverride: false,
+          transfer: true,
+          transferWithOverride: false,
+        },
         operators: [
           {
-            id: "operator-2",
-            displayName: "Максим",
+            id: 'operator-2',
+            displayName: 'Максим',
             availableCapacityUnits: 300,
-            effectiveAvailability: "AVAILABLE",
+            effectiveAvailability: 'AVAILABLE',
             requiredOverrides: [],
-            actions: { claim: false, assign: false, assignWithOverride: false, transfer: true, transferWithOverride: false },
+            actions: {
+              claim: false,
+              assign: false,
+              assignWithOverride: false,
+              transfer: true,
+              transferWithOverride: false,
+            },
           },
         ],
       },
@@ -170,21 +181,21 @@ describe("SupportAssignmentDesk", () => {
       props: {
         controller: assignment as never,
         assignment: selectedAssignment,
-        claimantLabel: "Не назначен",
-        viewersLabel: "Presence ещё не подключён",
-        availabilityLabel: "Доступен",
+        claimantLabel: 'Не назначен',
+        viewersLabel: 'Presence ещё не подключён',
+        availabilityLabel: 'Доступен',
       },
       global: {
         plugins: [PrimeVue],
         stubs: {
           Dialog: {
-            props: ["visible", "header"],
+            props: ['visible', 'header'],
             template:
               '<section v-if="visible" role="dialog"><h2>{{ header }}</h2><slot /><slot name="footer" /></section>',
           },
           Select: {
-            props: ["modelValue", "options", "optionLabel", "optionValue"],
-            emits: ["update:modelValue"],
+            props: ['modelValue', 'options', 'optionLabel', 'optionValue'],
+            emits: ['update:modelValue'],
             template:
               '<select :value="modelValue" v-bind="$attrs" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="option in options" :key="option[optionValue]" :value="option[optionValue]">{{ option[optionLabel] }}</option></select>',
           },
@@ -192,39 +203,37 @@ describe("SupportAssignmentDesk", () => {
       },
     });
 
-    await wrapper
-      .get("button[aria-label='Передать назначение']")
-      .trigger("click");
-    expect(wrapper.get("select[aria-label='Команда для передачи']").text()).toContain(
-      "VIP",
-    );
-    expect(
-      wrapper.get("select[aria-label='Оператор для передачи']").text(),
-    ).toContain("Максим");
-    await wrapper
-      .get("button[aria-label='Подтвердить передачу назначения']")
-      .trigger("click");
+    await wrapper.get("button[aria-label='Передать назначение']").trigger('click');
+    expect(wrapper.get("select[aria-label='Команда для передачи']").text()).toContain('VIP');
+    expect(wrapper.get("select[aria-label='Оператор для передачи']").text()).toContain('Максим');
+    await wrapper.get("button[aria-label='Подтвердить передачу назначения']").trigger('click');
 
     expect(assignment.setDraft).toHaveBeenCalledWith({
-      kind: "TRANSFER",
-      teamId: "team-2",
-      operatorId: "operator-2",
-      reasonCode: "SKILL_HANDOFF",
+      kind: 'TRANSFER',
+      teamId: 'team-2',
+      operatorId: 'operator-2',
+      reasonCode: 'SKILL_HANDOFF',
     });
     expect(assignment.submit).toHaveBeenCalledOnce();
   });
 
-  it("claims into a Team authorized by the current Case snapshot", async () => {
+  it('claims into a Team authorized by the current Case snapshot', async () => {
     const assignment = controller();
     assignment.canRelease = computed(() => false);
     assignment.canClaim = computed(() => true);
-    assignment.caseSnapshot.value!.assignmentState = "UNASSIGNED";
+    assignment.caseSnapshot.value!.assignmentState = 'UNASSIGNED';
     assignment.caseSnapshot.value!.teams = [
       {
-        id: "team-1",
-        code: "PAYMENTS",
-        name: "Платежи",
-        actions: { claim: true, assign: false, assignWithOverride: false, transfer: false, transferWithOverride: false },
+        id: 'team-1',
+        code: 'PAYMENTS',
+        name: 'Платежи',
+        actions: {
+          claim: true,
+          assign: false,
+          assignWithOverride: false,
+          transfer: false,
+          transferWithOverride: false,
+        },
         operators: [],
       },
     ];
@@ -232,21 +241,21 @@ describe("SupportAssignmentDesk", () => {
       props: {
         controller: assignment as never,
         assignment: null,
-        claimantLabel: "Не назначен",
-        viewersLabel: "Presence ещё не подключён",
-        availabilityLabel: "Доступен",
+        claimantLabel: 'Не назначен',
+        viewersLabel: 'Presence ещё не подключён',
+        availabilityLabel: 'Доступен',
       },
       global: {
         plugins: [PrimeVue],
         stubs: {
           Dialog: {
-            props: ["visible", "header"],
+            props: ['visible', 'header'],
             template:
               '<section v-if="visible" role="dialog"><h2>{{ header }}</h2><slot /><slot name="footer" /></section>',
           },
           Select: {
-            props: ["modelValue", "options", "optionLabel", "optionValue"],
-            emits: ["update:modelValue"],
+            props: ['modelValue', 'options', 'optionLabel', 'optionValue'],
+            emits: ['update:modelValue'],
             template:
               '<select :value="modelValue" v-bind="$attrs" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="option in options" :key="option[optionValue]" :value="option[optionValue]">{{ option[optionLabel] }}</option></select>',
           },
@@ -254,22 +263,18 @@ describe("SupportAssignmentDesk", () => {
       },
     });
 
-    await wrapper.get("button[aria-label='Взять в работу']").trigger("click");
-    expect(wrapper.get("select[aria-label='Команда для назначения']").text()).toContain(
-      "Платежи",
-    );
-    await wrapper
-      .get("button[aria-label='Подтвердить назначение на себя']")
-      .trigger("click");
+    await wrapper.get("button[aria-label='Взять в работу']").trigger('click');
+    expect(wrapper.get("select[aria-label='Команда для назначения']").text()).toContain('Платежи');
+    await wrapper.get("button[aria-label='Подтвердить назначение на себя']").trigger('click');
 
     expect(assignment.setDraft).toHaveBeenCalledWith({
-      kind: "CLAIM",
-      teamId: "team-1",
+      kind: 'CLAIM',
+      teamId: 'team-1',
     });
     expect(assignment.submit).toHaveBeenCalledOnce();
   });
 
-  it("offers exact retry after an unknown assignment outcome", async () => {
+  it('offers exact retry after an unknown assignment outcome', async () => {
     const assignment = controller();
     assignment.unknownOutcome.value = true;
     assignment.canRetry = computed(() => true);
@@ -277,18 +282,18 @@ describe("SupportAssignmentDesk", () => {
       props: {
         controller: assignment as never,
         assignment: selectedAssignment,
-        claimantLabel: "Не назначен",
-        viewersLabel: "Не загружены",
-        availabilityLabel: "Доступен",
+        claimantLabel: 'Не назначен',
+        viewersLabel: 'Не загружены',
+        availabilityLabel: 'Доступен',
       },
       global: { plugins: [PrimeVue] },
     });
 
-    await wrapper.get("button[aria-label='Повторить тот же запрос']").trigger("click");
+    await wrapper.get("button[aria-label='Повторить тот же запрос']").trigger('click');
     expect(assignment.retryUnknownOutcome).toHaveBeenCalledOnce();
   });
 
-  it("closes an open release dialog when authority is revoked", async () => {
+  it('closes an open release dialog when authority is revoked', async () => {
     const assignment = controller();
     const releaseAllowed = ref(true);
     assignment.canRelease = computed(() => releaseAllowed.value);
@@ -296,30 +301,29 @@ describe("SupportAssignmentDesk", () => {
       props: {
         controller: assignment as never,
         assignment: selectedAssignment,
-        claimantLabel: "Не назначен",
-        viewersLabel: "Не загружены",
-        availabilityLabel: "Доступен",
+        claimantLabel: 'Не назначен',
+        viewersLabel: 'Не загружены',
+        availabilityLabel: 'Доступен',
       },
       global: {
         plugins: [PrimeVue],
         stubs: {
           Dialog: {
-            props: ["visible", "header"],
+            props: ['visible', 'header'],
             template:
               '<section v-if="visible" role="dialog"><h2>{{ header }}</h2><slot /><slot name="footer" /></section>',
           },
-          Select: { template: "<select />" },
-          Textarea: { template: "<textarea />" },
+          Select: { template: '<select />' },
+          Textarea: { template: '<textarea />' },
         },
       },
     });
 
-    await wrapper.get("button[aria-label='Снять назначение']").trigger("click");
+    await wrapper.get("button[aria-label='Снять назначение']").trigger('click');
     expect(wrapper.find("[role='dialog']").exists()).toBe(true);
     releaseAllowed.value = false;
     assignment.draft.value = null;
     await wrapper.vm.$nextTick();
     expect(wrapper.find("[role='dialog']").exists()).toBe(false);
   });
-
 });

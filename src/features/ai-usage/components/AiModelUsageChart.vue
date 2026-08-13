@@ -1,75 +1,67 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed } from 'vue';
 import {
   compareDecimalStrings,
   decimalRatio,
   type DecimalString,
-} from '@/shared/lib/decimal-money'
-import type { AiModelUsage, AiUsageMetric } from '../ai-usage.model'
+} from '@/shared/lib/decimal-money';
+import type { AiModelUsage, AiUsageMetric } from '../ai-usage.model';
 import {
   formatMoney,
   formatTokenCount,
   getUsageCost,
   hasUsageCost,
   pluralizeRu,
-} from '../ai-usage.model'
+} from '../ai-usage.model';
 
 const props = defineProps<{
-  rows: AiModelUsage[]
-  metric: AiUsageMetric
-}>()
+  rows: AiModelUsage[];
+  metric: AiUsageMetric;
+}>();
 
 const sortedRows = computed(() =>
   [...props.rows]
-    .filter((row) =>
-      props.metric === 'cost' ? hasUsageCost(row) : row.records > 0,
-    )
+    .filter((row) => (props.metric === 'cost' ? hasUsageCost(row) : row.records > 0))
     .sort((left, right) =>
       props.metric === 'cost'
         ? compareDecimalStrings(getUsageCost(right), getUsageCost(left))
         : right.totalTokens - left.totalTokens,
     )
     .slice(0, 6),
-)
-const hiddenCount = computed(() =>
-  Math.max(props.rows.length - sortedRows.value.length, 0),
-)
-const maxValue = computed(() =>
-  sortedRows.value.length ? rowValue(sortedRows.value[0]!) : 0,
-)
+);
+const hiddenCount = computed(() => Math.max(props.rows.length - sortedRows.value.length, 0));
+const maxValue = computed(() => (sortedRows.value.length ? rowValue(sortedRows.value[0]!) : 0));
 
 function rowValue(row: AiModelUsage): number | DecimalString {
-  if (props.metric === 'cost') return getUsageCost(row)
-  return row.totalTokens
+  if (props.metric === 'cost') return getUsageCost(row);
+  return row.totalTokens;
 }
 
 function rowWidth(row: AiModelUsage): string {
   if (props.metric === 'cost') {
-    const value = getUsageCost(row)
-    const maximum = maxValue.value as DecimalString
-    if (compareDecimalStrings(value, '0') <= 0) return '0%'
-    return `${Math.max(decimalRatio(value, maximum) * 100, 1.5)}%`
+    const value = getUsageCost(row);
+    const maximum = maxValue.value as DecimalString;
+    if (compareDecimalStrings(value, '0') <= 0) return '0%';
+    return `${Math.max(decimalRatio(value, maximum) * 100, 1.5)}%`;
   }
-  const value = row.totalTokens
-  const maximum = maxValue.value as number
-  if (!maximum || value <= 0) return '0%'
-  return `${Math.max((value / maximum) * 100, 1.5)}%`
+  const value = row.totalTokens;
+  const maximum = maxValue.value as number;
+  if (!maximum || value <= 0) return '0%';
+  return `${Math.max((value / maximum) * 100, 1.5)}%`;
 }
 
 function rowLabel(row: AiModelUsage): string {
   if (props.metric === 'cost') {
-    return hasUsageCost(row)
-      ? formatMoney(getUsageCost(row), row.currency)
-      : 'Нет данных'
+    return hasUsageCost(row) ? formatMoney(getUsageCost(row), row.currency) : 'Нет данных';
   }
   if (!row.totalTokens && row.durationSeconds > 0) {
-    return `${formatDuration(row.durationSeconds)} аудио · токены не переданы`
+    return `${formatDuration(row.durationSeconds)} аудио · токены не переданы`;
   }
-  return `${formatTokenCount(row.totalTokens)} токенов`
+  return `${formatTokenCount(row.totalTokens)} токенов`;
 }
 
 function formatDuration(value: number): string {
-  return `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(value)} сек.`
+  return `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(value)} сек.`;
 }
 </script>
 
@@ -89,9 +81,7 @@ function formatDuration(value: number): string {
             ><strong>{{ row.model }}</strong
             ><small
               >{{ row.records }}
-              {{
-                pluralizeRu(row.records, 'операция', 'операции', 'операций')
-              }}</small
+              {{ pluralizeRu(row.records, 'операция', 'операции', 'операций') }}</small
             ></span
           >
           <span class="model-value">{{ rowLabel(row) }}</span>
@@ -108,8 +98,8 @@ function formatDuration(value: number): string {
         </div>
       </div>
       <p v-if="hiddenCount" class="chart-note">
-        Ещё {{ hiddenCount }} {{ hiddenCount === 1 ? 'модель' : 'моделей' }} не
-        показаны, но учтены в итогах.
+        Ещё {{ hiddenCount }} {{ hiddenCount === 1 ? 'модель' : 'моделей' }} не показаны, но учтены
+        в итогах.
       </p>
     </div>
     <div v-else class="chart-empty">

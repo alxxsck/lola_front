@@ -1,75 +1,63 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import type { LocationQueryRaw } from "vue-router";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import IntegrationActivityLogView from "@/features/integration-activity/ui/IntegrationActivityLogView.vue";
-import EventLogsPage from "./EventLogsPage.vue";
+import { computed, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import type { LocationQueryRaw } from 'vue-router';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import IntegrationActivityLogView from '@/features/integration-activity/ui/IntegrationActivityLogView.vue';
+import EventLogsPage from './EventLogsPage.vue';
 
-type LogsTab = "events" | "integrations";
+type LogsTab = 'events' | 'integrations';
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
-const permissions = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
+const permissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
 const canReadEvents = computed(() =>
-  hasProjectPermission(permissions.value, "project.event_logs.read"),
+  hasProjectPermission(permissions.value, 'project.event_logs.read'),
 );
 const canReadIntegrations = computed(() =>
-  hasProjectPermission(permissions.value, "project.integration_activity.read"),
+  hasProjectPermission(permissions.value, 'project.integration_activity.read'),
 );
 const tabs = computed(() =>
   [
     {
-      value: "events" as const,
-      label: "События продукта",
-      icon: "pi pi-bolt",
+      value: 'events' as const,
+      label: 'События продукта',
+      icon: 'pi pi-bolt',
       available: canReadEvents.value,
     },
     {
-      value: "integrations" as const,
-      label: "Интеграции",
-      icon: "pi pi-send",
+      value: 'integrations' as const,
+      label: 'Интеграции',
+      icon: 'pi pi-send',
       available: canReadIntegrations.value,
     },
   ].filter((tab) => tab.available),
 );
 const requestedTab = computed<LogsTab | null>(() =>
-  route.query.tab === "events" || route.query.tab === "integrations"
-    ? route.query.tab
-    : null,
+  route.query.tab === 'events' || route.query.tab === 'integrations' ? route.query.tab : null,
 );
 const activeTab = computed<LogsTab>(() => {
-  const requested = tabs.value.find(
-    (tab) => tab.value === requestedTab.value,
-  )?.value;
-  return requested ?? tabs.value[0]?.value ?? "events";
+  const requested = tabs.value.find((tab) => tab.value === requestedTab.value)?.value;
+  return requested ?? tabs.value[0]?.value ?? 'events';
 });
 
 function normalizedQuery(tab: LogsTab) {
   const query: LocationQueryRaw = { ...route.query, tab };
-  if (tab === "events") {
-    for (const key of [
-      "provider",
-      "activityType",
-      "activityStatus",
-      "createdFrom",
-      "createdTo",
-    ])
+  if (tab === 'events') {
+    for (const key of ['provider', 'activityType', 'activityStatus', 'createdFrom', 'createdTo'])
       delete query[key];
   } else {
     for (const key of [
-      "eventCode",
-      "eventId",
-      "source",
-      "status",
-      "receivedFrom",
-      "receivedTo",
-      "occurredFrom",
-      "occurredTo",
+      'eventCode',
+      'eventId',
+      'source',
+      'status',
+      'receivedFrom',
+      'receivedTo',
+      'occurredFrom',
+      'occurredTo',
     ])
       delete query[key];
   }
@@ -78,7 +66,7 @@ function normalizedQuery(tab: LogsTab) {
 
 function normalizeTab() {
   const desired = activeTab.value;
-  if (!requestedTab.value && desired === "events") return;
+  if (!requestedTab.value && desired === 'events') return;
   if (requestedTab.value === desired) return;
   void router.replace({ query: normalizedQuery(desired) });
 }
@@ -89,10 +77,7 @@ function selectTab(tab: LogsTab) {
 }
 
 onMounted(normalizeTab);
-watch(
-  () => [requestedTab.value, canReadEvents.value, canReadIntegrations.value],
-  normalizeTab,
-);
+watch(() => [requestedTab.value, canReadEvents.value, canReadIntegrations.value], normalizeTab);
 </script>
 
 <template>
@@ -102,16 +87,13 @@ watch(
         <div class="eyebrow">Observability · Project history</div>
         <h1>Журнал проекта</h1>
         <p class="subtitle">
-          События продукта и технический путь сообщений — в одном месте, но с
-          разными правилами доступа.
+          События продукта и технический путь сообщений — в одном месте, но с разными правилами
+          доступа.
         </p>
       </div>
       <div class="privacy-note">
         <i class="pi pi-shield" />
-        <span
-          ><strong>Безопасный просмотр</strong>Содержимое скрыто по
-          умолчанию</span
-        >
+        <span><strong>Безопасный просмотр</strong>Содержимое скрыто по умолчанию</span>
       </div>
     </header>
 
@@ -131,11 +113,7 @@ watch(
       </button>
     </nav>
 
-    <div
-      v-if="activeTab === 'events' && canReadEvents"
-      id="events-logs-panel"
-      role="tabpanel"
-    >
+    <div v-if="activeTab === 'events' && canReadEvents" id="events-logs-panel" role="tabpanel">
       <EventLogsPage embedded />
     </div>
     <div

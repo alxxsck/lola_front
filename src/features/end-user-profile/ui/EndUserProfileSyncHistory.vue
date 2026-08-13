@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import Button from "primevue/button";
-import Drawer from "primevue/drawer";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import { endUserProfileRepository } from "@/features/end-user-profile/api/end-user-profile-repository";
+import { ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Drawer from 'primevue/drawer';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import { endUserProfileRepository } from '@/features/end-user-profile/api/end-user-profile-repository';
 import type {
   CmsProfileSyncHistoryFieldResponseDto,
   CmsProfileSyncHistoryItemResponseDto,
-} from "@/shared/api/generated/models";
-import { formatDate } from "@/shared/lib/format";
+} from '@/shared/api/generated/models';
+import { formatDate } from '@/shared/lib/format';
 
 const props = defineProps<{
   projectId: string;
@@ -20,69 +20,69 @@ const props = defineProps<{
 const visible = ref(false);
 const loading = ref(false);
 const loadingMore = ref(false);
-const error = ref("");
+const error = ref('');
 const items = ref<CmsProfileSyncHistoryItemResponseDto[]>([]);
 const nextCursor = ref<string | null>(null);
 const failedCursor = ref<string>();
 let requestSequence = 0;
 
 const statusPresentation: Record<
-  CmsProfileSyncHistoryItemResponseDto["status"],
+  CmsProfileSyncHistoryItemResponseDto['status'],
   {
     label: string;
-    severity: "success" | "secondary" | "warn" | "danger";
+    severity: 'success' | 'secondary' | 'warn' | 'danger';
     icon: string;
   }
 > = {
   APPLIED: {
-    label: "Применено",
-    severity: "success",
-    icon: "pi pi-check",
+    label: 'Применено',
+    severity: 'success',
+    icon: 'pi pi-check',
   },
   NOOP: {
-    label: "Без изменений",
-    severity: "secondary",
-    icon: "pi pi-minus",
+    label: 'Без изменений',
+    severity: 'secondary',
+    icon: 'pi pi-minus',
   },
   DUPLICATE: {
-    label: "Повтор",
-    severity: "secondary",
-    icon: "pi pi-minus",
+    label: 'Повтор',
+    severity: 'secondary',
+    icon: 'pi pi-minus',
   },
   REJECTED_INVALID: {
-    label: "Отклонено",
-    severity: "danger",
-    icon: "pi pi-exclamation-triangle",
+    label: 'Отклонено',
+    severity: 'danger',
+    icon: 'pi pi-exclamation-triangle',
   },
   CONTRACT_OUTDATED: {
-    label: "Контракт устарел",
-    severity: "danger",
-    icon: "pi pi-exclamation-triangle",
+    label: 'Контракт устарел',
+    severity: 'danger',
+    icon: 'pi pi-exclamation-triangle',
   },
   STALE_IGNORED: {
-    label: "Устаревшие данные",
-    severity: "warn",
-    icon: "pi pi-exclamation-triangle",
+    label: 'Устаревшие данные',
+    severity: 'warn',
+    icon: 'pi pi-exclamation-triangle',
   },
   IDEMPOTENCY_CONFLICT: {
-    label: "Конфликт запроса",
-    severity: "danger",
-    icon: "pi pi-exclamation-triangle",
+    label: 'Конфликт запроса',
+    severity: 'danger',
+    icon: 'pi pi-exclamation-triangle',
   },
   SOURCE_SEQUENCE_CONFLICT: {
-    label: "Конфликт последовательности",
-    severity: "danger",
-    icon: "pi pi-exclamation-triangle",
+    label: 'Конфликт последовательности',
+    severity: 'danger',
+    icon: 'pi pi-exclamation-triangle',
   },
   OBSERVATION_CONFLICT: {
-    label: "Конфликт времени",
-    severity: "danger",
-    icon: "pi pi-exclamation-triangle",
+    label: 'Конфликт времени',
+    severity: 'danger',
+    icon: 'pi pi-exclamation-triangle',
   },
   RATE_LIMITED: {
-    label: "Лимит запросов",
-    severity: "danger",
-    icon: "pi pi-exclamation-triangle",
+    label: 'Лимит запросов',
+    severity: 'danger',
+    icon: 'pi pi-exclamation-triangle',
   },
 };
 
@@ -99,7 +99,7 @@ function reset(): void {
   items.value = [];
   nextCursor.value = null;
   failedCursor.value = undefined;
-  error.value = "";
+  error.value = '';
   loading.value = false;
   loadingMore.value = false;
 }
@@ -122,7 +122,7 @@ async function load(cursor?: string): Promise<void> {
   const endUserId = props.endUserId;
   if (cursor) loadingMore.value = true;
   else loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const page = await endUserProfileRepository.history(projectId, endUserId, {
       limit: 25,
@@ -145,7 +145,7 @@ async function load(cursor?: string): Promise<void> {
       projectId === props.projectId &&
       endUserId === props.endUserId
     ) {
-      error.value = "Не удалось загрузить историю профиля.";
+      error.value = 'Не удалось загрузить историю профиля.';
       failedCursor.value = cursor;
     }
   } finally {
@@ -164,12 +164,12 @@ function retry(): Promise<void> {
   return load(failedCursor.value);
 }
 
-function statusDisplay(status: CmsProfileSyncHistoryItemResponseDto["status"]) {
+function statusDisplay(status: CmsProfileSyncHistoryItemResponseDto['status']) {
   return statusPresentation[status];
 }
 
-function sourceLabel(source: CmsProfileSyncHistoryItemResponseDto["source"]) {
-  return source === "SESSION" ? "Сессия" : "Profile Sync API";
+function sourceLabel(source: CmsProfileSyncHistoryItemResponseDto['source']) {
+  return source === 'SESSION' ? 'Сессия' : 'Profile Sync API';
 }
 
 function fieldLabel(field: CmsProfileSyncHistoryFieldResponseDto): string {
@@ -211,13 +211,7 @@ function fieldLabel(field: CmsProfileSyncHistoryFieldResponseDto): string {
     <Message v-if="error" severity="error" :closable="false">
       <div class="error-message">
         <span>{{ error }}</span>
-        <Button
-          label="Повторить"
-          size="small"
-          text
-          aria-label="Повторить"
-          @click="retry"
-        />
+        <Button label="Повторить" size="small" text aria-label="Повторить" @click="retry" />
       </div>
     </Message>
 
@@ -225,8 +219,8 @@ function fieldLabel(field: CmsProfileSyncHistoryFieldResponseDto): string {
       <i class="pi pi-info-circle" aria-hidden="true" />
       <span>
         <strong>Как читать diff.</strong>
-        Передано — поля, пришедшие в этой попытке, а не обязательно новые
-        значения. Значения профиля в истории не сохраняются.
+        Передано — поля, пришедшие в этой попытке, а не обязательно новые значения. Значения профиля
+        в истории не сохраняются.
       </span>
     </p>
 
@@ -240,11 +234,7 @@ function fieldLabel(field: CmsProfileSyncHistoryFieldResponseDto): string {
       <p>Здесь появятся попытки синхронизации профиля.</p>
     </div>
 
-    <ol
-      v-if="items.length"
-      class="history-timeline"
-      aria-label="Попытки синхронизации"
-    >
+    <ol v-if="items.length" class="history-timeline" aria-label="Попытки синхронизации">
       <li v-for="item in items" :key="item.id">
         <span
           class="timeline-marker"
@@ -264,9 +254,7 @@ function fieldLabel(field: CmsProfileSyncHistoryFieldResponseDto): string {
               />
               <span>{{ sourceLabel(item.source) }}</span>
             </div>
-            <time :datetime="item.receivedAt">{{
-              formatDate(item.receivedAt)
-            }}</time>
+            <time :datetime="item.receivedAt">{{ formatDate(item.receivedAt) }}</time>
           </header>
 
           <div
@@ -284,44 +272,29 @@ function fieldLabel(field: CmsProfileSyncHistoryFieldResponseDto): string {
             </span>
           </div>
 
-          <div
-            v-if="item.submittedFields.length || item.removedFields.length"
-            class="field-diff"
-          >
-            <section
-              v-if="item.submittedFields.length"
-              class="field-change sent"
-            >
+          <div v-if="item.submittedFields.length || item.removedFields.length" class="field-diff">
+            <section v-if="item.submittedFields.length" class="field-change sent">
               <header>
                 <span><i class="pi pi-plus" aria-hidden="true" /></span>
                 <strong>Передано</strong>
                 <small>{{ item.submittedFields.length }}</small>
               </header>
               <ul>
-                <li
-                  v-for="field in item.submittedFields"
-                  :key="field.definitionId"
-                >
+                <li v-for="field in item.submittedFields" :key="field.definitionId">
                   <span>{{ fieldLabel(field) }}</span>
                   <code v-if="field.key">{{ field.key }}</code>
                 </li>
               </ul>
             </section>
 
-            <section
-              v-if="item.removedFields.length"
-              class="field-change removed"
-            >
+            <section v-if="item.removedFields.length" class="field-change removed">
               <header>
                 <span><i class="pi pi-minus" aria-hidden="true" /></span>
                 <strong>Удалено</strong>
                 <small>{{ item.removedFields.length }}</small>
               </header>
               <ul>
-                <li
-                  v-for="field in item.removedFields"
-                  :key="field.definitionId"
-                >
+                <li v-for="field in item.removedFields" :key="field.definitionId">
                   <span>{{ fieldLabel(field) }}</span>
                   <code v-if="field.key">{{ field.key }}</code>
                 </li>
@@ -339,14 +312,9 @@ function fieldLabel(field: CmsProfileSyncHistoryFieldResponseDto): string {
               <strong>Ошибки синхронизации</strong>
             </header>
             <ul>
-              <li
-                v-for="issue in item.issues"
-                :key="`${issue.code}-${issue.definitionId ?? ''}`"
-              >
+              <li v-for="issue in item.issues" :key="`${issue.code}-${issue.definitionId ?? ''}`">
                 <code>{{ issue.code }}</code>
-                <span v-if="issue.definitionId"
-                  >Поле {{ issue.definitionId }}</span
-                >
+                <span v-if="issue.definitionId">Поле {{ issue.definitionId }}</span>
               </li>
             </ul>
           </section>
@@ -361,8 +329,7 @@ function fieldLabel(field: CmsProfileSyncHistoryFieldResponseDto): string {
                   <template
                     v-if="
                       item.activeContractRevision &&
-                      item.activeContractRevision !==
-                        item.declaredContractRevision
+                      item.activeContractRevision !== item.declaredContractRevision
                     "
                   >
                     → {{ item.activeContractRevision }}
@@ -372,14 +339,12 @@ function fieldLabel(field: CmsProfileSyncHistoryFieldResponseDto): string {
               <div>
                 <dt>Наблюдалось</dt>
                 <dd>
-                  {{
-                    item.observedAt ? formatDate(item.observedAt) : "Не указано"
-                  }}
+                  {{ item.observedAt ? formatDate(item.observedAt) : 'Не указано' }}
                 </dd>
               </div>
               <div>
                 <dt>Последовательность</dt>
-                <dd>{{ item.sourceSequence ?? "Не указана" }}</dd>
+                <dd>{{ item.sourceSequence ?? 'Не указана' }}</dd>
               </div>
               <div>
                 <dt>Outcome</dt>
@@ -548,20 +513,20 @@ function fieldLabel(field: CmsProfileSyncHistoryFieldResponseDto): string {
   left: 50%;
   width: 1px;
   background: var(--border-default);
-  content: "";
+  content: '';
 }
 .history-timeline > li:last-child .timeline-marker::after {
   display: none;
 }
-.timeline-marker[data-status="success"] {
+.timeline-marker[data-status='success'] {
   background: var(--status-success-soft);
   color: var(--status-success-text);
 }
-.timeline-marker[data-status="danger"] {
+.timeline-marker[data-status='danger'] {
   background: var(--status-danger-soft);
   color: var(--status-danger-text);
 }
-.timeline-marker[data-status="warn"] {
+.timeline-marker[data-status='warn'] {
   background: var(--status-warning-soft);
   color: var(--status-warning-text);
 }
@@ -705,8 +670,7 @@ function fieldLabel(field: CmsProfileSyncHistoryFieldResponseDto): string {
 .attempt-issues {
   gap: 8px;
   padding: 11px 13px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-danger) 24%, var(--border-default));
+  border: 1px solid color-mix(in srgb, var(--status-danger) 24%, var(--border-default));
   border-radius: 12px;
   background: color-mix(in srgb, var(--status-danger) 5%, var(--surface-card));
 }

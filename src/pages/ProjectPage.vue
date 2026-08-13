@@ -1,45 +1,34 @@
 <script setup lang="ts">
-import {
-  computed,
-  onBeforeUnmount,
-  onMounted,
-  reactive,
-  ref,
-  watch,
-} from "vue";
-import { onBeforeRouteLeave } from "vue-router";
-import { useToast } from "primevue/usetoast";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Textarea from "primevue/textarea";
-import ToggleSwitch from "primevue/toggleswitch";
-import AiUsageSection from "@/features/ai-usage/AiUsageSection.vue";
-import ActivitySettingsSection from "@/features/activity-settings/ActivitySettingsSection.vue";
-import ScenarioAdmissionSettingsSection from "@/features/scenario-admission/ScenarioAdmissionSettingsSection.vue";
-import UserMemorySettingsSection from "@/features/user-memory/ui/UserMemorySettingsSection.vue";
-import AIReviewSettingsSection from "@/features/ai-review/ui/AIReviewSettingsSection.vue";
-import EventQueryPolicySection from "@/features/event-query/ui/EventQueryPolicySection.vue";
-import AiModelSettingsSection from "@/features/translation-settings/ui/AiModelSettingsSection.vue";
-import TranslationSettingsSection from "@/features/translation-settings/ui/TranslationSettingsSection.vue";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { onBeforeRouteLeave } from 'vue-router';
+import { useToast } from 'primevue/usetoast';
+import Button from 'primevue/button';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Textarea from 'primevue/textarea';
+import ToggleSwitch from 'primevue/toggleswitch';
+import AiUsageSection from '@/features/ai-usage/AiUsageSection.vue';
+import ActivitySettingsSection from '@/features/activity-settings/ActivitySettingsSection.vue';
+import ScenarioAdmissionSettingsSection from '@/features/scenario-admission/ScenarioAdmissionSettingsSection.vue';
+import UserMemorySettingsSection from '@/features/user-memory/ui/UserMemorySettingsSection.vue';
+import AIReviewSettingsSection from '@/features/ai-review/ui/AIReviewSettingsSection.vue';
+import EventQueryPolicySection from '@/features/event-query/ui/EventQueryPolicySection.vue';
+import AiModelSettingsSection from '@/features/translation-settings/ui/AiModelSettingsSection.vue';
+import TranslationSettingsSection from '@/features/translation-settings/ui/TranslationSettingsSection.vue';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { attributeContractRepository } from '@/features/end-user-attributes/api/attribute-contract-repository';
 import {
   fetchProjectVoiceCatalog,
   type ProjectVoiceCatalogItem,
-} from "@/features/project-voice/project-voice.api";
-import type { AttributeContractDraftFieldDto } from "@/shared/api/generated/models";
-import { repository } from "@/shared/api/repository";
-import type {
-  ActivitySettings,
-  AuthProject,
-  Project,
-} from "@/shared/types/domain";
-import { localeDisplayName } from "@/shared/lib/locale";
-import ProjectSettingsSectionHeader from "@/shared/ui/ProjectSettingsSectionHeader.vue";
+} from '@/features/project-voice/project-voice.api';
+import type { AttributeContractDraftFieldDto } from '@/shared/api/generated/models';
+import { repository } from '@/shared/api/repository';
+import type { ActivitySettings, AuthProject, Project } from '@/shared/types/domain';
+import { localeDisplayName } from '@/shared/lib/locale';
+import ProjectSettingsSectionHeader from '@/shared/ui/ProjectSettingsSectionHeader.vue';
 
 interface ProjectForm {
   name: string;
@@ -57,49 +46,32 @@ interface ProjectForm {
 
 function isVoiceId(value: unknown): value is string {
   return (
-    typeof value === "string" &&
-    value.length > 0 &&
-    value.length <= 64 &&
-    value.trim() === value
+    typeof value === 'string' && value.length > 0 && value.length <= 64 && value.trim() === value
   );
 }
 
 const auth = useAuthStore();
-const projectPermissions = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
+const projectPermissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
 const canEditSettings = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.settings.write"),
+  hasProjectPermission(projectPermissions.value, 'project.settings.write'),
 );
 const canReadSettings = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.settings.read"),
+  hasProjectPermission(projectPermissions.value, 'project.settings.read'),
 );
 const canReadProfileContract = computed(() =>
-  hasProjectPermission(
-    projectPermissions.value,
-    "project.profile_contract.read",
-  ),
+  hasProjectPermission(projectPermissions.value, 'project.profile_contract.read'),
 );
 const canWriteProfileContract = computed(() =>
-  hasProjectPermission(
-    projectPermissions.value,
-    "project.profile_contract.write",
-  ),
+  hasProjectPermission(projectPermissions.value, 'project.profile_contract.write'),
 );
 const canReadAiUsage = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.ai_usage.read"),
+  hasProjectPermission(projectPermissions.value, 'project.ai_usage.read'),
 );
 const canPreviewEventQueries = computed(() =>
-  hasProjectPermission(
-    projectPermissions.value,
-    "project.event_query_policy.preview",
-  ),
+  hasProjectPermission(projectPermissions.value, 'project.event_query_policy.preview'),
 );
 const canManageEventQueryPolicy = computed(() =>
-  hasProjectPermission(
-    projectPermissions.value,
-    "project.event_query_policy.manage",
-  ),
+  hasProjectPermission(projectPermissions.value, 'project.event_query_policy.manage'),
 );
 const toast = useToast();
 const loading = ref(true);
@@ -109,19 +81,19 @@ const localeSettingsExpanded = ref(false);
 const connectionSettingsExpanded = ref(false);
 const assistantSettingsExpanded = ref(false);
 const voiceSettingsExpanded = ref(false);
-const error = ref("");
-const validationError = ref("");
+const error = ref('');
+const validationError = ref('');
 const project = ref<AuthProject | null>(null);
 const settingsProject = ref<Project | null>(null);
 const localeField = ref<AttributeContractDraftFieldDto | null>(null);
 const activitySettings = ref<ActivitySettings | null>(null);
-const initialSnapshot = ref("");
+const initialSnapshot = ref('');
 const aiModelSettingsDirty = ref(false);
 const translationSettingsDirty = ref(false);
 const systemPromptControl = ref<HTMLElement | null>(null);
 const voiceCatalogItems = ref<ProjectVoiceCatalogItem[]>([]);
 const voiceCatalogLoading = ref(false);
-const voiceCatalogError = ref("");
+const voiceCatalogError = ref('');
 const voiceCatalogStale = ref(false);
 let voiceCatalogController: AbortController | null = null;
 let systemPromptResizeState: {
@@ -132,31 +104,26 @@ let systemPromptResizeState: {
 } | null = null;
 let loadProjectGeneration = 0;
 const form = reactive<ProjectForm>({
-  name: "",
-  description: "",
-  assistantName: "",
-  systemPrompt: "",
-  apiBaseUrl: "",
-  wsUrl: "",
-  allowedOrigins: "",
+  name: '',
+  description: '',
+  assistantName: '',
+  systemPrompt: '',
+  apiBaseUrl: '',
+  wsUrl: '',
+  allowedOrigins: '',
   voiceEnabled: false,
   voiceTranscriptEnabled: true,
-  voice: "eve",
-  voiceInstructions: "",
+  voice: 'eve',
+  voiceInstructions: '',
 });
 const voiceOptions = computed(() => {
-  const currentSupported = voiceCatalogItems.value.some(
-    (voice) => voice.id === form.voice,
-  );
+  const currentSupported = voiceCatalogItems.value.some((voice) => voice.id === form.voice);
   const options = voiceCatalogItems.value.map((voice) => ({
     label: `${voice.name} · ${voice.language}`,
     value: voice.id,
     disabled: false,
   }));
-  if (
-    isVoiceId(form.voice) &&
-    !options.some((option) => option.value === form.voice)
-  ) {
+  if (isVoiceId(form.voice) && !options.some((option) => option.value === form.voice)) {
     options.unshift({
       label: `Текущий голос · ${form.voice}`,
       value: form.voice,
@@ -170,24 +137,17 @@ const voiceOptions = computed(() => {
   return options;
 });
 const voiceCatalogIsAuthoritative = computed(
-  () =>
-    !voiceCatalogLoading.value &&
-    !voiceCatalogError.value &&
-    !voiceCatalogStale.value,
+  () => !voiceCatalogLoading.value && !voiceCatalogError.value && !voiceCatalogStale.value,
 );
 const currentVoiceSupported = computed(() =>
   voiceCatalogItems.value.some((voice) => voice.id === form.voice),
 );
 const hasValidVoiceOption = computed(
   () =>
-    isVoiceId(form.voice) &&
-    (currentVoiceSupported.value || !voiceCatalogIsAuthoritative.value),
+    isVoiceId(form.voice) && (currentVoiceSupported.value || !voiceCatalogIsAuthoritative.value),
 );
 const savedVoiceUnsupported = computed(
-  () =>
-    isVoiceId(form.voice) &&
-    voiceCatalogIsAuthoritative.value &&
-    !currentVoiceSupported.value,
+  () => isVoiceId(form.voice) && voiceCatalogIsAuthoritative.value && !currentVoiceSupported.value,
 );
 const voiceSelectorDisabled = computed(
   () =>
@@ -198,53 +158,36 @@ const voiceSelectorDisabled = computed(
 
 const formSnapshot = computed(() => JSON.stringify(form));
 const isDirty = computed(
-  () =>
-    Boolean(initialSnapshot.value) &&
-    formSnapshot.value !== initialSnapshot.value,
+  () => Boolean(initialSnapshot.value) && formSnapshot.value !== initialSnapshot.value,
 );
 const hasUnsavedChanges = computed(
-  () =>
-    isDirty.value ||
-    aiModelSettingsDirty.value ||
-    translationSettingsDirty.value,
+  () => isDirty.value || aiModelSettingsDirty.value || translationSettingsDirty.value,
 );
-const assistantInitial = computed(
-  () => form.assistantName.trim().slice(0, 1).toUpperCase() || "L",
-);
+const assistantInitial = computed(() => form.assistantName.trim().slice(0, 1).toUpperCase() || 'L');
 const contentLocales = computed(() =>
   (localeField.value?.constraints.allowedValues ?? []).filter(
-    (value): value is string => typeof value === "string",
+    (value): value is string => typeof value === 'string',
   ),
 );
-const contentDefaultLocale = computed(
-  () => localeField.value?.constraints.defaultLocale ?? "",
-);
+const contentDefaultLocale = computed(() => localeField.value?.constraints.defaultLocale ?? '');
 
 function fillForm(nextProject: Project) {
   settingsProject.value = nextProject;
   project.value = nextProject;
   Object.assign(form, {
     name: nextProject.name,
-    description: nextProject.settings.description ?? "",
+    description: nextProject.settings.description ?? '',
     assistantName: nextProject.assistantName,
     systemPrompt: nextProject.systemPrompt,
     apiBaseUrl:
-      typeof nextProject.settings.apiBaseUrl === "string"
-        ? nextProject.settings.apiBaseUrl
-        : "",
-    wsUrl:
-      typeof nextProject.settings.wsUrl === "string"
-        ? nextProject.settings.wsUrl
-        : "",
+      typeof nextProject.settings.apiBaseUrl === 'string' ? nextProject.settings.apiBaseUrl : '',
+    wsUrl: typeof nextProject.settings.wsUrl === 'string' ? nextProject.settings.wsUrl : '',
     allowedOrigins: Array.isArray(nextProject.settings.allowedOrigins)
-      ? nextProject.settings.allowedOrigins.join("\n")
-      : "",
+      ? nextProject.settings.allowedOrigins.join('\n')
+      : '',
     voiceEnabled: nextProject.settings.voiceEnabled === true,
-    voiceTranscriptEnabled:
-      nextProject.settings.voiceTranscriptEnabled !== false,
-    voice: isVoiceId(nextProject.settings.voice)
-      ? nextProject.settings.voice
-      : "eve",
+    voiceTranscriptEnabled: nextProject.settings.voiceTranscriptEnabled !== false,
+    voice: isVoiceId(nextProject.settings.voice) ? nextProject.settings.voice : 'eve',
     voiceInstructions: nextProject.voiceInstructions,
   });
   initialSnapshot.value = JSON.stringify(form);
@@ -255,24 +198,18 @@ async function loadVoiceCatalog(projectId: string) {
   const controller = new AbortController();
   voiceCatalogController = controller;
   voiceCatalogLoading.value = true;
-  voiceCatalogError.value = "";
+  voiceCatalogError.value = '';
   try {
-    const catalog = await fetchProjectVoiceCatalog(
-      projectId,
-      controller.signal,
-    );
+    const catalog = await fetchProjectVoiceCatalog(projectId, controller.signal);
     if (voiceCatalogController !== controller) return;
     voiceCatalogItems.value = catalog.items;
     voiceCatalogStale.value = catalog.stale;
   } catch (cause) {
-    if (voiceCatalogController !== controller || controller.signal.aborted)
-      return;
+    if (voiceCatalogController !== controller || controller.signal.aborted) return;
     voiceCatalogItems.value = [];
     voiceCatalogStale.value = false;
     voiceCatalogError.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить каталог голосов xAI";
+      cause instanceof Error ? cause.message : 'Не удалось загрузить каталог голосов xAI';
   } finally {
     if (voiceCatalogController === controller) {
       voiceCatalogLoading.value = false;
@@ -284,71 +221,61 @@ async function loadProject() {
   const generation = ++loadProjectGeneration;
   const selectedProject = auth.project;
   if (!selectedProject) {
-    error.value = "Текущий проект не найден. Войдите заново.";
+    error.value = 'Текущий проект не найден. Войдите заново.';
     loading.value = false;
     return;
   }
   const projectId = selectedProject.id;
 
   loading.value = true;
-  error.value = "";
+  error.value = '';
   if (canReadSettings.value) void loadVoiceCatalog(projectId);
   else {
     voiceCatalogController?.abort();
     voiceCatalogItems.value = [];
-    voiceCatalogError.value = "";
+    voiceCatalogError.value = '';
     voiceCatalogStale.value = false;
   }
   try {
     const [nextProject, workspace] = await Promise.all([
-      canReadSettings.value
-        ? repository.getProject(projectId)
-        : Promise.resolve(null),
+      canReadSettings.value ? repository.getProject(projectId) : Promise.resolve(null),
       canReadProfileContract.value
         ? attributeContractRepository.workspace(projectId).catch(() => null)
         : Promise.resolve(null),
     ]);
-    if (generation !== loadProjectGeneration || auth.project?.id !== projectId)
-      return;
+    if (generation !== loadProjectGeneration || auth.project?.id !== projectId) return;
     if (nextProject) fillForm(nextProject);
     else {
       settingsProject.value = null;
       project.value = selectedProject;
-      initialSnapshot.value = "";
+      initialSnapshot.value = '';
     }
     localeField.value =
       workspace?.currentPublication?.document.fields.find(
-        (field) =>
-          field.semanticRole === "LOCALE" && field.lifecycle === "ACTIVE",
+        (field) => field.semanticRole === 'LOCALE' && field.lifecycle === 'ACTIVE',
       ) ?? null;
   } catch (cause) {
     if (generation !== loadProjectGeneration) return;
-    error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить настройки проекта";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить настройки проекта';
   } finally {
     if (generation === loadProjectGeneration) loading.value = false;
   }
 }
 
 function validate() {
-  validationError.value = "";
-  if (!form.name.trim()) validationError.value = "Укажите название проекта.";
-  else if (!form.assistantName.trim())
-    validationError.value = "Укажите имя ассистента.";
+  validationError.value = '';
+  if (!form.name.trim()) validationError.value = 'Укажите название проекта.';
+  else if (!form.assistantName.trim()) validationError.value = 'Укажите имя ассистента.';
   else if (!form.systemPrompt.trim())
-    validationError.value = "Добавьте системную инструкцию для ассистента.";
-  else if (form.apiBaseUrl && !form.apiBaseUrl.startsWith("https://"))
-    validationError.value = "API URL должен использовать HTTPS.";
-  else if (form.wsUrl && !form.wsUrl.startsWith("wss://"))
-    validationError.value = "WebSocket URL должен использовать WSS.";
+    validationError.value = 'Добавьте системную инструкцию для ассистента.';
+  else if (form.apiBaseUrl && !form.apiBaseUrl.startsWith('https://'))
+    validationError.value = 'API URL должен использовать HTTPS.';
+  else if (form.wsUrl && !form.wsUrl.startsWith('wss://'))
+    validationError.value = 'WebSocket URL должен использовать WSS.';
   else if (!hasValidVoiceOption.value)
-    validationError.value =
-      "Выберите доступный голос Retenive перед сохранением проекта.";
+    validationError.value = 'Выберите доступный голос Retenive перед сохранением проекта.';
   else if (form.voiceInstructions.length > 20_000)
-    validationError.value =
-      "Инструкция для голосовой модели не должна превышать 20 000 символов.";
+    validationError.value = 'Инструкция для голосовой модели не должна превышать 20 000 символов.';
   return !validationError.value;
 }
 
@@ -377,18 +304,16 @@ async function saveProject() {
   if (!currentProject || !canEditSettings.value || !validate()) return;
 
   saving.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const nextSettings: Record<string, unknown> = {
       ...currentProject.settings,
-      ...(activitySettings.value
-        ? { timezone: activitySettings.value.timezone }
-        : {}),
+      ...(activitySettings.value ? { timezone: activitySettings.value.timezone } : {}),
       description: form.description.trim(),
       apiBaseUrl: form.apiBaseUrl.trim(),
       wsUrl: form.wsUrl.trim(),
       allowedOrigins: form.allowedOrigins
-        .split("\n")
+        .split('\n')
         .map((value) => value.trim())
         .filter(Boolean),
       voiceEnabled: form.voiceEnabled,
@@ -407,19 +332,16 @@ async function saveProject() {
     fillForm(savedProject);
     auth.updateProject(savedProject);
     toast.add({
-      severity: "success",
-      summary: "Настройки сохранены",
-      detail: "Проект и ассистент обновлены.",
+      severity: 'success',
+      summary: 'Настройки сохранены',
+      detail: 'Проект и ассистент обновлены.',
       life: 3200,
     });
   } catch (cause) {
-    error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось сохранить настройки проекта";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось сохранить настройки проекта';
     toast.add({
-      severity: "error",
-      summary: "Ошибка сохранения",
+      severity: 'error',
+      summary: 'Ошибка сохранения',
       detail: error.value,
       life: 4500,
     });
@@ -429,26 +351,15 @@ async function saveProject() {
 }
 
 function getSystemPromptTextarea() {
-  return (
-    systemPromptControl.value?.querySelector<HTMLTextAreaElement>("textarea") ??
-    null
-  );
+  return systemPromptControl.value?.querySelector<HTMLTextAreaElement>('textarea') ?? null;
 }
 
 function getTextareaMinHeight(textarea: HTMLTextAreaElement) {
   const styles = window.getComputedStyle(textarea);
   const lineHeight = Number.parseFloat(styles.lineHeight);
-  const verticalSpacing = [
-    "paddingTop",
-    "paddingBottom",
-    "borderTopWidth",
-    "borderBottomWidth",
-  ]
+  const verticalSpacing = ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth']
     .map(
-      (property) =>
-        Number.parseFloat(
-          styles[property as keyof CSSStyleDeclaration] as string,
-        ) || 0,
+      (property) => Number.parseFloat(styles[property as keyof CSSStyleDeclaration] as string) || 0,
     )
     .reduce((total, value) => total + value, 0);
 
@@ -468,9 +379,9 @@ function startSystemPromptResize(event: PointerEvent) {
     startHeight: textarea.offsetHeight,
     minHeight: getTextareaMinHeight(textarea),
   };
-  window.addEventListener("pointermove", resizeSystemPrompt);
-  window.addEventListener("pointerup", stopSystemPromptResize);
-  window.addEventListener("pointercancel", stopSystemPromptResize);
+  window.addEventListener('pointermove', resizeSystemPrompt);
+  window.addEventListener('pointerup', stopSystemPromptResize);
+  window.addEventListener('pointercancel', stopSystemPromptResize);
 }
 
 function resizeSystemPrompt(event: PointerEvent) {
@@ -484,9 +395,7 @@ function resizeSystemPrompt(event: PointerEvent) {
 
   const height = Math.max(
     systemPromptResizeState.minHeight,
-    systemPromptResizeState.startHeight +
-      event.clientY -
-      systemPromptResizeState.startY,
+    systemPromptResizeState.startHeight + event.clientY - systemPromptResizeState.startY,
   );
   textarea.style.height = `${height}px`;
 }
@@ -494,9 +403,9 @@ function resizeSystemPrompt(event: PointerEvent) {
 function stopSystemPromptResize(event?: PointerEvent) {
   if (event && event.pointerId !== systemPromptResizeState?.pointerId) return;
   systemPromptResizeState = null;
-  window.removeEventListener("pointermove", resizeSystemPrompt);
-  window.removeEventListener("pointerup", stopSystemPromptResize);
-  window.removeEventListener("pointercancel", stopSystemPromptResize);
+  window.removeEventListener('pointermove', resizeSystemPrompt);
+  window.removeEventListener('pointerup', stopSystemPromptResize);
+  window.removeEventListener('pointercancel', stopSystemPromptResize);
 }
 
 function resizeSystemPromptBy(offset: number) {
@@ -508,8 +417,7 @@ function resizeSystemPromptBy(offset: number) {
 
 function confirmDiscard() {
   return (
-    !hasUnsavedChanges.value ||
-    window.confirm("Есть несохранённые изменения. Покинуть страницу?")
+    !hasUnsavedChanges.value || window.confirm('Есть несохранённые изменения. Покинуть страницу?')
   );
 }
 
@@ -520,13 +428,13 @@ function beforeUnload(event: BeforeUnloadEvent) {
 
 onBeforeRouteLeave(confirmDiscard);
 onMounted(() => {
-  window.addEventListener("beforeunload", beforeUnload);
+  window.addEventListener('beforeunload', beforeUnload);
   void loadProject();
 });
 watch(() => auth.project?.id, loadProject);
 onBeforeUnmount(() => {
   voiceCatalogController?.abort();
-  window.removeEventListener("beforeunload", beforeUnload);
+  window.removeEventListener('beforeunload', beforeUnload);
   stopSystemPromptResize();
 });
 </script>
@@ -544,8 +452,7 @@ onBeforeUnmount(() => {
       </div>
       <div v-if="project" class="project-status">
         <span class="status-dot" /><span
-          ><strong>Проект активен</strong
-          ><small class="mono">{{ project.slug }}</small></span
+          ><strong>Проект активен</strong><small class="mono">{{ project.slug }}</small></span
         >
       </div>
     </header>
@@ -597,11 +504,7 @@ onBeforeUnmount(() => {
               tone="lime"
               content-id="project-about-settings"
             />
-            <div
-              id="project-about-settings"
-              v-show="aboutSettingsExpanded"
-              class="form-grid"
-            >
+            <div id="project-about-settings" v-show="aboutSettingsExpanded" class="form-grid">
               <div class="field full">
                 <label for="project-name">Название проекта</label
                 ><InputText
@@ -672,10 +575,7 @@ onBeforeUnmount(() => {
                 <i class="pi pi-language" />
                 <div>
                   <strong>Языки контента ещё не настроены</strong>
-                  <p>
-                    Создайте одно поле пользователя с назначением «Язык
-                    контента».
-                  </p>
+                  <p>Создайте одно поле пользователя с назначением «Язык контента».</p>
                 </div>
                 <Button
                   v-if="canWriteProfileContract"
@@ -752,19 +652,11 @@ onBeforeUnmount(() => {
                   />
                 </div>
               </div>
-              <RouterLink
-                to="/profile-fields"
-                class="contract-link surface-soft"
-              >
-                <span class="contract-link-icon"
-                  ><i class="pi pi-id-card"
-                /></span>
+              <RouterLink to="/profile-fields" class="contract-link surface-soft">
+                <span class="contract-link-icon"><i class="pi pi-id-card" /></span>
                 <span
                   ><strong>Поля профиля пользователей</strong
-                  ><small
-                    >Какие данные получает Retenive и где их можно
-                    использовать</small
-                  ></span
+                  ><small>Какие данные получает Retenive и где их можно использовать</small></span
                 >
                 <i class="pi pi-arrow-right" />
               </RouterLink>
@@ -821,7 +713,7 @@ onBeforeUnmount(() => {
                   <span>{{ assistantInitial }}</span>
                 </div>
                 <small>Предпросмотр</small
-                ><strong>{{ form.assistantName || "Имя ассистента" }}</strong>
+                ><strong>{{ form.assistantName || 'Имя ассистента' }}</strong>
               </div>
               <div class="form-grid">
                 <div class="field">
@@ -904,18 +796,11 @@ onBeforeUnmount(() => {
               tone="blue"
               content-id="voice-chat-settings"
             />
-            <div
-              id="voice-chat-settings"
-              v-show="voiceSettingsExpanded"
-              class="voice-settings"
-            >
+            <div id="voice-chat-settings" v-show="voiceSettingsExpanded" class="voice-settings">
               <div class="setting-toggle surface-soft">
                 <div>
                   <strong>Разрешить голосовые диалоги</strong
-                  ><span
-                    >Пока настройка выключена, начать голосовой разговор
-                    нельзя.</span
-                  >
+                  ><span>Пока настройка выключена, начать голосовой разговор нельзя.</span>
                 </div>
                 <ToggleSwitch
                   v-model="form.voiceEnabled"
@@ -938,14 +823,9 @@ onBeforeUnmount(() => {
                     :disabled="voiceSelectorDisabled"
                   />
                   <small class="field-hint"
-                    >Используется в голосовом чате и командах «Озвучить
-                    текст».</small
+                    >Используется в голосовом чате и командах «Озвучить текст».</small
                   >
-                  <div
-                    v-if="voiceCatalogError"
-                    class="voice-catalog-status warning"
-                    role="status"
-                  >
+                  <div v-if="voiceCatalogError" class="voice-catalog-status warning" role="status">
                     <span>{{ voiceCatalogError }}</span>
                     <Button
                       label="Повторить"
@@ -966,8 +846,7 @@ onBeforeUnmount(() => {
                     v-else-if="savedVoiceUnsupported"
                     class="voice-catalog-status warning"
                     role="status"
-                    >Сохранённый голос больше недоступен. Выберите новый перед
-                    сохранением.</small
+                    >Сохранённый голос больше недоступен. Выберите новый перед сохранением.</small
                   >
                 </div>
                 <div
@@ -976,10 +855,7 @@ onBeforeUnmount(() => {
                 >
                   <div>
                     <strong>Сохранять транскрипты</strong
-                    ><span
-                      >Реплики голосового диалога появятся в обычной истории
-                      сообщений.</span
-                    >
+                    ><span>Реплики голосового диалога появятся в обычной истории сообщений.</span>
                   </div>
                   <ToggleSwitch
                     v-model="form.voiceTranscriptEnabled"
@@ -993,14 +869,12 @@ onBeforeUnmount(() => {
                   class="setting-warning"
                   role="status"
                 >
-                  Обращения из голосовых диалогов нельзя определять и обновлять
-                  по содержанию без сохранённого финального транскрипта.
+                  Обращения из голосовых диалогов нельзя определять и обновлять по содержанию без
+                  сохранённого финального транскрипта.
                 </p>
               </div>
               <div class="field">
-                <label for="voice-instructions"
-                  >Инструкция для голосовой модели</label
-                >
+                <label for="voice-instructions">Инструкция для голосовой модели</label>
                 <Textarea
                   id="voice-instructions"
                   v-model="form.voiceInstructions"
@@ -1010,9 +884,7 @@ onBeforeUnmount(() => {
                   placeholder="Опишите тон, темп, эмоции и манеру речи"
                   :disabled="saving || !canEditSettings"
                 />
-                <small
-                  >{{ form.voiceInstructions.length }}/20 000 символов</small
-                >
+                <small>{{ form.voiceInstructions.length }}/20 000 символов</small>
               </div>
             </div>
           </section>
@@ -1032,22 +904,20 @@ onBeforeUnmount(() => {
             <span>Public key</span><code>{{ project.publicKey }}</code>
           </div>
           <p>
-            <i class="pi pi-info-circle" /> Идентификаторы назначаются при
-            создании проекта и недоступны для редактирования.
+            <i class="pi pi-info-circle" /> Идентификаторы назначаются при создании проекта и
+            недоступны для редактирования.
           </p>
         </section>
 
         <section v-if="canReadSettings" class="save-card">
           <div>
             <strong>{{
-              isDirty
-                ? "Есть несохранённые изменения"
-                : "Все изменения сохранены"
+              isDirty ? 'Есть несохранённые изменения' : 'Все изменения сохранены'
             }}</strong
             ><span>{{
               isDirty
-                ? "Сохраните настройки, чтобы применить их в проекте."
-                : "Настройки проекта актуальны."
+                ? 'Сохраните настройки, чтобы применить их в проекте.'
+                : 'Настройки проекта актуальны.'
             }}</span>
           </div>
           <Message v-if="validationError" severity="warn" size="small">{{
@@ -1066,10 +936,7 @@ onBeforeUnmount(() => {
       </aside>
     </div>
 
-    <AiUsageSection
-      v-if="!loading && project && canReadAiUsage"
-      :project-id="project.id"
-    />
+    <AiUsageSection v-if="!loading && project && canReadAiUsage" :project-id="project.id" />
   </div>
 </template>
 
@@ -1206,11 +1073,7 @@ onBeforeUnmount(() => {
   width: 76px;
   height: 76px;
   border-radius: 50%;
-  background: linear-gradient(
-    145deg,
-    var(--status-accent),
-    var(--action-primary)
-  );
+  background: linear-gradient(145deg, var(--status-accent), var(--action-primary));
   box-shadow:
     0 0 0 8px var(--status-accent-soft),
     0 13px 26px color-mix(in srgb, var(--status-accent) 24%, transparent);
@@ -1459,11 +1322,7 @@ onBeforeUnmount(() => {
   transition: 0.16s ease;
 }
 .contract-link:hover {
-  border-color: color-mix(
-    in srgb,
-    var(--text-brand) 35%,
-    var(--border-default)
-  );
+  border-color: color-mix(in srgb, var(--text-brand) 35%, var(--border-default));
   background: var(--brand-soft);
 }
 .contract-link-icon {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
+import { computed, ref } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
 
 const props = defineProps<{
   caseTitle: string;
@@ -13,16 +13,10 @@ const props = defineProps<{
 }>();
 
 const expanded = ref(false);
-const cleanSummary = computed(
-  () => props.summary.trim() || "Сводка пока не сформирована.",
-);
-const cleanGoal = computed(
-  () => props.goal.trim() || "Цель обращения пока не сформулирована.",
-);
+const cleanSummary = computed(() => props.summary.trim() || 'Сводка пока не сформирована.');
+const cleanGoal = computed(() => props.goal.trim() || 'Цель обращения пока не сформулирована.');
 const hasBlockerData = computed(() => props.blockers !== undefined);
-const blockers = computed(() =>
-  (props.blockers ?? []).map((item) => item.trim()).filter(Boolean),
-);
+const blockers = computed(() => (props.blockers ?? []).map((item) => item.trim()).filter(Boolean));
 const limitations = computed(() =>
   (props.limitations ?? []).map((item) => item.trim()).filter(Boolean),
 );
@@ -67,17 +61,11 @@ const limitations = computed(() =>
         class="case-brief__blockers"
         :class="{ 'is-clear': !blockers.length }"
       >
-        <i
-          :class="blockers.length ? 'pi pi-ban' : 'pi pi-check-circle'"
-          aria-hidden="true"
-        />
+        <i :class="blockers.length ? 'pi pi-ban' : 'pi pi-check-circle'" aria-hidden="true" />
         <div>
           <span>Блокеры · {{ blockers.length }}</span>
           <p>
-            {{
-              blockers[0] ??
-              "Активных препятствий для продолжения работы не зафиксировано."
-            }}
+            {{ blockers[0] ?? 'Активных препятствий для продолжения работы не зафиксировано.' }}
           </p>
         </div>
       </article>
@@ -104,10 +92,7 @@ const limitations = computed(() =>
         </div>
       </header>
 
-      <article
-        class="case-brief-sheet__summary"
-        aria-labelledby="brief-summary-title"
-      >
+      <article class="case-brief-sheet__summary" aria-labelledby="brief-summary-title">
         <span class="case-brief-sheet__section-icon" aria-hidden="true">
           <i class="pi pi-align-left" />
         </span>
@@ -123,10 +108,7 @@ const limitations = computed(() =>
         </div>
       </article>
 
-      <article
-        class="case-brief-sheet__goal"
-        aria-labelledby="brief-goal-title"
-      >
+      <article class="case-brief-sheet__goal" aria-labelledby="brief-goal-title">
         <span class="case-brief-sheet__section-icon" aria-hidden="true">
           <i class="pi pi-bullseye" />
         </span>
@@ -443,11 +425,7 @@ const limitations = computed(() =>
 }
 .case-brief-sheet__blockers {
   border-color: color-mix(in srgb, var(--status-warning-text) 30%, var(--line));
-  background: color-mix(
-    in srgb,
-    var(--status-warning-soft) 55%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--status-warning-soft) 55%, var(--surface-card));
 }
 .case-brief-sheet__blockers .case-brief-sheet__signal-icon,
 .case-brief-sheet__blockers h4 {
@@ -455,11 +433,7 @@ const limitations = computed(() =>
 }
 .case-brief-sheet__blockers.is-clear {
   border-color: color-mix(in srgb, var(--status-success-text) 24%, var(--line));
-  background: color-mix(
-    in srgb,
-    var(--status-success-soft) 45%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--status-success-soft) 45%, var(--surface-card));
 }
 .case-brief-sheet__blockers.is-clear .case-brief-sheet__signal-icon,
 .case-brief-sheet__blockers.is-clear h4 {

@@ -1,40 +1,32 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from "vue";
-import { RouterLink } from "vue-router";
-import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
-import Select from "primevue/select";
-import Textarea from "primevue/textarea";
-import ToggleSwitch from "primevue/toggleswitch";
-import EventPicker, {
-  type EventPickerOption,
-} from "@/features/events/EventPicker.vue";
-import { createLocalEventPickerLoader } from "@/features/events/event-picker-loader";
-import UiElementPicker from "@/features/interface/UiElementPicker.vue";
-import {
-  LocalizedField,
-  type TranslationUiState,
-} from "@/features/scenario-localization/ui";
+import { computed, reactive, watch } from 'vue';
+import { RouterLink } from 'vue-router';
+import InputNumber from 'primevue/inputnumber';
+import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
+import Textarea from 'primevue/textarea';
+import ToggleSwitch from 'primevue/toggleswitch';
+import EventPicker, { type EventPickerOption } from '@/features/events/EventPicker.vue';
+import { createLocalEventPickerLoader } from '@/features/events/event-picker-loader';
+import UiElementPicker from '@/features/interface/UiElementPicker.vue';
+import { LocalizedField, type TranslationUiState } from '@/features/scenario-localization/ui';
 import {
   defaultLocalizationPolicy,
   localizedPath,
   localizedValue,
-} from "@/features/scenario-localization/model";
+} from '@/features/scenario-localization/model';
 import type {
   ScenarioLocalizationCatalogResponseDto,
   ScenarioLocalizationPolicyDto,
   ScenarioTranslationCatalogResponseDto,
-} from "@/shared/api/generated/models";
-import {
-  actionFieldOptions,
-  isActionFieldVisible,
-} from "@/shared/lib/scenario-action-catalog";
+} from '@/shared/api/generated/models';
+import { actionFieldOptions, isActionFieldVisible } from '@/shared/lib/scenario-action-catalog';
 import type {
   ActionUiField,
   EventDefinition,
   ScenarioActionCatalogItem,
   UiElement,
-} from "@/shared/types/domain";
+} from '@/shared/types/domain';
 
 type TemplateVariable =
   string | { value: string; label: string; meta?: string; disabled?: boolean };
@@ -62,46 +54,42 @@ const props = withDefaults(
     events: () => [],
     elements: () => [],
     templateVariables: () => [],
-    instanceId: "",
+    instanceId: '',
     readonly: false,
-    projectId: "",
-    scenarioId: "",
-    fieldPathPrefix: "config",
+    projectId: '',
+    scenarioId: '',
+    fieldPathPrefix: 'config',
     localizationCatalog: undefined,
     translationCatalog: undefined,
     localizationPolicy: undefined,
     translationStates: () => ({}),
-    focusFieldPath: "",
-    focusLocale: "",
+    focusFieldPath: '',
+    focusLocale: '',
   },
 );
 
 const emit = defineEmits<{
-  "update:modelValue": [value: Record<string, unknown>];
-  "validity-change": [valid: boolean];
-  "translation-request": [payload: { fieldPath: string; targets: string[] }];
-  "translation-retry": [payload: { fieldPath: string; locale: string }];
-  "translation-cancel": [fieldPath: string];
-  "translation-manual-edit": [payload: { fieldPath: string; locale: string }];
+  'update:modelValue': [value: Record<string, unknown>];
+  'validity-change': [valid: boolean];
+  'translation-request': [payload: { fieldPath: string; targets: string[] }];
+  'translation-retry': [payload: { fieldPath: string; locale: string }];
+  'translation-cancel': [fieldPath: string];
+  'translation-manual-edit': [payload: { fieldPath: string; locale: string }];
 }>();
 
 const jsonDrafts = reactive<Record<string, string>>({});
 const jsonErrors = reactive<Record<string, string>>({});
 const visibleFields = computed(() =>
-  props.definition.uiSchema.fields.filter((field) =>
-    isActionFieldVisible(field, props.modelValue),
-  ),
+  props.definition.uiSchema.fields.filter((field) => isActionFieldVisible(field, props.modelValue)),
 );
 const showsLocalizationUnavailableNotice = computed(
   () =>
     props.localizationCatalog?.enabled !== true &&
-    visibleFields.value.some((field) => field.control === "textarea"),
+    visibleFields.value.some((field) => field.control === 'textarea'),
 );
 const templateVariableOptions = computed(() =>
   props.templateVariables.map((variable) =>
-    typeof variable === "string"
-      ? { value: variable, label: variable }
-      : variable,
+    typeof variable === 'string' ? { value: variable, label: variable } : variable,
   ),
 );
 const eventOptions = computed<EventPickerOption[]>(() =>
@@ -112,26 +100,24 @@ const eventOptions = computed<EventPickerOption[]>(() =>
       name: event.name,
       code: event.code,
       description: event.description,
-      ingestion: event.clientIngestible ? "FRONTEND_ALLOWED" : "BACKEND_ONLY",
+      ingestion: event.clientIngestible ? 'FRONTEND_ALLOWED' : 'BACKEND_ONLY',
       tags: [`Схема v${event.version}`],
     })),
 );
 const loadEvents = createLocalEventPickerLoader(() => eventOptions.value);
 const eventScopeKey = computed(() =>
-  props.events.map((event) => `${event.code}:${event.version}`).join("|"),
+  props.events.map((event) => `${event.code}:${event.version}`).join('|'),
 );
 
 watch(
   () => props.definition.type,
   () => {
     for (const field of props.definition.uiSchema.fields) {
-      if (field.control !== "json") continue;
+      if (field.control !== 'json') continue;
       const value = props.modelValue[field.key];
       jsonDrafts[field.key] =
-        typeof value === "string"
-          ? value
-          : JSON.stringify(value ?? {}, null, 2);
-      jsonErrors[field.key] = "";
+        typeof value === 'string' ? value : JSON.stringify(value ?? {}, null, 2);
+      jsonErrors[field.key] = '';
     }
     emitValidity();
   },
@@ -144,11 +130,7 @@ function propertyFor(field: ActionUiField) {
 
 function localizedDescriptor(field: ActionUiField) {
   if (!props.localizationCatalog?.enabled) return undefined;
-  return localizedPath(
-    props.localizationCatalog,
-    props.definition.type,
-    field.key,
-  );
+  return localizedPath(props.localizationCatalog, props.definition.type, field.key);
 }
 
 function fieldPath(field: ActionUiField) {
@@ -169,89 +151,70 @@ function isRequired(field: ActionUiField) {
 
 function selectOptions(field: ActionUiField) {
   return actionFieldOptions(field, propertyFor(field)).map((option) =>
-    option && typeof option === "object"
-      ? option
-      : { label: String(option), value: option },
+    option && typeof option === 'object' ? option : { label: String(option), value: option },
   );
 }
 
 function updateField(key: string, value: unknown) {
   const next = { ...props.modelValue };
-  if (value === undefined || value === null || value === "") delete next[key];
+  if (value === undefined || value === null || value === '') delete next[key];
   else next[key] = value;
-  emit("update:modelValue", next);
+  emit('update:modelValue', next);
 }
 
 function selectedEventOption(field: ActionUiField) {
-  return eventOptions.value.find(
-    (event) => event.value === props.modelValue[field.key],
-  );
+  return eventOptions.value.find((event) => event.value === props.modelValue[field.key]);
 }
 
 function updateJson(field: ActionUiField) {
   try {
-    const value = JSON.parse(jsonDrafts[field.key] || "{}") as unknown;
+    const value = JSON.parse(jsonDrafts[field.key] || '{}') as unknown;
     const expectedType = propertyFor(field)?.type;
-    if (expectedType === "array" && !Array.isArray(value))
-      throw new Error("JSON должен быть массивом");
-    if (
-      expectedType !== "array" &&
-      (!value || typeof value !== "object" || Array.isArray(value))
-    )
-      throw new Error("JSON должен быть объектом");
-    jsonErrors[field.key] = "";
+    if (expectedType === 'array' && !Array.isArray(value))
+      throw new Error('JSON должен быть массивом');
+    if (expectedType !== 'array' && (!value || typeof value !== 'object' || Array.isArray(value)))
+      throw new Error('JSON должен быть объектом');
+    jsonErrors[field.key] = '';
     updateField(field.key, value);
     emitValidity();
   } catch (cause) {
-    jsonErrors[field.key] =
-      cause instanceof Error ? cause.message : "Проверьте JSON";
+    jsonErrors[field.key] = cause instanceof Error ? cause.message : 'Проверьте JSON';
     emitValidity();
   }
 }
 
 function emitValidity() {
   const hasVisibleError = visibleFields.value.some(
-    (field) => field.control === "json" && Boolean(jsonErrors[field.key]),
+    (field) => field.control === 'json' && Boolean(jsonErrors[field.key]),
   );
-  emit("validity-change", !hasVisibleError);
+  emit('validity-change', !hasVisibleError);
 }
 
 function insertVariable(field: ActionUiField, variable: string) {
   const append = (current: string) =>
-    `${current}${current && !/\s$/.test(current) ? " " : ""}${variable}`;
+    `${current}${current && !/\s$/.test(current) ? ' ' : ''}${variable}`;
   const localization = props.localizationCatalog;
   if (localizedDescriptor(field) && localization?.enabled) {
-    const current = localizedValue(
-      props.modelValue[field.key],
-      localization.defaultLocale,
-    );
+    const current = localizedValue(props.modelValue[field.key], localization.defaultLocale);
     updateField(field.key, {
       ...current,
-      [localization.defaultLocale]: append(
-        current[localization.defaultLocale] ?? "",
-      ),
+      [localization.defaultLocale]: append(current[localization.defaultLocale] ?? ''),
     });
     return;
   }
   const current =
-    typeof props.modelValue[field.key] === "string"
-      ? (props.modelValue[field.key] as string)
-      : "";
+    typeof props.modelValue[field.key] === 'string' ? (props.modelValue[field.key] as string) : '';
   updateField(field.key, append(current));
 }
 
 function fieldHint(field: ActionUiField) {
   const property = propertyFor(field);
   const hints: string[] = [];
-  if (typeof property?.minLength === "number")
-    hints.push(`от ${property.minLength} симв.`);
-  if (typeof property?.maxLength === "number")
-    hints.push(`до ${property.maxLength} симв.`);
-  if (typeof property?.minimum === "number")
-    hints.push(`мин. ${property.minimum}`);
-  if (typeof property?.maximum === "number")
-    hints.push(`макс. ${property.maximum}`);
-  return hints.join(" · ");
+  if (typeof property?.minLength === 'number') hints.push(`от ${property.minLength} симв.`);
+  if (typeof property?.maxLength === 'number') hints.push(`до ${property.maxLength} симв.`);
+  if (typeof property?.minimum === 'number') hints.push(`мин. ${property.minimum}`);
+  if (typeof property?.maximum === 'number') hints.push(`макс. ${property.maximum}`);
+  return hints.join(' · ');
 }
 </script>
 
@@ -267,8 +230,8 @@ function fieldHint(field: ActionUiField) {
       <div>
         <strong>Переводы появятся после публикации языков проекта</strong>
         <span>
-          Настройте поле профиля с ролью Locale и опубликуйте структуру. Тогда
-          здесь откроются языковые версии и автоматический перевод.
+          Настройте поле профиля с ролью Locale и опубликуйте структуру. Тогда здесь откроются
+          языковые версии и автоматический перевод.
         </span>
         <RouterLink to="/profile-fields">Открыть языки проекта</RouterLink>
       </div>
@@ -283,9 +246,7 @@ function fieldHint(field: ActionUiField) {
     >
       <label
         v-if="
-          !localizedDescriptor(field) &&
-          field.control !== 'event' &&
-          field.control !== 'target'
+          !localizedDescriptor(field) && field.control !== 'event' && field.control !== 'target'
         "
         :for="fieldId(field)"
       >
@@ -294,17 +255,8 @@ function fieldHint(field: ActionUiField) {
       </label>
 
       <LocalizedField
-        v-if="
-          localizedDescriptor(field) &&
-          localizationCatalog &&
-          translationCatalog
-        "
-        :model-value="
-          localizedValue(
-            modelValue[field.key],
-            localizationCatalog.defaultLocale,
-          )
-        "
+        v-if="localizedDescriptor(field) && localizationCatalog && translationCatalog"
+        :model-value="localizedValue(modelValue[field.key], localizationCatalog.defaultLocale)"
         :catalog="localizationCatalog"
         :translation="translationCatalog"
         :policy="localizationPolicy ?? defaultLocalizationPolicy()"
@@ -352,9 +304,7 @@ function fieldHint(field: ActionUiField) {
         v-else-if="field.control === 'number'"
         :input-id="fieldId(field)"
         :model-value="
-          typeof modelValue[field.key] === 'number'
-            ? (modelValue[field.key] as number)
-            : null
+          typeof modelValue[field.key] === 'number' ? (modelValue[field.key] as number) : null
         "
         :min="propertyFor(field)?.minimum"
         :max="propertyFor(field)?.maximum"
@@ -380,9 +330,7 @@ function fieldHint(field: ActionUiField) {
         placeholder="Выберите событие"
         show-ingestion-filter
         :disabled="readonly"
-        @update:model-value="
-          !Array.isArray($event) && updateField(field.key, $event)
-        "
+        @update:model-value="!Array.isArray($event) && updateField(field.key, $event)"
       />
       <UiElementPicker
         v-else-if="field.control === 'target'"
@@ -411,9 +359,7 @@ function fieldHint(field: ActionUiField) {
         <template #option="slotProps">
           <div class="select-option">
             <span>{{ slotProps.option.label }}</span
-            ><small v-if="slotProps.option.meta">{{
-              slotProps.option.meta
-            }}</small>
+            ><small v-if="slotProps.option.meta">{{ slotProps.option.meta }}</small>
           </div>
         </template>
       </Select>
@@ -427,9 +373,7 @@ function fieldHint(field: ActionUiField) {
           :disabled="readonly"
           @blur="updateJson(field)"
         />
-        <small v-if="jsonErrors[field.key]" class="field-error">{{
-          jsonErrors[field.key]
-        }}</small>
+        <small v-if="jsonErrors[field.key]" class="field-error">{{ jsonErrors[field.key] }}</small>
       </template>
       <InputText
         v-else
@@ -439,13 +383,9 @@ function fieldHint(field: ActionUiField) {
         @update:model-value="updateField(field.key, $event)"
       />
 
-      <small v-if="fieldHint(field)" class="field-hint">{{
-        fieldHint(field)
-      }}</small>
+      <small v-if="fieldHint(field)" class="field-hint">{{ fieldHint(field) }}</small>
       <div
-        v-if="
-          field.supportsTemplates && templateVariableOptions.length && !readonly
-        "
+        v-if="field.supportsTemplates && templateVariableOptions.length && !readonly"
         class="variable-pills"
       >
         <button

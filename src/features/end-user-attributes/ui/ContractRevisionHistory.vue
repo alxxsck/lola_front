@@ -2,7 +2,7 @@
 import type {
   AttributeContractRevisionResponseDto,
   AttributeContractRevisionSummaryResponseDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 defineProps<{
   items: AttributeContractRevisionSummaryResponseDto[];
@@ -14,7 +14,7 @@ defineEmits<{
 }>();
 
 function date(value: string) {
-  return new Date(value).toLocaleString("ru-RU");
+  return new Date(value).toLocaleString('ru-RU');
 }
 </script>
 
@@ -23,8 +23,8 @@ function date(value: string) {
     <header class="history-heading">
       <h3 id="contract-history-title">Версии контракта</h3>
       <p>
-        Producer-интеграция меняется только при изменении ключей, типов,
-        обязательности или правил допустимых значений.
+        Producer-интеграция меняется только при изменении ключей, типов, обязательности или правил
+        допустимых значений.
       </p>
     </header>
 
@@ -48,11 +48,7 @@ function date(value: string) {
     </ol>
     <p v-else class="empty">Версий контракта пока нет.</p>
 
-    <article
-      v-if="selected"
-      class="history-detail"
-      aria-labelledby="contract-detail-title"
-    >
+    <article v-if="selected" class="history-detail" aria-labelledby="contract-detail-title">
       <h4 id="contract-detail-title">Контракт v{{ selected.version }}</h4>
       <dl>
         <div>
@@ -65,7 +61,9 @@ function date(value: string) {
         </div>
         <div>
           <dt>Canonical hash</dt>
-          <dd><code>{{ selected.canonicalHash }}</code></dd>
+          <dd>
+            <code>{{ selected.canonicalHash }}</code>
+          </dd>
         </div>
       </dl>
     </article>
@@ -104,7 +102,7 @@ function date(value: string) {
   cursor: pointer;
 }
 
-.history-list button[aria-current="true"] {
+.history-list button[aria-current='true'] {
   border-color: var(--p-primary-color);
 }
 

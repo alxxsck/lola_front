@@ -1,39 +1,39 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import { passwordRecoveryApi } from '@/features/password-recovery/password-recovery.api'
+import { nextTick, ref } from 'vue';
+import Button from 'primevue/button';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import { passwordRecoveryApi } from '@/features/password-recovery/password-recovery.api';
 
-const email = ref('')
-const state = ref<'READY' | 'PENDING' | 'SUCCESS' | 'ERROR'>('READY')
-const errorElement = ref<HTMLElement | null>(null)
+const email = ref('');
+const state = ref<'READY' | 'PENDING' | 'SUCCESS' | 'ERROR'>('READY');
+const errorElement = ref<HTMLElement | null>(null);
 
 async function submit() {
-  if (state.value === 'PENDING' || state.value === 'SUCCESS') return
-  const normalizedEmail = email.value.trim()
+  if (state.value === 'PENDING' || state.value === 'SUCCESS') return;
+  const normalizedEmail = email.value.trim();
   if (!normalizedEmail || normalizedEmail.length > 255) {
-    state.value = 'ERROR'
-    email.value = ''
-    await focusError()
-    return
+    state.value = 'ERROR';
+    email.value = '';
+    await focusError();
+    return;
   }
 
-  state.value = 'PENDING'
+  state.value = 'PENDING';
   try {
-    await passwordRecoveryApi.request(normalizedEmail)
-    email.value = ''
-    state.value = 'SUCCESS'
+    await passwordRecoveryApi.request(normalizedEmail);
+    email.value = '';
+    state.value = 'SUCCESS';
   } catch {
-    email.value = ''
-    state.value = 'ERROR'
-    await focusError()
+    email.value = '';
+    state.value = 'ERROR';
+    await focusError();
   }
 }
 
 async function focusError() {
-  await nextTick()
-  errorElement.value?.focus()
+  await nextTick();
+  errorElement.value?.focus();
 }
 </script>
 
@@ -70,7 +70,13 @@ async function focusError() {
           <div v-if="state === 'ERROR'" id="recovery-error" ref="errorElement" tabindex="-1">
             <Message severity="error">Не удалось отправить запрос. Попробуйте ещё раз.</Message>
           </div>
-          <Button type="submit" label="Отправить ссылку" icon="pi pi-arrow-right" icon-pos="right" :loading="state === 'PENDING'" />
+          <Button
+            type="submit"
+            label="Отправить ссылку"
+            icon="pi pi-arrow-right"
+            icon-pos="right"
+            :loading="state === 'PENDING'"
+          />
         </form>
         <a class="safe-link" href="/login">Вернуться ко входу</a>
       </template>
@@ -79,6 +85,95 @@ async function focusError() {
 </template>
 
 <style scoped>
-.recovery-page{display:grid;min-height:100dvh;place-items:center;padding:24px;background:var(--surface-canvas)}.recovery-card{display:flex;width:min(500px,100%);flex-direction:column;align-items:stretch;padding:34px;border:1px solid var(--border-default);border-radius:24px;background:var(--surface-card);box-shadow:var(--shadow-dialog)}.brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:32px}.brand span{display:grid;width:38px;height:38px;place-items:center;border-radius:12px;background:var(--brand-primary);color:var(--on-action-primary);font-weight:800;transform:rotate(-3deg)}.brand strong{font-family:var(--font-display);font-size:1.05rem}.recovery-card h1{margin:8px 0 10px;font-size:clamp(1.7rem,5vw,2.25rem);text-align:center}.recovery-card p{margin:0 0 22px;color:var(--muted);line-height:1.5;text-align:center}.recovery-card form{display:flex;flex-direction:column;gap:18px}.field{display:flex;flex-direction:column;gap:8px}.recovery-card :deep(.p-button){justify-content:center}.safe-link{align-self:center;margin-top:18px;padding:8px;color:var(--text-link);font-weight:700}.state-icon{display:grid;width:58px;height:58px;place-items:center;margin:0 auto 12px;border-radius:18px;background:var(--status-success-soft);color:var(--status-success-text);font-size:1.25rem}
-@media(max-width:520px){.recovery-page{padding:12px}.recovery-card{padding:28px 20px;border-radius:20px}}
+.recovery-page {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: 24px;
+  background: var(--surface-canvas);
+}
+.recovery-card {
+  display: flex;
+  width: min(500px, 100%);
+  flex-direction: column;
+  align-items: stretch;
+  padding: 34px;
+  border: 1px solid var(--border-default);
+  border-radius: 24px;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-dialog);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+.brand span {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--brand-primary);
+  color: var(--on-action-primary);
+  font-weight: 800;
+  transform: rotate(-3deg);
+}
+.brand strong {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+.recovery-card h1 {
+  margin: 8px 0 10px;
+  font-size: clamp(1.7rem, 5vw, 2.25rem);
+  text-align: center;
+}
+.recovery-card p {
+  margin: 0 0 22px;
+  color: var(--muted);
+  line-height: 1.5;
+  text-align: center;
+}
+.recovery-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.recovery-card :deep(.p-button) {
+  justify-content: center;
+}
+.safe-link {
+  align-self: center;
+  margin-top: 18px;
+  padding: 8px;
+  color: var(--text-link);
+  font-weight: 700;
+}
+.state-icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  margin: 0 auto 12px;
+  border-radius: 18px;
+  background: var(--status-success-soft);
+  color: var(--status-success-text);
+  font-size: 1.25rem;
+}
+@media (max-width: 520px) {
+  .recovery-page {
+    padding: 12px;
+  }
+  .recovery-card {
+    padding: 28px 20px;
+    border-radius: 20px;
+  }
+}
 </style>

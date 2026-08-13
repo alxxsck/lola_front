@@ -1,5 +1,5 @@
-import { definePreset } from '@primeuix/themes'
-import Aura from '@primeuix/themes/aura'
+import { definePreset } from '@primeuix/themes';
+import Aura from '@primeuix/themes/aura';
 
 const surface = {
   0: 'var(--palette-surface-0)',
@@ -14,21 +14,21 @@ const surface = {
   800: 'var(--palette-surface-800)',
   900: 'var(--palette-surface-900)',
   950: 'var(--palette-surface-950)',
-}
+};
 
 const primary = {
   color: 'var(--action-primary)',
   contrastColor: 'var(--on-action-primary)',
   hoverColor: 'var(--action-primary-hover)',
   activeColor: 'var(--action-primary-active)',
-}
+};
 
 const highlight = {
   background: 'var(--status-accent-soft)',
   focusBackground: 'var(--surface-active)',
   color: 'var(--status-accent-text)',
   focusColor: 'var(--text-primary)',
-}
+};
 
 const formField = {
   background: 'var(--input-background)',
@@ -45,7 +45,7 @@ const formField = {
   placeholderColor: 'var(--input-placeholder)',
   invalidPlaceholderColor: 'var(--status-danger-text)',
   iconColor: 'var(--text-tertiary)',
-}
+};
 
 const toast = {
   info: {
@@ -72,7 +72,7 @@ const toast = {
     color: 'var(--status-danger-text)',
     detailColor: 'var(--text-primary)',
   },
-}
+};
 
 export const RetenivePrimePreset = definePreset(Aura, {
   primitive: {
@@ -125,8 +125,18 @@ export const RetenivePrimePreset = definePreset(Aura, {
   components: {
     skeleton: {
       colorScheme: {
-        light: { root: { background: 'var(--surface-active)', animationBackground: 'var(--surface-hover)' } },
-        dark: { root: { background: 'var(--surface-active)', animationBackground: 'var(--surface-hover)' } },
+        light: {
+          root: {
+            background: 'var(--surface-active)',
+            animationBackground: 'var(--surface-hover)',
+          },
+        },
+        dark: {
+          root: {
+            background: 'var(--surface-active)',
+            animationBackground: 'var(--surface-hover)',
+          },
+        },
       },
     },
     toast: {
@@ -136,4 +146,4 @@ export const RetenivePrimePreset = definePreset(Aura, {
       },
     },
   },
-})
+});

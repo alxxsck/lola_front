@@ -11,37 +11,31 @@ import {
   supportInternalNoteAttachmentRevoke,
   supportInternalNoteAttachmentStartUpload,
   supportInternalNoteAttachmentStatus,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   ChatAttachmentStatusResponseDto,
   SupportInternalNoteAttachmentStatusResponseDto,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
-import { isMockMode } from "@/shared/config/data-mode";
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
+import { isMockMode } from '@/shared/config/data-mode';
 
 export type SupportAttachmentScope =
   | {
-      visibility: "PUBLIC_REPLY";
+      visibility: 'PUBLIC_REPLY';
       projectId: string;
       actorId: string;
       endUserId: string;
       conversationId: string;
     }
   | {
-      visibility: "INTERNAL_NOTE";
+      visibility: 'INTERNAL_NOTE';
       projectId: string;
       actorId: string;
       caseId: string;
     };
 
 export type SupportAttachmentServerState =
-  | "UPLOADING"
-  | "SCANNING"
-  | "READY"
-  | "REJECTED"
-  | "FAILED"
-  | "EXPIRED"
-  | "REVOKED";
+  'UPLOADING' | 'SCANNING' | 'READY' | 'REJECTED' | 'FAILED' | 'EXPIRED' | 'REVOKED';
 
 export interface SupportAttachmentStatus {
   id: string;
@@ -91,10 +85,7 @@ export interface SupportAttachmentsSource {
     attachmentId: string,
     signal?: AbortSignal,
   ): Promise<SupportAttachmentStatus>;
-  revoke(
-    scope: SupportAttachmentScope,
-    attachmentId: string,
-  ): Promise<void>;
+  revoke(scope: SupportAttachmentScope, attachmentId: string): Promise<void>;
   grantDownload(
     scope: SupportAttachmentScope,
     attachmentId: string,
@@ -102,9 +93,7 @@ export interface SupportAttachmentsSource {
 }
 
 function status(
-  value:
-    | ChatAttachmentStatusResponseDto
-    | SupportInternalNoteAttachmentStatusResponseDto,
+  value: ChatAttachmentStatusResponseDto | SupportInternalNoteAttachmentStatusResponseDto,
 ): SupportAttachmentStatus {
   return {
     id: value.id,
@@ -117,14 +106,14 @@ function status(
   };
 }
 
-function publicParams(scope: Extract<SupportAttachmentScope, { visibility: "PUBLIC_REPLY" }>) {
+function publicParams(scope: Extract<SupportAttachmentScope, { visibility: 'PUBLIC_REPLY' }>) {
   return { conversationId: scope.conversationId };
 }
 
 const apiSource: SupportAttachmentsSource = {
   async listDraft(scope, draftKey, signal) {
     try {
-      if (scope.visibility === "PUBLIC_REPLY") {
+      if (scope.visibility === 'PUBLIC_REPLY') {
         const response = await adminChatAttachmentListDraft(
           scope.projectId,
           scope.endUserId,
@@ -147,9 +136,9 @@ const apiSource: SupportAttachmentsSource = {
   },
   async startUpload(scope, input, idempotencyKey) {
     try {
-      const options = { headers: { "Idempotency-Key": idempotencyKey } };
+      const options = { headers: { 'Idempotency-Key': idempotencyKey } };
       const response =
-        scope.visibility === "PUBLIC_REPLY"
+        scope.visibility === 'PUBLIC_REPLY'
           ? await adminChatAttachmentStartUpload(
               scope.projectId,
               scope.endUserId,
@@ -180,7 +169,7 @@ const apiSource: SupportAttachmentsSource = {
         uploadUrl: response.uploadUrl,
         requiredHeaders: Object.fromEntries(
           Object.entries(response.requiredHeaders).flatMap(([key, value]) =>
-            typeof value === "string" ? [[key, value]] : [],
+            typeof value === 'string' ? [[key, value]] : [],
           ),
         ),
       };
@@ -190,7 +179,7 @@ const apiSource: SupportAttachmentsSource = {
   },
   async uploadBinary(url, file, headers, signal) {
     const response = await fetch(url, {
-      method: "PUT",
+      method: 'PUT',
       body: file,
       headers,
       signal,
@@ -200,7 +189,7 @@ const apiSource: SupportAttachmentsSource = {
   async completeUpload(scope, attachmentId) {
     try {
       const response =
-        scope.visibility === "PUBLIC_REPLY"
+        scope.visibility === 'PUBLIC_REPLY'
           ? await adminChatAttachmentCompleteUpload(
               scope.projectId,
               scope.endUserId,
@@ -220,7 +209,7 @@ const apiSource: SupportAttachmentsSource = {
   async status(scope, attachmentId, signal) {
     try {
       const response =
-        scope.visibility === "PUBLIC_REPLY"
+        scope.visibility === 'PUBLIC_REPLY'
           ? await adminChatAttachmentStatus(
               scope.projectId,
               scope.endUserId,
@@ -228,12 +217,9 @@ const apiSource: SupportAttachmentsSource = {
               publicParams(scope),
               { signal },
             )
-          : await supportInternalNoteAttachmentStatus(
-              scope.projectId,
-              scope.caseId,
-              attachmentId,
-              { signal },
-            );
+          : await supportInternalNoteAttachmentStatus(scope.projectId, scope.caseId, attachmentId, {
+              signal,
+            });
       return status(response);
     } catch (cause) {
       throw normalizeApiError(cause);
@@ -241,26 +227,21 @@ const apiSource: SupportAttachmentsSource = {
   },
   async revoke(scope, attachmentId) {
     try {
-      if (scope.visibility === "PUBLIC_REPLY")
+      if (scope.visibility === 'PUBLIC_REPLY')
         await adminChatAttachmentRevoke(
           scope.projectId,
           scope.endUserId,
           attachmentId,
           publicParams(scope),
         );
-      else
-        await supportInternalNoteAttachmentRevoke(
-          scope.projectId,
-          scope.caseId,
-          attachmentId,
-        );
+      else await supportInternalNoteAttachmentRevoke(scope.projectId, scope.caseId, attachmentId);
     } catch (cause) {
       throw normalizeApiError(cause);
     }
   },
   async grantDownload(scope, attachmentId) {
     try {
-      return scope.visibility === "PUBLIC_REPLY"
+      return scope.visibility === 'PUBLIC_REPLY'
         ? await adminChatAttachmentGrantDownload(
             scope.projectId,
             scope.endUserId,
@@ -281,7 +262,7 @@ const apiSource: SupportAttachmentsSource = {
 const mockItems = new Map<string, SupportAttachmentStatus>();
 const mockDrafts = new Map<string, string[]>();
 function mockScope(scope: SupportAttachmentScope, draftKey: string): string {
-  return scope.visibility === "PUBLIC_REPLY"
+  return scope.visibility === 'PUBLIC_REPLY'
     ? `${scope.projectId}:${scope.conversationId}:${draftKey}`
     : `${scope.projectId}:${scope.caseId}:${draftKey}`;
 }
@@ -299,7 +280,7 @@ const mockSource: SupportAttachmentsSource = {
       filename: input.filename,
       contentType: input.contentType,
       sizeBytes: input.sizeBytes,
-      state: "UPLOADING",
+      state: 'UPLOADING',
       canAttach: false,
       failureCode: null,
     });
@@ -310,14 +291,14 @@ const mockSource: SupportAttachmentsSource = {
   async uploadBinary() {},
   async completeUpload(_scope, attachmentId) {
     const current = mockItems.get(attachmentId);
-    if (!current) throw new Error("Mock attachment not found");
-    const ready = { ...current, state: "READY" as const, canAttach: true };
+    if (!current) throw new Error('Mock attachment not found');
+    const ready = { ...current, state: 'READY' as const, canAttach: true };
     mockItems.set(attachmentId, ready);
     return ready;
   },
   async status(_scope, attachmentId) {
     const current = mockItems.get(attachmentId);
-    if (!current) throw new Error("Mock attachment not found");
+    if (!current) throw new Error('Mock attachment not found');
     return current;
   },
   async revoke(_scope, attachmentId) {
@@ -325,12 +306,12 @@ const mockSource: SupportAttachmentsSource = {
     if (current)
       mockItems.set(attachmentId, {
         ...current,
-        state: "REVOKED",
+        state: 'REVOKED',
         canAttach: false,
       });
   },
   async grantDownload() {
-    return { url: "about:blank", expiresAt: new Date(Date.now() + 60_000).toISOString() };
+    return { url: 'about:blank', expiresAt: new Date(Date.now() + 60_000).toISOString() };
   },
 };
 

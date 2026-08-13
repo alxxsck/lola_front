@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from "vue";
-import Button from "primevue/button";
-import DatePicker from "primevue/datepicker";
-import InputText from "primevue/inputtext";
-import Select from "primevue/select";
-import EventDefinitionSelect from "@/features/events/EventDefinitionSelect.vue";
-import type { ProjectAIAnalysisListParams } from "@/shared/api/generated/models";
-import AIFilterToggle from "@/shared/ui/AIFilterToggle.vue";
+import { computed, reactive, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import DatePicker from 'primevue/datepicker';
+import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
+import EventDefinitionSelect from '@/features/events/EventDefinitionSelect.vue';
+import type { ProjectAIAnalysisListParams } from '@/shared/api/generated/models';
+import AIFilterToggle from '@/shared/ui/AIFilterToggle.vue';
 
-export type AIAnalysisFiltersModel = Omit<
-  ProjectAIAnalysisListParams,
-  "cursor" | "limit"
->;
+export type AIAnalysisFiltersModel = Omit<ProjectAIAnalysisListParams, 'cursor' | 'limit'>;
 
 const props = defineProps<{
   modelValue: AIAnalysisFiltersModel;
@@ -20,15 +17,15 @@ const props = defineProps<{
   projectId?: string;
 }>();
 const emit = defineEmits<{
-  "update:modelValue": [value: AIAnalysisFiltersModel];
+  'update:modelValue': [value: AIAnalysisFiltersModel];
   apply: [];
 }>();
 const mobileExpanded = ref(false);
 
 const draft = reactive<{
-  status: ProjectAIAnalysisListParams["status"] | null;
-  kind: ProjectAIAnalysisListParams["kind"] | null;
-  scopeKind: ProjectAIAnalysisListParams["scopeKind"] | null;
+  status: ProjectAIAnalysisListParams['status'] | null;
+  kind: ProjectAIAnalysisListParams['kind'] | null;
+  scopeKind: ProjectAIAnalysisListParams['scopeKind'] | null;
   endUserId: string;
   createdByCmsUserId: string;
   costAttributedToCmsUserId: string;
@@ -41,10 +38,10 @@ const draft = reactive<{
   status: props.modelValue.status ?? null,
   kind: props.modelValue.kind ?? null,
   scopeKind: props.modelValue.scopeKind ?? null,
-  endUserId: props.modelValue.endUserId ?? "",
-  createdByCmsUserId: props.modelValue.createdByCmsUserId ?? "",
-  costAttributedToCmsUserId: props.modelValue.costAttributedToCmsUserId ?? "",
-  eventCode: props.modelValue.eventCode ?? "",
+  endUserId: props.modelValue.endUserId ?? '',
+  createdByCmsUserId: props.modelValue.createdByCmsUserId ?? '',
+  costAttributedToCmsUserId: props.modelValue.costAttributedToCmsUserId ?? '',
+  eventCode: props.modelValue.eventCode ?? '',
   createdFrom: parseDate(props.modelValue.createdFrom),
   createdTo: parseDate(props.modelValue.createdTo),
   runFrom: parseDate(props.modelValue.runFrom),
@@ -52,36 +49,36 @@ const draft = reactive<{
 });
 
 const statusOptions = [
-  { label: "Все статусы", value: null },
-  { label: "Запланирован", value: "SCHEDULED" },
-  { label: "В очереди", value: "QUEUED" },
-  { label: "Выполняется", value: "RUNNING" },
-  { label: "Готов", value: "SUCCEEDED" },
-  { label: "Нужно уточнение", value: "NEEDS_CLARIFICATION" },
-  { label: "Ошибка", value: "FAILED" },
-  { label: "Приостановлен", value: "PAUSED" },
-  { label: "Отменён", value: "CANCELLED" },
-  { label: "Истёк", value: "EXPIRED" },
-  { label: "Исход неизвестен", value: "OUTCOME_UNKNOWN" },
+  { label: 'Все статусы', value: null },
+  { label: 'Запланирован', value: 'SCHEDULED' },
+  { label: 'В очереди', value: 'QUEUED' },
+  { label: 'Выполняется', value: 'RUNNING' },
+  { label: 'Готов', value: 'SUCCEEDED' },
+  { label: 'Нужно уточнение', value: 'NEEDS_CLARIFICATION' },
+  { label: 'Ошибка', value: 'FAILED' },
+  { label: 'Приостановлен', value: 'PAUSED' },
+  { label: 'Отменён', value: 'CANCELLED' },
+  { label: 'Истёк', value: 'EXPIRED' },
+  { label: 'Исход неизвестен', value: 'OUTCOME_UNKNOWN' },
 ];
 const scopeOptions = [
-  { label: "Любая область", value: null },
-  { label: "Весь проект", value: "PROJECT" },
-  { label: "Пользователь", value: "END_USER" },
-  { label: "Когорта", value: "COHORT" },
+  { label: 'Любая область', value: null },
+  { label: 'Весь проект', value: 'PROJECT' },
+  { label: 'Пользователь', value: 'END_USER' },
+  { label: 'Когорта', value: 'COHORT' },
 ];
 const kindOptions = [
-  { label: "Все типы", value: null },
-  { label: "Разовый", value: "ONE_OFF" },
-  { label: "Отложенный", value: "SCHEDULED_ONCE" },
-  { label: "Регулярный", value: "RECURRING" },
+  { label: 'Все типы', value: null },
+  { label: 'Разовый', value: 'ONE_OFF' },
+  { label: 'Отложенный', value: 'SCHEDULED_ONCE' },
+  { label: 'Регулярный', value: 'RECURRING' },
 ];
 const advancedFilterCount = computed(
   () =>
     [
       draft.endUserId,
       draft.createdByCmsUserId,
-      props.canReadCost ? draft.costAttributedToCmsUserId : "",
+      props.canReadCost ? draft.costAttributedToCmsUserId : '',
       draft.createdFrom,
       draft.createdTo,
       draft.runFrom,
@@ -95,10 +92,10 @@ watch(
     draft.status = value.status ?? null;
     draft.kind = value.kind ?? null;
     draft.scopeKind = value.scopeKind ?? null;
-    draft.endUserId = value.endUserId ?? "";
-    draft.createdByCmsUserId = value.createdByCmsUserId ?? "";
-    draft.costAttributedToCmsUserId = value.costAttributedToCmsUserId ?? "";
-    draft.eventCode = value.eventCode ?? "";
+    draft.endUserId = value.endUserId ?? '';
+    draft.createdByCmsUserId = value.createdByCmsUserId ?? '';
+    draft.costAttributedToCmsUserId = value.costAttributedToCmsUserId ?? '';
+    draft.eventCode = value.eventCode ?? '';
     draft.createdFrom = parseDate(value.createdFrom);
     draft.createdTo = parseDate(value.createdTo);
     draft.runFrom = parseDate(value.runFrom);
@@ -108,7 +105,7 @@ watch(
 );
 
 function apply(): void {
-  emit("update:modelValue", {
+  emit('update:modelValue', {
     ...(draft.status ? { status: draft.status } : {}),
     ...(draft.kind ? { kind: draft.kind } : {}),
     ...(draft.scopeKind ? { scopeKind: draft.scopeKind } : {}),
@@ -122,18 +119,12 @@ function apply(): void {
         }
       : {}),
     ...(draft.eventCode.trim() ? { eventCode: draft.eventCode.trim() } : {}),
-    ...(draft.createdFrom
-      ? { createdFrom: startOfDay(draft.createdFrom).toISOString() }
-      : {}),
-    ...(draft.createdTo
-      ? { createdTo: nextDay(draft.createdTo).toISOString() }
-      : {}),
-    ...(draft.runFrom
-      ? { runFrom: startOfDay(draft.runFrom).toISOString() }
-      : {}),
+    ...(draft.createdFrom ? { createdFrom: startOfDay(draft.createdFrom).toISOString() } : {}),
+    ...(draft.createdTo ? { createdTo: nextDay(draft.createdTo).toISOString() } : {}),
+    ...(draft.runFrom ? { runFrom: startOfDay(draft.runFrom).toISOString() } : {}),
     ...(draft.runTo ? { runTo: nextDay(draft.runTo).toISOString() } : {}),
   });
-  emit("apply");
+  emit('apply');
 }
 
 function reset(): void {
@@ -141,10 +132,10 @@ function reset(): void {
     status: null,
     kind: null,
     scopeKind: null,
-    endUserId: "",
-    createdByCmsUserId: "",
-    costAttributedToCmsUserId: "",
-    eventCode: "",
+    endUserId: '',
+    createdByCmsUserId: '',
+    costAttributedToCmsUserId: '',
+    eventCode: '',
     createdFrom: null,
     createdTo: null,
     runFrom: null,
@@ -281,19 +272,8 @@ function nextDay(value: Date): Date {
       </div>
     </details>
     <div class="filter-actions">
-      <Button
-        type="button"
-        label="Сбросить"
-        severity="secondary"
-        text
-        @click="reset"
-      />
-      <Button
-        type="submit"
-        label="Применить"
-        icon="pi pi-filter"
-        :loading="loading"
-      />
+      <Button type="button" label="Сбросить" severity="secondary" text @click="reset" />
+      <Button type="submit" label="Применить" icon="pi pi-filter" :loading="loading" />
     </div>
   </form>
 </template>

@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import DatePicker from "primevue/datepicker";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { AI_USAGE_CATEGORY_LABELS } from "@/features/ai-usage/ai-usage.model";
+import { computed, nextTick, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import DatePicker from 'primevue/datepicker';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { AI_USAGE_CATEGORY_LABELS } from '@/features/ai-usage/ai-usage.model';
 import {
   compareDecimalStrings,
   decimalRatio,
   formatDecimalMoney,
   type DecimalString,
-} from "@/shared/lib/decimal-money";
-import { aiCostsRepository } from "../api/ai-costs-repository";
-import AiAllowanceJournalPanel from "./AiAllowanceJournalPanel.vue";
-import AiAllowanceLimitsPanel from "./AiAllowanceLimitsPanel.vue";
-import AiAllowanceUserDialog from "./AiAllowanceUserDialog.vue";
+} from '@/shared/lib/decimal-money';
+import { aiCostsRepository } from '../api/ai-costs-repository';
+import AiAllowanceJournalPanel from './AiAllowanceJournalPanel.vue';
+import AiAllowanceLimitsPanel from './AiAllowanceLimitsPanel.vue';
+import AiAllowanceUserDialog from './AiAllowanceUserDialog.vue';
 import {
   aiCostRouteQuery,
   parseAiCostRouteState,
@@ -31,23 +31,23 @@ import {
   type AiCostTab,
   type AiCostUserRow,
   projectTimezone,
-} from "../model/ai-costs";
+} from '../model/ai-costs';
 
 const PAGE_SIZE = 25;
 const tabs: ReadonlyArray<{ key: AiCostTab; label: string }> = [
-  { key: "overview", label: "Обзор" },
-  { key: "users", label: "Пользователи" },
-  { key: "employees", label: "Сотрудники" },
-  { key: "limits", label: "Лимиты" },
-  { key: "journal", label: "Журнал и сверка" },
+  { key: 'overview', label: 'Обзор' },
+  { key: 'users', label: 'Пользователи' },
+  { key: 'employees', label: 'Сотрудники' },
+  { key: 'limits', label: 'Лимиты' },
+  { key: 'journal', label: 'Журнал и сверка' },
 ];
 const periods: ReadonlyArray<{
-  key: Exclude<AiCostPeriod, "custom">;
+  key: Exclude<AiCostPeriod, 'custom'>;
   label: string;
 }> = [
-  { key: "today", label: "Сегодня" },
-  { key: "7d", label: "7 дней" },
-  { key: "30d", label: "30 дней" },
+  { key: 'today', label: 'Сегодня' },
+  { key: '7d', label: '7 дней' },
+  { key: '30d', label: '30 дней' },
 ];
 const auth = useAuthStore();
 const route = useRoute();
@@ -57,16 +57,16 @@ const users = ref<AiCostPage<AiCostUserRow> | null>(null);
 const employees = ref<AiCostPage<AiCostCmsUserRow> | null>(null);
 const overviewLoading = ref(false);
 const tableLoading = ref(false);
-const error = ref("");
-const customFrom = ref("");
-const customTo = ref("");
-const customError = ref("");
+const error = ref('');
+const customFrom = ref('');
+const customTo = ref('');
+const customError = ref('');
 const selectedAllowanceUser = ref<AiCostUserRow | null>(null);
 const freshLoginPending = ref(false);
 const tablist = ref<HTMLElement | null>(null);
-const loadedTableKey = ref("");
+const loadedTableKey = ref('');
 let generation = 0;
-let overviewKey = "";
+let overviewKey = '';
 
 const customDateRange = computed<Date[] | null>({
   get: () => {
@@ -78,14 +78,12 @@ const customDateRange = computed<Date[] | null>({
   set: (range) => {
     customFrom.value = formatIsoDay(range?.[0]);
     customTo.value = formatIsoDay(range?.[1]);
-    customError.value = "";
+    customError.value = '';
   },
 });
 
 const projectId = computed(() => auth.project?.id ?? null);
-const configuredTimezone = computed(() =>
-  projectTimezone(auth.project?.settings),
-);
+const configuredTimezone = computed(() => projectTimezone(auth.project?.settings));
 const state = computed(() =>
   parseAiCostRouteState(
     route.query as Record<string, string | string[] | null | undefined>,
@@ -94,51 +92,35 @@ const state = computed(() =>
   ),
 );
 const canReadProfiles = computed(() =>
-  hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
-    "project.profiles.read",
-  ),
+  hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.profiles.read'),
 );
 const canReadCmsUsers = computed(
-  () =>
-    auth.user?.platformPermissionCodes?.includes("platform.cms_users.read") ??
-    false,
+  () => auth.user?.platformPermissionCodes?.includes('platform.cms_users.read') ?? false,
 );
-const permissionCodes = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
+const permissionCodes = computed(() => auth.project?.effectivePermissionCodes ?? []);
 const canReadCosts = computed(() =>
-  hasProjectPermission(permissionCodes.value, "project.ai_costs.read"),
+  hasProjectPermission(permissionCodes.value, 'project.ai_costs.read'),
 );
 const canReadAllowance = computed(() =>
-  hasProjectPermission(permissionCodes.value, "project.ai_allowance.read"),
+  hasProjectPermission(permissionCodes.value, 'project.ai_allowance.read'),
 );
 const canManageAllowance = computed(() =>
-  hasProjectPermission(permissionCodes.value, "project.ai_allowance.manage"),
+  hasProjectPermission(permissionCodes.value, 'project.ai_allowance.manage'),
 );
 const canGrantAllowance = computed(() =>
-  hasProjectPermission(permissionCodes.value, "project.ai_allowance.grant"),
+  hasProjectPermission(permissionCodes.value, 'project.ai_allowance.grant'),
 );
 const canReconcileAllowance = computed(() =>
-  hasProjectPermission(permissionCodes.value, "project.ai_allowance.reconcile"),
+  hasProjectPermission(permissionCodes.value, 'project.ai_allowance.reconcile'),
 );
 const canReadAccrual = computed(() =>
-  hasProjectPermission(
-    permissionCodes.value,
-    "project.ai_allowance.accrual_rules.read",
-  ),
+  hasProjectPermission(permissionCodes.value, 'project.ai_allowance.accrual_rules.read'),
 );
 const canManageAccrual = computed(() =>
-  hasProjectPermission(
-    permissionCodes.value,
-    "project.ai_allowance.accrual_rules.manage",
-  ),
+  hasProjectPermission(permissionCodes.value, 'project.ai_allowance.accrual_rules.manage'),
 );
 const canReadAccrualReceipts = computed(() =>
-  hasProjectPermission(
-    permissionCodes.value,
-    "project.ai_allowance.accrual_receipts.read",
-  ),
+  hasProjectPermission(permissionCodes.value, 'project.ai_allowance.accrual_receipts.read'),
 );
 const canAccessAllowanceConfiguration = computed(
   () =>
@@ -152,9 +134,9 @@ const canAccessAllowanceConfiguration = computed(
 );
 const visibleTabs = computed(() =>
   tabs.filter((tab) =>
-    tab.key === "limits"
+    tab.key === 'limits'
       ? canAccessAllowanceConfiguration.value
-      : tab.key === "journal"
+      : tab.key === 'journal'
         ? canReadAllowance.value || canReconcileAllowance.value
         : canReadCosts.value,
   ),
@@ -174,31 +156,26 @@ const tableContextKey = computed(() =>
 const activePage = computed(() =>
   loadedTableKey.value !== tableContextKey.value
     ? null
-    : state.value.tab === "users"
+    : state.value.tab === 'users'
       ? users.value
-      : state.value.tab === "employees"
+      : state.value.tab === 'employees'
         ? employees.value
         : null,
 );
 const displayedRows = computed<AiCostRankedRow[]>(() => {
   if (loadedTableKey.value !== tableContextKey.value) return [];
-  if (state.value.tab === "users" && users.value) return users.value.items;
-  if (state.value.tab === "employees" && employees.value)
-    return employees.value.items;
+  if (state.value.tab === 'users' && users.value) return users.value.items;
+  if (state.value.tab === 'employees' && employees.value) return employees.value.items;
   return [];
 });
 const dailyMax = computed(() => maxCost(overview.value?.daily ?? []));
 const categoryMax = computed(() => maxCost(overview.value?.categories ?? []));
 const displayTimezone = computed(
   () =>
-    activePage.value?.projection?.timezone ??
-    overview.value?.timezone ??
-    configuredTimezone.value,
+    activePage.value?.projection?.timezone ?? overview.value?.timezone ?? configuredTimezone.value,
 );
 const activeProjection = computed(() =>
-  state.value.tab === "overview"
-    ? overview.value?.projection
-    : activePage.value?.projection,
+  state.value.tab === 'overview' ? overview.value?.projection : activePage.value?.projection,
 );
 
 watch(
@@ -213,30 +190,20 @@ watch(
   () => state.value.tab,
   async () => {
     await nextTick();
-    const active = tablist.value?.querySelector<HTMLElement>(
-      '[role="tab"][aria-selected="true"]',
-    );
+    const active = tablist.value?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
     active?.scrollIntoView?.({
-      behavior: "smooth",
-      block: "nearest",
-      inline: "center",
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'center',
     });
   },
   { immediate: true },
 );
+watch([projectId, canReadAllowance], ([nextProjectId, canRead], [previousProjectId]) => {
+  if (!canRead || nextProjectId !== previousProjectId) selectedAllowanceUser.value = null;
+});
 watch(
-  [projectId, canReadAllowance],
-  ([nextProjectId, canRead], [previousProjectId]) => {
-    if (!canRead || nextProjectId !== previousProjectId)
-      selectedAllowanceUser.value = null;
-  },
-);
-watch(
-  () =>
-    [
-      visibleTabs.value.map((tab) => tab.key).join("|"),
-      state.value.tab,
-    ] as const,
+  () => [visibleTabs.value.map((tab) => tab.key).join('|'), state.value.tab] as const,
   ([, activeTab]) => {
     if (visibleTabs.value.some((tab) => tab.key === activeTab)) return;
     const fallback = visibleTabs.value[0];
@@ -245,12 +212,11 @@ watch(
   { immediate: true },
 );
 watch(
-  () =>
-    [state.value.period, state.value.customFrom, state.value.customTo] as const,
+  () => [state.value.period, state.value.customFrom, state.value.customTo] as const,
   ([period, from, to]) => {
-    customFrom.value = period === "custom" ? from : "";
-    customTo.value = period === "custom" ? to : "";
-    customError.value = "";
+    customFrom.value = period === 'custom' ? from : '';
+    customTo.value = period === 'custom' ? to : '';
+    customError.value = '';
   },
   { immediate: true },
 );
@@ -260,8 +226,8 @@ async function load(): Promise<void> {
   const current = state.value;
   const requestContextKey = tableContextKey.value;
   const requestGeneration = ++generation;
-  error.value = "";
-  loadedTableKey.value = "";
+  error.value = '';
+  loadedTableKey.value = '';
   users.value = null;
   employees.value = null;
   if (!currentProjectId) {
@@ -269,20 +235,16 @@ async function load(): Promise<void> {
     tableLoading.value = false;
     return;
   }
-  if (
-    !canReadCosts.value &&
-    current.tab !== "limits" &&
-    current.tab !== "journal"
-  ) {
+  if (!canReadCosts.value && current.tab !== 'limits' && current.tab !== 'journal') {
     overviewLoading.value = false;
     tableLoading.value = false;
     overview.value = null;
-    overviewKey = "";
+    overviewKey = '';
     error.value =
-      "Нет права project.ai_costs.read. Доступны только управление лимитами и журнал allowance.";
+      'Нет права project.ai_costs.read. Доступны только управление лимитами и журнал allowance.';
     return;
   }
-  if (current.tab === "limits" || current.tab === "journal") {
+  if (current.tab === 'limits' || current.tab === 'journal') {
     overviewLoading.value = false;
     tableLoading.value = false;
     return;
@@ -291,7 +253,7 @@ async function load(): Promise<void> {
   const needsOverview = !overview.value || overviewKey !== nextOverviewKey;
   if (needsOverview) overview.value = null;
   overviewLoading.value = needsOverview;
-  tableLoading.value = current.tab !== "overview";
+  tableLoading.value = current.tab !== 'overview';
   try {
     const overviewRequest = needsOverview
       ? aiCostsRepository.overview(currentProjectId, {
@@ -300,15 +262,12 @@ async function load(): Promise<void> {
         })
       : Promise.resolve(overview.value);
     const tableRequest =
-      current.tab === "users"
+      current.tab === 'users'
         ? aiCostsRepository.users(currentProjectId, pageQuery(current))
-        : current.tab === "employees"
+        : current.tab === 'employees'
           ? aiCostsRepository.cmsUsers(currentProjectId, pageQuery(current))
           : Promise.resolve(null);
-    const [nextOverview, nextPage] = await Promise.all([
-      overviewRequest,
-      tableRequest,
-    ]);
+    const [nextOverview, nextPage] = await Promise.all([overviewRequest, tableRequest]);
     if (
       requestGeneration !== generation ||
       projectId.value !== currentProjectId ||
@@ -320,20 +279,18 @@ async function load(): Promise<void> {
       overview.value = nextOverview;
       overviewKey = nextOverviewKey;
     }
-    if (current.tab === "users") {
+    if (current.tab === 'users') {
       users.value = nextPage as AiCostPage<AiCostUserRow>;
       loadedTableKey.value = requestContextKey;
     }
-    if (current.tab === "employees") {
+    if (current.tab === 'employees') {
       employees.value = nextPage as AiCostPage<AiCostCmsUserRow>;
       loadedTableKey.value = requestContextKey;
     }
   } catch (cause) {
     if (requestGeneration !== generation) return;
     error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить статистику расходов AI";
+      cause instanceof Error ? cause.message : 'Не удалось загрузить статистику расходов AI';
   } finally {
     if (requestGeneration === generation) {
       overviewLoading.value = false;
@@ -344,13 +301,13 @@ async function load(): Promise<void> {
 
 function invalidateTable(): void {
   generation += 1;
-  loadedTableKey.value = "";
+  loadedTableKey.value = '';
   users.value = null;
   employees.value = null;
   tableLoading.value = false;
   if (!canReadCosts.value) {
     overview.value = null;
-    overviewKey = "";
+    overviewKey = '';
     overviewLoading.value = false;
   }
 }
@@ -375,44 +332,38 @@ function selectTab(tab: AiCostTab): void {
   replaceState({ tab, page: 1 });
 }
 
-async function handleTabKeydown(
-  event: KeyboardEvent,
-  tab: AiCostTab,
-): Promise<void> {
+async function handleTabKeydown(event: KeyboardEvent, tab: AiCostTab): Promise<void> {
   const available = visibleTabs.value;
   const index = available.findIndex((item) => item.key === tab);
   if (index < 0) return;
   let nextIndex: number | undefined;
-  if (event.key === "ArrowRight") nextIndex = (index + 1) % available.length;
-  if (event.key === "ArrowLeft")
-    nextIndex = (index - 1 + available.length) % available.length;
-  if (event.key === "Home") nextIndex = 0;
-  if (event.key === "End") nextIndex = available.length - 1;
+  if (event.key === 'ArrowRight') nextIndex = (index + 1) % available.length;
+  if (event.key === 'ArrowLeft') nextIndex = (index - 1 + available.length) % available.length;
+  if (event.key === 'Home') nextIndex = 0;
+  if (event.key === 'End') nextIndex = available.length - 1;
   if (nextIndex === undefined) return;
   event.preventDefault();
   const target = available[nextIndex];
   if (!target) return;
   selectTab(target.key);
   await nextTick();
-  tablist.value
-    ?.querySelector<HTMLElement>(`#ai-cost-tab-${target.key}`)
-    ?.focus();
+  tablist.value?.querySelector<HTMLElement>(`#ai-cost-tab-${target.key}`)?.focus();
 }
 
-function selectPeriod(period: Exclude<AiCostPeriod, "custom">): void {
-  replaceState({ period, page: 1, customFrom: "", customTo: "" });
+function selectPeriod(period: Exclude<AiCostPeriod, 'custom'>): void {
+  replaceState({ period, page: 1, customFrom: '', customTo: '' });
 }
 
 function openAllowanceUser(row: AiCostRankedRow): void {
-  if ("endUserId" in row) selectedAllowanceUser.value = row as AiCostUserRow;
+  if ('endUserId' in row) selectedAllowanceUser.value = row as AiCostUserRow;
 }
 
 function openJournal(endUserId: string): void {
   selectedAllowanceUser.value = null;
   replaceState({
-    tab: "journal",
+    tab: 'journal',
     allowanceUser: endUserId,
-    allowanceCursor: "",
+    allowanceCursor: '',
     page: 1,
   });
 }
@@ -428,13 +379,13 @@ async function requireFreshAllowanceLogin(): Promise<void> {
   }
   selectedAllowanceUser.value = null;
   await router.replace({
-    name: "login",
+    name: 'login',
     query: { redirect },
   });
 }
 
 function selectJournalUser(endUserId: string): void {
-  replaceState({ allowanceUser: endUserId, allowanceCursor: "" });
+  replaceState({ allowanceUser: endUserId, allowanceCursor: '' });
 }
 
 function nextJournalCursor(cursor: string): void {
@@ -444,21 +395,21 @@ function nextJournalCursor(cursor: string): void {
 function applyCustomPeriod(): void {
   const parsed = parseAiCostRouteState(
     {
-      period: "custom",
+      period: 'custom',
       from: customFrom.value,
       to: customTo.value,
     },
     new Date(),
     configuredTimezone.value,
   );
-  if (parsed.period !== "custom") {
+  if (parsed.period !== 'custom') {
     customError.value =
-      "Выберите корректный диапазон: окончание не раньше начала, не более 366 дней.";
+      'Выберите корректный диапазон: окончание не раньше начала, не более 366 дней.';
     return;
   }
-  customError.value = "";
+  customError.value = '';
   replaceState({
-    period: "custom",
+    period: 'custom',
     customFrom: parsed.customFrom,
     customTo: parsed.customTo,
     from: parsed.from,
@@ -474,35 +425,30 @@ function parseIsoDay(value: string): Date | null {
   const month = Number(match[2]);
   const day = Number(match[3]);
   const date = new Date(year, month - 1, day);
-  return date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
     ? date
     : null;
 }
 
 function formatIsoDay(value: Date | null | undefined): string {
-  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return "";
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) return '';
   const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  const day = String(value.getDate()).padStart(2, "0");
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
 function changeSort(sort: AiCostSortKey): void {
   replaceState({
     sort,
-    direction:
-      state.value.sort === sort && state.value.direction === "desc"
-        ? "asc"
-        : "desc",
+    direction: state.value.sort === sort && state.value.direction === 'desc' ? 'asc' : 'desc',
     page: 1,
   });
 }
 
-function sortState(key: AiCostSortKey): "ascending" | "descending" | "none" {
-  if (state.value.sort !== key) return "none";
-  return state.value.direction === "asc" ? "ascending" : "descending";
+function sortState(key: AiCostSortKey): 'ascending' | 'descending' | 'none' {
+  if (state.value.sort !== key) return 'none';
+  return state.value.direction === 'asc' ? 'ascending' : 'descending';
 }
 
 function changePage(page: number): void {
@@ -511,64 +457,55 @@ function changePage(page: number): void {
 }
 
 function formatMoney(value: DecimalString | null): string {
-  return value === null ? "Нет цены" : formatDecimalMoney(value, "USD");
+  return value === null ? 'Нет цены' : formatDecimalMoney(value, 'USD');
 }
 
 function formatCount(value: number): string {
-  return new Intl.NumberFormat("ru-RU").format(value);
+  return new Intl.NumberFormat('ru-RU').format(value);
 }
 
 function categoryLabel(category: string): string {
   return (
-    AI_USAGE_CATEGORY_LABELS[
-      category as keyof typeof AI_USAGE_CATEGORY_LABELS
-    ] ?? category.replaceAll("_", " ")
+    AI_USAGE_CATEGORY_LABELS[category as keyof typeof AI_USAGE_CATEGORY_LABELS] ??
+    category.replaceAll('_', ' ')
   );
 }
 
 function dayLabel(day: string): string {
-  const [, month, date] = day.split("-");
+  const [, month, date] = day.split('-');
   return `${date}.${month}`;
 }
 
 function barWidth(value: DecimalString | null, maximum: DecimalString): string {
-  if (value === null) return "0%";
-  if (compareDecimalStrings(value, "0") <= 0) return "0%";
+  if (value === null) return '0%';
+  if (compareDecimalStrings(value, '0') <= 0) return '0%';
   return `${Math.max(decimalRatio(value, maximum) * 100, 2)}%`;
 }
 
-function maxCost(
-  rows: readonly { effectiveCostUsd: DecimalString | null }[],
-): DecimalString {
+function maxCost(rows: readonly { effectiveCostUsd: DecimalString | null }[]): DecimalString {
   return rows.reduce<DecimalString>(
     (maximum, row) =>
-      row.effectiveCostUsd !== null &&
-      compareDecimalStrings(row.effectiveCostUsd, maximum) > 0
+      row.effectiveCostUsd !== null && compareDecimalStrings(row.effectiveCostUsd, maximum) > 0
         ? row.effectiveCostUsd
         : maximum,
-    "0",
+    '0',
   );
 }
 
 function rowIdentity(row: AiCostRankedRow): string {
-  if ("externalId" in row && typeof row.externalId === "string")
-    return row.externalId;
-  if ("email" in row && typeof row.email === "string") return row.email;
-  return "—";
+  if ('externalId' in row && typeof row.externalId === 'string') return row.externalId;
+  if ('email' in row && typeof row.email === 'string') return row.email;
+  return '—';
 }
 
 function userHref(row: AiCostRankedRow): string | undefined {
-  return "endUserId" in row &&
-    typeof row.endUserId === "string" &&
-    canReadProfiles.value
+  return 'endUserId' in row && typeof row.endUserId === 'string' && canReadProfiles.value
     ? `/users/${encodeURIComponent(row.endUserId)}`
     : undefined;
 }
 
 function employeeHref(row: AiCostRankedRow): string | undefined {
-  return "cmsUserId" in row &&
-    typeof row.cmsUserId === "string" &&
-    canReadCmsUsers.value
+  return 'cmsUserId' in row && typeof row.cmsUserId === 'string' && canReadCmsUsers.value
     ? `/platform/cms-users/${encodeURIComponent(row.cmsUserId)}`
     : undefined;
 }
@@ -580,10 +517,7 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
       <div>
         <span class="eyebrow">Контроль расходов</span>
         <h1>Расходы AI</h1>
-        <p>
-          Фактическая, расчётная и неполная стоимость по задачам, пользователям
-          и сотрудникам.
-        </p>
+        <p>Фактическая, расчётная и неполная стоимость по задачам, пользователям и сотрудникам.</p>
       </div>
       <span
         v-if="state.tab !== 'limits' && state.tab !== 'journal'"
@@ -595,12 +529,7 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
       </span>
     </header>
 
-    <nav
-      ref="tablist"
-      class="cost-tabs"
-      role="tablist"
-      aria-label="Разделы расходов AI"
-    >
+    <nav ref="tablist" class="cost-tabs" role="tablist" aria-label="Разделы расходов AI">
       <button
         v-for="tab in visibleTabs"
         :id="`ai-cost-tab-${tab.key}`"
@@ -652,9 +581,7 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
           @click="applyCustomPeriod"
         />
       </div>
-      <small v-if="customError" class="field-error" role="alert">{{
-        customError
-      }}</small>
+      <small v-if="customError" class="field-error" role="alert">{{ customError }}</small>
     </section>
 
     <Message v-if="error" severity="error" :closable="false">
@@ -692,58 +619,32 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
     />
 
     <template v-if="state.tab !== 'limits' && state.tab !== 'journal'">
-      <section
-        v-if="overviewLoading && !overview"
-        class="kpi-grid"
-        aria-label="Загрузка сводки"
-      >
-        <Skeleton
-          v-for="index in 4"
-          :key="index"
-          height="132px"
-          border-radius="16px"
-        />
+      <section v-if="overviewLoading && !overview" class="kpi-grid" aria-label="Загрузка сводки">
+        <Skeleton v-for="index in 4" :key="index" height="132px" border-radius="16px" />
       </section>
       <template v-else-if="overview">
         <Message
-          v-if="
-            activeProjection?.status === 'STALE' ||
-            activeProjection?.driftDetected
-          "
+          v-if="activeProjection?.status === 'STALE' || activeProjection?.driftDetected"
           severity="warn"
           :closable="false"
         >
           Проекция расходов устарела или обнаружен drift. Данные актуальны на
           {{
             activeProjection?.asOf
-              ? new Date(activeProjection.asOf).toLocaleString("ru-RU")
-              : "неизвестный момент"
+              ? new Date(activeProjection.asOf).toLocaleString('ru-RU')
+              : 'неизвестный момент'
           }}; финансовые решения отложите до сверки.
         </Message>
         <section class="kpi-grid" aria-label="Сводка расходов">
           <article>
             <small>По данным провайдера</small>
-            <strong>{{
-              formatMoney(overview.totals.providerReportedCostUsd)
-            }}</strong>
-            <span
-              >{{
-                formatCount(overview.completeness.providerReportedRecords)
-              }}
-              записей</span
-            >
+            <strong>{{ formatMoney(overview.totals.providerReportedCostUsd) }}</strong>
+            <span>{{ formatCount(overview.completeness.providerReportedRecords) }} записей</span>
           </article>
           <article>
             <small>Расчётная стоимость</small>
-            <strong>{{
-              formatMoney(overview.totals.estimatedFallbackCostUsd)
-            }}</strong>
-            <span
-              >{{
-                formatCount(overview.completeness.estimatedRecords)
-              }}
-              записей</span
-            >
+            <strong>{{ formatMoney(overview.totals.estimatedFallbackCostUsd) }}</strong>
+            <span>{{ formatCount(overview.completeness.estimatedRecords) }} записей</span>
           </article>
           <article class="kpi-effective">
             <small>Итого</small>
@@ -753,12 +654,7 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
           <article>
             <small>Полнота оценки</small>
             <strong>{{ overview.completeness.pricedPercent }}%</strong>
-            <span
-              >{{
-                formatCount(overview.completeness.totalRecords)
-              }}
-              операций</span
-            >
+            <span>{{ formatCount(overview.completeness.totalRecords) }} операций</span>
           </article>
         </section>
 
@@ -770,8 +666,8 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
           <i class="pi pi-exclamation-triangle" aria-hidden="true" />
           <span>
             <strong
-              >{{ formatCount(overview.completeness.unpricedRecords) }} операций
-              пока без цены.</strong
+              >{{ formatCount(overview.completeness.unpricedRecords) }} операций пока без
+              цены.</strong
             >
             Итоговая стоимость может увеличиться после сверки.
           </span>
@@ -816,11 +712,7 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
               <span>{{ overview.categories.length }} категорий</span>
             </header>
             <div v-if="overview.categories.length" class="bar-list">
-              <div
-                v-for="row in overview.categories"
-                :key="row.category"
-                class="bar-row"
-              >
+              <div v-for="row in overview.categories" :key="row.category" class="bar-row">
                 <span>{{ categoryLabel(row.category) }}</span>
                 <div class="bar-track" aria-hidden="true">
                   <span
@@ -833,9 +725,7 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
                 <strong>{{ formatMoney(row.effectiveCostUsd) }}</strong>
               </div>
             </div>
-            <p v-else class="empty-state">
-              Категории появятся после первой AI-операции.
-            </p>
+            <p v-else class="empty-state">Категории появятся после первой AI-операции.</p>
           </article>
         </section>
       </template>
@@ -850,11 +740,8 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
         <header>
           <div>
             <span class="eyebrow">Cost attribution</span>
-            <h2>{{ state.tab === "users" ? "Пользователи" : "Сотрудники" }}</h2>
-            <p>
-              Сортировка выполняется сервером по всей выборке и сохраняется в
-              URL.
-            </p>
+            <h2>{{ state.tab === 'users' ? 'Пользователи' : 'Сотрудники' }}</h2>
+            <p>Сортировка выполняется сервером по всей выборке и сохраняется в URL.</p>
           </div>
         </header>
         <div v-if="tableLoading" class="table-loading">
@@ -866,26 +753,20 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
               <tr>
                 <th :aria-sort="sortState('identity')">
                   <button type="button" @click="changeSort('identity')">
-                    {{ state.tab === "users" ? "Пользователь" : "Сотрудник" }}
+                    {{ state.tab === 'users' ? 'Пользователь' : 'Сотрудник' }}
                   </button>
                 </th>
                 <th v-if="state.tab === 'users'">Сегмент</th>
                 <th :aria-sort="sortState('records')">
-                  <button type="button" @click="changeSort('records')">
-                    Операции
-                  </button>
+                  <button type="button" @click="changeSort('records')">Операции</button>
                 </th>
                 <th :aria-sort="sortState('unpricedRecords')">
-                  <button type="button" @click="changeSort('unpricedRecords')">
-                    Без цены
-                  </button>
+                  <button type="button" @click="changeSort('unpricedRecords')">Без цены</button>
                 </th>
                 <th>Провайдер</th>
                 <th>Расчёт</th>
                 <th :aria-sort="sortState('effectiveCostUsd')">
-                  <button type="button" @click="changeSort('effectiveCostUsd')">
-                    Итого
-                  </button>
+                  <button type="button" @click="changeSort('effectiveCostUsd')">Итого</button>
                 </th>
                 <th v-if="state.tab === 'users' && canReadAllowance">Квота</th>
               </tr>
@@ -893,11 +774,9 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
             <tbody>
               <tr v-for="row in displayedRows" :key="rowIdentity(row)">
                 <td>
-                  <a
-                    v-if="state.tab === 'users' && userHref(row)"
-                    :href="userHref(row)"
-                    >{{ rowIdentity(row) }}</a
-                  >
+                  <a v-if="state.tab === 'users' && userHref(row)" :href="userHref(row)">{{
+                    rowIdentity(row)
+                  }}</a>
                   <a
                     v-else-if="state.tab === 'employees' && employeeHref(row)"
                     :href="employeeHref(row)"
@@ -909,7 +788,7 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
                 </td>
                 <td v-if="state.tab === 'users'">
                   <span class="segment-tag">{{
-                    "segment" in row ? row.segment || "Без сегмента" : "—"
+                    'segment' in row ? row.segment || 'Без сегмента' : '—'
                   }}</span>
                 </td>
                 <td>{{ formatCount(row.records) }}</td>
@@ -936,17 +815,10 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
             </tbody>
           </table>
         </div>
-        <p v-else class="empty-state">
-          За выбранный период расходов в этом разрезе нет.
-        </p>
+        <p v-else class="empty-state">За выбранный период расходов в этом разрезе нет.</p>
 
-        <Message
-          v-if="activePage?.pagination.truncated"
-          severity="warn"
-          :closable="false"
-        >
-          Достигнута граница безопасной пагинации. Сузьте период, чтобы увидеть
-          оставшиеся строки.
+        <Message v-if="activePage?.pagination.truncated" severity="warn" :closable="false">
+          Достигнута граница безопасной пагинации. Сузьте период, чтобы увидеть оставшиеся строки.
         </Message>
 
         <footer v-if="activePage" class="pagination-bar">
@@ -1137,11 +1009,7 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
   overflow-wrap: anywhere;
 }
 .kpi-grid .kpi-effective {
-  border-color: color-mix(
-    in srgb,
-    var(--action-primary) 38%,
-    var(--border-default)
-  );
+  border-color: color-mix(in srgb, var(--action-primary) 38%, var(--border-default));
   background: linear-gradient(145deg, var(--action-soft), var(--surface-card));
 }
 .completeness-warning {
@@ -1149,8 +1017,7 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
   align-items: flex-start;
   gap: 10px;
   padding: 12px 14px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-warning) 38%, var(--border-default));
+  border: 1px solid color-mix(in srgb, var(--status-warning) 38%, var(--border-default));
   border-radius: 12px;
   background: var(--status-warning-soft);
   color: var(--status-warning-text);
@@ -1187,10 +1054,7 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
 }
 .bar-row {
   display: grid;
-  grid-template-columns: minmax(72px, 1fr) minmax(100px, 2fr) minmax(
-      88px,
-      auto
-    );
+  grid-template-columns: minmax(72px, 1fr) minmax(100px, 2fr) minmax(88px, auto);
   align-items: center;
   gap: 12px;
   font-size: 0.72rem;
@@ -1213,18 +1077,10 @@ function employeeHref(row: AiCostRankedRow): string | undefined {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(
-    90deg,
-    var(--chart-series-1),
-    var(--chart-series-4)
-  );
+  background: linear-gradient(90deg, var(--chart-series-1), var(--chart-series-4));
 }
 .bar-fill.category {
-  background: linear-gradient(
-    90deg,
-    var(--chart-series-6),
-    var(--chart-series-3)
-  );
+  background: linear-gradient(90deg, var(--chart-series-6), var(--chart-series-3));
 }
 .ranking-card {
   padding: 20px;

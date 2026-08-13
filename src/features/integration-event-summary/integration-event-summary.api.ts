@@ -1,10 +1,7 @@
-import { integrationEventRouteEventDefinitionSummary } from "@/shared/api/generated/retenive-backend";
+import { integrationEventRouteEventDefinitionSummary } from '@/shared/api/generated/retenive-backend';
 
 export const integrationEventSummaryApi = {
   get(projectId: string, eventDefinitionKeyId: string) {
-    return integrationEventRouteEventDefinitionSummary(
-      projectId,
-      eventDefinitionKeyId,
-    );
+    return integrationEventRouteEventDefinitionSummary(projectId, eventDefinitionKeyId);
   },
 };

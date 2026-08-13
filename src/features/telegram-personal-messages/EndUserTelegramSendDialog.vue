@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import Message from "primevue/message";
-import Textarea from "primevue/textarea";
-import { telegramPersonalMessagesApi } from "./telegram-personal-messages.api";
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Message from 'primevue/message';
+import Textarea from 'primevue/textarea';
+import { telegramPersonalMessagesApi } from './telegram-personal-messages.api';
 import {
   MAX_TELEGRAM_CAPTION_LENGTH,
   MAX_TELEGRAM_TEXT_LENGTH,
@@ -13,8 +13,8 @@ import {
   telegramPersonalStatusLabel,
   validateTelegramPersonalDraft,
   type TelegramPersonalLinkStatus,
-} from "./telegram-personal-message.model";
-import { createTelegramPersonalMessagesController } from "./use-telegram-personal-messages";
+} from './telegram-personal-message.model';
+import { createTelegramPersonalMessagesController } from './use-telegram-personal-messages';
 
 const props = defineProps<{
   projectId: string;
@@ -24,17 +24,17 @@ const props = defineProps<{
   targetLabel: string;
 }>();
 const emit = defineEmits<{
-  "dirty-change": [dirty: boolean];
-  "link-state-stale": [];
+  'dirty-change': [dirty: boolean];
+  'link-state-stale': [];
 }>();
-const visible = defineModel<boolean>("visible", { required: true });
-const text = ref("");
+const visible = defineModel<boolean>('visible', { required: true });
+const text = ref('');
 const file = ref<File | null>(null);
 const fileInputKey = ref(0);
-const validationError = ref("");
+const validationError = ref('');
 const controller = createTelegramPersonalMessagesController({
   api: telegramPersonalMessagesApi,
-  onLinkStateStale: () => emit("link-state-stale"),
+  onLinkStateStale: () => emit('link-state-stale'),
 });
 const {
   history,
@@ -47,27 +47,16 @@ const {
   transportRetryAvailable,
 } = controller;
 
-const dirty = computed(() =>
-  Boolean(text.value || file.value || transportRetryAvailable.value),
-);
+const dirty = computed(() => Boolean(text.value || file.value || transportRetryAvailable.value));
 const maximumTextLength = computed(() =>
   file.value ? MAX_TELEGRAM_CAPTION_LENGTH : MAX_TELEGRAM_TEXT_LENGTH,
 );
 const sendAllowed = computed(
-  () =>
-    props.canSend &&
-    (props.linkStatus === "ACTIVE" || props.linkStatus === "UNKNOWN"),
+  () => props.canSend && (props.linkStatus === 'ACTIVE' || props.linkStatus === 'UNKNOWN'),
 );
 
 watch(
-  () =>
-    [
-      visible.value,
-      props.projectId,
-      props.endUserId,
-      props.canSend,
-      props.linkStatus,
-    ] as const,
+  () => [visible.value, props.projectId, props.endUserId, props.canSend, props.linkStatus] as const,
   ([isVisible, projectId, endUserId, canSend, linkStatus], previous) => {
     controller.setContext({
       visible: isVisible,
@@ -76,21 +65,20 @@ watch(
       canSend,
       linkStatus,
     });
-    const targetChanged =
-      !previous || previous[1] !== projectId || previous[2] !== endUserId;
+    const targetChanged = !previous || previous[1] !== projectId || previous[2] !== endUserId;
     const permissionLost = previous?.[3] === true && !canSend;
     if (!isVisible || targetChanged || permissionLost || !canSend) clearDraft();
     if (isVisible && canSend) void controller.loadHistory();
   },
-  { immediate: true, flush: "sync" },
+  { immediate: true, flush: 'sync' },
 );
-watch(dirty, (value) => emit("dirty-change", value), { immediate: true });
+watch(dirty, (value) => emit('dirty-change', value), { immediate: true });
 
 function clearDraft(): void {
-  text.value = "";
+  text.value = '';
   file.value = null;
   fileInputKey.value += 1;
-  validationError.value = "";
+  validationError.value = '';
   controller.discardTransportRetry();
 }
 
@@ -98,27 +86,26 @@ function selectFile(event: Event): void {
   const selected = (event.target as HTMLInputElement).files?.[0] ?? null;
   file.value = selected;
   validationError.value = selected
-    ? (validateTelegramPersonalDraft({ text: text.value, file: selected }) ??
-      "")
-    : "";
+    ? (validateTelegramPersonalDraft({ text: text.value, file: selected }) ?? '')
+    : '';
 }
 
 function removeFile(): void {
   file.value = null;
   fileInputKey.value += 1;
-  validationError.value = "";
+  validationError.value = '';
   controller.discardTransportRetry();
 }
 
 function editAfterTransportFailure(): void {
   controller.discardTransportRetry();
-  validationError.value = "";
+  validationError.value = '';
 }
 
 async function send(): Promise<void> {
   if (!sendAllowed.value || submitting.value) return;
   const draft = { text: text.value, file: file.value };
-  validationError.value = validateTelegramPersonalDraft(draft) ?? "";
+  validationError.value = validateTelegramPersonalDraft(draft) ?? '';
   if (validationError.value) return;
   if (await controller.send(draft)) clearDraft();
 }
@@ -128,11 +115,7 @@ async function retryTransport(): Promise<void> {
 }
 
 function requestVisible(next: boolean): void {
-  if (
-    !next &&
-    dirty.value &&
-    !window.confirm("Закрыть отправку и потерять черновик Telegram?")
-  )
+  if (!next && dirty.value && !window.confirm('Закрыть отправку и потерять черновик Telegram?'))
     return;
   visible.value = next;
 }
@@ -140,32 +123,30 @@ function requestVisible(next: boolean): void {
 function kindLabel(kind: string): string {
   return (
     {
-      TEXT: "Текст",
-      PHOTO: "Фото",
-      VIDEO: "Видео",
-      DOCUMENT: "Документ",
-    }[kind] ?? "Сообщение"
+      TEXT: 'Текст',
+      PHOTO: 'Фото',
+      VIDEO: 'Видео',
+      DOCUMENT: 'Документ',
+    }[kind] ?? 'Сообщение'
   );
 }
 
 function formatTimestamp(value: string | null | undefined): string {
-  if (!value) return "—";
+  if (!value) return '—';
   const timestamp = new Date(value);
-  return Number.isNaN(timestamp.getTime())
-    ? "—"
-    : timestamp.toLocaleString("ru-RU");
+  return Number.isNaN(timestamp.getTime()) ? '—' : timestamp.toLocaleString('ru-RU');
 }
 
 function retryAtLabel(value: string | null | undefined): string {
   const formatted = formatTimestamp(value);
-  return formatted === "—"
-    ? "Время следующей попытки уточняется"
+  return formatted === '—'
+    ? 'Время следующей попытки уточняется'
     : `Следующая попытка: ${formatted}`;
 }
 
 onBeforeUnmount(() => {
   controller.dispose();
-  emit("dirty-change", false);
+  emit('dirty-change', false);
 });
 </script>
 
@@ -195,18 +176,13 @@ onBeforeUnmount(() => {
       >
         Отправка доступна только при активной связи пользователя с Telegram.
       </Message>
-      <Message
-        v-else-if="linkStatus === 'UNKNOWN'"
-        severity="info"
-        :closable="false"
-      >
-        Статус связи скрыт вашими правами. Сервер проверит активную связь перед
-        отправкой.
+      <Message v-else-if="linkStatus === 'UNKNOWN'" severity="info" :closable="false">
+        Статус связи скрыт вашими правами. Сервер проверит активную связь перед отправкой.
       </Message>
 
       <form v-if="canSend" class="composer" @submit.prevent="send">
         <label for="telegram-personal-text">
-          {{ file ? "Подпись к файлу" : "Сообщение" }}
+          {{ file ? 'Подпись к файлу' : 'Сообщение' }}
         </label>
         <Textarea
           id="telegram-personal-text"
@@ -246,9 +222,7 @@ onBeforeUnmount(() => {
               @click="removeFile"
             />
           </div>
-          <small>
-            JPEG, PNG, WebP до 10 МБ; MP4, PDF, TXT или ZIP до 50 МБ.
-          </small>
+          <small> JPEG, PNG, WebP до 10 МБ; MP4, PDF, TXT или ZIP до 50 МБ. </small>
         </div>
 
         <Message v-if="validationError" severity="error" :closable="false">
@@ -257,12 +231,7 @@ onBeforeUnmount(() => {
         <Message v-if="error" severity="error" :closable="false">
           {{ error }}
         </Message>
-        <Message
-          v-if="feedback"
-          severity="info"
-          :closable="false"
-          aria-live="polite"
-        >
+        <Message v-if="feedback" severity="info" :closable="false" aria-live="polite">
           {{ feedback }}
         </Message>
         <progress
@@ -274,8 +243,8 @@ onBeforeUnmount(() => {
 
         <div v-if="transportRetryAvailable" class="transport-retry">
           <p>
-            Повтор использует тот же ключ и неизменённое содержимое. Новое
-            сообщение создано не будет.
+            Повтор использует тот же ключ и неизменённое содержимое. Новое сообщение создано не
+            будет.
           </p>
           <Button
             type="button"
@@ -323,9 +292,7 @@ onBeforeUnmount(() => {
           />
         </header>
         <p v-if="historyLoading" role="status">Загружаем историю…</p>
-        <p v-else-if="!history.length" class="empty">
-          Отправок в Telegram пока нет.
-        </p>
+        <p v-else-if="!history.length" class="empty">Отправок в Telegram пока нет.</p>
         <ol v-else>
           <li v-for="message in history" :key="message.id">
             <div>
@@ -343,10 +310,7 @@ onBeforeUnmount(() => {
               ID сообщения Telegram: {{ message.providerMessageId }}
             </small>
             <small
-              v-if="
-                message.status === 'FAILED_PERMANENT' ||
-                message.status === 'CANCELLED'
-              "
+              v-if="message.status === 'FAILED_PERMANENT' || message.status === 'CANCELLED'"
               class="failure"
             >
               {{ telegramPersonalFailureLabel(message.errorCode) }}
@@ -356,9 +320,7 @@ onBeforeUnmount(() => {
             </small>
           </li>
         </ol>
-        <p v-if="polling" role="status" aria-live="polite">
-          Проверяем статус отправки…
-        </p>
+        <p v-if="polling" role="status" aria-live="polite">Проверяем статус отправки…</p>
       </section>
     </div>
   </Dialog>

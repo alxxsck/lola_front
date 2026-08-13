@@ -1,19 +1,19 @@
-import { createPinia, setActivePinia } from "pinia";
-import { flushPromises, shallowMount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { authApi } from "@/features/auth/auth.api";
-import MfaPage from "./MfaPage.vue";
+import { createPinia, setActivePinia } from 'pinia';
+import { flushPromises, shallowMount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { authApi } from '@/features/auth/auth.api';
+import MfaPage from './MfaPage.vue';
 
 const replace = vi.fn();
 const route = { query: {} as Record<string, string> };
-vi.mock("vue-router", () => ({
+vi.mock('vue-router', () => ({
   useRoute: () => route,
   useRouter: () => ({ replace }),
 }));
-vi.mock("@/features/auth/auth.api", () => ({
+vi.mock('@/features/auth/auth.api', () => ({
   authApi: {
-    mode: "api",
+    mode: 'api',
     login: vi.fn(),
     restore: vi.fn(),
     logout: vi.fn(),
@@ -26,69 +26,57 @@ vi.mock("@/features/auth/auth.api", () => ({
   },
 }));
 
-describe("MFA page", () => {
+describe('MFA page', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
     route.query = {};
   });
 
-  it("does not allow recovery codes to be dismissed before explicit confirmation", async () => {
+  it('does not allow recovery codes to be dismissed before explicit confirmation', async () => {
     const auth = useAuthStore();
     auth.$patch({
-      phase: "MFA_RECOVERY_CODES",
-      recoveryCodes: ["lrc_one", "lrc_two"],
+      phase: 'MFA_RECOVERY_CODES',
+      recoveryCodes: ['lrc_one', 'lrc_two'],
     });
     const wrapper = shallowMount(MfaPage);
 
-    expect(wrapper.get('[data-testid="mfa-recovery-codes"]').text()).toContain(
-      "lrc_one",
-    );
+    expect(wrapper.get('[data-testid="mfa-recovery-codes"]').text()).toContain('lrc_one');
     expect(
-      wrapper
-        .get('button-stub[label="Вернуться ко входу"]')
-        .attributes("disabled"),
+      wrapper.get('button-stub[label="Вернуться ко входу"]').attributes('disabled'),
     ).toBeDefined();
-    expect(JSON.stringify(Object.values(localStorage))).not.toContain(
-      "lrc_one",
-    );
-    expect(JSON.stringify(Object.values(sessionStorage))).not.toContain(
-      "lrc_one",
-    );
+    expect(JSON.stringify(Object.values(localStorage))).not.toContain('lrc_one');
+    expect(JSON.stringify(Object.values(sessionStorage))).not.toContain('lrc_one');
   });
 
-  it("carries the validated redirect through recovery-code acknowledgement and local scrub", async () => {
+  it('carries the validated redirect through recovery-code acknowledgement and local scrub', async () => {
     const auth = useAuthStore();
-    route.query = { redirect: "/ai-costs?tab=limits" };
-    auth.$patch({ phase: "MFA_RECOVERY_CODES", recoveryCodes: ["lrc_one"] });
+    route.query = { redirect: '/ai-costs?tab=limits' };
+    auth.$patch({ phase: 'MFA_RECOVERY_CODES', recoveryCodes: ['lrc_one'] });
     const wrapper = shallowMount(MfaPage);
 
-    wrapper
-      .getComponent({ name: "Checkbox" })
-      .vm.$emit("update:modelValue", true);
+    wrapper.getComponent({ name: 'Checkbox' }).vm.$emit('update:modelValue', true);
     await wrapper.vm.$nextTick();
-    await wrapper
-      .get('button-stub[label="Вернуться ко входу"]')
-      .trigger("click");
+    await wrapper.get('button-stub[label="Вернуться ко входу"]').trigger('click');
     await flushPromises();
 
     expect(replace).toHaveBeenCalledWith({
-      name: "login",
-      query: { redirect: "/ai-costs?tab=limits" },
+      name: 'login',
+      query: { redirect: '/ai-costs?tab=limits' },
     });
     expect(auth.postAuthenticationRedirect).toBeNull();
-    expect(auth.phase).toBe("ANONYMOUS");
+    expect(auth.phase).toBe('ANONYMOUS');
   });
 
-  it("opens the platform workspace after a projectless operator completes MFA", async () => {
+  it('opens the platform workspace after a projectless operator completes MFA', async () => {
     vi.mocked(authApi.completeMfaPasskey).mockResolvedValue({
-      kind: "AUTHENTICATED",
+      kind: 'AUTHENTICATED',
       context: {
         user: {
-          id: "operator-1",
-          email: "operator@example.com",
-          name: "Operator",
-          platformPermissionCodes: ["platform.cms_users.read"],
+          id: 'operator-1',
+          email: 'operator@example.com',
+          name: 'Operator',
+          platformPermissionCodes: ['platform.cms_users.read'],
         },
         projects: [],
         capabilities: { supportEnabled: true },
@@ -96,24 +84,24 @@ describe("MFA page", () => {
     });
     const auth = useAuthStore();
     auth.$patch({
-      phase: "MFA_REQUIRED",
+      phase: 'MFA_REQUIRED',
       mfaChallenge: {
-        kind: "MFA_REQUIRED",
-        ceremonyToken: "lmf_memory-only",
-        expiresAt: "2026-07-21T21:10:00.000Z",
-        publicKey: { challenge: "challenge" },
+        kind: 'MFA_REQUIRED',
+        ceremonyToken: 'lmf_memory-only',
+        expiresAt: '2026-07-21T21:10:00.000Z',
+        publicKey: { challenge: 'challenge' },
         recoveryAvailable: false,
       },
     });
     const wrapper = shallowMount(MfaPage);
 
-    await wrapper.get('[data-testid="mfa-passkey-action"]').trigger("click");
+    await wrapper.get('[data-testid="mfa-passkey-action"]').trigger('click');
     await flushPromises();
 
-    expect(replace).toHaveBeenCalledWith("/platform/cms-users");
+    expect(replace).toHaveBeenCalledWith('/platform/cms-users');
   });
 
-  it("keeps a handoff state visible until the authenticated route is ready", async () => {
+  it('keeps a handoff state visible until the authenticated route is ready', async () => {
     let finishNavigation!: () => void;
     replace.mockReturnValueOnce(
       new Promise<void>((resolve) => {
@@ -121,13 +109,13 @@ describe("MFA page", () => {
       }),
     );
     vi.mocked(authApi.completeMfaPasskey).mockResolvedValue({
-      kind: "AUTHENTICATED",
+      kind: 'AUTHENTICATED',
       context: {
         user: {
-          id: "operator-1",
-          email: "operator@example.com",
-          name: "Operator",
-          platformPermissionCodes: ["platform.cms_users.read"],
+          id: 'operator-1',
+          email: 'operator@example.com',
+          name: 'Operator',
+          platformPermissionCodes: ['platform.cms_users.read'],
         },
         projects: [],
         capabilities: { supportEnabled: true },
@@ -135,52 +123,50 @@ describe("MFA page", () => {
     });
     const auth = useAuthStore();
     auth.$patch({
-      phase: "MFA_REQUIRED",
+      phase: 'MFA_REQUIRED',
       mfaChallenge: {
-        kind: "MFA_REQUIRED",
-        ceremonyToken: "lmf_memory-only",
-        expiresAt: "2026-07-21T21:10:00.000Z",
-        publicKey: { challenge: "challenge" },
+        kind: 'MFA_REQUIRED',
+        ceremonyToken: 'lmf_memory-only',
+        expiresAt: '2026-07-21T21:10:00.000Z',
+        publicKey: { challenge: 'challenge' },
         recoveryAvailable: false,
       },
     });
     const wrapper = shallowMount(MfaPage);
 
-    await wrapper.get('[data-testid="mfa-passkey-action"]').trigger("click");
+    await wrapper.get('[data-testid="mfa-passkey-action"]').trigger('click');
     await vi.waitFor(() => expect(replace).toHaveBeenCalled());
 
     expect(wrapper.get('[data-testid="auth-handoff"]').text()).toContain(
-      "Открываем рабочее пространство",
+      'Открываем рабочее пространство',
     );
-    expect(wrapper.find('[data-testid="mfa-passkey-action"]').exists()).toBe(
-      false,
-    );
+    expect(wrapper.find('[data-testid="mfa-passkey-action"]').exists()).toBe(false);
 
     finishNavigation();
     await flushPromises();
   });
 
-  it("opens Project selection instead of trapping a multi-Project user in security settings", async () => {
+  it('opens Project selection instead of trapping a multi-Project user in security settings', async () => {
     vi.mocked(authApi.completeMfaPasskey).mockResolvedValue({
-      kind: "AUTHENTICATED",
+      kind: 'AUTHENTICATED',
       context: {
         user: {
-          id: "owner-1",
-          email: "owner@example.com",
-          name: "Owner",
+          id: 'owner-1',
+          email: 'owner@example.com',
+          name: 'Owner',
         },
         projects: [
           {
-            id: "project-1",
-            name: "Project One",
-            slug: "project-one",
-            status: "ACTIVE",
+            id: 'project-1',
+            name: 'Project One',
+            slug: 'project-one',
+            status: 'ACTIVE',
           },
           {
-            id: "project-2",
-            name: "Project Two",
-            slug: "project-two",
-            status: "ACTIVE",
+            id: 'project-2',
+            name: 'Project Two',
+            slug: 'project-two',
+            status: 'ACTIVE',
           },
         ],
         capabilities: { supportEnabled: true },
@@ -188,42 +174,42 @@ describe("MFA page", () => {
     });
     const auth = useAuthStore();
     auth.$patch({
-      phase: "MFA_REQUIRED",
+      phase: 'MFA_REQUIRED',
       mfaChallenge: {
-        kind: "MFA_REQUIRED",
-        ceremonyToken: "lmf_memory-only",
-        expiresAt: "2026-07-21T21:10:00.000Z",
-        publicKey: { challenge: "challenge" },
+        kind: 'MFA_REQUIRED',
+        ceremonyToken: 'lmf_memory-only',
+        expiresAt: '2026-07-21T21:10:00.000Z',
+        publicKey: { challenge: 'challenge' },
         recoveryAvailable: false,
       },
     });
     const wrapper = shallowMount(MfaPage);
 
-    await wrapper.get('[data-testid="mfa-passkey-action"]').trigger("click");
+    await wrapper.get('[data-testid="mfa-passkey-action"]').trigger('click');
     await flushPromises();
 
     expect(auth.requiresProjectSelection).toBe(true);
-    expect(replace).toHaveBeenCalledWith({ name: "login" });
+    expect(replace).toHaveBeenCalledWith({ name: 'login' });
   });
 
-  it("keeps a validated redirect in the URL while a multi-Project user selects a Project", async () => {
-    route.query = { redirect: "/ai-costs?tab=journal&allowanceUser=user-1" };
+  it('keeps a validated redirect in the URL while a multi-Project user selects a Project', async () => {
+    route.query = { redirect: '/ai-costs?tab=journal&allowanceUser=user-1' };
     vi.mocked(authApi.completeMfaPasskey).mockResolvedValue({
-      kind: "AUTHENTICATED",
+      kind: 'AUTHENTICATED',
       context: {
-        user: { id: "owner-1", email: "owner@example.com", name: "Owner" },
+        user: { id: 'owner-1', email: 'owner@example.com', name: 'Owner' },
         projects: [
           {
-            id: "project-1",
-            name: "Project One",
-            slug: "one",
-            status: "ACTIVE",
+            id: 'project-1',
+            name: 'Project One',
+            slug: 'one',
+            status: 'ACTIVE',
           },
           {
-            id: "project-2",
-            name: "Project Two",
-            slug: "two",
-            status: "ACTIVE",
+            id: 'project-2',
+            name: 'Project Two',
+            slug: 'two',
+            status: 'ACTIVE',
           },
         ],
         capabilities: { supportEnabled: true },
@@ -231,23 +217,23 @@ describe("MFA page", () => {
     });
     const auth = useAuthStore();
     auth.$patch({
-      phase: "MFA_REQUIRED",
+      phase: 'MFA_REQUIRED',
       mfaChallenge: {
-        kind: "MFA_REQUIRED",
-        ceremonyToken: "lmf_memory-only",
-        expiresAt: "2026-07-21T21:10:00.000Z",
-        publicKey: { challenge: "challenge" },
+        kind: 'MFA_REQUIRED',
+        ceremonyToken: 'lmf_memory-only',
+        expiresAt: '2026-07-21T21:10:00.000Z',
+        publicKey: { challenge: 'challenge' },
         recoveryAvailable: false,
       },
     });
     const wrapper = shallowMount(MfaPage);
 
-    await wrapper.get('[data-testid="mfa-passkey-action"]').trigger("click");
+    await wrapper.get('[data-testid="mfa-passkey-action"]').trigger('click');
     await flushPromises();
 
     expect(replace).toHaveBeenCalledWith({
-      name: "login",
-      query: { redirect: "/ai-costs?tab=journal&allowanceUser=user-1" },
+      name: 'login',
+      query: { redirect: '/ai-costs?tab=journal&allowanceUser=user-1' },
     });
   });
 });

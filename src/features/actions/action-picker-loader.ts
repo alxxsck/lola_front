@@ -1,12 +1,12 @@
-import { paginateByCursor } from "@/shared/lib/paged-search";
-import type { ActionExecutor } from "@/shared/types/domain";
+import { paginateByCursor } from '@/shared/lib/paged-search';
+import type { ActionExecutor } from '@/shared/types/domain';
 import type {
   CatalogPickerOption,
   CatalogPickerPage,
   CatalogPickerRequest,
-} from "@/shared/ui/CatalogPicker.vue";
+} from '@/shared/ui/CatalogPicker.vue';
 
-export type ActionPickerCategory = "logic" | "wait" | "action";
+export type ActionPickerCategory = 'logic' | 'wait' | 'action';
 
 export interface ActionPickerItem {
   id: string;
@@ -17,22 +17,16 @@ export interface ActionPickerItem {
   enabled: boolean;
 }
 
-const LOGIC_ACTIONS = new Set(["ASK_CHOICE", "CONDITION"]);
-const WAIT_ACTIONS = new Set(["WAIT_FOR", "WAIT_FOR_GOAL"]);
-const CATEGORY_META: Record<
-  ActionPickerCategory,
-  { label: string; icon: string }
-> = {
-  logic: { label: "Логика", icon: "pi pi-code" },
-  wait: { label: "Ожидания", icon: "pi pi-clock" },
-  action: { label: "Действия", icon: "pi pi-bolt" },
+const LOGIC_ACTIONS = new Set(['ASK_CHOICE', 'CONDITION']);
+const WAIT_ACTIONS = new Set(['WAIT_FOR', 'WAIT_FOR_GOAL']);
+const CATEGORY_META: Record<ActionPickerCategory, { label: string; icon: string }> = {
+  logic: { label: 'Логика', icon: 'pi pi-code' },
+  wait: { label: 'Ожидания', icon: 'pi pi-clock' },
+  action: { label: 'Действия', icon: 'pi pi-bolt' },
 };
-const EXECUTOR_META: Record<
-  ActionExecutor,
-  { label: string; icon: string }
-> = {
-  FRONTEND: { label: "В интерфейсе", icon: "pi pi-desktop" },
-  SERVER: { label: "На сервере", icon: "pi pi-server" },
+const EXECUTOR_META: Record<ActionExecutor, { label: string; icon: string }> = {
+  FRONTEND: { label: 'В интерфейсе', icon: 'pi pi-desktop' },
+  SERVER: { label: 'На сервере', icon: 'pi pi-server' },
 };
 
 interface LocalCatalogPickerLoaderOptions<T> {
@@ -45,20 +39,16 @@ interface LocalCatalogPickerLoaderOptions<T> {
 }
 
 export function actionPickerCategory(type: string): ActionPickerCategory {
-  if (LOGIC_ACTIONS.has(type)) return "logic";
-  if (WAIT_ACTIONS.has(type)) return "wait";
-  return "action";
+  if (LOGIC_ACTIONS.has(type)) return 'logic';
+  if (WAIT_ACTIONS.has(type)) return 'wait';
+  return 'action';
 }
 
-export function actionPickerCategoryLabel(
-  category: ActionPickerCategory,
-): string {
+export function actionPickerCategoryLabel(category: ActionPickerCategory): string {
   return CATEGORY_META[category].label;
 }
 
-export function actionPickerCategoryIcon(
-  category: ActionPickerCategory,
-): string {
+export function actionPickerCategoryIcon(category: ActionPickerCategory): string {
   return CATEGORY_META[category].icon;
 }
 
@@ -70,15 +60,13 @@ export function actionExecutorIcon(executor: ActionExecutor): string {
   return EXECUTOR_META[executor].icon;
 }
 
-export function toActionPickerOption(
-  action: ActionPickerItem,
-): CatalogPickerOption {
+export function toActionPickerOption(action: ActionPickerItem): CatalogPickerOption {
   const category = actionPickerCategory(action.type);
   return {
     value: action.type,
     name: action.name,
     code: action.type,
-    description: action.description ?? "Описание пока не добавлено",
+    description: action.description ?? 'Описание пока не добавлено',
     meta: [
       {
         label: actionPickerCategoryLabel(category),
@@ -97,7 +85,7 @@ export function createLocalCatalogPickerLoader<T>(
   options: LocalCatalogPickerLoaderOptions<T>,
 ): (request: CatalogPickerRequest) => Promise<CatalogPickerPage> {
   return async (request) => {
-    const query = request.query.trim().toLocaleLowerCase("ru-RU");
+    const query = request.query.trim().toLocaleLowerCase('ru-RU');
     const items = options
       .items()
       .filter(
@@ -105,9 +93,9 @@ export function createLocalCatalogPickerLoader<T>(
           (!options.include || options.include(item)) &&
           (!request.filter || options.filterValue(item) === request.filter) &&
           (!query ||
-            options.searchValues(item).some((value) =>
-              value?.toLocaleLowerCase("ru-RU").includes(query),
-            )),
+            options
+              .searchValues(item)
+              .some((value) => value?.toLocaleLowerCase('ru-RU').includes(query))),
       )
       .sort(options.compare)
       .map(options.toOption);
@@ -128,8 +116,7 @@ export function createLocalActionPickerLoader(
     },
     filterValue: (action) => actionPickerCategory(action.type),
     searchValues: (action) => [action.name, action.type, action.description],
-    compare: (left, right) =>
-      left.name.localeCompare(right.name, "ru-RU", { sensitivity: "base" }),
+    compare: (left, right) => left.name.localeCompare(right.name, 'ru-RU', { sensitivity: 'base' }),
     toOption: toActionPickerOption,
   });
 }

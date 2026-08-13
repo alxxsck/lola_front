@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed } from 'vue';
 
 const props = withDefaults(
   defineProps<{
@@ -11,22 +11,18 @@ const props = withDefaults(
   }>(),
   {
     pageSize: 10,
-    previousLabel: "Предыдущая страница",
-    nextLabel: "Следующая страница",
+    previousLabel: 'Предыдущая страница',
+    nextLabel: 'Следующая страница',
   },
 );
 
 const emit = defineEmits<{
-  "update:page": [page: number];
+  'update:page': [page: number];
 }>();
 
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil(props.total / props.pageSize)),
-);
+const pageCount = computed(() => Math.max(1, Math.ceil(props.total / props.pageSize)));
 const firstItem = computed(() => (props.page - 1) * props.pageSize + 1);
-const lastItem = computed(() =>
-  Math.min(props.total, props.page * props.pageSize),
-);
+const lastItem = computed(() => Math.min(props.total, props.page * props.pageSize));
 </script>
 
 <template>

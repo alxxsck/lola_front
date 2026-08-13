@@ -1,11 +1,11 @@
-import { axiosInstance } from "@/shared/api/http/axios-instance";
-import { parseAllowanceUsd } from "../model/ai-allowance";
+import { axiosInstance } from '@/shared/api/http/axios-instance';
+import { parseAllowanceUsd } from '../model/ai-allowance';
 import type {
   AiAllowanceAccrualRule,
   AiAllowanceAccrualReceiptPage,
   PutAiAllowanceAccrualRuleInput,
-} from "../model/ai-allowance-accrual";
-import { isAccrualSource } from "../model/ai-allowance-accrual";
+} from '../model/ai-allowance-accrual';
+import { isAccrualSource } from '../model/ai-allowance-accrual';
 
 export const aiAllowanceAccrualRepository = {
   async listRules(
@@ -27,7 +27,7 @@ export const aiAllowanceAccrualRepository = {
       limit?: number;
       cursor?: string;
       endUserId?: string;
-      status?: "GRANTED" | "REJECTED";
+      status?: 'GRANTED' | 'REJECTED';
     } = { limit: 50 },
   ): Promise<AiAllowanceAccrualReceiptPage> {
     const response = await axiosInstance.get<unknown>(
@@ -43,11 +43,9 @@ export const aiAllowanceAccrualRepository = {
     idempotencyKey: string,
   ): Promise<unknown> {
     return (
-      await axiosInstance.put(
-        `${root(projectId)}/${encodeURIComponent(ruleKey)}`,
-        input,
-        { headers: { "Idempotency-Key": idempotencyKey } },
-      )
+      await axiosInstance.put(`${root(projectId)}/${encodeURIComponent(ruleKey)}`, input, {
+        headers: { 'Idempotency-Key': idempotencyKey },
+      })
     ).data;
   },
 };
@@ -84,7 +82,7 @@ function parseReceiptPage(value: unknown): AiAllowanceAccrualReceiptPage {
     return r &&
       text(r.id) &&
       text(r.endUserId) &&
-      (r.status === "GRANTED" || r.status === "REJECTED") &&
+      (r.status === 'GRANTED' || r.status === 'REJECTED') &&
       (r.rejectionReason === null || text(r.rejectionReason)) &&
       rewardUsd &&
       iso(r.evaluatedAt) &&
@@ -126,7 +124,7 @@ function parseReceiptPage(value: unknown): AiAllowanceAccrualReceiptPage {
   });
   if (items.some((item) => !item)) invalid();
   return {
-    items: items as AiAllowanceAccrualReceiptPage["items"],
+    items: items as AiAllowanceAccrualReceiptPage['items'],
     pageInfo: info,
   };
 }
@@ -152,12 +150,10 @@ function parseRule(value: unknown): AiAllowanceAccrualRule | undefined {
     lifecycle: s.lifecycle,
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,
-    revisions: revisions as AiAllowanceAccrualRule["revisions"],
+    revisions: revisions as AiAllowanceAccrualRule['revisions'],
   };
 }
-function parseRevision(
-  value: unknown,
-): AiAllowanceAccrualRule["revisions"][number] | undefined {
+function parseRevision(value: unknown): AiAllowanceAccrualRule['revisions'][number] | undefined {
   const s = object(value);
   const rewardUsd = parseAllowanceUsd(s?.rewardUsd);
   const userCap = parseAllowanceUsd(s?.perEndUserDailyCapUsd);
@@ -220,10 +216,7 @@ function parseRevision(
     changeReason: s.changeReason,
     createdAt: s.createdAt,
     eventRevisionBindings: bindings as never,
-    ...(eventKey &&
-    text(eventKey.code) &&
-    text(eventKey.name) &&
-    text(eventKey.lifecycle)
+    ...(eventKey && text(eventKey.code) && text(eventKey.name) && text(eventKey.lifecycle)
       ? {
           eventDefinitionKey: {
             code: eventKey.code,
@@ -235,16 +228,14 @@ function parseRevision(
   };
 }
 function object(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === "object" && !Array.isArray(value)
+  return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : undefined;
 }
-function pageInfo(
-  value: unknown,
-): { hasMore: boolean; nextCursor: string | null } | undefined {
+function pageInfo(value: unknown): { hasMore: boolean; nextCursor: string | null } | undefined {
   const source = object(value);
   return source &&
-    typeof source.hasMore === "boolean" &&
+    typeof source.hasMore === 'boolean' &&
     (source.nextCursor === null || text(source.nextCursor)) &&
     source.hasMore === (source.nextCursor !== null)
     ? {
@@ -254,14 +245,14 @@ function pageInfo(
     : undefined;
 }
 function text(value: unknown): value is string {
-  return typeof value === "string" && value.length > 0 && value.length <= 500;
+  return typeof value === 'string' && value.length > 0 && value.length <= 500;
 }
 function iso(value: unknown): value is string {
   return text(value) && Number.isFinite(Date.parse(value));
 }
-function lifecycle(value: unknown): value is "ACTIVE" | "PAUSED" | "ARCHIVED" {
-  return value === "ACTIVE" || value === "PAUSED" || value === "ARCHIVED";
+function lifecycle(value: unknown): value is 'ACTIVE' | 'PAUSED' | 'ARCHIVED' {
+  return value === 'ACTIVE' || value === 'PAUSED' || value === 'ARCHIVED';
 }
 function invalid(): never {
-  throw new Error("Сервер вернул некорректные правила лояльности");
+  throw new Error('Сервер вернул некорректные правила лояльности');
 }

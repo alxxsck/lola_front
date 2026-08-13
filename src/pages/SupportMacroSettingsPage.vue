@@ -1,43 +1,43 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import Textarea from "primevue/textarea";
-import ToggleSwitch from "primevue/toggleswitch";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { supportMacroSource } from "@/features/support-macros/api/support-macros-source";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import Textarea from 'primevue/textarea';
+import ToggleSwitch from 'primevue/toggleswitch';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { supportMacroSource } from '@/features/support-macros/api/support-macros-source';
 import {
   createSupportMacroTranslationScopeFence,
   type SupportMacroTranslationScopeToken,
-} from "@/features/support-macros/model/support-macro-translation-scope";
-import { createSupportMacroAuthoringController } from "@/features/support-macros/model/use-support-macro-authoring";
-import { createTranslationJobController } from "@/features/scenario-localization/model/translation-job-controller";
+} from '@/features/support-macros/model/support-macro-translation-scope';
+import { createSupportMacroAuthoringController } from '@/features/support-macros/model/use-support-macro-authoring';
+import { createTranslationJobController } from '@/features/scenario-localization/model/translation-job-controller';
 import type {
   RollbackSupportMacroDtoReasonCode,
   SupportMacroCompiledDraftDto,
   SupportMacroResponseDto,
   SupportMacroRevisionResponseDto,
   SupportMacroVariableDtoName,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
-type LibraryFilter = "ALL" | "INCOMPLETE" | "ARCHIVED";
+type LibraryFilter = 'ALL' | 'INCOMPLETE' | 'ARCHIVED';
 type TranslationState =
-  | "READY"
-  | "MISSING"
-  | "PENDING"
-  | "RUNNING"
-  | "MACHINE_UNSAVED"
-  | "ERROR"
-  | "OUTDATED"
-  | "STALE_SOURCE"
-  | "TARGET_CONFLICT"
-  | "CANCELLED";
+  | 'READY'
+  | 'MISSING'
+  | 'PENDING'
+  | 'RUNNING'
+  | 'MACHINE_UNSAVED'
+  | 'ERROR'
+  | 'OUTDATED'
+  | 'STALE_SOURCE'
+  | 'TARGET_CONFLICT'
+  | 'CANCELLED';
 
 interface StoredTranslationDraft {
   sourceBody: string;
@@ -51,16 +51,15 @@ const editorVisible = ref(false);
 const translationsExpanded = ref(false);
 const advancedExpanded = ref(false);
 const historyExpanded = ref(false);
-const libraryFilter = ref<LibraryFilter>("ALL");
+const libraryFilter = ref<LibraryFilter>('ALL');
 const filterOptions: readonly { value: LibraryFilter; label: string }[] = [
-  { value: "ALL", label: "Все" },
-  { value: "INCOMPLETE", label: "Нужен перевод" },
-  { value: "ARCHIVED", label: "Архив" },
+  { value: 'ALL', label: 'Все' },
+  { value: 'INCOMPLETE', label: 'Нужен перевод' },
+  { value: 'ARCHIVED', label: 'Архив' },
 ];
 const rollbackVisible = ref(false);
 const rollbackRevision = ref<SupportMacroRevisionResponseDto | null>(null);
-const rollbackReason =
-  ref<RollbackSupportMacroDtoReasonCode>("CONTENT_REGRESSION");
+const rollbackReason = ref<RollbackSupportMacroDtoReasonCode>('CONTENT_REGRESSION');
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 const canManage = computed(
@@ -68,7 +67,7 @@ const canManage = computed(
     !accessDenied.value &&
     hasProjectPermission(
       auth.project?.effectivePermissionCodes ?? [],
-      "project.support.macros.manage",
+      'project.support.macros.manage',
     ),
 );
 const controller = createSupportMacroAuthoringController(
@@ -89,7 +88,7 @@ const controller = createSupportMacroAuthoringController(
 );
 
 const supportedLocales = computed(() => {
-  const values = ["ru", ...(auth.project?.supportedLocales ?? [])];
+  const values = ['ru', ...(auth.project?.supportedLocales ?? [])];
   return [
     ...new Set(
       values.flatMap((locale) => {
@@ -107,22 +106,15 @@ const sourceBody = computed({
   set: (value: string) => controller.updateSourceBody(value),
 });
 
-let translationJobs: ReturnType<typeof createTranslationJobController> | null =
-  null;
+let translationJobs: ReturnType<typeof createTranslationJobController> | null = null;
 const translationFence = createSupportMacroTranslationScopeFence();
 
 function translationDraftStorageKey(projectId: string, scope: string): string {
   return `retenive:support-macro-translation-draft:${projectId}:${scope}`;
 }
 
-function persistTranslationDraft(
-  token: SupportMacroTranslationScopeToken,
-): void {
-  if (
-    !translationFence.isCurrent(token) ||
-    typeof sessionStorage === "undefined"
-  )
-    return;
+function persistTranslationDraft(token: SupportMacroTranslationScopeToken): void {
+  if (!translationFence.isCurrent(token) || typeof sessionStorage === 'undefined') return;
   const projectId = auth.project?.id;
   if (!projectId) return;
   const draft: StoredTranslationDraft = {
@@ -130,15 +122,12 @@ function persistTranslationDraft(
     translations: { ...controller.form.value.translations },
     states: { ...controller.translationStates.value },
   };
-  sessionStorage.setItem(
-    translationDraftStorageKey(projectId, token.scope),
-    JSON.stringify(draft),
-  );
+  sessionStorage.setItem(translationDraftStorageKey(projectId, token.scope), JSON.stringify(draft));
 }
 
 function restoreTranslationDraft(scope: string): void {
   const projectId = auth.project?.id;
-  if (!projectId || typeof sessionStorage === "undefined") return;
+  if (!projectId || typeof sessionStorage === 'undefined') return;
   const key = translationDraftStorageKey(projectId, scope);
   const raw = sessionStorage.getItem(key);
   if (!raw) return;
@@ -161,7 +150,7 @@ function restoreTranslationDraft(scope: string): void {
 
 function clearTranslationDraft(scope = translationFence.current().scope): void {
   const projectId = auth.project?.id;
-  if (!projectId || !scope || typeof sessionStorage === "undefined") return;
+  if (!projectId || !scope || typeof sessionStorage === 'undefined') return;
   sessionStorage.removeItem(translationDraftStorageKey(projectId, scope));
 }
 
@@ -170,18 +159,16 @@ function bindTranslationJobs(scope: string): {
   jobs: ReturnType<typeof createTranslationJobController>;
 } {
   translationJobs?.dispose();
-  const projectId = auth.project?.id ?? "";
+  const projectId = auth.project?.id ?? '';
   const token = translationFence.activate(scope);
   const jobs = createTranslationJobController({
     context: () => ({ projectId, scenarioId: scope }),
     getValue: () =>
-      translationFence.isCurrent(token)
-        ? { ...controller.form.value.translations }
-        : {},
+      translationFence.isCurrent(token) ? { ...controller.form.value.translations } : {},
     apply: (_fieldPath, locale, text, snapshot) => {
-      if (!translationFence.isCurrent(token)) return "TARGET_CONFLICT";
+      if (!translationFence.isCurrent(token)) return 'TARGET_CONFLICT';
       const outcome = controller.applyTranslation(locale, text, snapshot);
-      if (outcome === "APPLIED") persistTranslationDraft(token);
+      if (outcome === 'APPLIED') persistTranslationDraft(token);
       return outcome;
     },
     state: (_fieldPath, locale, state) => {
@@ -195,29 +182,24 @@ function bindTranslationJobs(scope: string): {
 }
 
 const visibilityOptions = [
-  { label: "Весь проект", value: "PROJECT" },
-  { label: "Только команды", value: "TEAMS" },
+  { label: 'Весь проект', value: 'PROJECT' },
+  { label: 'Только команды', value: 'TEAMS' },
 ];
 const rollbackReasons = [
-  { label: "Ошибка в содержимом", value: "CONTENT_REGRESSION" },
-  { label: "Восстановление после инцидента", value: "INCIDENT_RECOVERY" },
-  { label: "Откат политики", value: "POLICY_ROLLBACK" },
+  { label: 'Ошибка в содержимом', value: 'CONTENT_REGRESSION' },
+  { label: 'Восстановление после инцидента', value: 'INCIDENT_RECOVERY' },
+  { label: 'Откат политики', value: 'POLICY_ROLLBACK' },
 ];
-const variableOptions: { label: string; value: SupportMacroVariableDtoName }[] =
-  [
-    { label: "Имя пользователя", value: "endUser.displayName" },
-    { label: "Идентификатор обращения", value: "case.id" },
-    { label: "Тема обращения", value: "case.topicLabel" },
-    { label: "Идентификатор диалога", value: "conversation.id" },
-    { label: "Имя оператора", value: "operator.displayName" },
-  ];
+const variableOptions: { label: string; value: SupportMacroVariableDtoName }[] = [
+  { label: 'Имя пользователя', value: 'endUser.displayName' },
+  { label: 'Идентификатор обращения', value: 'case.id' },
+  { label: 'Тема обращения', value: 'case.topicLabel' },
+  { label: 'Идентификатор диалога', value: 'conversation.id' },
+  { label: 'Имя оператора', value: 'operator.displayName' },
+];
 
-function configurationOf(
-  macro: SupportMacroResponseDto,
-): SupportMacroCompiledDraftDto | null {
-  return (
-    macro.draft?.configuration ?? macro.publishedRevision?.configuration ?? null
-  );
+function configurationOf(macro: SupportMacroResponseDto): SupportMacroCompiledDraftDto | null {
+  return macro.draft?.configuration ?? macro.publishedRevision?.configuration ?? null;
 }
 
 function translationsOf(
@@ -245,21 +227,17 @@ function coverageOf(macro: SupportMacroResponseDto) {
 
 const visibleItems = computed(() =>
   controller.items.value.filter((macro) => {
-    if (libraryFilter.value === "ARCHIVED")
-      return macro.lifecycle === "ARCHIVED";
-    if (libraryFilter.value === "INCOMPLETE")
-      return macro.lifecycle !== "ARCHIVED" && !coverageOf(macro).complete;
+    if (libraryFilter.value === 'ARCHIVED') return macro.lifecycle === 'ARCHIVED';
+    if (libraryFilter.value === 'INCOMPLETE')
+      return macro.lifecycle !== 'ARCHIVED' && !coverageOf(macro).complete;
     return true;
   }),
 );
 const publishedCount = computed(
-  () =>
-    controller.items.value.filter((macro) => Boolean(macro.publishedRevision))
-      .length,
+  () => controller.items.value.filter((macro) => Boolean(macro.publishedRevision)).length,
 );
 const completeCount = computed(
-  () =>
-    controller.items.value.filter((macro) => coverageOf(macro).complete).length,
+  () => controller.items.value.filter((macro) => coverageOf(macro).complete).length,
 );
 const currentCoverage = computed(() => {
   const translated = supportedLocales.value.filter((locale) =>
@@ -271,21 +249,17 @@ const legacySourceLocale = computed(() => {
   const configuration = controller.selected.value
     ? configurationOf(controller.selected.value)
     : null;
-  if (!configuration || configuration.locale === "ru") return null;
-  return controller.form.value.translations.ru?.trim()
-    ? null
-    : configuration.locale;
+  if (!configuration || configuration.locale === 'ru') return null;
+  return controller.form.value.translations.ru?.trim() ? null : configuration.locale;
 });
 const translating = computed(() =>
   Object.values(controller.translationStates.value).some(
-    (state) => state === "PENDING" || state === "RUNNING",
+    (state) => state === 'PENDING' || state === 'RUNNING',
   ),
 );
 
 function addVariable(): void {
-  const used = new Set(
-    controller.form.value.variables.map((variable) => variable.name),
-  );
+  const used = new Set(controller.form.value.variables.map((variable) => variable.name));
   const available = variableOptions.find((option) => !used.has(option.value));
   if (available)
     controller.form.value.variables.push({
@@ -300,52 +274,44 @@ function removeVariable(index: number): void {
 
 function localeLabel(locale: string): string {
   try {
-    return (
-      new Intl.DisplayNames(["ru"], { type: "language" }).of(locale) ?? locale
-    );
+    return new Intl.DisplayNames(['ru'], { type: 'language' }).of(locale) ?? locale;
   } catch {
     return locale;
   }
 }
 
 function translationState(locale: string): TranslationState {
-  if (locale === "ru") return "READY";
+  if (locale === 'ru') return 'READY';
   return (
-    (controller.translationStates.value[locale] as
-      TranslationState | undefined) ??
-    (controller.form.value.translations[locale]?.trim() ? "READY" : "MISSING")
+    (controller.translationStates.value[locale] as TranslationState | undefined) ??
+    (controller.form.value.translations[locale]?.trim() ? 'READY' : 'MISSING')
   );
 }
 
 function translationStateLabel(state: TranslationState): string {
   return {
-    READY: "Готов",
-    MISSING: "Нет перевода",
-    PENDING: "В очереди",
-    RUNNING: "Переводится",
-    MACHINE_UNSAVED: "Новый перевод",
-    ERROR: "Ошибка",
-    OUTDATED: "Устарел",
-    STALE_SOURCE: "Оригинал изменён",
-    TARGET_CONFLICT: "Изменён вручную",
-    CANCELLED: "Отменён",
+    READY: 'Готов',
+    MISSING: 'Нет перевода',
+    PENDING: 'В очереди',
+    RUNNING: 'Переводится',
+    MACHINE_UNSAVED: 'Новый перевод',
+    ERROR: 'Ошибка',
+    OUTDATED: 'Устарел',
+    STALE_SOURCE: 'Оригинал изменён',
+    TARGET_CONFLICT: 'Изменён вручную',
+    CANCELLED: 'Отменён',
   }[state];
 }
 
 function translationSeverity(
   state: TranslationState,
-): "success" | "secondary" | "warn" | "danger" | "info" {
-  if (state === "READY") return "success";
-  if (state === "PENDING" || state === "RUNNING" || state === "MACHINE_UNSAVED")
-    return "info";
-  if (state === "ERROR") return "danger";
-  if (
-    state === "OUTDATED" ||
-    state === "STALE_SOURCE" ||
-    state === "TARGET_CONFLICT"
-  )
-    return "warn";
-  return "secondary";
+): 'success' | 'secondary' | 'warn' | 'danger' | 'info' {
+  if (state === 'READY') return 'success';
+  if (state === 'PENDING' || state === 'RUNNING' || state === 'MACHINE_UNSAVED') return 'info';
+  if (state === 'ERROR') return 'danger';
+  if (state === 'OUTDATED' || state === 'STALE_SOURCE' || state === 'TARGET_CONFLICT')
+    return 'warn';
+  return 'secondary';
 }
 
 function setTranslation(locale: string, value: string): void {
@@ -353,30 +319,28 @@ function setTranslation(locale: string, value: string): void {
   if (value.trim()) translations[locale] = value;
   else delete translations[locale];
   controller.form.value.translations = translations;
-  controller.setTranslationState(locale, value.trim() ? "READY" : "MISSING");
+  controller.setTranslationState(locale, value.trim() ? 'READY' : 'MISSING');
   const token = translationFence.current();
   if (token.scope) persistTranslationDraft(token);
 }
 
 async function translateAll(): Promise<void> {
-  const targets = supportedLocales.value.filter((locale) => locale !== "ru");
+  const targets = supportedLocales.value.filter((locale) => locale !== 'ru');
   if (!controller.form.value.body.trim() || !targets.length) return;
   try {
     if (!controller.selected.value) {
       if (!(await controller.saveDraft())) return;
-      const savedMacro = controller.selected
-        .value as SupportMacroResponseDto | null;
+      const savedMacro = controller.selected.value as SupportMacroResponseDto | null;
       if (!savedMacro) return;
       bindTranslationJobs(`support-macro:${savedMacro.id}`);
     }
     await translationJobs?.start({
-      fieldPath: "support-macro.body",
-      sourceLocale: "ru",
+      fieldPath: 'support-macro.body',
+      sourceLocale: 'ru',
       targets,
     });
   } catch {
-    controller.error.value =
-      "Не удалось запустить перевод. Попробуйте ещё раз.";
+    controller.error.value = 'Не удалось запустить перевод. Попробуйте ещё раз.';
   }
 }
 
@@ -422,12 +386,12 @@ async function saveAndPublish(): Promise<void> {
 }
 
 function publicationKindLabel(value: string): string {
-  return value === "ROLLBACK" ? "возврат версии" : "публикация";
+  return value === 'ROLLBACK' ? 'возврат версии' : 'публикация';
 }
 
 function openRollback(revision: SupportMacroRevisionResponseDto): void {
   rollbackRevision.value = revision;
-  rollbackReason.value = "CONTENT_REGRESSION";
+  rollbackReason.value = 'CONTENT_REGRESSION';
   rollbackVisible.value = true;
 }
 
@@ -470,21 +434,14 @@ onBeforeUnmount(() => {
   <section class="page macro-library-page">
     <header class="library-header">
       <div class="library-heading">
-        <div class="eyebrow">
-          <i class="pi pi-comments" /> Материалы поддержки
-        </div>
+        <div class="eyebrow"><i class="pi pi-comments" /> Материалы поддержки</div>
         <h1>Библиотека ответов</h1>
         <p>
-          Один ответ для всех языков проекта. Операторы получают вариант на
-          языке текущего диалога и могут отредактировать его перед отправкой.
+          Один ответ для всех языков проекта. Операторы получают вариант на языке текущего диалога и
+          могут отредактировать его перед отправкой.
         </p>
       </div>
-      <Button
-        label="Новый шаблон"
-        icon="pi pi-plus"
-        :disabled="!canManage"
-        @click="openCreate"
-      />
+      <Button label="Новый шаблон" icon="pi pi-plus" :disabled="!canManage" @click="openCreate" />
     </header>
 
     <Message v-if="!canManage" severity="warn" :closable="false">
@@ -513,10 +470,7 @@ onBeforeUnmount(() => {
         </div>
         <div class="library-summary__note">
           <i class="pi pi-language" />
-          <span
-            >{{ supportedLocales.length }} языка проекта · сводка по
-            списку</span
-          >
+          <span>{{ supportedLocales.length }} языка проекта · сводка по списку</span>
         </div>
       </section>
 
@@ -555,27 +509,18 @@ onBeforeUnmount(() => {
           v-if="controller.loading.value && !controller.items.value.length"
           class="library-loading"
         >
-          <Skeleton
-            v-for="index in 5"
-            :key="index"
-            height="112px"
-            border-radius="14px"
-          />
+          <Skeleton v-for="index in 5" :key="index" height="112px" border-radius="14px" />
         </div>
         <div v-else-if="!visibleItems.length" class="library-empty">
           <span class="library-empty__icon"><i class="pi pi-comments" /></span>
           <h2>
-            {{
-              controller.query.value
-                ? "Ничего не найдено"
-                : "Библиотека пока пуста"
-            }}
+            {{ controller.query.value ? 'Ничего не найдено' : 'Библиотека пока пуста' }}
           </h2>
           <p>
             {{
               controller.query.value
-                ? "Попробуйте другой запрос или сбросьте фильтр."
-                : "Создайте первый русский ответ — переводы добавятся в тот же шаблон."
+                ? 'Попробуйте другой запрос или сбросьте фильтр.'
+                : 'Создайте первый русский ответ — переводы добавятся в тот же шаблон.'
             }}
           </p>
           <Button
@@ -621,17 +566,12 @@ onBeforeUnmount(() => {
               <div class="resource-meta">
                 <code>{{ macro.stableCode }}</code>
                 <span
-                  v-for="topic in configurationOf(
-                    macro,
-                  )?.visibility.topicCodes.slice(0, 2)"
+                  v-for="topic in configurationOf(macro)?.visibility.topicCodes.slice(0, 2)"
                   :key="topic"
                   >{{ topic }}</span
                 >
                 <span
-                  v-for="shortcut in configurationOf(macro)?.shortcuts.slice(
-                    0,
-                    2,
-                  )"
+                  v-for="shortcut in configurationOf(macro)?.shortcuts.slice(0, 2)"
                   :key="shortcut"
                   >/{{ shortcut }}</span
                 >
@@ -640,30 +580,18 @@ onBeforeUnmount(() => {
             <div class="coverage-cell">
               <div>
                 <span>Переводы</span>
-                <strong
-                  >{{ coverageOf(macro).translated }} /
-                  {{ coverageOf(macro).total }}</strong
-                >
+                <strong>{{ coverageOf(macro).translated }} / {{ coverageOf(macro).total }}</strong>
               </div>
-              <div
-                class="coverage-rail"
-                :class="{ complete: coverageOf(macro).complete }"
-              >
+              <div class="coverage-rail" :class="{ complete: coverageOf(macro).complete }">
                 <span
                   v-for="locale in supportedLocales"
                   :key="locale"
                   :class="{
-                    ready: Boolean(
-                      translationsOf(configurationOf(macro))[locale]?.trim(),
-                    ),
+                    ready: Boolean(translationsOf(configurationOf(macro))[locale]?.trim()),
                   }"
                 />
               </div>
-              <small>{{
-                coverageOf(macro).complete
-                  ? "Все языки готовы"
-                  : "Нужен перевод"
-              }}</small>
+              <small>{{ coverageOf(macro).complete ? 'Все языки готовы' : 'Нужен перевод' }}</small>
             </div>
             <span class="resource-open" aria-hidden="true">
               Открыть <i class="pi pi-chevron-right" />
@@ -692,35 +620,20 @@ onBeforeUnmount(() => {
     >
       <template #header>
         <div class="editor-heading">
-          <span>{{
-            controller.selected.value ? "Шаблон ответа" : "Новый шаблон"
-          }}</span>
-          <h2>{{ controller.form.value.title || "Без названия" }}</h2>
+          <span>{{ controller.selected.value ? 'Шаблон ответа' : 'Новый шаблон' }}</span>
+          <h2>{{ controller.form.value.title || 'Без названия' }}</h2>
           <div>
             <Tag
               v-if="controller.selected.value"
-              :value="
-                controller.selected.value.lifecycle === 'ACTIVE'
-                  ? 'Активен'
-                  : 'Архивирован'
-              "
-              :severity="
-                controller.selected.value.lifecycle === 'ACTIVE'
-                  ? 'success'
-                  : 'secondary'
-              "
+              :value="controller.selected.value.lifecycle === 'ACTIVE' ? 'Активен' : 'Архивирован'"
+              :severity="controller.selected.value.lifecycle === 'ACTIVE' ? 'success' : 'secondary'"
             />
-            <span v-if="controller.selected.value?.draft"
-              >Есть неопубликованные изменения</span
-            >
+            <span v-if="controller.selected.value?.draft">Есть неопубликованные изменения</span>
           </div>
         </div>
       </template>
 
-      <div
-        v-if="controller.loading.value && editorVisible"
-        class="editor-loading"
-      >
+      <div v-if="controller.loading.value && editorVisible" class="editor-loading">
         <Skeleton height="48px" />
         <Skeleton height="180px" />
         <Skeleton height="92px" />
@@ -736,9 +649,8 @@ onBeforeUnmount(() => {
           </header>
           <Message v-if="legacySourceLocale" severity="warn" :closable="false">
             Это старый шаблон с источником
-            {{ localeLabel(legacySourceLocale) }}. Его текст сохранён в
-            переводах. Добавьте русский оригинал перед сохранением —
-            существующий перевод не будет перезаписан.
+            {{ localeLabel(legacySourceLocale) }}. Его текст сохранён в переводах. Добавьте русский
+            оригинал перед сохранением — существующий перевод не будет перезаписан.
           </Message>
           <div class="form-grid">
             <label>
@@ -768,8 +680,8 @@ onBeforeUnmount(() => {
               placeholder="Текст, который оператор сможет отредактировать перед отправкой"
             />
             <small
-              >{{ controller.form.value.body.length }} / 10 240 · русский текст
-              — источник всех переводов</small
+              >{{ controller.form.value.body.length }} / 10 240 · русский текст — источник всех
+              переводов</small
             >
           </label>
         </section>
@@ -785,8 +697,8 @@ onBeforeUnmount(() => {
             <span>
               <strong>Переводы</strong>
               <small
-                >{{ currentCoverage.translated }} из
-                {{ currentCoverage.total }} языков готовы</small
+                >{{ currentCoverage.translated }} из {{ currentCoverage.total }} языков
+                готовы</small
               >
             </span>
             <span class="coverage-rail coverage-rail--editor">
@@ -794,25 +706,18 @@ onBeforeUnmount(() => {
                 v-for="locale in supportedLocales"
                 :key="locale"
                 :class="{
-                  ready: Boolean(
-                    controller.form.value.translations[locale]?.trim(),
-                  ),
+                  ready: Boolean(controller.form.value.translations[locale]?.trim()),
                 }"
               />
             </span>
             <i class="pi pi-chevron-down disclosure-chevron" />
           </button>
           <div class="translation-action">
-            <p>
-              Переводы сохраняются внутри этого шаблона и подбираются по языку
-              текущего чата.
-            </p>
+            <p>Переводы сохраняются внутри этого шаблона и подбираются по языку текущего чата.</p>
             <Button
               type="button"
               :label="
-                controller.selected.value
-                  ? 'Перевести на все языки'
-                  : 'Сохранить и перевести'
+                controller.selected.value ? 'Перевести на все языки' : 'Сохранить и перевести'
               "
               icon="pi pi-sparkles"
               severity="secondary"
@@ -840,17 +745,13 @@ onBeforeUnmount(() => {
                   />
                 </header>
                 <Textarea
-                  :model-value="
-                    controller.form.value.translations[locale] ?? ''
-                  "
+                  :model-value="controller.form.value.translations[locale] ?? ''"
                   :disabled="locale === 'ru'"
                   :aria-label="`Перевод: ${localeLabel(locale)} (${locale})`"
                   rows="4"
                   auto-resize
                   :placeholder="
-                    locale === 'ru'
-                      ? 'Русский оригинал редактируется выше'
-                      : 'Перевод ещё не готов'
+                    locale === 'ru' ? 'Русский оригинал редактируется выше' : 'Перевод ещё не готов'
                   "
                   @update:model-value="setTranslation(locale, String($event))"
                 />
@@ -860,8 +761,7 @@ onBeforeUnmount(() => {
                     translationState(locale) === 'STALE_SOURCE'
                   "
                 >
-                  Русский оригинал изменился. Переведите этот язык заново или
-                  обновите вручную.
+                  Русский оригинал изменился. Переведите этот язык заново или обновите вручную.
                 </small>
               </article>
             </div>
@@ -915,9 +815,7 @@ onBeforeUnmount(() => {
                     rows="3"
                     placeholder="PAYMENTS"
                   />
-                  <small
-                    >Коды тем по одному на строку; пусто — любая тема.</small
-                  >
+                  <small>Коды тем по одному на строку; пусто — любая тема.</small>
                 </label>
               </div>
               <div class="form-grid">
@@ -939,10 +837,7 @@ onBeforeUnmount(() => {
                 </label>
                 <label v-if="controller.form.value.visibility === 'TEAMS'">
                   <span>Идентификаторы команд</span>
-                  <Textarea
-                    v-model="controller.form.value.teamIdsText"
-                    rows="3"
-                  />
+                  <Textarea v-model="controller.form.value.teamIdsText" rows="3" />
                 </label>
               </div>
               <div class="variable-editor">
@@ -957,8 +852,8 @@ onBeforeUnmount(() => {
                       />
                     </strong>
                     <small
-                      >Сервер подставит разрешённые данные пользователя или
-                      обращения при вставке шаблона.</small
+                      >Сервер подставит разрешённые данные пользователя или обращения при вставке
+                      шаблона.</small
                     >
                   </div>
                   <Button
@@ -967,16 +862,11 @@ onBeforeUnmount(() => {
                     icon="pi pi-plus"
                     severity="secondary"
                     text
-                    :disabled="
-                      controller.form.value.variables.length >=
-                      variableOptions.length
-                    "
+                    :disabled="controller.form.value.variables.length >= variableOptions.length"
                     @click="addVariable"
                   />
                 </header>
-                <p v-if="!controller.form.value.variables.length">
-                  Динамических значений нет.
-                </p>
+                <p v-if="!controller.form.value.variables.length">Динамических значений нет.</p>
                 <div
                   v-for="(variable, index) in controller.form.value.variables"
                   :key="`${variable.name}-${index}`"
@@ -988,10 +878,7 @@ onBeforeUnmount(() => {
                     option-label="label"
                     option-value="value"
                   />
-                  <InputText
-                    v-model="variable.fallback"
-                    placeholder="Запасной текст"
-                  />
+                  <InputText v-model="variable.fallback" placeholder="Запасной текст" />
                   <label class="variable-required">
                     <ToggleSwitch v-model="variable.required" />
                     <span>Обязательно</span>
@@ -1010,19 +897,13 @@ onBeforeUnmount(() => {
           </Transition>
         </section>
 
-        <section
-          v-if="controller.preview.value"
-          class="macro-preview"
-          aria-live="polite"
-        >
+        <section v-if="controller.preview.value" class="macro-preview" aria-live="polite">
           <header>
-            <strong>Проверено сервером</strong
-            ><Tag value="Готово" severity="success" />
+            <strong>Проверено сервером</strong><Tag value="Готово" severity="success" />
           </header>
           <p>{{ controller.preview.value.draft.body }}</p>
           <small
-            >Compiler {{ controller.preview.value.compilerRevision }} · без
-            предупреждений</small
+            >Compiler {{ controller.preview.value.compilerRevision }} · без предупреждений</small
           >
         </section>
 
@@ -1039,27 +920,20 @@ onBeforeUnmount(() => {
             <span class="disclosure-icon"><i class="pi pi-history" /></span>
             <span
               ><strong>История</strong
-              ><small
-                >{{ controller.revisions.value.length }} публикаций</small
-              ></span
+              ><small>{{ controller.revisions.value.length }} публикаций</small></span
             >
             <i class="pi pi-chevron-down disclosure-chevron" />
           </button>
           <Transition name="section-expand">
             <div v-if="historyExpanded" class="history-list">
-              <article
-                v-for="revision in controller.revisions.value"
-                :key="revision.id"
-              >
+              <article v-for="revision in controller.revisions.value" :key="revision.id">
                 <div>
                   <strong
                     >Версия {{ revision.revisionNumber }} ·
                     {{ revision.configuration.title }}</strong
                   >
                   <small
-                    >{{
-                      new Date(revision.publishedAt).toLocaleString("ru-RU")
-                    }}
+                    >{{ new Date(revision.publishedAt).toLocaleString('ru-RU') }}
                     ·
                     {{ publicationKindLabel(revision.publicationKind) }}</small
                   >
@@ -1133,10 +1007,7 @@ onBeforeUnmount(() => {
       :style="{ width: 'min(460px, calc(100vw - 32px))' }"
     >
       <div class="rollback-dialog">
-        <p>
-          Старая версия останется неизменной. Сервер создаст на её основе новую
-          публикацию.
-        </p>
+        <p>Старая версия останется неизменной. Сервер создаст на её основе новую публикацию.</p>
         <label>
           <span>Причина</span>
           <Select
@@ -1148,12 +1019,7 @@ onBeforeUnmount(() => {
         </label>
       </div>
       <template #footer>
-        <Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="rollbackVisible = false"
-        />
+        <Button label="Отмена" severity="secondary" text @click="rollbackVisible = false" />
         <Button
           label="Вернуть версию"
           :loading="controller.saving.value"
@@ -1556,7 +1422,7 @@ onBeforeUnmount(() => {
   color: var(--text-tertiary);
   transition: transform 150ms ease;
 }
-.section-disclosure[aria-expanded="true"] .disclosure-chevron {
+.section-disclosure[aria-expanded='true'] .disclosure-chevron {
   transform: rotate(180deg);
 }
 .coverage-rail--editor {

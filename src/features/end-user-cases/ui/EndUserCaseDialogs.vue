@@ -1,29 +1,26 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { useRouter } from "vue-router";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import MultiSelect from "primevue/multiselect";
-import Select from "primevue/select";
-import Textarea from "primevue/textarea";
-import { useAuthStore } from "@/features/auth/auth.store";
+import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import MultiSelect from 'primevue/multiselect';
+import Select from 'primevue/select';
+import Textarea from 'primevue/textarea';
+import { useAuthStore } from '@/features/auth/auth.store';
 import type {
   EndUserCaseMessageResponseDtoRole,
   EndUserCaseSplitEvidenceResponseDtoKind,
-} from "@/shared/api/generated/models";
-import { endUserCasesRepository } from "../api/end-user-cases-repository";
-import type {
-  EndUserCasePriority,
-  EndUserCaseStatus,
-} from "../model/end-user-case";
+} from '@/shared/api/generated/models';
+import { endUserCasesRepository } from '../api/end-user-cases-repository';
+import type { EndUserCasePriority, EndUserCaseStatus } from '../model/end-user-case';
 import {
   endUserCaseActionLabel,
   endUserCasePriorityLabel,
-} from "../model/end-user-case-presentation";
-import { endUserCaseRouteQuery } from "../model/end-user-case-route";
-import { useEndUserCasesStore } from "../model/end-user-cases.store";
+} from '../model/end-user-case-presentation';
+import { endUserCaseRouteQuery } from '../model/end-user-case-route';
+import { useEndUserCasesStore } from '../model/end-user-cases.store';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -35,52 +32,44 @@ const props = withDefaults(
   { classificationOptions: () => [] },
 );
 const transitionVisible = ref(false);
-const transitionStatus = ref<EndUserCaseStatus>("IN_PROGRESS");
-const transitionReason = ref("");
+const transitionStatus = ref<EndUserCaseStatus>('IN_PROGRESS');
+const transitionReason = ref('');
 const assignmentVisible = ref(false);
-const assignmentTarget = ref("");
-const assignmentReason = ref("");
+const assignmentTarget = ref('');
+const assignmentReason = ref('');
 const assigneeOptions = ref<Array<{ id: string; displayName: string }>>([]);
 const assigneesLoading = ref(false);
-const assigneesError = ref("");
+const assigneesError = ref('');
 const classificationVisible = ref(false);
-const classificationGroup = ref("");
+const classificationGroup = ref('');
 const classificationPriority = ref<EndUserCasePriority | undefined>();
-const classificationReason = ref("");
+const classificationReason = ref('');
 const publishedClassificationOptions = computed(() =>
   props.classificationOptions.map(({ code, label }) => ({
     value: code,
-    label: code === "UNMAPPED" ? "Другие темы" : label,
+    label: code === 'UNMAPPED' ? 'Другие темы' : label,
   })),
 );
 const unlinkMessageId = ref<string | null>(null);
-const unlinkReason = ref("");
+const unlinkReason = ref('');
 const mergeVisible = ref(false);
-const mergeCandidates = ref<
-  Array<{ id: string; version: number; label: string }>
->([]);
+const mergeCandidates = ref<Array<{ id: string; version: number; label: string }>>([]);
 const mergeSourceIds = ref<string[]>([]);
-const mergeReason = ref("");
+const mergeReason = ref('');
 const splitVisible = ref(false);
 const splitMessageIds = ref<string[]>([]);
 const splitEvidenceIds = ref<string[]>([]);
-const splitTitle = ref("");
-const splitGroup = ref("");
-const splitReason = ref("");
-const priorityOptions: EndUserCasePriority[] = [
-  "LOW",
-  "NORMAL",
-  "HIGH",
-  "URGENT",
-  "CRITICAL",
-];
+const splitTitle = ref('');
+const splitGroup = ref('');
+const splitReason = ref('');
+const priorityOptions: EndUserCasePriority[] = ['LOW', 'NORMAL', 'HIGH', 'URGENT', 'CRITICAL'];
 
 const messageRoleLabels = {
-  USER: "Пользователь",
-  ASSISTANT: "Ассистент",
-  ADMIN: "Оператор",
-  SCENARIO: "Сценарий",
-  SYSTEM: "Система",
+  USER: 'Пользователь',
+  ASSISTANT: 'Ассистент',
+  ADMIN: 'Оператор',
+  SCENARIO: 'Сценарий',
+  SYSTEM: 'Система',
 } satisfies Record<EndUserCaseMessageResponseDtoRole, string>;
 
 function messageRoleLabel(value: EndUserCaseMessageResponseDtoRole): string {
@@ -88,31 +77,29 @@ function messageRoleLabel(value: EndUserCaseMessageResponseDtoRole): string {
 }
 
 const splitEvidenceKindLabels = {
-  AI_ACTION_INVOCATION: "Вызов действия AI",
-  LEGACY_AI_RESULT: "Результат прежней версии AI",
-  TRUSTED_VERIFICATION: "Подтверждённая проверка",
+  AI_ACTION_INVOCATION: 'Вызов действия AI',
+  LEGACY_AI_RESULT: 'Результат прежней версии AI',
+  TRUSTED_VERIFICATION: 'Подтверждённая проверка',
 } satisfies Record<EndUserCaseSplitEvidenceResponseDtoKind, string>;
 
-function splitEvidenceKindLabel(
-  value: EndUserCaseSplitEvidenceResponseDtoKind,
-): string {
+function splitEvidenceKindLabel(value: EndUserCaseSplitEvidenceResponseDtoKind): string {
   return splitEvidenceKindLabels[value];
 }
 
 function splitEvidenceContributionLabel(value: string): string {
   return (
     {
-      ACTION_COMPLETED: "действие завершено",
-      ACTION_FAILED: "действие завершилось ошибкой",
-      CASE_CREATED: "обращение создано",
-      CLASSIFICATION_EVIDENCE: "учтено при классификации",
-    }[value] ?? "результат не распознан"
+      ACTION_COMPLETED: 'действие завершено',
+      ACTION_FAILED: 'действие завершилось ошибкой',
+      CASE_CREATED: 'обращение создано',
+      CLASSIFICATION_EVIDENCE: 'учтено при классификации',
+    }[value] ?? 'результат не распознан'
   );
 }
 
 function requestTransition(status: EndUserCaseStatus): void {
   transitionStatus.value = status;
-  transitionReason.value = "";
+  transitionReason.value = '';
   transitionVisible.value = true;
 }
 
@@ -125,25 +112,19 @@ async function submitTransition(): Promise<void> {
 async function requestAssignment(): Promise<void> {
   const projectId = auth.project?.id;
   if (!projectId) return;
-  assignmentReason.value = "";
-  assigneesError.value = "";
+  assignmentReason.value = '';
+  assigneesError.value = '';
   assignmentVisible.value = true;
   assigneesLoading.value = true;
   try {
     const response = await endUserCasesRepository.assignees(projectId);
-    assigneeOptions.value = [
-      { id: "", displayName: "Снять назначение" },
-      ...response.items,
-    ];
-    const preferredId =
-      store.selected?.case.assignee?.id ?? auth.user?.id ?? "";
-    assignmentTarget.value = assigneeOptions.value.some(
-      ({ id }) => id === preferredId,
-    )
+    assigneeOptions.value = [{ id: '', displayName: 'Снять назначение' }, ...response.items];
+    const preferredId = store.selected?.case.assignee?.id ?? auth.user?.id ?? '';
+    assignmentTarget.value = assigneeOptions.value.some(({ id }) => id === preferredId)
       ? preferredId
-      : "";
+      : '';
   } catch {
-    assigneesError.value = "Не удалось загрузить доступных исполнителей.";
+    assigneesError.value = 'Не удалось загрузить доступных исполнителей.';
   } finally {
     assigneesLoading.value = false;
   }
@@ -151,21 +132,19 @@ async function requestAssignment(): Promise<void> {
 
 async function submitAssignment(): Promise<void> {
   if (!assignmentReason.value.trim()) return;
-  if (
-    await store.assign(assignmentTarget.value || null, assignmentReason.value)
-  )
+  if (await store.assign(assignmentTarget.value || null, assignmentReason.value))
     assignmentVisible.value = false;
 }
 
 function requestClassification(): void {
-  const currentGroup = store.selected?.case.groupCode ?? "";
+  const currentGroup = store.selected?.case.groupCode ?? '';
   classificationGroup.value = publishedClassificationOptions.value.some(
     ({ value }) => value === currentGroup,
   )
     ? currentGroup
-    : "";
+    : '';
   classificationPriority.value = store.selected?.case.priority;
-  classificationReason.value = "";
+  classificationReason.value = '';
   classificationVisible.value = true;
 }
 
@@ -183,14 +162,14 @@ async function submitClassification(): Promise<void> {
 
 function requestUnlink(messageId: string): void {
   unlinkMessageId.value = messageId;
-  unlinkReason.value = "";
+  unlinkReason.value = '';
 }
 
 async function submitUnlink(): Promise<void> {
   if (!unlinkMessageId.value || !unlinkReason.value.trim()) return;
   if (await store.unlinkMessage(unlinkMessageId.value, unlinkReason.value)) {
     unlinkMessageId.value = null;
-    unlinkReason.value = "";
+    unlinkReason.value = '';
   }
 }
 
@@ -198,11 +177,11 @@ async function requestMerge(): Promise<void> {
   const projectId = auth.project?.id;
   const value = store.selected?.case;
   if (!projectId || !value) return;
-  mergeReason.value = "";
+  mergeReason.value = '';
   mergeSourceIds.value = [];
   const page = await endUserCasesRepository.list(projectId, {
-    preset: "ALL",
-    sort: "LAST_ACTIVITY",
+    preset: 'ALL',
+    sort: 'LAST_ACTIVITY',
     endUserId: value.endUser.id,
   });
   mergeCandidates.value = page.items
@@ -216,12 +195,9 @@ async function requestMerge(): Promise<void> {
 }
 
 async function submitMerge(): Promise<void> {
-  const selected = mergeCandidates.value.filter((item) =>
-    mergeSourceIds.value.includes(item.id),
-  );
+  const selected = mergeCandidates.value.filter((item) => mergeSourceIds.value.includes(item.id));
   if (!selected.length || !mergeReason.value.trim()) return;
-  if (await store.merge(selected, mergeReason.value))
-    mergeVisible.value = false;
+  if (await store.merge(selected, mergeReason.value)) mergeVisible.value = false;
 }
 
 function requestSplit(): void {
@@ -229,13 +205,13 @@ function requestSplit(): void {
   if (!value) return;
   splitMessageIds.value = [];
   splitEvidenceIds.value = [];
-  splitTitle.value = "";
+  splitTitle.value = '';
   splitGroup.value = publishedClassificationOptions.value.some(
     ({ value: code }) => code === value.groupCode,
   )
     ? value.groupCode
-    : "";
-  splitReason.value = "";
+    : '';
+  splitReason.value = '';
   splitVisible.value = true;
 }
 
@@ -250,7 +226,7 @@ async function submitSplit(): Promise<void> {
   if (!id) return;
   splitVisible.value = false;
   await router.replace({
-    name: "end-user-case-detail",
+    name: 'end-user-case-detail',
     params: { caseId: id },
     query: endUserCaseRouteQuery(store.filters),
   });
@@ -273,13 +249,9 @@ defineExpose({
     :header="endUserCaseActionLabel(transitionStatus)"
     :style="{ width: 'min(520px, calc(100vw - 24px))' }"
   >
-    <Message
-      v-if="transitionStatus === 'RESOLVED'"
-      severity="warn"
-      :closable="false"
-    >
-      Молчание пользователя не подтверждает решение. Укажите явный ответ
-      пользователя, проверенный лог или собственную проверку администратора.
+    <Message v-if="transitionStatus === 'RESOLVED'" severity="warn" :closable="false">
+      Молчание пользователя не подтверждает решение. Укажите явный ответ пользователя, проверенный
+      лог или собственную проверку администратора.
     </Message>
     <label class="dialog-field">
       <span>Основание</span>
@@ -324,11 +296,7 @@ defineExpose({
       <Button label="Отмена" text @click="assignmentVisible = false" />
       <Button
         label="Сохранить"
-        :disabled="
-          !assignmentReason.trim() ||
-          assigneesLoading ||
-          Boolean(assigneesError)
-        "
+        :disabled="!assignmentReason.trim() || assigneesLoading || Boolean(assigneesError)"
         :loading="store.mutating"
         @click="submitAssignment"
       />
@@ -341,13 +309,8 @@ defineExpose({
     header="Исправить классификацию"
     :style="{ width: 'min(520px, calc(100vw - 24px))' }"
   >
-    <Message
-      v-if="!publishedClassificationOptions.length"
-      severity="warn"
-      :closable="false"
-    >
-      Список классификаций недоступен. Обновите рабочее место и попробуйте ещё
-      раз.
+    <Message v-if="!publishedClassificationOptions.length" severity="warn" :closable="false">
+      Список классификаций недоступен. Обновите рабочее место и попробуйте ещё раз.
     </Message>
     <label class="dialog-field">
       <span>Классификация</span>
@@ -419,8 +382,8 @@ defineExpose({
     :style="{ width: 'min(560px, calc(100vw - 24px))' }"
   >
     <Message severity="warn" :closable="false">
-      Сообщения, подтверждающие данные и история будут перенесены в текущее
-      обращение. Исходные обращения останутся в истории как объединённые.
+      Сообщения, подтверждающие данные и история будут перенесены в текущее обращение. Исходные
+      обращения останутся в истории как объединённые.
     </Message>
     <label class="dialog-field">
       <span>Дубликаты того же пользователя</span>
@@ -456,8 +419,8 @@ defineExpose({
     :style="{ width: 'min(600px, calc(100vw - 24px))' }"
   >
     <Message severity="info" :closable="false">
-      Выбранные сообщения станут новым обращением. В исходном должно остаться
-      хотя бы одно сообщение.
+      Выбранные сообщения станут новым обращением. В исходном должно остаться хотя бы одно
+      сообщение.
     </Message>
     <label class="dialog-field">
       <span>Сообщения для нового обращения</span>
@@ -475,10 +438,7 @@ defineExpose({
         display="chip"
       />
     </label>
-    <label
-      v-if="store.selected?.case.splitEvidence?.length"
-      class="dialog-field"
-    >
+    <label v-if="store.selected?.case.splitEvidence?.length" class="dialog-field">
       <span>Связанные действия и проверки</span>
       <MultiSelect
         v-model="splitEvidenceIds"
@@ -519,8 +479,7 @@ defineExpose({
         label="Создать обращение"
         :disabled="
           !splitMessageIds.length ||
-          splitMessageIds.length >=
-            (store.selected?.messages.items.length ?? 0) ||
+          splitMessageIds.length >= (store.selected?.messages.items.length ?? 0) ||
           !splitTitle.trim() ||
           !splitGroup ||
           !splitReason.trim()

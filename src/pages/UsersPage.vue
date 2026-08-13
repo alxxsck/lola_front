@@ -1,27 +1,27 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import Column from "primevue/column";
-import DataTable from "primevue/datatable";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import { useAuthStore } from "@/features/auth/auth.store";
-import UserAISuspensionIndicator from "@/features/conversation-ai-suspension/ui/UserAISuspensionIndicator.vue";
-import { endUserProfileRepository } from "@/features/end-user-profile/api/end-user-profile-repository";
-import { formatProfileValue } from "@/features/end-user-profile/model/profile-value";
-import UserWorkspaceDialog from "@/features/end-user-workspace/UserWorkspaceDialog.vue";
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Column from 'primevue/column';
+import DataTable from 'primevue/datatable';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import { useAuthStore } from '@/features/auth/auth.store';
+import UserAISuspensionIndicator from '@/features/conversation-ai-suspension/ui/UserAISuspensionIndicator.vue';
+import { endUserProfileRepository } from '@/features/end-user-profile/api/end-user-profile-repository';
+import { formatProfileValue } from '@/features/end-user-profile/model/profile-value';
+import UserWorkspaceDialog from '@/features/end-user-workspace/UserWorkspaceDialog.vue';
 import type {
   CmsProfileSummaryResponseDto,
   ProfileProjectionResponseDto,
   ProfileProjectionFieldResponseDto,
-} from "@/shared/api/generated/models";
-import { repository } from "@/shared/api/repository";
-import { conversationAISuspensionEnabled } from "@/shared/config/features";
-import { formatDate, relativeTime } from "@/shared/lib/format";
+} from '@/shared/api/generated/models';
+import { repository } from '@/shared/api/repository';
+import { conversationAISuspensionEnabled } from '@/shared/config/features';
+import { formatDate, relativeTime } from '@/shared/lib/format';
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -32,14 +32,14 @@ const workspaceVisible = ref(false);
 const nextCursor = ref<string | null>(null);
 const loading = ref(true);
 const loadingMore = ref(false);
-const error = ref("");
-const query = ref("");
-const appliedQuery = ref("");
-const filterDefinitionId = ref("");
-const filterOperator = ref<"EQ" | "LT" | "LTE" | "GT" | "GTE">("EQ");
-const filterValue = ref("");
-const sort = ref<"LAST_SEEN_DESC" | "LAST_SEEN_ASC">("LAST_SEEN_DESC");
-const aiFilter = ref<"ALL" | "SUSPENDED">("ALL");
+const error = ref('');
+const query = ref('');
+const appliedQuery = ref('');
+const filterDefinitionId = ref('');
+const filterOperator = ref<'EQ' | 'LT' | 'LTE' | 'GT' | 'GTE'>('EQ');
+const filterValue = ref('');
+const sort = ref<'LAST_SEEN_DESC' | 'LAST_SEEN_ASC'>('LAST_SEEN_DESC');
+const aiFilter = ref<'ALL' | 'SUSPENDED'>('ALL');
 let requestSequence = 0;
 let reloadTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -54,29 +54,26 @@ const availableFields = computed(() => {
   }));
 });
 const operatorOptions = [
-  { value: "EQ", label: "Равно" },
-  { value: "LT", label: "Меньше" },
-  { value: "LTE", label: "Не больше" },
-  { value: "GT", label: "Больше" },
-  { value: "GTE", label: "Не меньше" },
+  { value: 'EQ', label: 'Равно' },
+  { value: 'LT', label: 'Меньше' },
+  { value: 'LTE', label: 'Не больше' },
+  { value: 'GT', label: 'Больше' },
+  { value: 'GTE', label: 'Не меньше' },
 ];
 const sortOptions = [
-  { value: "LAST_SEEN_DESC", label: "Сначала недавно активные" },
-  { value: "LAST_SEEN_ASC", label: "Сначала давно активные" },
+  { value: 'LAST_SEEN_DESC', label: 'Сначала недавно активные' },
+  { value: 'LAST_SEEN_ASC', label: 'Сначала давно активные' },
 ];
 const aiFilterOptions = [
-  { value: "ALL", label: "Все" },
-  { value: "SUSPENDED", label: "AI приостановлен" },
+  { value: 'ALL', label: 'Все' },
+  { value: 'SUSPENDED', label: 'AI приостановлен' },
 ];
 
-function summaryFromProfile(
-  profile: ProfileProjectionResponseDto,
-): CmsProfileSummaryResponseDto {
+function summaryFromProfile(profile: ProfileProjectionResponseDto): CmsProfileSummaryResponseDto {
   return {
     endUserId: profile.endUserId,
     fields: profile.fields,
-    lastSeenAt:
-      profile.observedAt ?? profile.receivedAt ?? new Date(0).toISOString(),
+    lastSeenAt: profile.observedAt ?? profile.receivedAt ?? new Date(0).toISOString(),
     observedAt: profile.observedAt,
     profileVersion: profile.profileVersion,
     syncStatus: profile.syncStatus,
@@ -95,29 +92,24 @@ async function load(append = false): Promise<void> {
   const request = ++requestSequence;
   if (append) loadingMore.value = true;
   else loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const response =
-      repository.mode === "mock"
+      repository.mode === 'mock'
         ? await loadMockProfiles(projectId)
         : appliedQuery.value
           ? {
               items: [
                 summaryFromProfile(
-                  await endUserProfileRepository.profile(
-                    projectId,
-                    appliedQuery.value,
-                  ),
+                  await endUserProfileRepository.profile(projectId, appliedQuery.value),
                 ),
               ],
               nextCursor: null,
             }
           : await endUserProfileRepository.list(projectId, {
               limit: 50,
-              ...(append && nextCursor.value
-                ? { cursor: nextCursor.value }
-                : {}),
-              ...(aiFilter.value === "SUSPENDED"
+              ...(append && nextCursor.value ? { cursor: nextCursor.value } : {}),
+              ...(aiFilter.value === 'SUSPENDED'
                 ? { hasActiveConversationAiSuspension: true }
                 : {}),
               ...(filterDefinitionId.value && filterValue.value
@@ -134,13 +126,10 @@ async function load(append = false): Promise<void> {
     nextCursor.value = response.nextCursor ?? null;
     if (selected.value) {
       selected.value =
-        items.value.find(
-          (item) => item.endUserId === selected.value?.endUserId,
-        ) ?? selected.value;
+        items.value.find((item) => item.endUserId === selected.value?.endUserId) ?? selected.value;
     }
   } catch {
-    if (request === requestSequence)
-      error.value = "Не удалось загрузить профили пользователей";
+    if (request === requestSequence) error.value = 'Не удалось загрузить профили пользователей';
   } finally {
     if (request === requestSequence) {
       loading.value = false;
@@ -157,21 +146,17 @@ function mockField(
   semanticRole?: string,
 ): ProfileProjectionFieldResponseDto {
   const type =
-    typeof value === "boolean"
-      ? "BOOLEAN"
-      : typeof value === "number"
-        ? "INTEGER"
-        : "STRING";
+    typeof value === 'boolean' ? 'BOOLEAN' : typeof value === 'number' ? 'INTEGER' : 'STRING';
   return {
     definitionId,
     definitionRevisionId: `${definitionId}-r1`,
     key,
     label,
     valueType: type,
-    lifecycle: "ACTIVE",
-    classification: "INTERNAL",
-    access: "ALLOWED",
-    availability: value === undefined ? "MISSING" : "AVAILABLE",
+    lifecycle: 'ACTIVE',
+    classification: 'INTERNAL',
+    access: 'ALLOWED',
+    availability: value === undefined ? 'MISSING' : 'AVAILABLE',
     ...(semanticRole ? { semanticRole } : {}),
     ...(value === undefined ? {} : { value: { type, value } }),
   };
@@ -190,24 +175,22 @@ async function loadMockProfiles(
       const active = page.items.filter((conversation) => {
         const state = conversation.aiSuspension;
         return (
-          state.mode === "SUSPENDED" &&
-          state.lifecycle === "ACTIVE" &&
+          state.mode === 'SUSPENDED' &&
+          state.lifecycle === 'ACTIVE' &&
           Boolean(state.suspendedUntil) &&
           Date.parse(state.suspendedUntil!) > Date.parse(state.serverTime)
         );
       });
       const deadlines = active.flatMap((conversation) =>
-        conversation.aiSuspension.suspendedUntil
-          ? [conversation.aiSuspension.suspendedUntil]
-          : [],
+        conversation.aiSuspension.suspendedUntil ? [conversation.aiSuspension.suspendedUntil] : [],
       );
       return {
         endUserId: user.id,
         locale: user.locale,
         lastSeenAt: user.lastSeenAt,
         observedAt: user.lastSeenAt,
-        profileVersion: "demo",
-        syncStatus: "VALID" as const,
+        profileVersion: 'demo',
+        syncStatus: 'VALID' as const,
         conversationAiSuspensionSummary: {
           activeConversationCount: active.length,
           nearestSuspendedUntil: deadlines.sort()[0] ?? null,
@@ -215,16 +198,10 @@ async function loadMockProfiles(
           serverTime: new Date().toISOString(),
         },
         fields: [
-          mockField(
-            "mock-name",
-            "displayName",
-            "Имя",
-            user.profile.name,
-            "DISPLAY_NAME",
-          ),
-          mockField("mock-email", "email", "Email", user.profile.email),
-          mockField("mock-country", "country", "Страна", user.profile.country),
-          mockField("mock-segment", "segment", "Сегмент", user.segment),
+          mockField('mock-name', 'displayName', 'Имя', user.profile.name, 'DISPLAY_NAME'),
+          mockField('mock-email', 'email', 'Email', user.profile.email),
+          mockField('mock-country', 'country', 'Страна', user.profile.country),
+          mockField('mock-segment', 'segment', 'Сегмент', user.segment),
         ],
       };
     }),
@@ -238,11 +215,11 @@ async function loadMockProfiles(
     )
     .filter(
       (profile) =>
-        aiFilter.value !== "SUSPENDED" ||
+        aiFilter.value !== 'SUSPENDED' ||
         profile.conversationAiSuspensionSummary.activeConversationCount > 0,
     )
     .sort((left, right) =>
-      sort.value === "LAST_SEEN_ASC"
+      sort.value === 'LAST_SEEN_ASC'
         ? left.lastSeenAt.localeCompare(right.lastSeenAt)
         : right.lastSeenAt.localeCompare(left.lastSeenAt),
     );
@@ -268,7 +245,7 @@ async function openProfile(
   workspaceVisible.value = true;
   if (!updateRoute) return;
   await router.replace({
-    name: "users",
+    name: 'users',
     params: { endUserId: profile.endUserId },
   });
 }
@@ -276,11 +253,11 @@ async function openProfile(
 async function selectConversation(conversationId: string): Promise<void> {
   if (!selected.value) return;
   await router.replace({
-    name: "users",
+    name: 'users',
     params: { endUserId: selected.value.endUserId },
     query: {
       conversationId,
-      ...(typeof route.query.endUserCaseId === "string"
+      ...(typeof route.query.endUserCaseId === 'string'
         ? { endUserCaseId: route.query.endUserCaseId }
         : {}),
     },
@@ -290,7 +267,7 @@ async function selectConversation(conversationId: string): Promise<void> {
 async function selectProfile(): Promise<void> {
   if (!selected.value) return;
   await router.replace({
-    name: "users",
+    name: 'users',
     params: { endUserId: selected.value.endUserId },
   });
 }
@@ -298,7 +275,7 @@ async function selectProfile(): Promise<void> {
 function closeProfile(): void {
   if (workspaceVisible.value) return;
   selected.value = null;
-  void router.replace({ name: "users" });
+  void router.replace({ name: 'users' });
 }
 
 function scheduleReload(): void {
@@ -309,38 +286,36 @@ function scheduleReload(): void {
 function userDisplayName(profile: CmsProfileSummaryResponseDto): string {
   const displayName = profile.fields.find(
     (field) =>
-      field.semanticRole === "DISPLAY_NAME" &&
-      field.availability === "AVAILABLE" &&
-      field.access === "ALLOWED" &&
+      field.semanticRole === 'DISPLAY_NAME' &&
+      field.availability === 'AVAILABLE' &&
+      field.access === 'ALLOWED' &&
       field.value,
   );
-  if (!displayName?.value) return "Пользователь";
-  return formatProfileValue(displayName.value).trim() || "Пользователь";
+  if (!displayName?.value) return 'Пользователь';
+  return formatProfileValue(displayName.value).trim() || 'Пользователь';
 }
 
 function userProductId(profile: CmsProfileSummaryResponseDto): string {
   return `ID ${profile.endUserId.slice(0, 8)}`;
 }
 
-function syncSeverity(
-  status: string,
-): "success" | "warn" | "secondary" | "danger" {
-  return status === "VALID"
-    ? "success"
-    : status === "VALID_WITH_WARNINGS"
-      ? "warn"
-      : status === "NO_VALID_SNAPSHOT"
-        ? "secondary"
-        : "danger";
+function syncSeverity(status: string): 'success' | 'warn' | 'secondary' | 'danger' {
+  return status === 'VALID'
+    ? 'success'
+    : status === 'VALID_WITH_WARNINGS'
+      ? 'warn'
+      : status === 'NO_VALID_SNAPSHOT'
+        ? 'secondary'
+        : 'danger';
 }
 
 function syncStatusLabel(status: string): string {
   return (
     {
-      VALID: "Данные приняты",
-      VALID_WITH_WARNINGS: "Принято с предупреждением",
-      NO_VALID_SNAPSHOT: "Профиль ещё не передан",
-      INVALID: "Обновление отклонено",
+      VALID: 'Данные приняты',
+      VALID_WITH_WARNINGS: 'Принято с предупреждением',
+      NO_VALID_SNAPSHOT: 'Профиль ещё не передан',
+      INVALID: 'Обновление отклонено',
     }[status] ?? status
   );
 }
@@ -348,17 +323,14 @@ function syncStatusLabel(status: string): string {
 onMounted(async () => {
   await load();
   const endUserId = route.params.endUserId;
-  if (typeof endUserId !== "string" || !endUserId.trim()) return;
+  if (typeof endUserId !== 'string' || !endUserId.trim()) return;
   let profile = items.value.find((item) => item.endUserId === endUserId);
   if (!profile && auth.project?.id) {
     try {
-      const detail = await endUserProfileRepository.profile(
-        auth.project.id,
-        endUserId,
-      );
+      const detail = await endUserProfileRepository.profile(auth.project.id, endUserId);
       profile = summaryFromProfile(detail);
     } catch {
-      error.value = "Не удалось открыть пользователя по ссылке";
+      error.value = 'Не удалось открыть пользователя по ссылке';
     }
   }
   if (profile) await openProfile(profile, false);
@@ -376,8 +348,7 @@ onBeforeUnmount(() => {
         <div class="eyebrow">Данные пользователей</div>
         <h1>Профили пользователей</h1>
         <p class="subtitle">
-          Откройте пользователя, чтобы посмотреть профиль и историю разговоров
-          в одном окне.
+          Откройте пользователя, чтобы посмотреть профиль и историю разговоров в одном окне.
         </p>
       </div>
       <div class="header-actions">
@@ -406,9 +377,7 @@ onBeforeUnmount(() => {
         ><strong>Нужно добавить или изменить данные профиля?</strong
         ><small>Настройте названия, типы и доступность полей.</small></span
       >
-      <span class="callout-action"
-        >Настроить поля <i class="pi pi-arrow-right"
-      /></span>
+      <span class="callout-action">Настроить поля <i class="pi pi-arrow-right" /></span>
     </RouterLink>
 
     <Message v-if="error" severity="error" :closable="false">
@@ -447,8 +416,7 @@ onBeforeUnmount(() => {
           :disabled="!filterDefinitionId"
       /></label>
       <label
-        ><span>Значение</span
-        ><InputText v-model="filterValue" :disabled="!filterDefinitionId"
+        ><span>Значение</span><InputText v-model="filterValue" :disabled="!filterDefinitionId"
       /></label>
       <label
         ><span>Сортировка</span
@@ -498,9 +466,7 @@ onBeforeUnmount(() => {
         <Column header="Пользователь"
           ><template #body="{ data }"
             ><div class="user-cell">
-              <span class="avatar">{{
-                userDisplayName(data).slice(0, 1).toUpperCase()
-              }}</span>
+              <span class="avatar">{{ userDisplayName(data).slice(0, 1).toUpperCase() }}</span>
               <div>
                 <strong>{{ userDisplayName(data) }}</strong
                 ><small>{{ userProductId(data) }}</small>
@@ -518,21 +484,17 @@ onBeforeUnmount(() => {
               :severity="syncSeverity(data.syncStatus)" /></template
         ></Column>
         <Column header="Версия профиля" class="mobile-hide"
-          ><template #body="{ data }">{{
-            data.profileVersion
-          }}</template></Column
+          ><template #body="{ data }">{{ data.profileVersion }}</template></Column
         >
         <Column header="Данные получены" class="mobile-hide"
           ><template #body="{ data }"
             ><span :title="formatDate(data.observedAt)">{{
-              data.observedAt ? relativeTime(data.observedAt) : "Данных ещё нет"
+              data.observedAt ? relativeTime(data.observedAt) : 'Данных ещё нет'
             }}</span></template
           ></Column
         >
         <Column header="Последняя активность" class="mobile-hide"
-          ><template #body="{ data }">{{
-            relativeTime(data.lastSeenAt)
-          }}</template></Column
+          ><template #body="{ data }">{{ relativeTime(data.lastSeenAt) }}</template></Column
         >
         <Column
           ><template #body="{ data }"
@@ -564,14 +526,10 @@ onBeforeUnmount(() => {
     :project-id="auth.project.id"
     :end-user-id="selected?.endUserId ?? null"
     :preferred-conversation-id="
-      typeof route.query.conversationId === 'string'
-        ? route.query.conversationId
-        : undefined
+      typeof route.query.conversationId === 'string' ? route.query.conversationId : undefined
     "
     :preferred-end-user-case-id="
-      typeof route.query.endUserCaseId === 'string'
-        ? route.query.endUserCaseId
-        : undefined
+      typeof route.query.endUserCaseId === 'string' ? route.query.endUserCaseId : undefined
     "
     read-only
     @changed="load()"

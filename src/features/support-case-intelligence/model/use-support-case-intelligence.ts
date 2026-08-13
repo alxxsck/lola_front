@@ -1,4 +1,4 @@
-import { computed, ref, shallowRef, watch } from "vue";
+import { computed, ref, shallowRef, watch } from 'vue';
 import type {
   CaseIntelligenceAuthoringIssueDto,
   CaseIntelligenceBudgetPolicyDto,
@@ -9,14 +9,14 @@ import type {
   CaseIntelligenceDryRunResponseDto,
   CaseIntelligenceModelProfileCatalogResponseDto,
   CaseIntelligencePreviewMessageDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 import {
   CaseIntelligenceAuthoringIssueDtoCode,
   CaseIntelligenceAuthoringIssueDtoSeverity,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
-import type { SupportCaseIntelligenceSource } from "../api/support-case-intelligence-source";
-import { supportCaseIntelligenceSource } from "../api/support-case-intelligence-source";
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
+import type { SupportCaseIntelligenceSource } from '../api/support-case-intelligence-source';
+import { supportCaseIntelligenceSource } from '../api/support-case-intelligence-source';
 import {
   clonePolicy,
   createDefaultBudgetPolicy,
@@ -28,7 +28,7 @@ import {
   type PolicyIssue,
   validateBudgetPolicy,
   validateDetectionPolicy,
-} from "./support-case-intelligence-policy";
+} from './support-case-intelligence-policy';
 
 export type CaseIntelligenceAuthority = {
   actorId: string;
@@ -38,32 +38,32 @@ export type CaseIntelligenceAuthority = {
 
 type PendingAttempt =
   | {
-      operation: "SAVE_DETECTION";
+      operation: 'SAVE_DETECTION';
       key: string;
       expectedVersion: number;
       definition: CaseIntelligenceDetectionPolicyDto;
     }
   | {
-      operation: "DISCARD_DETECTION";
+      operation: 'DISCARD_DETECTION';
       key: string;
       expectedVersion: number;
       reason: string;
     }
   | {
-      operation: "PUBLISH_DETECTION";
+      operation: 'PUBLISH_DETECTION';
       key: string;
       revisionId: string;
       expectedVersion: number;
       reason: string;
     }
   | {
-      operation: "SAVE_BUDGET";
+      operation: 'SAVE_BUDGET';
       key: string;
       expectedVersion: number;
       definition: CaseIntelligenceBudgetPolicyDto;
     }
   | {
-      operation: "PUBLISH_BUDGET";
+      operation: 'PUBLISH_BUDGET';
       key: string;
       revisionId: string;
       expectedVersion: number;
@@ -79,12 +79,9 @@ export type SupportCaseIntelligenceContext = {
 };
 
 const retainedAttempts = new Map<string, PendingAttempt>();
-const retainedStoragePrefix = "support-case-intelligence-command-v1:";
+const retainedStoragePrefix = 'support-case-intelligence-command-v1:';
 
-function permission(
-  authority: CaseIntelligenceAuthority | null,
-  code: string,
-): boolean {
+function permission(authority: CaseIntelligenceAuthority | null, code: string): boolean {
   return authority?.permissions.includes(code) === true;
 }
 
@@ -96,16 +93,16 @@ function readRetained(scope: CaseIntelligenceAuthority): PendingAttempt | null {
   const key = scopeKey(scope);
   const memory = retainedAttempts.get(key);
   if (memory) return clonePolicy(memory);
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   try {
     const raw = window.sessionStorage.getItem(`${retainedStoragePrefix}${key}`);
     if (!raw) return null;
     const value = JSON.parse(raw) as PendingAttempt;
     if (
       !value ||
-      typeof value !== "object" ||
-      typeof value.key !== "string" ||
-      typeof value.operation !== "string"
+      typeof value !== 'object' ||
+      typeof value.key !== 'string' ||
+      typeof value.operation !== 'string'
     )
       return null;
     retainedAttempts.set(key, value);
@@ -115,40 +112,29 @@ function readRetained(scope: CaseIntelligenceAuthority): PendingAttempt | null {
   }
 }
 
-function writeRetained(
-  scope: CaseIntelligenceAuthority,
-  attempt: PendingAttempt | null,
-) {
+function writeRetained(scope: CaseIntelligenceAuthority, attempt: PendingAttempt | null) {
   const key = scopeKey(scope);
   if (attempt) retainedAttempts.set(key, clonePolicy(attempt));
   else retainedAttempts.delete(key);
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
     const storageKey = `${retainedStoragePrefix}${key}`;
-    if (attempt)
-      window.sessionStorage.setItem(storageKey, JSON.stringify(attempt));
+    if (attempt) window.sessionStorage.setItem(storageKey, JSON.stringify(attempt));
     else window.sessionStorage.removeItem(storageKey);
   } catch {
     // In-memory recovery remains authoritative for this tab lifecycle.
   }
 }
 
-function detectionVersion(
-  snapshot: CaseIntelligenceCurrentResponseDto | null,
-): number {
+function detectionVersion(snapshot: CaseIntelligenceCurrentResponseDto | null): number {
   return Math.max(
     snapshot?.detection?.draft?.version ?? 0,
     snapshot?.detection?.published?.version ?? 0,
   );
 }
 
-function budgetVersion(
-  snapshot: CaseIntelligenceCurrentResponseDto | null,
-): number {
-  return Math.max(
-    snapshot?.budget?.draft?.version ?? 0,
-    snapshot?.budget?.published?.version ?? 0,
-  );
+function budgetVersion(snapshot: CaseIntelligenceCurrentResponseDto | null): number {
+  return Math.max(snapshot?.budget?.draft?.version ?? 0, snapshot?.budget?.published?.version ?? 0);
 }
 
 function budgetDefinition(
@@ -171,29 +157,25 @@ function budgetDefinition(
 function authoringIssuesFromDetails(details: unknown): PolicyIssue[] {
   if (
     !details ||
-    typeof details !== "object" ||
-    !("issues" in details) ||
+    typeof details !== 'object' ||
+    !('issues' in details) ||
     !Array.isArray(details.issues)
   )
     return [];
-  const codes = new Set<string>(
-    Object.values(CaseIntelligenceAuthoringIssueDtoCode),
-  );
-  const severities = new Set<string>(
-    Object.values(CaseIntelligenceAuthoringIssueDtoSeverity),
-  );
+  const codes = new Set<string>(Object.values(CaseIntelligenceAuthoringIssueDtoCode));
+  const severities = new Set<string>(Object.values(CaseIntelligenceAuthoringIssueDtoSeverity));
   const issues = details.issues.filter(
     (candidate): candidate is CaseIntelligenceAuthoringIssueDto => {
-      if (!candidate || typeof candidate !== "object") return false;
+      if (!candidate || typeof candidate !== 'object') return false;
       const value = candidate as Record<string, unknown>;
       return (
-        typeof value.code === "string" &&
+        typeof value.code === 'string' &&
         codes.has(value.code) &&
-        typeof value.message === "string" &&
-        typeof value.path === "string" &&
+        typeof value.message === 'string' &&
+        typeof value.path === 'string' &&
         Array.isArray(value.relatedPaths) &&
-        value.relatedPaths.every((path) => typeof path === "string") &&
-        typeof value.severity === "string" &&
+        value.relatedPaths.every((path) => typeof path === 'string') &&
+        typeof value.severity === 'string' &&
         severities.has(value.severity)
       );
     },
@@ -201,34 +183,23 @@ function authoringIssuesFromDetails(details: unknown): PolicyIssue[] {
   return presentServerAuthoringIssues(issues);
 }
 
-export function useSupportCaseIntelligence(
-  context: SupportCaseIntelligenceContext,
-) {
+export function useSupportCaseIntelligence(context: SupportCaseIntelligenceContext) {
   const source = context.source ?? supportCaseIntelligenceSource;
   const snapshot = shallowRef<CaseIntelligenceCurrentResponseDto | null>(null);
-  const detection = ref<CaseIntelligenceDetectionPolicyDto>(
-    createDefaultDetectionPolicy(),
-  );
-  const budget = ref<CaseIntelligenceBudgetPolicyDto>(
-    createDefaultBudgetPolicy(),
-  );
+  const detection = ref<CaseIntelligenceDetectionPolicyDto>(createDefaultDetectionPolicy());
+  const budget = ref<CaseIntelligenceBudgetPolicyDto>(createDefaultBudgetPolicy());
   const loading = ref(false);
   const mutating = ref(false);
   const previewing = ref(false);
   const validating = ref(false);
   const calibrating = ref(false);
   const accessDenied = ref(false);
-  const error = ref("");
-  const feedback = ref("");
+  const error = ref('');
+  const feedback = ref('');
   const pendingAttempt = shallowRef<PendingAttempt | null>(null);
-  const dryRunResult = shallowRef<CaseIntelligenceDryRunResponseDto | null>(
-    null,
-  );
-  const modelProfiles =
-    shallowRef<CaseIntelligenceModelProfileCatalogResponseDto | null>(null);
-  const calibration = shallowRef<CaseIntelligenceCalibrationResponseDto | null>(
-    null,
-  );
+  const dryRunResult = shallowRef<CaseIntelligenceDryRunResponseDto | null>(null);
+  const modelProfiles = shallowRef<CaseIntelligenceModelProfileCatalogResponseDto | null>(null);
+  const calibration = shallowRef<CaseIntelligenceCalibrationResponseDto | null>(null);
   const serverDetectionIssues = shallowRef<PolicyIssue[]>([]);
   const validatedPolicyHash = ref<string | null>(null);
   const generation = ref(0);
@@ -240,41 +211,33 @@ export function useSupportCaseIntelligence(
   let activeScope: CaseIntelligenceAuthority | null = null;
 
   const authority = computed(() => context.authority());
-  const canRead = computed(() =>
-    permission(authority.value, "project.case_intelligence.read"),
-  );
-  const allows = (
-    action: CaseIntelligenceCurrentResponseDtoAllowedActionsItem,
-  ) => snapshot.value?.allowedActions.includes(action) === true;
+  const canRead = computed(() => permission(authority.value, 'project.case_intelligence.read'));
+  const allows = (action: CaseIntelligenceCurrentResponseDtoAllowedActionsItem) =>
+    snapshot.value?.allowedActions.includes(action) === true;
   const canPreview = computed(
-    () =>
-      permission(authority.value, "project.case_intelligence.preview") &&
-      allows("PREVIEW"),
+    () => permission(authority.value, 'project.case_intelligence.preview') && allows('PREVIEW'),
   );
   const canManageDetection = computed(
     () =>
-      permission(
-        authority.value,
-        "project.case_intelligence.detection.manage",
-      ) && allows("SAVE_DETECTION_DRAFT"),
+      permission(authority.value, 'project.case_intelligence.detection.manage') &&
+      allows('SAVE_DETECTION_DRAFT'),
   );
   const canPublishDetection = computed(
     () =>
-      permission(authority.value, "project.case_intelligence.release.manage") &&
-      allows("PUBLISH"),
+      permission(authority.value, 'project.case_intelligence.release.manage') && allows('PUBLISH'),
   );
   const canManageBudget = computed(
     () =>
-      permission(authority.value, "project.case_intelligence.release.manage") &&
-      allows("SAVE_BUDGET_DRAFT"),
+      permission(authority.value, 'project.case_intelligence.release.manage') &&
+      allows('SAVE_BUDGET_DRAFT'),
   );
   const canPublishBudget = computed(
     () =>
-      permission(authority.value, "project.case_intelligence.release.manage") &&
-      allows("PUBLISH_BUDGET"),
+      permission(authority.value, 'project.case_intelligence.release.manage') &&
+      allows('PUBLISH_BUDGET'),
   );
   const canReadCost = computed(() =>
-    permission(authority.value, "project.case_intelligence.cost.read"),
+    permission(authority.value, 'project.case_intelligence.cost.read'),
   );
   const assignedModelRevisionId = computed(() => {
     const candidates = [
@@ -285,29 +248,26 @@ export function useSupportCaseIntelligence(
       candidates
         .find(
           (candidate): candidate is string =>
-            typeof candidate === "string" && candidate.trim().length > 0,
+            typeof candidate === 'string' && candidate.trim().length > 0,
         )
-        ?.trim() ?? ""
+        ?.trim() ?? ''
     );
   });
   const modelProfileIssues = computed<PolicyIssue[]>(() => {
     if (!modelProfiles.value) return [];
     const selected =
-      assignedModelRevisionId.value ===
-        detection.value.modelProfileRevisionId ||
+      assignedModelRevisionId.value === detection.value.modelProfileRevisionId ||
       modelProfiles.value.items.some(
-        (profile) =>
-          profile.revisionId === detection.value.modelProfileRevisionId,
+        (profile) => profile.revisionId === detection.value.modelProfileRevisionId,
       );
     return selected
       ? []
       : [
           {
-            path: "modelProfileRevisionId",
-            severity: "ERROR",
-            source: "SERVER",
-            message:
-              "Выберите модель из списка, разрешённого для этого проекта.",
+            path: 'modelProfileRevisionId',
+            severity: 'ERROR',
+            source: 'SERVER',
+            message: 'Выберите модель из списка, разрешённого для этого проекта.',
           },
         ];
   });
@@ -319,9 +279,7 @@ export function useSupportCaseIntelligence(
     ),
   );
   const budgetIssues = computed(() => validateBudgetPolicy(budget.value));
-  const hasDetectionErrors = computed(() =>
-    policyHasErrors(detectionIssues.value),
-  );
+  const hasDetectionErrors = computed(() => policyHasErrors(detectionIssues.value));
   const hasBudgetErrors = computed(() => policyHasErrors(budgetIssues.value));
   const hasPendingRecovery = computed(() => pendingAttempt.value !== null);
 
@@ -336,10 +294,7 @@ export function useSupportCaseIntelligence(
     { deep: true },
   );
 
-  function current(
-    scope: CaseIntelligenceAuthority,
-    capturedGeneration: number,
-  ): boolean {
+  function current(scope: CaseIntelligenceAuthority, capturedGeneration: number): boolean {
     const value = context.authority();
     return (
       generation.value === capturedGeneration &&
@@ -348,22 +303,19 @@ export function useSupportCaseIntelligence(
     );
   }
 
-  function canRunAttempt(
-    scope: CaseIntelligenceAuthority,
-    attempt: PendingAttempt,
-  ): boolean {
+  function canRunAttempt(scope: CaseIntelligenceAuthority, attempt: PendingAttempt): boolean {
     const allowed = snapshot.value?.allowedActions ?? [];
     if (!hasAttemptPermission(scope, attempt)) return false;
     switch (attempt.operation) {
-      case "SAVE_DETECTION":
-      case "DISCARD_DETECTION":
-        return allowed.includes("SAVE_DETECTION_DRAFT");
-      case "PUBLISH_DETECTION":
-        return allowed.includes("PUBLISH");
-      case "SAVE_BUDGET":
-        return allowed.includes("SAVE_BUDGET_DRAFT");
-      case "PUBLISH_BUDGET":
-        return allowed.includes("PUBLISH_BUDGET");
+      case 'SAVE_DETECTION':
+      case 'DISCARD_DETECTION':
+        return allowed.includes('SAVE_DETECTION_DRAFT');
+      case 'PUBLISH_DETECTION':
+        return allowed.includes('PUBLISH');
+      case 'SAVE_BUDGET':
+        return allowed.includes('SAVE_BUDGET_DRAFT');
+      case 'PUBLISH_BUDGET':
+        return allowed.includes('PUBLISH_BUDGET');
     }
   }
 
@@ -371,16 +323,12 @@ export function useSupportCaseIntelligence(
     scope: CaseIntelligenceAuthority,
     attempt: PendingAttempt,
   ): boolean {
-    return attempt.operation === "SAVE_DETECTION" ||
-      attempt.operation === "DISCARD_DETECTION"
-      ? permission(scope, "project.case_intelligence.detection.manage")
-      : permission(scope, "project.case_intelligence.release.manage");
+    return attempt.operation === 'SAVE_DETECTION' || attempt.operation === 'DISCARD_DETECTION'
+      ? permission(scope, 'project.case_intelligence.detection.manage')
+      : permission(scope, 'project.case_intelligence.release.manage');
   }
 
-  function applySnapshot(
-    value: CaseIntelligenceCurrentResponseDto,
-    preserveForms = false,
-  ) {
+  function applySnapshot(value: CaseIntelligenceCurrentResponseDto, preserveForms = false) {
     snapshot.value = value;
     if (!preserveForms) {
       detection.value = prepareDetectionPolicyForAuthoring(
@@ -418,14 +366,11 @@ export function useSupportCaseIntelligence(
     previewing.value = false;
     validating.value = false;
     calibrating.value = false;
-    error.value = "";
-    feedback.value = "";
+    error.value = '';
+    feedback.value = '';
   }
 
-  function handleTerminalAccess(
-    cause: unknown,
-    captured?: CaseIntelligenceAuthority,
-  ): boolean {
+  function handleTerminalAccess(cause: unknown, captured?: CaseIntelligenceAuthority): boolean {
     const value = normalizeApiError(cause);
     if ([401, 428].includes(value.status)) {
       if (captured) writeRetained(captured, null);
@@ -445,7 +390,7 @@ export function useSupportCaseIntelligence(
 
   async function load(options: { preserveForms?: boolean } = {}) {
     const scope = context.authority();
-    if (!scope || !permission(scope, "project.case_intelligence.read")) {
+    if (!scope || !permission(scope, 'project.case_intelligence.read')) {
       purge();
       return;
     }
@@ -456,7 +401,7 @@ export function useSupportCaseIntelligence(
     readAbort = new AbortController();
     loading.value = true;
     accessDenied.value = false;
-    error.value = "";
+    error.value = '';
     const retained = readRetained(scope);
     pendingAttempt.value = retained;
     try {
@@ -474,16 +419,12 @@ export function useSupportCaseIntelligence(
         assignedModelRevisionId.value
       )
         detection.value.modelProfileRevisionId = assignedModelRevisionId.value;
-      if (pendingAttempt.value && !canRunAttempt(scope, pendingAttempt.value))
-        forget(scope);
+      if (pendingAttempt.value && !canRunAttempt(scope, pendingAttempt.value)) forget(scope);
     } catch (cause) {
-      if (
-        !current(scope, capturedGeneration) ||
-        normalizeApiError(cause).name === "AbortError"
-      )
+      if (!current(scope, capturedGeneration) || normalizeApiError(cause).name === 'AbortError')
         return;
       if (!handleTerminalAccess(cause, scope))
-        error.value = "Не удалось загрузить правила. Попробуйте ещё раз.";
+        error.value = 'Не удалось загрузить правила. Попробуйте ещё раз.';
     } finally {
       if (current(scope, capturedGeneration)) loading.value = false;
     }
@@ -501,19 +442,18 @@ export function useSupportCaseIntelligence(
 
   async function execute(attempt: PendingAttempt, label: string) {
     const scope = context.authority();
-    if (!scope || mutating.value || !canRunAttempt(scope, attempt))
-      return false;
+    if (!scope || mutating.value || !canRunAttempt(scope, attempt)) return false;
     activeScope = clonePolicy(scope);
     remember(scope, attempt);
     const capturedGeneration = generation.value;
     operationAbort?.abort();
     operationAbort = new AbortController();
     mutating.value = true;
-    error.value = "";
-    feedback.value = "";
+    error.value = '';
+    feedback.value = '';
     try {
       switch (attempt.operation) {
-        case "SAVE_DETECTION":
+        case 'SAVE_DETECTION':
           await source.saveDetectionDraft(
             scope.projectId,
             attempt.definition,
@@ -522,7 +462,7 @@ export function useSupportCaseIntelligence(
             operationAbort.signal,
           );
           break;
-        case "DISCARD_DETECTION":
+        case 'DISCARD_DETECTION':
           await source.discardDetectionDraft(
             scope.projectId,
             attempt.expectedVersion,
@@ -531,7 +471,7 @@ export function useSupportCaseIntelligence(
             operationAbort.signal,
           );
           break;
-        case "PUBLISH_DETECTION":
+        case 'PUBLISH_DETECTION':
           await source.publishDetection(
             scope.projectId,
             attempt.revisionId,
@@ -541,7 +481,7 @@ export function useSupportCaseIntelligence(
             operationAbort.signal,
           );
           break;
-        case "SAVE_BUDGET":
+        case 'SAVE_BUDGET':
           await source.saveBudgetDraft(
             scope.projectId,
             attempt.definition,
@@ -550,7 +490,7 @@ export function useSupportCaseIntelligence(
             operationAbort.signal,
           );
           break;
-        case "PUBLISH_BUDGET":
+        case 'PUBLISH_BUDGET':
           await source.publishBudget(
             scope.projectId,
             attempt.revisionId,
@@ -570,25 +510,21 @@ export function useSupportCaseIntelligence(
       return true;
     } catch (cause) {
       const value = normalizeApiError(cause);
-      if (!current(scope, capturedGeneration) || value.name === "AbortError")
-        return false;
+      if (!current(scope, capturedGeneration) || value.name === 'AbortError') return false;
       if (handleTerminalAccess(value, scope)) return false;
       const authoringIssues = authoringIssuesFromDetails(value.details);
       if ([400, 422].includes(value.status) && authoringIssues.length) {
         forget(scope);
         serverDetectionIssues.value = authoringIssues;
-        error.value = "Исправьте отмеченные сервером поля.";
+        error.value = 'Исправьте отмеченные сервером поля.';
         return false;
       }
       if (value.status === 409) {
         forget(scope);
         error.value =
-          "Правила уже изменились на сервере. Мы перечитали свежую версию; проверьте изменения и подтвердите действие ещё раз.";
+          'Правила уже изменились на сервере. Мы перечитали свежую версию; проверьте изменения и подтвердите действие ещё раз.';
         try {
-          const fresh = await source.read(
-            scope.projectId,
-            operationAbort?.signal,
-          );
+          const fresh = await source.read(scope.projectId, operationAbort?.signal);
           if (current(scope, capturedGeneration)) applySnapshot(fresh, true);
         } catch {
           // Keep the operator draft and require an explicit refresh.
@@ -602,12 +538,11 @@ export function useSupportCaseIntelligence(
         value.status >= 500
       ) {
         error.value =
-          "Результат команды пока неизвестен. Не создавайте новую команду — повторите проверку этой попытки.";
+          'Результат команды пока неизвестен. Не создавайте новую команду — повторите проверку этой попытки.';
         return false;
       }
       forget(scope);
-      error.value =
-        "Команда не выполнена. Проверьте данные и попробуйте ещё раз.";
+      error.value = 'Команда не выполнена. Проверьте данные и попробуйте ещё раз.';
       return false;
     } finally {
       if (current(scope, capturedGeneration)) mutating.value = false;
@@ -619,66 +554,58 @@ export function useSupportCaseIntelligence(
   }
 
   async function saveDetection() {
-    if (
-      !canManageDetection.value ||
-      hasDetectionErrors.value ||
-      pendingAttempt.value
-    )
-      return false;
+    if (!canManageDetection.value || hasDetectionErrors.value || pendingAttempt.value) return false;
     if (canPreview.value && !(await validateDraft())) return false;
     return execute(
       {
-        operation: "SAVE_DETECTION",
+        operation: 'SAVE_DETECTION',
         key: key(),
         expectedVersion: detectionVersion(snapshot.value),
         definition: clonePolicy(detection.value),
       },
-      "Черновик правил сохранён.",
+      'Черновик правил сохранён.',
     );
   }
 
   async function discardDetection(reason: string) {
     const draft = snapshot.value?.detection?.draft;
-    if (!canManageDetection.value || !draft || pendingAttempt.value)
-      return false;
+    if (!canManageDetection.value || !draft || pendingAttempt.value) return false;
     return execute(
       {
-        operation: "DISCARD_DETECTION",
+        operation: 'DISCARD_DETECTION',
         key: key(),
         expectedVersion: draft.version,
         reason,
       },
-      "Черновик удалён.",
+      'Черновик удалён.',
     );
   }
 
   async function publishDetection(reason: string) {
     const draft = snapshot.value?.detection?.draft;
-    if (!canPublishDetection.value || !draft || pendingAttempt.value)
-      return false;
+    if (!canPublishDetection.value || !draft || pendingAttempt.value) return false;
     return execute(
       {
-        operation: "PUBLISH_DETECTION",
+        operation: 'PUBLISH_DETECTION',
         key: key(),
         revisionId: draft.id,
         expectedVersion: draft.version,
         reason,
       },
-      "Правила категорий опубликованы и готовы для следующей общей рабочей версии.",
+      'Правила категорий опубликованы и готовы для следующей общей рабочей версии.',
     );
   }
 
   async function saveBudget() {
-    if (!canManageBudget.value || hasBudgetErrors.value || pendingAttempt.value)
-      return false;
+    if (!canManageBudget.value || hasBudgetErrors.value || pendingAttempt.value) return false;
     return execute(
       {
-        operation: "SAVE_BUDGET",
+        operation: 'SAVE_BUDGET',
         key: key(),
         expectedVersion: budgetVersion(snapshot.value),
         definition: clonePolicy(budget.value),
       },
-      "Черновик лимитов сохранён.",
+      'Черновик лимитов сохранён.',
     );
   }
 
@@ -687,13 +614,13 @@ export function useSupportCaseIntelligence(
     if (!canPublishBudget.value || !draft || pendingAttempt.value) return false;
     return execute(
       {
-        operation: "PUBLISH_BUDGET",
+        operation: 'PUBLISH_BUDGET',
         key: key(),
         revisionId: draft.id,
         expectedVersion: draft.version,
         reason,
       },
-      "Лимиты опубликованы.",
+      'Лимиты опубликованы.',
     );
   }
 
@@ -706,7 +633,7 @@ export function useSupportCaseIntelligence(
     validationAbort?.abort();
     validationAbort = new AbortController();
     validating.value = true;
-    error.value = "";
+    error.value = '';
     try {
       const result = await source.validateDetection(
         scope.projectId,
@@ -724,8 +651,8 @@ export function useSupportCaseIntelligence(
         const issues = authoringIssuesFromDetails(value.details);
         if (issues.length) serverDetectionIssues.value = issues;
         error.value = issues.length
-          ? "Исправьте отмеченные сервером поля."
-          : "Не удалось проверить правила на сервере.";
+          ? 'Исправьте отмеченные сервером поля.'
+          : 'Не удалось проверить правила на сервере.';
       }
       return false;
     } finally {
@@ -740,7 +667,7 @@ export function useSupportCaseIntelligence(
       !canPreview.value ||
       previewing.value ||
       hasDetectionErrors.value ||
-      !messages.some((message) => message.role === "USER")
+      !messages.some((message) => message.role === 'USER')
     )
       return;
     if (!(await validateDraft())) return;
@@ -748,7 +675,7 @@ export function useSupportCaseIntelligence(
     previewAbort?.abort();
     previewAbort = new AbortController();
     previewing.value = true;
-    error.value = "";
+    error.value = '';
     try {
       const result = await source.dryRun(
         scope.projectId,
@@ -760,8 +687,7 @@ export function useSupportCaseIntelligence(
       dryRunResult.value = result;
     } catch (cause) {
       if (!current(scope, capturedGeneration)) return;
-      if (!handleTerminalAccess(cause, scope))
-        error.value = "Не удалось проверить пример.";
+      if (!handleTerminalAccess(cause, scope)) error.value = 'Не удалось проверить пример.';
     } finally {
       if (current(scope, capturedGeneration)) previewing.value = false;
     }
@@ -769,19 +695,13 @@ export function useSupportCaseIntelligence(
 
   async function loadCalibration() {
     const scope = context.authority();
-    if (
-      !scope ||
-      !canPreview.value ||
-      calibrating.value ||
-      hasDetectionErrors.value
-    )
-      return false;
+    if (!scope || !canPreview.value || calibrating.value || hasDetectionErrors.value) return false;
     if (!(await validateDraft())) return false;
     const capturedGeneration = generation.value;
     calibrationAbort?.abort();
     calibrationAbort = new AbortController();
     calibrating.value = true;
-    error.value = "";
+    error.value = '';
     try {
       const result = await source.readCalibration(
         scope.projectId,
@@ -794,7 +714,7 @@ export function useSupportCaseIntelligence(
     } catch (cause) {
       if (!current(scope, capturedGeneration)) return false;
       if (!handleTerminalAccess(cause, scope))
-        error.value = "Не удалось загрузить покрытие модели.";
+        error.value = 'Не удалось загрузить покрытие модели.';
       return false;
     } finally {
       if (current(scope, capturedGeneration)) calibrating.value = false;
@@ -813,7 +733,7 @@ export function useSupportCaseIntelligence(
     operationAbort?.abort();
     operationAbort = new AbortController();
     mutating.value = true;
-    error.value = "";
+    error.value = '';
     try {
       const result = await source.lookupCommand(
         scope.projectId,
@@ -821,38 +741,36 @@ export function useSupportCaseIntelligence(
         operationAbort.signal,
       );
       if (!current(scope, capturedGeneration)) return false;
-      const expectedKind = attempt.operation.includes("BUDGET")
-        ? "BUDGET_POLICY"
-        : "DETECTION_POLICY";
+      const expectedKind = attempt.operation.includes('BUDGET')
+        ? 'BUDGET_POLICY'
+        : 'DETECTION_POLICY';
       if (result.resultKind !== expectedKind) {
         error.value =
-          "Сервер вернул подтверждение другой команды. Новые изменения заблокированы до ручной проверки.";
+          'Сервер вернул подтверждение другой команды. Новые изменения заблокированы до ручной проверки.';
         return false;
       }
       const fresh = await source.read(scope.projectId, operationAbort.signal);
       if (!current(scope, capturedGeneration)) return false;
       applySnapshot(fresh);
       forget(scope);
-      feedback.value = "Команда подтверждена сервером.";
+      feedback.value = 'Команда подтверждена сервером.';
       return true;
     } catch (cause) {
       const value = normalizeApiError(cause);
-      if (!current(scope, capturedGeneration) || value.name === "AbortError")
-        return false;
+      if (!current(scope, capturedGeneration) || value.name === 'AbortError') return false;
       if (value.status === 404) {
         // The idempotency lookup has no receipt for this exact command yet.
         // Replaying the retained body, version and key is the only safe write.
       } else if (handleTerminalAccess(value, scope)) {
         return false;
       } else {
-        error.value =
-          "Подтверждение пока недоступно. Повторите проверку этой же команды позже.";
+        error.value = 'Подтверждение пока недоступно. Повторите проверку этой же команды позже.';
         return false;
       }
     } finally {
       if (current(scope, capturedGeneration)) mutating.value = false;
     }
-    return execute(clonePolicy(attempt), "Команда подтверждена сервером.");
+    return execute(clonePolicy(attempt), 'Команда подтверждена сервером.');
   }
 
   function reset(
@@ -866,17 +784,13 @@ export function useSupportCaseIntelligence(
       activeScope &&
       (next === null ||
         (next !== undefined &&
-          (next.actorId !== activeScope.actorId ||
-            next.projectId !== activeScope.projectId)));
+          (next.actorId !== activeScope.actorId || next.projectId !== activeScope.projectId)));
     const permissionLost =
       activeScope &&
       next &&
       pendingAttempt.value &&
       !hasAttemptPermission(next, pendingAttempt.value);
-    if (
-      activeScope &&
-      (options.forgetRetained || scopeChanged || permissionLost)
-    )
+    if (activeScope && (options.forgetRetained || scopeChanged || permissionLost))
       writeRetained(activeScope, null);
     generation.value += 1;
     readAbort?.abort();
@@ -900,8 +814,8 @@ export function useSupportCaseIntelligence(
     previewing.value = false;
     validating.value = false;
     calibrating.value = false;
-    error.value = "";
-    feedback.value = "";
+    error.value = '';
+    feedback.value = '';
     pendingAttempt.value = null;
     activeScope = null;
   }

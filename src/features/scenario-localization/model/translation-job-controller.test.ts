@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createTranslationJobController } from "./translation-job-controller";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createTranslationJobController } from './translation-job-controller';
 
 const repo = {
   create: vi.fn(),
@@ -9,394 +9,377 @@ const repo = {
   usage: vi.fn(),
 };
 
-describe("translation job controller", () => {
+describe('translation job controller', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
     sessionStorage.clear();
   });
 
-  it("polls an accepted job and applies output by unit key", async () => {
+  it('polls an accepted job and applies output by unit key', async () => {
     repo.create.mockResolvedValue({
-      jobId: "job-1",
-      status: "PENDING",
-      sourceHash: "hash",
-      createdAt: "2026-07-19T00:00:00.000Z",
+      jobId: 'job-1',
+      status: 'PENDING',
+      sourceHash: 'hash',
+      createdAt: '2026-07-19T00:00:00.000Z',
     });
     repo.get
       .mockResolvedValueOnce({
-        jobId: "job-1",
-        status: "RUNNING",
-        sourceHash: "hash",
-        createdAt: "2026-07-19T00:00:00.000Z",
-        sourceLocale: "en",
+        jobId: 'job-1',
+        status: 'RUNNING',
+        sourceHash: 'hash',
+        createdAt: '2026-07-19T00:00:00.000Z',
+        sourceLocale: 'en',
         targets: [
           {
-            targetLocale: "es",
-            status: "RUNNING",
+            targetLocale: 'es',
+            status: 'RUNNING',
             outputUnits: null,
             errorCode: null,
           },
         ],
       })
       .mockResolvedValueOnce({
-        jobId: "job-1",
-        status: "COMPLETED",
-        sourceHash: "hash",
-        createdAt: "2026-07-19T00:00:00.000Z",
-        sourceLocale: "en",
+        jobId: 'job-1',
+        status: 'COMPLETED',
+        sourceHash: 'hash',
+        createdAt: '2026-07-19T00:00:00.000Z',
+        sourceLocale: 'en',
         targets: [
           {
-            targetLocale: "es",
-            status: "SUCCESS",
-            outputUnits: [
-              { key: "graph.actions.welcome.config.text", text: "Hola" },
-            ],
+            targetLocale: 'es',
+            status: 'SUCCESS',
+            outputUnits: [{ key: 'graph.actions.welcome.config.text', text: 'Hola' }],
             errorCode: null,
           },
         ],
       });
-    const value = { en: "Hello", es: "" };
+    const value = { en: 'Hello', es: '' };
     const apply = vi.fn((_: string, locale: string, text: string) => {
-      value[locale as "es"] = text;
-      return "APPLIED" as const;
+      value[locale as 'es'] = text;
+      return 'APPLIED' as const;
     });
     const state = vi.fn();
     const controller = createTranslationJobController({
       repository: repo,
-      context: () => ({ projectId: "project-1", scenarioId: "scenario-1" }),
+      context: () => ({ projectId: 'project-1', scenarioId: 'scenario-1' }),
       getValue: () => ({ ...value }),
       apply,
       state,
     });
 
     await controller.start({
-      fieldPath: "graph.actions.welcome.config.text",
-      sourceLocale: "en",
-      targets: ["es"],
+      fieldPath: 'graph.actions.welcome.config.text',
+      sourceLocale: 'en',
+      targets: ['es'],
     });
     expect(repo.create).toHaveBeenCalledWith(
-      "project-1",
+      'project-1',
       {
-        sourceLocale: "en",
-        targetLocales: ["es"],
-        units: [{ key: "graph.actions.welcome.config.text", text: "Hello" }],
+        sourceLocale: 'en',
+        targetLocales: ['es'],
+        units: [{ key: 'graph.actions.welcome.config.text', text: 'Hello' }],
       },
       { idempotencyKey: expect.any(String) },
     );
     expect(repo.get).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(500);
     expect(apply).toHaveBeenCalledWith(
-      "graph.actions.welcome.config.text",
-      "es",
-      "Hola",
-      expect.objectContaining({ sourceText: "Hello", targetText: "" }),
+      'graph.actions.welcome.config.text',
+      'es',
+      'Hola',
+      expect.objectContaining({ sourceText: 'Hello', targetText: '' }),
     );
     expect(sessionStorage.length).toBe(0);
     controller.dispose();
   });
 
-  it("applies a completed translation when the submitted source only differs by surrounding whitespace", async () => {
+  it('applies a completed translation when the submitted source only differs by surrounding whitespace', async () => {
     repo.create.mockResolvedValue({
-      jobId: "job-whitespace",
-      status: "PENDING",
-      sourceHash: "hash",
-      createdAt: "now",
+      jobId: 'job-whitespace',
+      status: 'PENDING',
+      sourceHash: 'hash',
+      createdAt: 'now',
     });
     repo.get.mockResolvedValue({
-      jobId: "job-whitespace",
-      status: "COMPLETED",
-      sourceHash: "hash",
-      createdAt: "now",
-      sourceLocale: "ru",
+      jobId: 'job-whitespace',
+      status: 'COMPLETED',
+      sourceHash: 'hash',
+      createdAt: 'now',
+      sourceLocale: 'ru',
       targets: [
         {
-          targetLocale: "it",
-          status: "SUCCESS",
+          targetLocale: 'it',
+          status: 'SUCCESS',
           outputUnits: [
             {
-              key: "graph.actions.step_1.config.text",
-              text: "Ciao, come va?",
+              key: 'graph.actions.step_1.config.text',
+              text: 'Ciao, come va?',
             },
           ],
           errorCode: null,
         },
         {
-          targetLocale: "de",
-          status: "SUCCESS",
+          targetLocale: 'de',
+          status: 'SUCCESS',
           outputUnits: [
             {
-              key: "graph.actions.step_1.config.text",
-              text: "Hallo, wie geht es dir?",
+              key: 'graph.actions.step_1.config.text',
+              text: 'Hallo, wie geht es dir?',
             },
           ],
           errorCode: null,
         },
       ],
     });
-    const value = { ru: "Приветик как дела ", it: "", de: "" };
+    const value = { ru: 'Приветик как дела ', it: '', de: '' };
     const apply = vi.fn(
       (
         _: string,
         locale: string,
         text: string,
-        snapshot: Parameters<
-          Parameters<typeof createTranslationJobController>[0]["apply"]
-        >[3],
+        snapshot: Parameters<Parameters<typeof createTranslationJobController>[0]['apply']>[3],
       ) => {
-        if (value.ru !== snapshot.sourceText) return "STALE_SOURCE" as const;
-        value[locale as "it" | "de"] = text;
-        return "APPLIED" as const;
+        if (value.ru !== snapshot.sourceText) return 'STALE_SOURCE' as const;
+        value[locale as 'it' | 'de'] = text;
+        return 'APPLIED' as const;
       },
     );
     const state = vi.fn();
     const controller = createTranslationJobController({
       repository: repo,
-      context: () => ({ projectId: "project-1", scenarioId: "scenario-1" }),
+      context: () => ({ projectId: 'project-1', scenarioId: 'scenario-1' }),
       getValue: () => ({ ...value }),
       apply,
       state,
     });
 
     await controller.start({
-      fieldPath: "graph.actions.step_1.config.text",
-      sourceLocale: "ru",
-      targets: ["it", "de"],
+      fieldPath: 'graph.actions.step_1.config.text',
+      sourceLocale: 'ru',
+      targets: ['it', 'de'],
     });
 
-    expect(value.it).toBe("Ciao, come va?");
-    expect(value.de).toBe("Hallo, wie geht es dir?");
-    expect(state).toHaveBeenCalledWith(
-      "graph.actions.step_1.config.text",
-      "it",
-      "MACHINE_UNSAVED",
-    );
-    expect(state).toHaveBeenCalledWith(
-      "graph.actions.step_1.config.text",
-      "de",
-      "MACHINE_UNSAVED",
-    );
+    expect(value.it).toBe('Ciao, come va?');
+    expect(value.de).toBe('Hallo, wie geht es dir?');
+    expect(state).toHaveBeenCalledWith('graph.actions.step_1.config.text', 'it', 'MACHINE_UNSAVED');
+    expect(state).toHaveBeenCalledWith('graph.actions.step_1.config.text', 'de', 'MACHINE_UNSAVED');
     controller.dispose();
   });
 
-  it("keeps a source race stale instead of applying it", async () => {
+  it('keeps a source race stale instead of applying it', async () => {
     repo.create.mockResolvedValue({
-      jobId: "job-2",
-      status: "PENDING",
-      sourceHash: "hash",
-      createdAt: "now",
+      jobId: 'job-2',
+      status: 'PENDING',
+      sourceHash: 'hash',
+      createdAt: 'now',
     });
     repo.get.mockResolvedValue({
-      jobId: "job-2",
-      status: "COMPLETED",
-      sourceHash: "hash",
-      createdAt: "now",
-      sourceLocale: "en",
+      jobId: 'job-2',
+      status: 'COMPLETED',
+      sourceHash: 'hash',
+      createdAt: 'now',
+      sourceLocale: 'en',
       targets: [
         {
-          targetLocale: "es",
-          status: "SUCCESS",
-          outputUnits: [{ key: "field", text: "Hola" }],
+          targetLocale: 'es',
+          status: 'SUCCESS',
+          outputUnits: [{ key: 'field', text: 'Hola' }],
           errorCode: null,
         },
       ],
     });
-    const apply = vi.fn(() => "STALE_SOURCE" as const);
+    const apply = vi.fn(() => 'STALE_SOURCE' as const);
     const state = vi.fn();
     const controller = createTranslationJobController({
       repository: repo,
-      context: () => ({ projectId: "p", scenarioId: "s" }),
-      getValue: () => ({ en: "Hello", es: "" }),
+      context: () => ({ projectId: 'p', scenarioId: 's' }),
+      getValue: () => ({ en: 'Hello', es: '' }),
       apply,
       state,
     });
     await controller.start({
-      fieldPath: "field",
-      sourceLocale: "en",
-      targets: ["es"],
+      fieldPath: 'field',
+      sourceLocale: 'en',
+      targets: ['es'],
     });
-    expect(state).toHaveBeenLastCalledWith("field", "es", "STALE_SOURCE");
+    expect(state).toHaveBeenLastCalledWith('field', 'es', 'STALE_SOURCE');
     controller.dispose();
   });
 
-  it("applies successful targets from a partial job and retries only the failed locale", async () => {
+  it('applies successful targets from a partial job and retries only the failed locale', async () => {
     repo.create.mockResolvedValue({
-      jobId: "job-3",
-      status: "PENDING",
-      sourceHash: "hash",
-      createdAt: "now",
+      jobId: 'job-3',
+      status: 'PENDING',
+      sourceHash: 'hash',
+      createdAt: 'now',
     });
     repo.get.mockResolvedValue({
-      jobId: "job-3",
-      status: "COMPLETED_WITH_ERRORS",
-      sourceHash: "hash",
-      createdAt: "now",
-      sourceLocale: "en",
+      jobId: 'job-3',
+      status: 'COMPLETED_WITH_ERRORS',
+      sourceHash: 'hash',
+      createdAt: 'now',
+      sourceLocale: 'en',
       targets: [
         {
-          targetLocale: "es",
-          status: "SUCCESS",
-          outputUnits: [{ key: "field", text: "Hola" }],
+          targetLocale: 'es',
+          status: 'SUCCESS',
+          outputUnits: [{ key: 'field', text: 'Hola' }],
           errorCode: null,
         },
         {
-          targetLocale: "de",
-          status: "ERROR",
+          targetLocale: 'de',
+          status: 'ERROR',
           outputUnits: null,
-          errorCode: "PROVIDER_TIMEOUT",
+          errorCode: 'PROVIDER_TIMEOUT',
         },
       ],
     });
     repo.retryTarget.mockResolvedValue({
-      jobId: "job-3",
-      status: "COMPLETED",
-      sourceHash: "hash",
-      createdAt: "now",
-      sourceLocale: "en",
+      jobId: 'job-3',
+      status: 'COMPLETED',
+      sourceHash: 'hash',
+      createdAt: 'now',
+      sourceLocale: 'en',
       targets: [
         {
-          targetLocale: "es",
-          status: "SUCCESS",
-          outputUnits: [{ key: "field", text: "Hola" }],
+          targetLocale: 'es',
+          status: 'SUCCESS',
+          outputUnits: [{ key: 'field', text: 'Hola' }],
           errorCode: null,
         },
         {
-          targetLocale: "de",
-          status: "SUCCESS",
-          outputUnits: [{ key: "field", text: "Hallo" }],
+          targetLocale: 'de',
+          status: 'SUCCESS',
+          outputUnits: [{ key: 'field', text: 'Hallo' }],
           errorCode: null,
         },
       ],
     });
     const state = vi.fn();
-    const apply = vi.fn(() => "APPLIED" as const);
+    const apply = vi.fn(() => 'APPLIED' as const);
     const controller = createTranslationJobController({
       repository: repo,
-      context: () => ({ projectId: "p", scenarioId: "s" }),
-      getValue: () => ({ en: "Hello", es: "", de: "" }),
+      context: () => ({ projectId: 'p', scenarioId: 's' }),
+      getValue: () => ({ en: 'Hello', es: '', de: '' }),
       apply,
       state,
     });
 
     await controller.start({
-      fieldPath: "field",
-      sourceLocale: "en",
-      targets: ["es", "de"],
+      fieldPath: 'field',
+      sourceLocale: 'en',
+      targets: ['es', 'de'],
     });
-    expect(state).toHaveBeenCalledWith("field", "de", "ERROR");
+    expect(state).toHaveBeenCalledWith('field', 'de', 'ERROR');
     expect(sessionStorage.length).toBe(1);
 
-    await controller.retry("field", "de");
-    expect(repo.retryTarget).toHaveBeenCalledWith("p", "job-3", "de");
-    expect(apply).toHaveBeenCalledWith(
-      "field",
-      "de",
-      "Hallo",
-      expect.any(Object),
-    );
+    await controller.retry('field', 'de');
+    expect(repo.retryTarget).toHaveBeenCalledWith('p', 'job-3', 'de');
+    expect(apply).toHaveBeenCalledWith('field', 'de', 'Hallo', expect.any(Object));
     expect(sessionStorage.length).toBe(0);
     controller.dispose();
   });
 
-  it("submits and applies multiple localized fields in one batch job", async () => {
+  it('submits and applies multiple localized fields in one batch job', async () => {
     repo.create.mockResolvedValue({
-      jobId: "job-batch",
-      status: "PENDING",
-      sourceHash: "hash",
-      createdAt: "now",
+      jobId: 'job-batch',
+      status: 'PENDING',
+      sourceHash: 'hash',
+      createdAt: 'now',
     });
     repo.get.mockResolvedValue({
-      jobId: "job-batch",
-      status: "COMPLETED",
-      sourceHash: "hash",
-      createdAt: "now",
-      sourceLocale: "ru",
+      jobId: 'job-batch',
+      status: 'COMPLETED',
+      sourceHash: 'hash',
+      createdAt: 'now',
+      sourceLocale: 'ru',
       targets: [
         {
-          targetLocale: "en",
-          status: "SUCCESS",
+          targetLocale: 'en',
+          status: 'SUCCESS',
           outputUnits: [
-            { key: "allowance.warning", text: "Almost exhausted" },
-            { key: "allowance.exhausted", text: "Exhausted" },
+            { key: 'allowance.warning', text: 'Almost exhausted' },
+            { key: 'allowance.exhausted', text: 'Exhausted' },
           ],
           errorCode: null,
         },
       ],
     });
     const values: Record<string, Record<string, string>> = {
-      "allowance.warning": { ru: "Почти исчерпан", en: "" },
-      "allowance.exhausted": { ru: "Исчерпан", en: "" },
+      'allowance.warning': { ru: 'Почти исчерпан', en: '' },
+      'allowance.exhausted': { ru: 'Исчерпан', en: '' },
     };
     const apply = vi.fn((fieldPath: string, locale: string, text: string) => {
       values[fieldPath]![locale] = text;
-      return "APPLIED" as const;
+      return 'APPLIED' as const;
     });
     const controller = createTranslationJobController({
       repository: repo,
-      context: () => ({ projectId: "p", scenarioId: "allowance-policy" }),
+      context: () => ({ projectId: 'p', scenarioId: 'allowance-policy' }),
       getValue: (fieldPath) => ({ ...values[fieldPath] }),
       apply,
       state: vi.fn(),
     });
 
     await controller.startBatch({
-      fieldPaths: ["allowance.warning", "allowance.exhausted"],
-      sourceLocale: "ru",
-      targets: ["en"],
+      fieldPaths: ['allowance.warning', 'allowance.exhausted'],
+      sourceLocale: 'ru',
+      targets: ['en'],
     });
 
     expect(repo.create).toHaveBeenCalledWith(
-      "p",
+      'p',
       {
-        sourceLocale: "ru",
-        targetLocales: ["en"],
+        sourceLocale: 'ru',
+        targetLocales: ['en'],
         units: [
-          { key: "allowance.warning", text: "Почти исчерпан" },
-          { key: "allowance.exhausted", text: "Исчерпан" },
+          { key: 'allowance.warning', text: 'Почти исчерпан' },
+          { key: 'allowance.exhausted', text: 'Исчерпан' },
         ],
       },
       { idempotencyKey: expect.any(String) },
     );
-    expect(values["allowance.warning"]?.en).toBe("Almost exhausted");
-    expect(values["allowance.exhausted"]?.en).toBe("Exhausted");
+    expect(values['allowance.warning']?.en).toBe('Almost exhausted');
+    expect(values['allowance.exhausted']?.en).toBe('Exhausted');
     controller.dispose();
   });
 
-  it("restores pending state for every field in a recovered batch job", async () => {
+  it('restores pending state for every field in a recovered batch job', async () => {
     sessionStorage.setItem(
-      "retenive:translation-jobs:p:allowance-policy",
+      'retenive:translation-jobs:p:allowance-policy',
       JSON.stringify([
         {
-          jobId: "job-batch-recovered",
-          fieldPath: "allowance.warning",
-          fieldPaths: ["allowance.warning", "allowance.exhausted"],
-          sourceLocale: "ru",
-          sourceText: "Почти исчерпан",
+          jobId: 'job-batch-recovered',
+          fieldPath: 'allowance.warning',
+          fieldPaths: ['allowance.warning', 'allowance.exhausted'],
+          sourceLocale: 'ru',
+          sourceText: 'Почти исчерпан',
           sourceTexts: {
-            "allowance.warning": "Почти исчерпан",
-            "allowance.exhausted": "Исчерпан",
+            'allowance.warning': 'Почти исчерпан',
+            'allowance.exhausted': 'Исчерпан',
           },
-          unitKeys: ["allowance.warning", "allowance.exhausted"],
-          targets: ["en"],
-          targetValues: { en: "" },
+          unitKeys: ['allowance.warning', 'allowance.exhausted'],
+          targets: ['en'],
+          targetValues: { en: '' },
           targetValuesByField: {
-            "allowance.warning": { en: "" },
-            "allowance.exhausted": { en: "" },
+            'allowance.warning': { en: '' },
+            'allowance.exhausted': { en: '' },
           },
-          startedAt: "now",
+          startedAt: 'now',
         },
       ]),
     );
     repo.get.mockResolvedValue({
-      jobId: "job-batch-recovered",
-      status: "RUNNING",
-      sourceHash: "hash",
-      createdAt: "now",
-      sourceLocale: "ru",
+      jobId: 'job-batch-recovered',
+      status: 'RUNNING',
+      sourceHash: 'hash',
+      createdAt: 'now',
+      sourceLocale: 'ru',
       targets: [
         {
-          targetLocale: "en",
-          status: "RUNNING",
+          targetLocale: 'en',
+          status: 'RUNNING',
           outputUnits: null,
           errorCode: null,
         },
@@ -405,62 +388,62 @@ describe("translation job controller", () => {
     const state = vi.fn();
     const controller = createTranslationJobController({
       repository: repo,
-      context: () => ({ projectId: "p", scenarioId: "allowance-policy" }),
+      context: () => ({ projectId: 'p', scenarioId: 'allowance-policy' }),
       getValue: () => ({}),
-      apply: vi.fn(() => "APPLIED" as const),
+      apply: vi.fn(() => 'APPLIED' as const),
       state,
     });
 
     await controller.recover();
 
-    expect(state).toHaveBeenCalledWith("allowance.warning", "en", "PENDING");
-    expect(state).toHaveBeenCalledWith("allowance.exhausted", "en", "PENDING");
+    expect(state).toHaveBeenCalledWith('allowance.warning', 'en', 'PENDING');
+    expect(state).toHaveBeenCalledWith('allowance.exhausted', 'en', 'PENDING');
     controller.dispose();
   });
 
-  it("recovers an accepted job from the same-tab session and cleans terminal storage", async () => {
+  it('recovers an accepted job from the same-tab session and cleans terminal storage', async () => {
     sessionStorage.setItem(
-      "retenive:translation-jobs:p:s",
+      'retenive:translation-jobs:p:s',
       JSON.stringify([
         {
-          jobId: "job-recovered",
-          fieldPath: "field",
-          sourceLocale: "en",
-          sourceText: "Hello",
-          unitKeys: ["field"],
-          targets: ["es"],
-          targetValues: { es: "" },
-          startedAt: "now",
+          jobId: 'job-recovered',
+          fieldPath: 'field',
+          sourceLocale: 'en',
+          sourceText: 'Hello',
+          unitKeys: ['field'],
+          targets: ['es'],
+          targetValues: { es: '' },
+          startedAt: 'now',
         },
       ]),
     );
     repo.get.mockResolvedValue({
-      jobId: "job-recovered",
-      status: "COMPLETED",
-      sourceHash: "hash",
-      createdAt: "now",
-      sourceLocale: "en",
+      jobId: 'job-recovered',
+      status: 'COMPLETED',
+      sourceHash: 'hash',
+      createdAt: 'now',
+      sourceLocale: 'en',
       targets: [
         {
-          targetLocale: "es",
-          status: "SUCCESS",
-          outputUnits: [{ key: "field", text: "Hola" }],
+          targetLocale: 'es',
+          status: 'SUCCESS',
+          outputUnits: [{ key: 'field', text: 'Hola' }],
           errorCode: null,
         },
       ],
     });
-    const apply = vi.fn(() => "APPLIED" as const);
+    const apply = vi.fn(() => 'APPLIED' as const);
     const controller = createTranslationJobController({
       repository: repo,
-      context: () => ({ projectId: "p", scenarioId: "s" }),
-      getValue: () => ({ en: "Hello", es: "" }),
+      context: () => ({ projectId: 'p', scenarioId: 's' }),
+      getValue: () => ({ en: 'Hello', es: '' }),
       apply,
       state: vi.fn(),
     });
 
     await controller.recover();
     await vi.waitFor(() => expect(apply).toHaveBeenCalled());
-    expect(repo.get).toHaveBeenCalledWith("p", "job-recovered");
+    expect(repo.get).toHaveBeenCalledWith('p', 'job-recovered');
     expect(sessionStorage.length).toBe(0);
     controller.dispose();
   });

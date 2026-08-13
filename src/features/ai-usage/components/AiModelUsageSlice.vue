@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, shallowRef, watch } from 'vue'
+import { computed, shallowRef, watch } from 'vue';
 import {
   aggregateModelUsage,
   aggregateProviderUsage,
@@ -14,63 +14,53 @@ import {
   type AiUsageBreakdown,
   type AiUsageCategoryBreakdown,
   type AiUsageMetric,
-} from '../ai-usage.model'
-import AiModelUsageChart from './AiModelUsageChart.vue'
-import AiModalityChart from './AiModalityChart.vue'
+} from '../ai-usage.model';
+import AiModelUsageChart from './AiModelUsageChart.vue';
+import AiModalityChart from './AiModalityChart.vue';
 
 const props = defineProps<{
-  breakdown: AiUsageBreakdown[]
-  caseUsage?: AiUsageCategoryBreakdown
-}>()
+  breakdown: AiUsageBreakdown[];
+  caseUsage?: AiUsageCategoryBreakdown;
+}>();
 
-const usageMetric = shallowRef<AiUsageMetric>('tokens')
-const modelBreakdown = computed(() => getModelBreakdown(props.breakdown))
-const modelUsage = computed(() => aggregateProviderUsage(modelBreakdown.value))
-const models = computed(() => aggregateModelUsage(modelBreakdown.value))
-const currency = computed(() => getUsageCurrency(modelBreakdown.value))
-const costAvailable = computed(
-  () => Boolean(currency.value) && models.value.some(hasUsageCost),
-)
+const usageMetric = shallowRef<AiUsageMetric>('tokens');
+const modelBreakdown = computed(() => getModelBreakdown(props.breakdown));
+const modelUsage = computed(() => aggregateProviderUsage(modelBreakdown.value));
+const models = computed(() => aggregateModelUsage(modelBreakdown.value));
+const currency = computed(() => getUsageCurrency(modelBreakdown.value));
+const costAvailable = computed(() => Boolean(currency.value) && models.value.some(hasUsageCost));
 const caseBreakdown = computed(() =>
   modelBreakdown.value.filter((item) => item.operation.startsWith('case_')),
-)
+);
 const cachedShare = computed(() => {
-  if (!modelUsage.value.inputTokens) return '0% входящих'
-  const share =
-    (modelUsage.value.cachedInputTokens / modelUsage.value.inputTokens) * 100
-  return `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(share)}% входящих`
-})
+  if (!modelUsage.value.inputTokens) return '0% входящих';
+  const share = (modelUsage.value.cachedInputTokens / modelUsage.value.inputTokens) * 100;
+  return `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(share)}% входящих`;
+});
 
 function selectMetric(metric: AiUsageMetric) {
-  if (metric === 'cost' && !costAvailable.value) return
-  usageMetric.value = metric
+  if (metric === 'cost' && !costAvailable.value) return;
+  usageMetric.value = metric;
 }
 
 function operationCount(value: number) {
-  return `${formatTokenCount(value)} ${pluralizeRu(value, 'операция', 'операции', 'операций')}`
+  return `${formatTokenCount(value)} ${pluralizeRu(value, 'операция', 'операции', 'операций')}`;
 }
 
 watch(costAvailable, (available) => {
-  if (!available && usageMetric.value === 'cost') usageMetric.value = 'tokens'
-})
+  if (!available && usageMetric.value === 'cost') usageMetric.value = 'tokens';
+});
 </script>
 
 <template>
-  <section
-    class="ai-usage-slice model-slice"
-    aria-labelledby="model-slice-title"
-  >
+  <section class="ai-usage-slice model-slice" aria-labelledby="model-slice-title">
     <header class="slice-header">
       <div>
         <span class="provider-kicker">Models & inference</span>
         <h4 id="model-slice-title">Модели Grok</h4>
         <p>Токены и provider-reported стоимость модельных операций.</p>
       </div>
-      <div
-        class="metric-switch"
-        role="group"
-        aria-label="Показатель графиков Grok"
-      >
+      <div class="metric-switch" role="group" aria-label="Показатель графиков Grok">
         <button
           type="button"
           :class="{ active: usageMetric === 'tokens' }"
@@ -107,28 +97,20 @@ watch(costAvailable, (available) => {
       </article>
     </div>
 
-    <section
-      v-if="caseUsage"
-      class="case-usage"
-      aria-labelledby="case-intelligence-usage-title"
-    >
+    <section v-if="caseUsage" class="case-usage" aria-labelledby="case-intelligence-usage-title">
       <header>
         <span class="case-mark">
           <i class="pi pi-briefcase" />
         </span>
         <div>
           <span class="provider-kicker">AI-кейсы</span>
-          <h5 id="case-intelligence-usage-title">
-            Анализ и проверка обращений
-          </h5>
+          <h5 id="case-intelligence-usage-title">Анализ и проверка обращений</h5>
         </div>
       </header>
       <div class="case-summary">
         <article>
           <small>Стоимость</small>
-          <strong>{{
-            formatMoney(getUsageCost(caseUsage), caseUsage.currency)
-          }}</strong>
+          <strong>{{ formatMoney(getUsageCost(caseUsage), caseUsage.currency) }}</strong>
         </article>
         <article>
           <small>Токены</small>
@@ -233,8 +215,7 @@ watch(costAvailable, (available) => {
 .case-usage {
   padding: 16px;
   margin-top: 14px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-accent) 24%, var(--border-default));
+  border: 1px solid color-mix(in srgb, var(--status-accent) 24%, var(--border-default));
   border-radius: 16px;
   background: var(--surface-subtle);
 }

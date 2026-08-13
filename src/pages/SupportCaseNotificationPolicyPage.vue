@@ -1,41 +1,41 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import Checkbox from "primevue/checkbox";
-import Dialog from "primevue/dialog";
-import InputNumber from "primevue/inputnumber";
-import Message from "primevue/message";
-import MultiSelect from "primevue/multiselect";
-import RadioButton from "primevue/radiobutton";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import Textarea from "primevue/textarea";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { supportCaseNotificationPolicySource } from "@/features/support-case-notifications/api/support-case-notification-policy-source";
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Checkbox from 'primevue/checkbox';
+import Dialog from 'primevue/dialog';
+import InputNumber from 'primevue/inputnumber';
+import Message from 'primevue/message';
+import MultiSelect from 'primevue/multiselect';
+import RadioButton from 'primevue/radiobutton';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import Textarea from 'primevue/textarea';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { supportCaseNotificationPolicySource } from '@/features/support-case-notifications/api/support-case-notification-policy-source';
 import {
   policyModeLabel,
   policyStatusLabel,
-} from "@/features/support-case-notifications/model/support-case-notification-policy";
-import { createSupportCaseNotificationPolicyController } from "@/features/support-case-notifications/model/use-support-case-notification-policy";
+} from '@/features/support-case-notifications/model/support-case-notification-policy';
+import { createSupportCaseNotificationPolicyController } from '@/features/support-case-notifications/model/use-support-case-notification-policy';
 
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 const accessDenied = ref(false);
-const confirmation = ref<"PUBLISH" | "DISABLE" | "RESTORE" | null>(null);
+const confirmation = ref<'PUBLISH' | 'DISABLE' | 'RESTORE' | null>(null);
 const restorationRevisionId = ref<string | null>(null);
 const permissionSignature = computed(() =>
-  [...(auth.project?.effectivePermissionCodes ?? [])].sort().join("\u0000"),
+  [...(auth.project?.effectivePermissionCodes ?? [])].sort().join('\u0000'),
 );
 const canManage = computed(
   () =>
     !accessDenied.value &&
     hasProjectPermission(
       auth.project?.effectivePermissionCodes ?? [],
-      "project.support.notification_policy.manage",
+      'project.support.notification_policy.manage',
     ),
 );
 
@@ -59,7 +59,7 @@ const controller = createSupportCaseNotificationPolicyController(
         /* Local authority is cleared before the request. */
       } finally {
         await router.replace({
-          path: "/login",
+          path: '/login',
           query: { redirect: route.fullPath },
         });
       }
@@ -70,30 +70,30 @@ const controller = createSupportCaseNotificationPolicyController(
 
 const modeOptions = [
   {
-    value: "IMMEDIATE" as const,
-    title: "Сразу",
-    description: "Отдельное уведомление после каждого подходящего события.",
-    icon: "pi pi-bolt",
+    value: 'IMMEDIATE' as const,
+    title: 'Сразу',
+    description: 'Отдельное уведомление после каждого подходящего события.',
+    icon: 'pi pi-bolt',
   },
   {
-    value: "DIGEST" as const,
-    title: "Сводкой",
-    description: "Несколько событий объединяются и приходят по расписанию.",
-    icon: "pi pi-list-check",
+    value: 'DIGEST' as const,
+    title: 'Сводкой',
+    description: 'Несколько событий объединяются и приходят по расписанию.',
+    icon: 'pi pi-list-check',
   },
   {
-    value: "OFF" as const,
-    title: "Не отправлять",
-    description: "Новая версия сохранит политику выключенной.",
-    icon: "pi pi-bell-slash",
+    value: 'OFF' as const,
+    title: 'Не отправлять',
+    description: 'Новая версия сохранит политику выключенной.',
+    icon: 'pi pi-bell-slash',
   },
 ];
 const priorityOptions = [
-  { label: "Низкий и выше", value: "LOW" },
-  { label: "Обычный и выше", value: "NORMAL" },
-  { label: "Высокий и выше", value: "HIGH" },
-  { label: "Срочный и выше", value: "URGENT" },
-  { label: "Критический", value: "CRITICAL" },
+  { label: 'Низкий и выше', value: 'LOW' },
+  { label: 'Обычный и выше', value: 'NORMAL' },
+  { label: 'Высокий и выше', value: 'HIGH' },
+  { label: 'Срочный и выше', value: 'URGENT' },
+  { label: 'Критический', value: 'CRITICAL' },
 ];
 const topicOptions = computed(() =>
   (controller.current.value?.allowedTopicCodes ?? []).map((value) => ({
@@ -110,128 +110,119 @@ const teamOptions = computed(() =>
 );
 const activePolicy = computed(() => controller.current.value?.current ?? null);
 const publishDisabledReason = computed(() => {
-  if (controller.pending.value)
-    return "Сначала проверьте результат предыдущей команды.";
-  if (!controller.current.value?.draft) return "Сначала сохраните черновик.";
-  if (!controller.draftMatchesForm.value)
-    return "После изменений снова сохраните черновик.";
-  if (!controller.preview.value)
-    return "Сначала выполните предварительную проверку.";
-  if (controller.previewStale.value)
-    return "После изменений выполните проверку ещё раз.";
-  if (!controller.preview.value.publishable)
-    return "Исправьте ошибки предварительной проверки.";
+  if (controller.pending.value) return 'Сначала проверьте результат предыдущей команды.';
+  if (!controller.current.value?.draft) return 'Сначала сохраните черновик.';
+  if (!controller.draftMatchesForm.value) return 'После изменений снова сохраните черновик.';
+  if (!controller.preview.value) return 'Сначала выполните предварительную проверку.';
+  if (controller.previewStale.value) return 'После изменений выполните проверку ещё раз.';
+  if (!controller.preview.value.publishable) return 'Исправьте ошибки предварительной проверки.';
   if (!controller.previewMatchesDraft.value)
-    return "Проверка должна относиться к сохранённому черновику.";
+    return 'Проверка должна относиться к сохранённому черновику.';
   return null;
 });
 const publicationWindowCopy = computed(() => {
   const from = controller.form.value.effectiveFrom
-    ? "с " + formatDate(controller.form.value.effectiveFrom)
-    : "сразу";
+    ? 'с ' + formatDate(controller.form.value.effectiveFrom)
+    : 'сразу';
   const until = controller.form.value.effectiveUntil
-    ? "до " + formatDate(controller.form.value.effectiveUntil)
-    : "без ограничения срока";
-  return from + ", " + until;
+    ? 'до ' + formatDate(controller.form.value.effectiveUntil)
+    : 'без ограничения срока';
+  return from + ', ' + until;
 });
 const confirmationTitle = computed(() =>
-  confirmation.value === "PUBLISH"
-    ? "Опубликовать политику?"
-    : confirmation.value === "RESTORE"
-      ? "Восстановить эту версию?"
-      : "Выключить политику?",
+  confirmation.value === 'PUBLISH'
+    ? 'Опубликовать политику?'
+    : confirmation.value === 'RESTORE'
+      ? 'Восстановить эту версию?'
+      : 'Выключить политику?',
 );
 const confirmationCopy = computed(() => {
-  if (confirmation.value === "PUBLISH")
+  if (confirmation.value === 'PUBLISH')
     return `Период действия: ${publicationWindowCopy.value}. Уведомления получат только сотрудники с личной подпиской и подключённым браузером.`;
-  if (confirmation.value === "RESTORE")
+  if (confirmation.value === 'RESTORE')
     return `Сервер создаст новую версию на основе выбранной. Причина: ${controller.form.value.reason.trim()}.`;
-  return "Новые уведомления перестанут создаваться. Уже отправленные уведомления останутся в браузерах сотрудников.";
+  return 'Новые уведомления перестанут создаваться. Уже отправленные уведомления останутся в браузерах сотрудников.';
 });
 
 function topicLabel(value: string): string {
   return (
     (
       {
-        PAYMENTS: "Платежи",
-        ACCOUNT_ACCESS: "Доступ к аккаунту",
-        PRODUCT_USAGE: "Использование продукта",
+        PAYMENTS: 'Платежи',
+        ACCOUNT_ACCESS: 'Доступ к аккаунту',
+        PRODUCT_USAGE: 'Использование продукта',
       } as Record<string, string>
-    )[value] ?? value.replaceAll("_", " ").toLocaleLowerCase("ru-RU")
+    )[value] ?? value.replaceAll('_', ' ').toLocaleLowerCase('ru-RU')
   );
 }
 function priorityLabel(value: string): string {
   return (
     (
       {
-        LOW: "Низкий",
-        NORMAL: "Обычный",
-        HIGH: "Высокий",
-        URGENT: "Срочный",
-        CRITICAL: "Критический",
+        LOW: 'Низкий',
+        NORMAL: 'Обычный',
+        HIGH: 'Высокий',
+        URGENT: 'Срочный',
+        CRITICAL: 'Критический',
       } as Record<string, string>
-    )[value] ?? "Неизвестный"
+    )[value] ?? 'Неизвестный'
   );
 }
 function occurrenceLabel(value: string): string {
-  return value === "CREATED"
-    ? "Создание"
-    : value === "REOPENED"
-      ? "Повторное открытие"
-      : "Неизвестное событие";
+  return value === 'CREATED'
+    ? 'Создание'
+    : value === 'REOPENED'
+      ? 'Повторное открытие'
+      : 'Неизвестное событие';
 }
 function classLabel(value: string): string {
-  return value === "PRODUCT_PROBLEM"
-    ? "Проблема с продуктом"
-    : value === "PRODUCT_INQUIRY"
-      ? "Вопрос о продукте"
-      : "Неизвестный тип";
+  return value === 'PRODUCT_PROBLEM'
+    ? 'Проблема с продуктом'
+    : value === 'PRODUCT_INQUIRY'
+      ? 'Вопрос о продукте'
+      : 'Неизвестный тип';
 }
 function issueMessage(code: string): string {
   return (
     (
       {
-        INVALID_WINDOW: "Проверьте начало и окончание периода.",
-        TEAM_REQUIRED: "Выберите хотя бы одну команду.",
-        TEAM_NOT_ALLOWED: "Одна из команд больше недоступна.",
-        TEAM_NOT_FOUND: "Одна из команд не найдена.",
-        TOPIC_NOT_ALLOWED: "Одна из тем больше недоступна.",
-        DIGEST_CONFIG_INVALID: "Проверьте интервал и размер сводки.",
-        CHANNEL_UNAVAILABLE: "Доставка через браузер сейчас недоступна.",
-        OFF_POLICY_HAS_SCOPE:
-          "У выключенной политики не должно быть дополнительных условий.",
+        INVALID_WINDOW: 'Проверьте начало и окончание периода.',
+        TEAM_REQUIRED: 'Выберите хотя бы одну команду.',
+        TEAM_NOT_ALLOWED: 'Одна из команд больше недоступна.',
+        TEAM_NOT_FOUND: 'Одна из команд не найдена.',
+        TOPIC_NOT_ALLOWED: 'Одна из тем больше недоступна.',
+        DIGEST_CONFIG_INVALID: 'Проверьте интервал и размер сводки.',
+        CHANNEL_UNAVAILABLE: 'Доставка через браузер сейчас недоступна.',
+        OFF_POLICY_HAS_SCOPE: 'У выключенной политики не должно быть дополнительных условий.',
       } as Record<string, string>
-    )[code] ?? "Сервер не может применить одно из условий."
+    )[code] ?? 'Сервер не может применить одно из условий.'
   );
 }
 function formatNumber(value: number): string {
-  return new Intl.NumberFormat("ru-RU").format(value);
+  return new Intl.NumberFormat('ru-RU').format(value);
 }
 function formatDate(value: string | null | undefined): string {
-  if (!value) return "Без ограничения";
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  if (!value) return 'Без ограничения';
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(new Date(value));
 }
 function localDate(value: string | null | undefined): string {
-  if (!value) return "";
+  if (!value) return '';
   const date = new Date(value);
   const offset = date.getTimezoneOffset() * 60000;
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
-function setDate(
-  field: "effectiveFrom" | "effectiveUntil",
-  value: string,
-): void {
+function setDate(field: 'effectiveFrom' | 'effectiveUntil', value: string): void {
   controller.form.value[field] = value ? new Date(value).toISOString() : null;
 }
-function chooseMode(value: "OFF" | "IMMEDIATE" | "DIGEST"): void {
+function chooseMode(value: 'OFF' | 'IMMEDIATE' | 'DIGEST'): void {
   controller.form.value.mode = value;
-  if (value === "OFF") {
+  if (value === 'OFF') {
     Object.assign(controller.form.value, {
       topicCodes: [],
       teamIds: [],
@@ -240,7 +231,7 @@ function chooseMode(value: "OFF" | "IMMEDIATE" | "DIGEST"): void {
       digestWindowMinutes: null,
       digestMaxItems: null,
     });
-  } else if (value === "DIGEST") {
+  } else if (value === 'DIGEST') {
     controller.form.value.digestWindowMinutes ??= 60;
     controller.form.value.digestMaxItems ??= 25;
   } else {
@@ -251,9 +242,9 @@ function chooseMode(value: "OFF" | "IMMEDIATE" | "DIGEST"): void {
 async function confirmCommand(): Promise<void> {
   const value = confirmation.value;
   confirmation.value = null;
-  if (value === "PUBLISH") await controller.publish();
-  if (value === "DISABLE") await controller.disable();
-  if (value === "RESTORE" && restorationRevisionId.value)
+  if (value === 'PUBLISH') await controller.publish();
+  if (value === 'DISABLE') await controller.disable();
+  if (value === 'RESTORE' && restorationRevisionId.value)
     await controller.restore(restorationRevisionId.value);
   restorationRevisionId.value = null;
 }
@@ -272,7 +263,7 @@ watch(
     if (canManage.value) void controller.load();
     else controller.reset({ forgetPending: true });
   },
-  { immediate: true, flush: "sync" },
+  { immediate: true, flush: 'sync' },
 );
 watch(controller.form, controller.markPreviewStale, { deep: true });
 onBeforeUnmount(() => controller.reset());
@@ -285,13 +276,10 @@ onBeforeUnmount(() => controller.reset());
         <a href="/support/settings/notifications" class="back-link"
           ><i class="pi pi-arrow-left" /> Уведомления поддержки</a
         >
-        <div class="eyebrow">
-          <i class="pi pi-megaphone" /> Настройки проекта
-        </div>
+        <div class="eyebrow"><i class="pi pi-megaphone" /> Настройки проекта</div>
         <h1>Уведомления о новых обращениях</h1>
         <p>
-          Определите, о каких новых и повторно открытых обращениях сообщать
-          сотрудникам поддержки.
+          Определите, о каких новых и повторно открытых обращениях сообщать сотрудникам поддержки.
         </p>
       </div>
       <Button
@@ -311,18 +299,12 @@ onBeforeUnmount(() => controller.reset());
     <Message v-if="controller.error.value" severity="error" :closable="false">{{
       controller.error.value
     }}</Message>
-    <Message
-      v-if="controller.success.value"
-      severity="success"
-      :closable="false"
-      >{{ controller.success.value }}</Message
-    >
+    <Message v-if="controller.success.value" severity="success" :closable="false">{{
+      controller.success.value
+    }}</Message>
     <Message v-if="controller.pending.value" severity="warn" :closable="false">
       <div class="pending-message">
-        <span
-          >Результат предыдущей команды пока неизвестен. Не создавайте новую
-          команду.</span
-        >
+        <span>Результат предыдущей команды пока неизвестен. Не создавайте новую команду.</span>
         <div class="pending-actions">
           <Button
             label="Проверить результат"
@@ -355,37 +337,25 @@ onBeforeUnmount(() => controller.reset());
     <template v-else-if="controller.current.value">
       <section class="status-strip" aria-label="Текущее состояние политики">
         <div class="status-primary">
-          <span
-            :class="[
-              'status-dot',
-              controller.current.value.effectiveStatus.toLowerCase(),
-            ]"
-          />
+          <span :class="['status-dot', controller.current.value.effectiveStatus.toLowerCase()]" />
           <div>
             <small>Сейчас</small
-            ><strong>{{
-              policyStatusLabel(controller.current.value.effectiveStatus)
-            }}</strong>
+            ><strong>{{ policyStatusLabel(controller.current.value.effectiveStatus) }}</strong>
           </div>
         </div>
         <div>
           <small>Способ доставки</small
-          ><strong>{{
-            activePolicy ? policyModeLabel(activePolicy.mode) : "Не настроен"
-          }}</strong>
+          ><strong>{{ activePolicy ? policyModeLabel(activePolicy.mode) : 'Не настроен' }}</strong>
         </div>
         <div>
           <small>Срок</small
           ><strong>{{
             activePolicy?.effectiveUntil
               ? `до ${formatDate(activePolicy.effectiveUntil)}`
-              : "Постоянно"
+              : 'Постоянно'
           }}</strong>
         </div>
-        <div>
-          <small>Личная доставка</small
-          ><strong>Зависит от подписки и браузера</strong>
-        </div>
+        <div><small>Личная доставка</small><strong>Зависит от подписки и браузера</strong></div>
       </section>
 
       <div class="editor-layout">
@@ -396,10 +366,7 @@ onBeforeUnmount(() => controller.reset());
                 <span>1</span>
                 <div>
                   <h2>Как отправлять</h2>
-                  <p>
-                    Выберите скорость доставки. Это не включает личные подписки
-                    сотрудников.
-                  </p>
+                  <p>Выберите скорость доставки. Это не включает личные подписки сотрудников.</p>
                 </div>
               </div>
             </div>
@@ -407,10 +374,7 @@ onBeforeUnmount(() => controller.reset());
               <label
                 v-for="option in modeOptions"
                 :key="option.value"
-                :class="[
-                  'mode-card',
-                  { selected: controller.form.value.mode === option.value },
-                ]"
+                :class="['mode-card', { selected: controller.form.value.mode === option.value }]"
               >
                 <RadioButton
                   :model-value="controller.form.value.mode"
@@ -433,10 +397,7 @@ onBeforeUnmount(() => controller.reset());
                   <span>2</span>
                   <div>
                     <h2>Какие обращения учитывать</h2>
-                    <p>
-                      Обычное сообщение внутри обращения не создаёт повторное
-                      уведомление.
-                    </p>
+                    <p>Обычное сообщение внутри обращения не создаёт повторное уведомление.</p>
                   </div>
                 </div>
               </div>
@@ -444,24 +405,14 @@ onBeforeUnmount(() => controller.reset());
                 <fieldset data-field="occurrences">
                   <legend>Событие</legend>
                   <label class="check-row"
-                    ><Checkbox
-                      v-model="controller.form.value.occurrences"
-                      value="CREATED"
-                    /><span
+                    ><Checkbox v-model="controller.form.value.occurrences" value="CREATED" /><span
                       ><strong>Создано обращение</strong
-                      ><small
-                        >Первое появление принятого обращения.</small
-                      ></span
+                      ><small>Первое появление принятого обращения.</small></span
                     ></label
                   ><label class="check-row"
-                    ><Checkbox
-                      v-model="controller.form.value.occurrences"
-                      value="REOPENED"
-                    /><span
+                    ><Checkbox v-model="controller.form.value.occurrences" value="REOPENED" /><span
                       ><strong>Обращение открыто повторно</strong
-                      ><small
-                        >Закрытое обращение снова требует работы.</small
-                      ></span
+                      ><small>Закрытое обращение снова требует работы.</small></span
                     ></label
                   >
                 </fieldset>
@@ -473,10 +424,7 @@ onBeforeUnmount(() => controller.reset());
                       value="PRODUCT_PROBLEM"
                     /><span
                       ><strong>Проблема с продуктом</strong
-                      ><small
-                        >Ошибка, сбой или невозможность выполнить
-                        действие.</small
-                      ></span
+                      ><small>Ошибка, сбой или невозможность выполнить действие.</small></span
                     ></label
                   ><label class="check-row"
                     ><Checkbox
@@ -484,9 +432,7 @@ onBeforeUnmount(() => controller.reset());
                       value="PRODUCT_INQUIRY"
                     /><span
                       ><strong>Вопрос о продукте</strong
-                      ><small
-                        >Запрос информации или помощи в использовании.</small
-                      ></span
+                      ><small>Запрос информации или помощи в использовании.</small></span
                     ></label
                   >
                 </fieldset>
@@ -502,10 +448,7 @@ onBeforeUnmount(() => controller.reset());
                     placeholder="Все темы"
                     display="chip"
                     :max-selected-labels="3"
-                  /><small
-                    >Оставьте пустым, чтобы учитывать все разрешённые
-                    темы.</small
-                  ></label
+                  /><small>Оставьте пустым, чтобы учитывать все разрешённые темы.</small></label
                 >
                 <label data-field="minimumPriority"
                   ><span>Минимальный приоритет</span
@@ -515,8 +458,7 @@ onBeforeUnmount(() => controller.reset());
                     option-label="label"
                     option-value="value"
                   /><small
-                    >Обращения с более высоким приоритетом тоже попадут в
-                    выборку.</small
+                    >Обращения с более высоким приоритетом тоже попадут в выборку.</small
                   ></label
                 >
               </div>
@@ -529,8 +471,8 @@ onBeforeUnmount(() => controller.reset());
                   <div>
                     <h2>Кому отправлять</h2>
                     <p>
-                      Уведомление получат только сотрудники с личной подпиской и
-                      подключённым браузером.
+                      Уведомление получат только сотрудники с личной подпиской и подключённым
+                      браузером.
                     </p>
                   </div>
                 </div>
@@ -540,9 +482,7 @@ onBeforeUnmount(() => controller.reset());
                   :class="[
                     'recipient-card',
                     {
-                      selected:
-                        controller.form.value.recipientRule ===
-                        'ALL_ELIGIBLE_SUBSCRIBERS',
+                      selected: controller.form.value.recipientRule === 'ALL_ELIGIBLE_SUBSCRIBERS',
                     },
                   ]"
                   ><RadioButton
@@ -551,18 +491,14 @@ onBeforeUnmount(() => controller.reset());
                     name="recipient-rule"
                   /><span
                     ><strong>Всем подходящим подписчикам</strong
-                    ><small
-                      >В проекте, у кого есть доступ к обращению.</small
-                    ></span
+                    ><small>В проекте, у кого есть доступ к обращению.</small></span
                   ></label
                 >
                 <label
                   :class="[
                     'recipient-card',
                     {
-                      selected:
-                        controller.form.value.recipientRule ===
-                        'TEAM_SUBSCRIBERS',
+                      selected: controller.form.value.recipientRule === 'TEAM_SUBSCRIBERS',
                     },
                   ]"
                   ><RadioButton
@@ -571,16 +507,12 @@ onBeforeUnmount(() => controller.reset());
                     name="recipient-rule"
                   /><span
                     ><strong>Только выбранным командам</strong
-                    ><small
-                      >Личные подписки остаются обязательными.</small
-                    ></span
+                    ><small>Личные подписки остаются обязательными.</small></span
                   ></label
                 >
               </div>
               <label
-                v-if="
-                  controller.form.value.recipientRule === 'TEAM_SUBSCRIBERS'
-                "
+                v-if="controller.form.value.recipientRule === 'TEAM_SUBSCRIBERS'"
                 class="full-control"
                 data-field="teamIds"
                 ><span>Команды</span
@@ -592,9 +524,8 @@ onBeforeUnmount(() => controller.reset());
                   placeholder="Выберите команды"
                   display="chip"
                 /><small
-                  >Список ограничен командами, доступными для этой политики.
-                  Дополнительного права на управление командами не
-                  требуется.</small
+                  >Список ограничен командами, доступными для этой политики. Дополнительного права
+                  на управление командами не требуется.</small
                 ></label
               >
             </section>
@@ -606,8 +537,8 @@ onBeforeUnmount(() => controller.reset());
                   <div>
                     <h2>Когда политика действует</h2>
                     <p>
-                      Можно включить её постоянно, запланировать начало или
-                      заранее задать окончание.
+                      Можно включить её постоянно, запланировать начало или заранее задать
+                      окончание.
                     </p>
                   </div>
                 </div>
@@ -618,12 +549,7 @@ onBeforeUnmount(() => controller.reset());
                   ><input
                     type="datetime-local"
                     :value="localDate(controller.form.value.effectiveFrom)"
-                    @input="
-                      setDate(
-                        'effectiveFrom',
-                        ($event.target as HTMLInputElement).value,
-                      )
-                    "
+                    @input="setDate('effectiveFrom', ($event.target as HTMLInputElement).value)"
                   /><small>Пусто — сразу после публикации.</small></label
                 >
                 <label data-field="effectiveUntil"
@@ -631,19 +557,11 @@ onBeforeUnmount(() => controller.reset());
                   ><input
                     type="datetime-local"
                     :value="localDate(controller.form.value.effectiveUntil)"
-                    @input="
-                      setDate(
-                        'effectiveUntil',
-                        ($event.target as HTMLInputElement).value,
-                      )
-                    "
+                    @input="setDate('effectiveUntil', ($event.target as HTMLInputElement).value)"
                   /><small>Пусто — без ограничения срока.</small></label
                 >
               </div>
-              <div
-                v-if="controller.form.value.mode === 'DIGEST'"
-                class="control-grid digest-grid"
-              >
+              <div v-if="controller.form.value.mode === 'DIGEST'" class="control-grid digest-grid">
                 <label data-field="digestWindowMinutes"
                   ><span>Интервал сводки, минут</span
                   ><InputNumber
@@ -660,9 +578,7 @@ onBeforeUnmount(() => controller.reset());
                     :min="1"
                     :max="100"
                     :use-grouping="false"
-                  /><small
-                    >Лишние обращения попадут в следующую сводку.</small
-                  ></label
+                  /><small>Лишние обращения попадут в следующую сводку.</small></label
                 >
               </div>
             </section>
@@ -674,10 +590,7 @@ onBeforeUnmount(() => controller.reset());
                 <span>5</span>
                 <div>
                   <h2>Почему меняется политика</h2>
-                  <p>
-                    Причина попадёт в журнал решений и поможет восстановить
-                    контекст.
-                  </p>
+                  <p>Причина попадёт в журнал решений и поможет восстановить контекст.</p>
                 </div>
               </div>
             </div>
@@ -688,9 +601,7 @@ onBeforeUnmount(() => controller.reset());
               auto-resize
               aria-label="Причина изменения"
             />
-            <small class="character-count"
-              >{{ controller.form.value.reason.length }}/500</small
-            >
+            <small class="character-count">{{ controller.form.value.reason.length }}/500</small>
           </section>
 
           <section
@@ -703,8 +614,7 @@ onBeforeUnmount(() => controller.reset());
               <i class="pi pi-exclamation-triangle" />
               <div>
                 <strong id="issue-title"
-                  >Нужно исправить:
-                  {{ controller.formIssues.value.length }}</strong
+                  >Нужно исправить: {{ controller.formIssues.value.length }}</strong
                 ><span>Перейдите к полю и проверьте значение.</span>
               </div>
             </div>
@@ -745,9 +655,7 @@ onBeforeUnmount(() => controller.reset());
               /><Button
                 label="Опубликовать"
                 icon="pi pi-check"
-                :disabled="
-                  Boolean(publishDisabledReason) || controller.mutating.value
-                "
+                :disabled="Boolean(publishDisabledReason) || controller.mutating.value"
                 @click="confirmation = 'PUBLISH'"
               />
             </div>
@@ -763,23 +671,16 @@ onBeforeUnmount(() => controller.reset());
               <span class="section-kicker">Предварительная проверка</span>
               <h2 id="preview-title">Что изменится</h2>
             </div>
-            <Tag
-              v-if="controller.previewStale.value"
-              value="Нужно обновить"
-              severity="warn"
-            />
+            <Tag v-if="controller.previewStale.value" value="Нужно обновить" severity="warn" />
           </div>
           <div v-if="controller.previewing.value" class="preview-loading">
-            <Skeleton height="72px" /><Skeleton height="150px" /><Skeleton
-              height="210px"
-            />
+            <Skeleton height="72px" /><Skeleton height="150px" /><Skeleton height="210px" />
           </div>
           <div v-else-if="!controller.preview.value" class="preview-empty">
             <span class="preview-icon"><i class="pi pi-chart-line" /></span
             ><strong>Проверьте влияние до публикации</strong>
             <p>
-              Сервер рассчитает объём за последние 7 дней и покажет до пяти
-              обезличенных примеров.
+              Сервер рассчитает объём за последние 7 дней и покажет до пяти обезличенных примеров.
             </p>
             <Button
               label="Проверить влияние"
@@ -788,56 +689,37 @@ onBeforeUnmount(() => controller.reset());
               @click="controller.runPreview"
             />
           </div>
-          <div
-            v-else
-            :class="[
-              'preview-content',
-              { stale: controller.previewStale.value },
-            ]"
-          >
-            <Message
-              v-if="controller.previewStale.value"
-              severity="warn"
-              :closable="false"
-              >Форма изменилась. Эти числа больше не относятся к текущим
-              условиям.</Message
+          <div v-else :class="['preview-content', { stale: controller.previewStale.value }]">
+            <Message v-if="controller.previewStale.value" severity="warn" :closable="false"
+              >Форма изменилась. Эти числа больше не относятся к текущим условиям.</Message
             >
             <div class="impact-metrics">
               <div>
                 <strong>{{
-                  formatNumber(
-                    controller.preview.value.matchingOccurrencesLast7Days,
-                  )
+                  formatNumber(controller.preview.value.matchingOccurrencesLast7Days)
                 }}</strong
                 ><span>событий</span>
               </div>
               <div>
                 <strong>{{
-                  formatNumber(
-                    controller.preview.value.estimatedEligibleRecipients,
-                  )
+                  formatNumber(controller.preview.value.estimatedEligibleRecipients)
                 }}</strong
                 ><span>получателей</span>
               </div>
               <div class="impact-result">
                 <strong>{{
                   formatNumber(
-                    controller.form.value.mode === "DIGEST"
+                    controller.form.value.mode === 'DIGEST'
                       ? controller.preview.value.estimatedDigestWindowsLast7Days
-                      : controller.preview.value
-                          .estimatedImmediateDeliveriesLast7Days,
+                      : controller.preview.value.estimatedImmediateDeliveriesLast7Days,
                   )
                 }}</strong
-                ><span>{{
-                  controller.form.value.mode === "DIGEST"
-                    ? "сводок"
-                    : "доставок"
-                }}</span>
+                ><span>{{ controller.form.value.mode === 'DIGEST' ? 'сводок' : 'доставок' }}</span>
               </div>
             </div>
             <p class="estimate-note">
-              Оценка по данным проекта за последние 7 дней. Фактическая доставка
-              зависит от личной подписки, доступа и подключённого браузера.
+              Оценка по данным проекта за последние 7 дней. Фактическая доставка зависит от личной
+              подписки, доступа и подключённого браузера.
             </p>
             <div class="effective-window" role="note">
               <i class="pi pi-calendar" />
@@ -846,10 +728,7 @@ onBeforeUnmount(() => controller.reset());
                 {{ publicationWindowCopy }}
               </span>
             </div>
-            <div
-              v-if="controller.preview.value.issues.length"
-              class="server-issues"
-            >
+            <div v-if="controller.preview.value.issues.length" class="server-issues">
               <strong>Сервер нашёл ограничения</strong
               ><button
                 v-for="issue in controller.preview.value.issues"
@@ -884,8 +763,8 @@ onBeforeUnmount(() => controller.reset());
               </ul>
               <p v-else>За выбранный период подходящих примеров нет.</p>
               <small class="privacy-note"
-                ><i class="pi pi-shield" /> Здесь нет номера обращения,
-                заголовка, текста сообщения или личных данных.</small
+                ><i class="pi pi-shield" /> Здесь нет номера обращения, заголовка, текста сообщения
+                или личных данных.</small
               >
             </section>
           </div>
@@ -900,9 +779,7 @@ onBeforeUnmount(() => controller.reset());
               <div>
                 <dt>Принято событий</dt>
                 <dd>
-                  {{
-                    formatNumber(controller.metrics.value.admittedOccurrences)
-                  }}
+                  {{ formatNumber(controller.metrics.value.admittedOccurrences) }}
                 </dd>
               </div>
               <div>
@@ -912,13 +789,9 @@ onBeforeUnmount(() => controller.reset());
               <div>
                 <dt>Подписаны</dt>
                 <dd>
-                  {{
-                    formatNumber(controller.metrics.value.subscribedRecipients)
-                  }}
+                  {{ formatNumber(controller.metrics.value.subscribedRecipients) }}
                   из
-                  {{
-                    formatNumber(controller.metrics.value.eligibleRecipients)
-                  }}
+                  {{ formatNumber(controller.metrics.value.eligibleRecipients) }}
                 </dd>
               </div>
               <div>
@@ -931,17 +804,15 @@ onBeforeUnmount(() => controller.reset());
           <section
             v-if="
               controller.current.value.current &&
-              ['ACTIVE', 'SCHEDULED'].includes(
-                controller.current.value.effectiveStatus,
-              )
+              ['ACTIVE', 'SCHEDULED'].includes(controller.current.value.effectiveStatus)
             "
             class="danger-zone"
           >
             <div>
               <strong>Выключить действующую политику</strong>
               <p>
-                Новые уведомления перестанут создаваться. Личные подписки и
-                браузеры сотрудников не изменятся.
+                Новые уведомления перестанут создаваться. Личные подписки и браузеры сотрудников не
+                изменятся.
               </p>
             </div>
             <Button
@@ -949,9 +820,7 @@ onBeforeUnmount(() => controller.reset());
               icon="pi pi-pause"
               severity="danger"
               outlined
-              :disabled="
-                controller.mutating.value || Boolean(controller.pending.value)
-              "
+              :disabled="controller.mutating.value || Boolean(controller.pending.value)"
               @click="confirmation = 'DISABLE'"
             />
           </section>
@@ -975,9 +844,7 @@ onBeforeUnmount(() => controller.reset());
                 label="Восстановить"
                 text
                 size="small"
-                :disabled="
-                  controller.mutating.value || Boolean(controller.pending.value)
-                "
+                :disabled="controller.mutating.value || Boolean(controller.pending.value)"
                 @click="
                   restorationRevisionId = revision.id;
                   confirmation = 'RESTORE';
@@ -1005,11 +872,7 @@ onBeforeUnmount(() => controller.reset());
     >
       <p>{{ confirmationCopy }}</p>
       <template #footer
-        ><Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="confirmation = null" /><Button
+        ><Button label="Отмена" severity="secondary" text @click="confirmation = null" /><Button
           :label="
             confirmation === 'PUBLISH'
               ? 'Опубликовать'
@@ -1123,8 +986,7 @@ onBeforeUnmount(() => controller.reset());
 }
 .status-dot.active {
   background: var(--status-success);
-  box-shadow: 0 0 0 5px
-    color-mix(in srgb, var(--status-success) 14%, transparent);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--status-success) 14%, transparent);
 }
 .status-dot.scheduled {
   background: var(--status-info);
@@ -1487,11 +1349,7 @@ onBeforeUnmount(() => controller.reset());
 }
 .impact-result {
   border-color: color-mix(in srgb, var(--brand) 35%, var(--line)) !important;
-  background: color-mix(
-    in srgb,
-    var(--brand-soft) 35%,
-    var(--surface-card)
-  ) !important;
+  background: color-mix(in srgb, var(--brand-soft) 35%, var(--surface-card)) !important;
 }
 .estimate-note,
 .example-section > p {

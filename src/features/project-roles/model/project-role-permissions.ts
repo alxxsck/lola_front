@@ -5,7 +5,7 @@ export function canReadProjectRoles(
   return (
     platformPermissions.includes('platform.roles.read') ||
     projectPermissions.includes('project.roles.read')
-  )
+  );
 }
 
 export function canManageProjectRoles(
@@ -15,5 +15,5 @@ export function canManageProjectRoles(
   return (
     platformPermissions.includes('platform.roles.manage') ||
     projectPermissions.includes('project.roles.manage')
-  )
+  );
 }

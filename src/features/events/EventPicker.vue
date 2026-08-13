@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed } from 'vue';
 import CatalogPicker, {
   type CatalogPickerFilter,
   type CatalogPickerOption,
   type CatalogPickerPage,
   type CatalogPickerRequest,
-} from "@/shared/ui/CatalogPicker.vue";
+} from '@/shared/ui/CatalogPicker.vue';
 
-defineOptions({ name: "EventPicker" });
+defineOptions({ name: 'EventPicker' });
 
 export interface EventPickerOption {
   value: string;
   name: string;
   code: string;
   description?: string;
-  ingestion?: "FRONTEND_ALLOWED" | "BACKEND_ONLY";
+  ingestion?: 'FRONTEND_ALLOWED' | 'BACKEND_ONLY';
   tags?: string[];
 }
 
@@ -22,7 +22,7 @@ export interface EventPickerRequest {
   query: string;
   cursor?: string;
   limit: number;
-  ingestion?: EventPickerOption["ingestion"];
+  ingestion?: EventPickerOption['ingestion'];
 }
 
 export interface EventPickerPage {
@@ -55,14 +55,14 @@ const props = withDefaults(
     maxSelection: 50,
     allowEmpty: false,
     showIngestionFilter: false,
-    scopeKey: "",
+    scopeKey: '',
     selectedOption: undefined,
     selectedOptions: () => [],
   },
 );
 
 const emit = defineEmits<{
-  "update:modelValue": [value: string | string[]];
+  'update:modelValue': [value: string | string[]];
   select: [option: EventPickerOption | EventPickerOption[]];
 }>();
 
@@ -70,15 +70,15 @@ const filters = computed<CatalogPickerFilter[]>(() =>
   props.showIngestionFilter
     ? [
         {
-          value: "BACKEND_ONLY",
-          label: "Только backend",
-          icon: "pi pi-server",
-          testId: "event-picker-filter-backend",
+          value: 'BACKEND_ONLY',
+          label: 'Только backend',
+          icon: 'pi pi-server',
+          testId: 'event-picker-filter-backend',
         },
         {
-          value: "FRONTEND_ALLOWED",
-          label: "Разрешено frontend",
-          icon: "pi pi-desktop",
+          value: 'FRONTEND_ALLOWED',
+          label: 'Разрешено frontend',
+          icon: 'pi pi-desktop',
         },
       ]
     : [],
@@ -86,9 +86,7 @@ const filters = computed<CatalogPickerFilter[]>(() =>
 const selectedOption = computed(() =>
   props.selectedOption ? toCatalogOption(props.selectedOption) : undefined,
 );
-const selectedOptions = computed(() =>
-  props.selectedOptions.map(toCatalogOption),
-);
+const selectedOptions = computed(() => props.selectedOptions.map(toCatalogOption));
 
 function toCatalogOption(option: EventPickerOption): CatalogPickerOption {
   return {
@@ -100,14 +98,8 @@ function toCatalogOption(option: EventPickerOption): CatalogPickerOption {
       ...(option.ingestion
         ? [
             {
-              label:
-                option.ingestion === "FRONTEND_ALLOWED"
-                  ? "Frontend"
-                  : "Backend",
-              icon:
-                option.ingestion === "FRONTEND_ALLOWED"
-                  ? "pi pi-desktop"
-                  : "pi pi-server",
+              label: option.ingestion === 'FRONTEND_ALLOWED' ? 'Frontend' : 'Backend',
+              icon: option.ingestion === 'FRONTEND_ALLOWED' ? 'pi pi-desktop' : 'pi pi-server',
             },
           ]
         : []),
@@ -117,15 +109,11 @@ function toCatalogOption(option: EventPickerOption): CatalogPickerOption {
   };
 }
 
-async function loadCatalog(
-  request: CatalogPickerRequest,
-): Promise<CatalogPickerPage> {
+async function loadCatalog(request: CatalogPickerRequest): Promise<CatalogPickerPage> {
   const page = await props.load({
     query: request.query,
     ...(request.cursor ? { cursor: request.cursor } : {}),
-    ...(request.filter
-      ? { ingestion: request.filter as EventPickerOption["ingestion"] }
-      : {}),
+    ...(request.filter ? { ingestion: request.filter as EventPickerOption['ingestion'] } : {}),
     limit: request.limit,
   });
   return {
@@ -137,14 +125,12 @@ async function loadCatalog(
 function select(option: CatalogPickerOption | CatalogPickerOption[]): void {
   if (Array.isArray(option)) {
     emit(
-      "select",
-      option.flatMap((item) =>
-        item.data ? [item.data as EventPickerOption] : [],
-      ),
+      'select',
+      option.flatMap((item) => (item.data ? [item.data as EventPickerOption] : [])),
     );
     return;
   }
-  if (option.data) emit("select", option.data as EventPickerOption);
+  if (option.data) emit('select', option.data as EventPickerOption);
 }
 </script>
 

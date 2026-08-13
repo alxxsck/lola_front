@@ -1,121 +1,118 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
-import MultiSelect from "primevue/multiselect";
-import Select from "primevue/select";
-import type {
-  EndUserCaseFilters,
-  EndUserCasePreset,
-} from "../model/end-user-case";
+import { ref } from 'vue';
+import Button from 'primevue/button';
+import InputText from 'primevue/inputtext';
+import MultiSelect from 'primevue/multiselect';
+import Select from 'primevue/select';
+import type { EndUserCaseFilters, EndUserCasePreset } from '../model/end-user-case';
 
 const props = defineProps<{
   modelValue: EndUserCaseFilters;
   counts: { active: number; attention: number; resolved: number };
 }>();
 const emit = defineEmits<{
-  "update:modelValue": [value: EndUserCaseFilters];
+  'update:modelValue': [value: EndUserCaseFilters];
 }>();
 
 const presets: Array<{ value: EndUserCasePreset; label: string }> = [
-  { value: "ACTIVE", label: "Активные" },
-  { value: "ATTENTION", label: "Требуют внимания" },
-  { value: "WAITING", label: "Ожидают" },
-  { value: "RESOLVED", label: "Решённые" },
-  { value: "ALL", label: "Все" },
+  { value: 'ACTIVE', label: 'Активные' },
+  { value: 'ATTENTION', label: 'Требуют внимания' },
+  { value: 'WAITING', label: 'Ожидают' },
+  { value: 'RESOLVED', label: 'Решённые' },
+  { value: 'ALL', label: 'Все' },
 ];
 const sorts = [
-  { value: "ATTENTION_FIRST", label: "Важные сначала" },
-  { value: "LAST_ACTIVITY", label: "Последняя активность" },
-  { value: "OLDEST_OPEN", label: "Сначала старые" },
-  { value: "PRIORITY", label: "По приоритету" },
-  { value: "RECENTLY_RESOLVED", label: "Недавно решённые" },
+  { value: 'ATTENTION_FIRST', label: 'Важные сначала' },
+  { value: 'LAST_ACTIVITY', label: 'Последняя активность' },
+  { value: 'OLDEST_OPEN', label: 'Сначала старые' },
+  { value: 'PRIORITY', label: 'По приоритету' },
+  { value: 'RECENTLY_RESOLVED', label: 'Недавно решённые' },
 ];
 const priorities = [
-  { value: "CRITICAL", label: "Критично" },
-  { value: "URGENT", label: "Срочно" },
-  { value: "HIGH", label: "Высокий" },
-  { value: "NORMAL", label: "Обычный" },
-  { value: "LOW", label: "Низкий" },
+  { value: 'CRITICAL', label: 'Критично' },
+  { value: 'URGENT', label: 'Срочно' },
+  { value: 'HIGH', label: 'Высокий' },
+  { value: 'NORMAL', label: 'Обычный' },
+  { value: 'LOW', label: 'Низкий' },
 ];
 const statuses = [
-  { value: "OPEN", label: "Открыто" },
-  { value: "IN_PROGRESS", label: "В работе" },
-  { value: "WAITING_END_USER", label: "Ожидает пользователя" },
-  { value: "WAITING_SYSTEM", label: "Ожидает систему" },
-  { value: "WAITING_ADMIN", label: "Ожидает администратора" },
-  { value: "RESOLVED", label: "Решено" },
-  { value: "UNRESOLVED", label: "Не решено" },
-  { value: "CANCELLED", label: "Отменено" },
+  { value: 'OPEN', label: 'Открыто' },
+  { value: 'IN_PROGRESS', label: 'В работе' },
+  { value: 'WAITING_END_USER', label: 'Ожидает пользователя' },
+  { value: 'WAITING_SYSTEM', label: 'Ожидает систему' },
+  { value: 'WAITING_ADMIN', label: 'Ожидает администратора' },
+  { value: 'RESOLVED', label: 'Решено' },
+  { value: 'UNRESOLVED', label: 'Не решено' },
+  { value: 'CANCELLED', label: 'Отменено' },
 ];
 const impacts = [
-  { value: "CRITICAL", label: "Критичное влияние" },
-  { value: "HIGH", label: "Высокое влияние" },
-  { value: "MEDIUM", label: "Среднее влияние" },
-  { value: "LOW", label: "Низкое влияние" },
+  { value: 'CRITICAL', label: 'Критичное влияние' },
+  { value: 'HIGH', label: 'Высокое влияние' },
+  { value: 'MEDIUM', label: 'Среднее влияние' },
+  { value: 'LOW', label: 'Низкое влияние' },
 ];
 const urgencies = [
-  { value: "IMMEDIATE", label: "Немедленно" },
-  { value: "HIGH", label: "Высокая срочность" },
-  { value: "MEDIUM", label: "Средняя срочность" },
-  { value: "LOW", label: "Низкая срочность" },
+  { value: 'IMMEDIATE', label: 'Немедленно' },
+  { value: 'HIGH', label: 'Высокая срочность' },
+  { value: 'MEDIUM', label: 'Средняя срочность' },
+  { value: 'LOW', label: 'Низкая срочность' },
 ];
 const resolutionAssessments = [
-  { value: "NOT_ASSESSED", label: "Не оценено" },
-  { value: "LIKELY_RESOLVED", label: "Вероятно решено" },
-  { value: "CONFIRMED_RESOLVED", label: "Решение подтверждено" },
-  { value: "LIKELY_UNRESOLVED", label: "Вероятно не решено" },
-  { value: "CONFIRMED_UNRESOLVED", label: "Не решено подтверждённо" },
-  { value: "INCONCLUSIVE", label: "Недостаточно данных" },
+  { value: 'NOT_ASSESSED', label: 'Не оценено' },
+  { value: 'LIKELY_RESOLVED', label: 'Вероятно решено' },
+  { value: 'CONFIRMED_RESOLVED', label: 'Решение подтверждено' },
+  { value: 'LIKELY_UNRESOLVED', label: 'Вероятно не решено' },
+  { value: 'CONFIRMED_UNRESOLVED', label: 'Не решено подтверждённо' },
+  { value: 'INCONCLUSIVE', label: 'Недостаточно данных' },
 ];
 const resolutionSources = [
-  { value: "END_USER_EXPLICIT", label: "Подтвердил пользователь" },
-  { value: "CMS_USER", label: "Подтвердил администратор" },
-  { value: "TRUSTED_VERIFICATION", label: "Проверено по данным" },
-  { value: "AI_INFERENCE", label: "Оценка Retenive" },
+  { value: 'END_USER_EXPLICIT', label: 'Подтвердил пользователь' },
+  { value: 'CMS_USER', label: 'Подтвердил администратор' },
+  { value: 'TRUSTED_VERIFICATION', label: 'Проверено по данным' },
+  { value: 'AI_INFERENCE', label: 'Оценка Retenive' },
 ];
 const assignments = [
-  { value: undefined, label: "Любой" },
-  { value: "ASSIGNED", label: "Назначено" },
-  { value: "UNASSIGNED", label: "Без исполнителя" },
+  { value: undefined, label: 'Любой' },
+  { value: 'ASSIGNED', label: 'Назначено' },
+  { value: 'UNASSIGNED', label: 'Без исполнителя' },
 ];
 const recontacts = [
-  { value: undefined, label: "Любой возврат" },
-  { value: "YES", label: "Пользователь возвращался" },
-  { value: "NO", label: "Без возврата" },
+  { value: undefined, label: 'Любой возврат' },
+  { value: 'YES', label: 'Пользователь возвращался' },
+  { value: 'NO', label: 'Без возврата' },
 ];
 const yesNoOptions = (anyLabel: string, yesLabel: string, noLabel: string) => [
   { value: undefined, label: anyLabel },
-  { value: "YES", label: yesLabel },
-  { value: "NO", label: noLabel },
+  { value: 'YES', label: yesLabel },
+  { value: 'NO', label: noLabel },
 ];
 const adminAttentionOptions = [
-  { value: undefined, label: "Любое внимание" },
-  { value: "OPEN", label: "Есть активная эскалация" },
-  { value: "NONE", label: "Нет активной эскалации" },
+  { value: undefined, label: 'Любое внимание' },
+  { value: 'OPEN', label: 'Есть активная эскалация' },
+  { value: 'NONE', label: 'Нет активной эскалации' },
 ];
 const channels = [
-  { value: "TEXT", label: "Текст" },
-  { value: "VOICE", label: "Голос" },
-  { value: "CMS", label: "Администратор" },
+  { value: 'TEXT', label: 'Текст' },
+  { value: 'VOICE', label: 'Голос' },
+  { value: 'CMS', label: 'Администратор' },
 ];
 const capabilityOutcomes = [
-  { value: "COMPLETED", label: "Успешно" },
-  { value: "FAILED", label: "Ошибка" },
-  { value: "REJECTED", label: "Отклонено" },
-  { value: "ACCEPTED", label: "Принято" },
-  { value: "RESERVED", label: "Начато" },
+  { value: 'COMPLETED', label: 'Успешно' },
+  { value: 'FAILED', label: 'Ошибка' },
+  { value: 'REJECTED', label: 'Отклонено' },
+  { value: 'ACCEPTED', label: 'Принято' },
+  { value: 'RESERVED', label: 'Начато' },
 ];
 
 function count(preset: EndUserCasePreset): number | null {
-  if (preset === "ACTIVE") return props.counts.active;
-  if (preset === "ATTENTION") return props.counts.attention;
-  if (preset === "RESOLVED") return props.counts.resolved;
+  if (preset === 'ACTIVE') return props.counts.active;
+  if (preset === 'ATTENTION') return props.counts.attention;
+  if (preset === 'RESOLVED') return props.counts.resolved;
   return null;
 }
 
 function update(patch: Partial<EndUserCaseFilters>): void {
-  emit("update:modelValue", { ...props.modelValue, ...patch });
+  emit('update:modelValue', { ...props.modelValue, ...patch });
 }
 
 function dateTimeLocalValue(value?: string): string | undefined {
@@ -148,9 +145,7 @@ const advancedVisible = ref(false);
         @click="update({ preset: preset.value })"
       >
         {{ preset.label }}
-        <strong v-if="count(preset.value) !== null">{{
-          count(preset.value)
-        }}</strong>
+        <strong v-if="count(preset.value) !== null">{{ count(preset.value) }}</strong>
       </button>
     </div>
     <div class="controls">
@@ -163,9 +158,7 @@ const advancedVisible = ref(false);
         aria-label="Статус"
         display="chip"
         :max-selected-labels="2"
-        @update:model-value="
-          update({ status: $event?.length ? $event : undefined })
-        "
+        @update:model-value="update({ status: $event?.length ? $event : undefined })"
       />
       <MultiSelect
         :model-value="modelValue.priority"
@@ -176,9 +169,7 @@ const advancedVisible = ref(false);
         aria-label="Приоритет"
         display="chip"
         :max-selected-labels="2"
-        @update:model-value="
-          update({ priority: $event?.length ? $event : undefined })
-        "
+        @update:model-value="update({ priority: $event?.length ? $event : undefined })"
       />
       <Select
         :model-value="modelValue.assignment"
@@ -207,11 +198,7 @@ const advancedVisible = ref(false);
         aria-controls="advanced-case-filters"
         @click="advancedVisible = !advancedVisible"
       />
-      <div
-        v-if="advancedVisible"
-        id="advanced-case-filters"
-        class="advanced-controls"
-      >
+      <div v-if="advancedVisible" id="advanced-case-filters" class="advanced-controls">
         <MultiSelect
           :model-value="modelValue.impact"
           :options="impacts"
@@ -221,9 +208,7 @@ const advancedVisible = ref(false);
           aria-label="Влияние"
           display="chip"
           :max-selected-labels="2"
-          @update:model-value="
-            update({ impact: $event?.length ? $event : undefined })
-          "
+          @update:model-value="update({ impact: $event?.length ? $event : undefined })"
         />
         <MultiSelect
           :model-value="modelValue.urgency"
@@ -234,9 +219,7 @@ const advancedVisible = ref(false);
           aria-label="Срочность"
           display="chip"
           :max-selected-labels="2"
-          @update:model-value="
-            update({ urgency: $event?.length ? $event : undefined })
-          "
+          @update:model-value="update({ urgency: $event?.length ? $event : undefined })"
         />
         <MultiSelect
           :model-value="modelValue.resolutionAssessment"
@@ -262,9 +245,7 @@ const advancedVisible = ref(false);
           aria-label="Источник решения"
           display="chip"
           :max-selected-labels="2"
-          @update:model-value="
-            update({ resolutionSource: $event?.length ? $event : undefined })
-          "
+          @update:model-value="update({ resolutionSource: $event?.length ? $event : undefined })"
         />
         <InputText
           :model-value="modelValue.groupCode"
@@ -278,9 +259,7 @@ const advancedVisible = ref(false);
           maxlength="36"
           placeholder="Идентификатор исполнителя"
           aria-label="Идентификатор исполнителя"
-          @update:model-value="
-            update({ assignedCmsUserId: $event || undefined })
-          "
+          @update:model-value="update({ assignedCmsUserId: $event || undefined })"
         />
         <InputText
           :model-value="modelValue.endUserId"
@@ -330,9 +309,7 @@ const advancedVisible = ref(false);
         />
         <Select
           :model-value="modelValue.reopened"
-          :options="
-            yesNoOptions('Любое переоткрытие', 'Переоткрыто', 'Не переоткрыто')
-          "
+          :options="yesNoOptions('Любое переоткрытие', 'Переоткрыто', 'Не переоткрыто')"
           option-label="label"
           option-value="value"
           aria-label="Переоткрытие"
@@ -340,9 +317,7 @@ const advancedVisible = ref(false);
         />
         <Select
           :model-value="modelValue.stale"
-          :options="
-            yesNoOptions('Любая давность', 'Просрочено', 'Не просрочено')
-          "
+          :options="yesNoOptions('Любая давность', 'Просрочено', 'Не просрочено')"
           option-label="label"
           option-value="value"
           aria-label="Просроченность"
@@ -350,13 +325,7 @@ const advancedVisible = ref(false);
         />
         <Select
           :model-value="modelValue.degraded"
-          :options="
-            yesNoOptions(
-              'Любое состояние анализа',
-              'Анализ отстаёт',
-              'Анализ актуален',
-            )
-          "
+          :options="yesNoOptions('Любое состояние анализа', 'Анализ отстаёт', 'Анализ актуален')"
           option-label="label"
           option-value="value"
           aria-label="Состояние анализа"
@@ -371,17 +340,13 @@ const advancedVisible = ref(false);
           aria-label="Канал"
           display="chip"
           :max-selected-labels="2"
-          @update:model-value="
-            update({ channel: $event?.length ? $event : undefined })
-          "
+          @update:model-value="update({ channel: $event?.length ? $event : undefined })"
         />
         <InputText
           type="datetime-local"
           :model-value="dateTimeLocalValue(modelValue.createdFrom)"
           aria-label="Создано с"
-          @update:model-value="
-            update({ createdFrom: absoluteDateTime($event) })
-          "
+          @update:model-value="update({ createdFrom: absoluteDateTime($event) })"
         />
         <InputText
           type="datetime-local"
@@ -393,26 +358,20 @@ const advancedVisible = ref(false);
           type="datetime-local"
           :model-value="dateTimeLocalValue(modelValue.lastActivityFrom)"
           aria-label="Активность с"
-          @update:model-value="
-            update({ lastActivityFrom: absoluteDateTime($event) })
-          "
+          @update:model-value="update({ lastActivityFrom: absoluteDateTime($event) })"
         />
         <InputText
           type="datetime-local"
           :model-value="dateTimeLocalValue(modelValue.lastActivityTo)"
           aria-label="Активность до"
-          @update:model-value="
-            update({ lastActivityTo: absoluteDateTime($event) })
-          "
+          @update:model-value="update({ lastActivityTo: absoluteDateTime($event) })"
         />
         <InputText
           :model-value="modelValue.aiCapabilityCode"
           maxlength="100"
           placeholder="Код инструмента Retenive"
           aria-label="Код инструмента Retenive"
-          @update:model-value="
-            update({ aiCapabilityCode: $event || undefined })
-          "
+          @update:model-value="update({ aiCapabilityCode: $event || undefined })"
         />
         <MultiSelect
           :model-value="modelValue.aiCapabilityOutcome"
@@ -423,9 +382,7 @@ const advancedVisible = ref(false);
           aria-label="Результат инструмента"
           display="chip"
           :max-selected-labels="2"
-          @update:model-value="
-            update({ aiCapabilityOutcome: $event?.length ? $event : undefined })
-          "
+          @update:model-value="update({ aiCapabilityOutcome: $event?.length ? $event : undefined })"
         />
       </div>
     </div>

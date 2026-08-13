@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Skeleton from "primevue/skeleton";
+import Skeleton from 'primevue/skeleton';
 </script>
 
 <template>
@@ -48,11 +48,7 @@ import Skeleton from "primevue/skeleton";
       </section>
     </div>
 
-    <section
-      class="skeleton-panel section-skeleton"
-      data-skeleton-block
-      aria-hidden="true"
-    >
+    <section class="skeleton-panel section-skeleton" data-skeleton-block aria-hidden="true">
       <div class="skeleton-heading">
         <div>
           <Skeleton width="92px" height="9px" />
@@ -61,20 +57,12 @@ import Skeleton from "primevue/skeleton";
         </div>
       </div>
       <div class="capacity-skeletons">
-        <Skeleton
-          v-for="index in 2"
-          :key="index"
-          height="197px"
-          border-radius="12px"
-        />
+        <Skeleton v-for="index in 2" :key="index" height="197px" border-radius="12px" />
       </div>
     </section>
 
     <div class="operations-skeleton" aria-hidden="true">
-      <section
-        class="skeleton-panel section-skeleton risk-skeleton"
-        data-skeleton-block
-      >
+      <section class="skeleton-panel section-skeleton risk-skeleton" data-skeleton-block>
         <div class="skeleton-heading skeleton-heading--wrap">
           <div>
             <Skeleton width="108px" height="9px" />
@@ -96,10 +84,7 @@ import Skeleton from "primevue/skeleton";
         </div>
       </section>
 
-      <section
-        class="skeleton-panel section-skeleton alerts-skeleton"
-        data-skeleton-block
-      >
+      <section class="skeleton-panel section-skeleton alerts-skeleton" data-skeleton-block>
         <div class="skeleton-heading">
           <div>
             <Skeleton width="136px" height="9px" />
@@ -203,7 +188,7 @@ import Skeleton from "primevue/skeleton";
 .operations-skeleton {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
-  grid-template-areas: "risks alerts";
+  grid-template-areas: 'risks alerts';
   align-items: start;
   gap: 12px;
 }
@@ -242,8 +227,8 @@ import Skeleton from "primevue/skeleton";
   }
   .operations-skeleton {
     grid-template-areas:
-      "risks"
-      "alerts";
+      'risks'
+      'alerts';
   }
 }
 @media (max-width: 720px) {

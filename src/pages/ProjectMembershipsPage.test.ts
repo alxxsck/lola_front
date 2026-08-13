@@ -1,12 +1,12 @@
-import { flushPromises, shallowMount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import ProjectMembershipsPage from './ProjectMembershipsPage.vue'
-import { projectMembershipApi } from '@/features/project-memberships/api/project-membership.api'
-import { ApiError } from '@/shared/api/http/api-error'
+import { flushPromises, shallowMount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import ProjectMembershipsPage from './ProjectMembershipsPage.vue';
+import { projectMembershipApi } from '@/features/project-memberships/api/project-membership.api';
+import { ApiError } from '@/shared/api/http/api-error';
 
-const projectId = '00000000-0000-4000-8000-000000000010'
-const currentUserId = '00000000-0000-4000-8000-000000000020'
-const roleId = '00000000-0000-4000-8000-000000000030'
+const projectId = '00000000-0000-4000-8000-000000000010';
+const currentUserId = '00000000-0000-4000-8000-000000000020';
+const roleId = '00000000-0000-4000-8000-000000000030';
 
 const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
@@ -15,29 +15,23 @@ const mocks = vi.hoisted(() => ({
       id: '00000000-0000-4000-8000-000000000020',
       email: 'owner@example.com',
       name: 'Owner',
-      platformPermissionCodes: [
-        'platform.memberships.read',
-        'platform.memberships.manage',
-      ],
+      platformPermissionCodes: ['platform.memberships.read', 'platform.memberships.manage'],
     },
     project: {
       id: '00000000-0000-4000-8000-000000000010',
-      effectivePermissionCodes: [
-        'project.members.read',
-        'project.members.manage',
-      ],
+      effectivePermissionCodes: ['project.members.read', 'project.members.manage'],
     } as { id: string; effectivePermissionCodes: string[] } | null,
     refreshContext: vi.fn(),
     logout: vi.fn(),
   },
-}))
+}));
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({ replace: mocks.replace }),
-}))
+}));
 vi.mock('@/features/auth/auth.store', () => ({
   useAuthStore: () => mocks.auth,
-}))
+}));
 vi.mock('@/features/project-memberships/api/project-membership.api', () => ({
   projectMembershipApi: {
     list: vi.fn(),
@@ -47,7 +41,7 @@ vi.mock('@/features/project-memberships/api/project-membership.api', () => ({
     update: vi.fn(),
     remove: vi.fn(),
   },
-}))
+}));
 
 const createdMembership = {
   id: 'membership-1',
@@ -77,7 +71,7 @@ const createdMembership = {
   createdAt: '2026-07-21T10:00:00.000Z',
   updatedAt: '2026-07-21T10:00:00.000Z',
   removedAt: null,
-}
+};
 
 function mountPage() {
   return shallowMount(ProjectMembershipsPage, {
@@ -97,8 +91,7 @@ function mountPage() {
         },
         Dialog: {
           props: ['visible'],
-          template:
-            '<section v-if="visible"><slot /><slot name="footer" /></section>',
+          template: '<section v-if="visible"><slot /><slot name="footer" /></section>',
         },
         InputText: {
           inheritAttrs: false,
@@ -127,38 +120,35 @@ function mountPage() {
         },
       },
     },
-  })
+  });
 }
 
 async function submitSelfMutation(wrapper: ReturnType<typeof mountPage>) {
-  await wrapper.get('[data-testid="add-membership"]').trigger('click')
-  await wrapper.get('[data-testid="cms-user-id"]').setValue(currentUserId)
-  await wrapper.get('[data-testid="membership-roles"]').trigger('click')
+  await wrapper.get('[data-testid="add-membership"]').trigger('click');
+  await wrapper.get('[data-testid="cms-user-id"]').setValue(currentUserId);
+  await wrapper.get('[data-testid="membership-roles"]').trigger('click');
   await wrapper
     .get('[data-testid="membership-reason"]')
-    .setValue('  Назначение подтверждено владельцем  ')
-  await wrapper.get('[data-testid="submit-membership"]').trigger('click')
-  await flushPromises()
+    .setValue('  Назначение подтверждено владельцем  ');
+  await wrapper.get('[data-testid="submit-membership"]').trigger('click');
+  await flushPromises();
 }
 
 describe('Project Memberships page', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.clearAllMocks();
     mocks.auth.user.platformPermissionCodes = [
       'platform.memberships.read',
       'platform.memberships.manage',
-    ]
+    ];
     mocks.auth.project = {
       id: projectId,
-      effectivePermissionCodes: [
-        'project.members.read',
-        'project.members.manage',
-      ],
-    }
+      effectivePermissionCodes: ['project.members.read', 'project.members.manage'],
+    };
     vi.mocked(projectMembershipApi.list).mockResolvedValue({
       items: [],
       nextCursor: null,
-    })
+    });
     vi.mocked(projectMembershipApi.roles).mockResolvedValue({
       items: [
         {
@@ -171,110 +161,108 @@ describe('Project Memberships page', () => {
           version: 1,
         },
       ],
-    })
-    vi.mocked(projectMembershipApi.create).mockResolvedValue(createdMembership)
-    mocks.auth.refreshContext.mockResolvedValue(undefined)
-    mocks.auth.logout.mockResolvedValue(undefined)
-  })
+    });
+    vi.mocked(projectMembershipApi.create).mockResolvedValue(createdMembership);
+    mocks.auth.refreshContext.mockResolvedValue(undefined);
+    mocks.auth.logout.mockResolvedValue(undefined);
+  });
 
   it('keeps attach Platform-only even when Project membership management is available', async () => {
-    mocks.auth.user.platformPermissionCodes = []
-    const wrapper = mountPage()
-    await flushPromises()
+    mocks.auth.user.platformPermissionCodes = [];
+    const wrapper = mountPage();
+    await flushPromises();
 
     expect(projectMembershipApi.list).toHaveBeenCalledWith(projectId, {
       limit: 50,
-    })
-    expect(wrapper.find('[data-testid="add-membership"]').exists()).toBe(false)
-  })
+    });
+    expect(wrapper.find('[data-testid="add-membership"]').exists()).toBe(false);
+  });
 
   it('creates through the generated contract and refreshes self authority after commit', async () => {
-    const wrapper = mountPage()
-    await flushPromises()
-    await submitSelfMutation(wrapper)
+    const wrapper = mountPage();
+    await flushPromises();
+    await submitSelfMutation(wrapper);
 
     expect(projectMembershipApi.create).toHaveBeenCalledWith(projectId, {
       cmsUserId: currentUserId,
       roleIds: [roleId],
       reason: 'Назначение подтверждено владельцем',
-    })
-    expect(mocks.auth.refreshContext).toHaveBeenCalledOnce()
-  })
+    });
+    expect(mocks.auth.refreshContext).toHaveBeenCalledOnce();
+  });
 
   it('formats email verification and last login for the member table', async () => {
-    const wrapper = mountPage()
-    await flushPromises()
+    const wrapper = mountPage();
+    await flushPromises();
     const page = wrapper.vm as unknown as {
-      emailVerificationLabel(verified: boolean): string
-      lastLoginLabel(value: string | null): string
-    }
+      emailVerificationLabel(verified: boolean): string;
+      lastLoginLabel(value: string | null): string;
+    };
 
-    expect(page.emailVerificationLabel(true)).toBe('Email подтверждён')
-    expect(page.emailVerificationLabel(false)).toBe('Email не подтверждён')
-    expect(page.lastLoginLabel(null)).toBe('Последний вход: ещё не было')
-    expect(page.lastLoginLabel('2026-07-21T10:00:00.000Z')).toContain(
-      'Последний вход:',
-    )
-  })
+    expect(page.emailVerificationLabel(true)).toBe('Email подтверждён');
+    expect(page.emailVerificationLabel(false)).toBe('Email не подтверждён');
+    expect(page.lastLoginLabel(null)).toBe('Последний вход: ещё не было');
+    expect(page.lastLoginLabel('2026-07-21T10:00:00.000Z')).toContain('Последний вход:');
+  });
 
   it('clears cached identities and redirects after a successful self-removal refresh', async () => {
     vi.mocked(projectMembershipApi.list).mockResolvedValue({
       items: [createdMembership],
       nextCursor: null,
-    })
+    });
     mocks.auth.refreshContext.mockImplementation(async () => {
-      mocks.auth.project = null
-    })
-    const wrapper = mountPage()
-    await flushPromises()
-    expect(wrapper.get('[data-testid="membership-count"]').text()).toBe('1')
+      mocks.auth.project = null;
+    });
+    const wrapper = mountPage();
+    await flushPromises();
+    expect(wrapper.get('[data-testid="membership-count"]').text()).toBe('1');
 
-    await submitSelfMutation(wrapper)
+    await submitSelfMutation(wrapper);
 
-    expect(wrapper.get('[data-testid="membership-count"]').text()).toBe('0')
-    expect(mocks.replace).toHaveBeenCalledWith({ name: 'overview' })
-  })
+    expect(wrapper.get('[data-testid="membership-count"]').text()).toBe('0');
+    expect(mocks.replace).toHaveBeenCalledWith({ name: 'overview' });
+  });
 
   it('clears cached identities and redirects after a successful self-downgrade removes read access', async () => {
     vi.mocked(projectMembershipApi.list).mockResolvedValue({
       items: [createdMembership],
       nextCursor: null,
-    })
+    });
     mocks.auth.refreshContext.mockImplementation(async () => {
-      mocks.auth.user.platformPermissionCodes = []
+      mocks.auth.user.platformPermissionCodes = [];
       mocks.auth.project = {
         id: projectId,
         effectivePermissionCodes: ['project.members.manage'],
-      }
-    })
-    const wrapper = mountPage()
-    await flushPromises()
+      };
+    });
+    const wrapper = mountPage();
+    await flushPromises();
 
-    await submitSelfMutation(wrapper)
+    await submitSelfMutation(wrapper);
 
-    expect(wrapper.get('[data-testid="membership-count"]').text()).toBe('0')
-    expect(mocks.replace).toHaveBeenCalledWith({ name: 'overview' })
-  })
+    expect(wrapper.get('[data-testid="membership-count"]').text()).toBe('0');
+    expect(mocks.replace).toHaveBeenCalledWith({ name: 'overview' });
+  });
 
   it('offers a fresh login after step-up denial without replaying the membership mutation', async () => {
     vi.mocked(projectMembershipApi.create).mockRejectedValue(
       new ApiError(401, 'unsafe backend text', undefined, 'step-up-request', 'MFA_REQUIRED'),
-    )
-    const wrapper = mountPage()
-    await flushPromises()
-    await submitSelfMutation(wrapper)
+    );
+    const wrapper = mountPage();
+    await flushPromises();
+    await submitSelfMutation(wrapper);
 
-    expect(wrapper.text()).toContain('Требуется свежий вход с MFA')
-    expect(wrapper.text()).not.toContain('unsafe backend text')
-    expect(projectMembershipApi.create).toHaveBeenCalledOnce()
+    expect(wrapper.text()).toContain('Требуется свежий вход с MFA');
+    expect(wrapper.text()).not.toContain('unsafe backend text');
+    expect(projectMembershipApi.create).toHaveBeenCalledOnce();
 
-    await wrapper.get('[data-testid="membership-step-up"]').trigger('click')
-    await flushPromises()
-    expect(mocks.auth.logout).toHaveBeenCalledOnce()
+    await wrapper.get('[data-testid="membership-step-up"]').trigger('click');
+    await flushPromises();
+    expect(mocks.auth.logout).toHaveBeenCalledOnce();
     expect(mocks.replace).toHaveBeenCalledWith({
       name: 'login',
       query: { redirect: '/project/memberships' },
-    })
-    expect(projectMembershipApi.create).toHaveBeenCalledOnce()
-  })
-})
+    });
+    expect(projectMembershipApi.create).toHaveBeenCalledOnce();
+  });
+});

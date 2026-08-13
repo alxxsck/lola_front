@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import type {
   SupportRoutingContext,
   SupportRoutingExclusion,
   SupportSlaContext,
-} from "@/features/support-workspace/api/support-workspace-source";
+} from '@/features/support-workspace/api/support-workspace-source';
 import {
   assignmentStateLabel,
   formatBusinessDuration,
   routingReasonLabel,
   slaClockStatus,
-} from "@/features/support-case-operations/model/support-case-operations";
+} from '@/features/support-case-operations/model/support-case-operations';
 
 const props = defineProps<{
   caseId: string;
@@ -23,30 +23,28 @@ const props = defineProps<{
 const emit = defineEmits<{ reconcile: [expiresAt: string] }>();
 
 const exclusionLabels: Record<SupportRoutingExclusion, string> = {
-  ASSIGNMENT_CONFLICT: "Конфликт назначения",
-  AVAILABILITY_NOT_ROUTABLE: "Недоступны для маршрутизации",
-  CAPACITY_EXHAUSTED: "Нет ёмкости",
-  CASE_COOLDOWN: "Пауза после обращения",
-  DATA_SCOPE_DENIED: "Нет доступа к данным",
-  FACT_STALE: "Устаревшие данные",
-  LANGUAGE_REQUIRED: "Не хватает языка",
-  LEASE_EXPIRED: "Резерв истёк",
-  MEMBERSHIP_INACTIVE: "Неактивны в команде",
-  RECEIVE_PERMISSION_MISSING: "Нет права получать обращения",
-  SKILL_REQUIRED: "Не хватает навыка",
-  TEAM_NOT_ELIGIBLE: "Команда не подходит",
+  ASSIGNMENT_CONFLICT: 'Конфликт назначения',
+  AVAILABILITY_NOT_ROUTABLE: 'Недоступны для маршрутизации',
+  CAPACITY_EXHAUSTED: 'Нет ёмкости',
+  CASE_COOLDOWN: 'Пауза после обращения',
+  DATA_SCOPE_DENIED: 'Нет доступа к данным',
+  FACT_STALE: 'Устаревшие данные',
+  LANGUAGE_REQUIRED: 'Не хватает языка',
+  LEASE_EXPIRED: 'Резерв истёк',
+  MEMBERSHIP_INACTIVE: 'Неактивны в команде',
+  RECEIVE_PERMISSION_MISSING: 'Нет права получать обращения',
+  SKILL_REQUIRED: 'Не хватает навыка',
+  TEAM_NOT_ELIGIBLE: 'Команда не подходит',
 };
 
 const availableRouting = computed(() =>
-  props.routing?.state === "AVAILABLE" ? props.routing : null,
+  props.routing?.state === 'AVAILABLE' ? props.routing : null,
 );
 
 const orderedExclusions = computed(() => {
   if (!availableRouting.value) return [];
   return (
-    Object.entries(availableRouting.value.exclusions) as Array<
-      [SupportRoutingExclusion, number]
-    >
+    Object.entries(availableRouting.value.exclusions) as Array<[SupportRoutingExclusion, number]>
   )
     .filter(([, count]) => count > 0)
     .map(([code, count]) => ({ code, count, label: exclusionLabels[code] }));
@@ -85,16 +83,14 @@ function scheduleReservationReconcile(expiresAt: string | null): void {
     : 0;
   expiryTimer = setTimeout(() => {
     reservationPending.value = true;
-    emit("reconcile", expiresAt);
+    emit('reconcile', expiresAt);
   }, delay);
 }
 
 watch(
   () =>
     [
-      props.routing?.state === "AVAILABLE"
-        ? (props.routing.reservation?.expiresAt ?? null)
-        : null,
+      props.routing?.state === 'AVAILABLE' ? (props.routing.reservation?.expiresAt ?? null) : null,
       props.reservationReconcileAttempt,
       props.reservationReconcileInFlight,
       props.caseId,
@@ -105,40 +101,38 @@ watch(
 
 onBeforeUnmount(clearExpiryTimer);
 
-function clockTone(clock: SupportSlaContext["clocks"][number]): string {
-  if (clock.outcome !== "OPEN") return "neutral";
-  if (clock.risk === "BREACHED") return "danger";
-  if (clock.risk === "AT_RISK") return "warning";
-  if (clock.timing === "PAUSED") return "paused";
-  return "success";
+function clockTone(clock: SupportSlaContext['clocks'][number]): string {
+  if (clock.outcome !== 'OPEN') return 'neutral';
+  if (clock.risk === 'BREACHED') return 'danger';
+  if (clock.risk === 'AT_RISK') return 'warning';
+  if (clock.timing === 'PAUSED') return 'paused';
+  return 'success';
 }
 
-function clockKindTitle(
-  kind: SupportSlaContext["clocks"][number]["kind"],
-): string {
+function clockKindTitle(kind: SupportSlaContext['clocks'][number]['kind']): string {
   return {
-    FIRST_HUMAN_RESPONSE: "Первый ответ",
-    NEXT_HUMAN_RESPONSE: "Следующий ответ",
-    RESOLUTION: "Решение",
+    FIRST_HUMAN_RESPONSE: 'Первый ответ',
+    NEXT_HUMAN_RESPONSE: 'Следующий ответ',
+    RESOLUTION: 'Решение',
   }[kind];
 }
 
 function dateTime(value: string | null): string {
-  if (!value) return "Срок не рассчитан";
+  if (!value) return 'Срок не рассчитан';
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "Срок не рассчитан";
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
+  if (Number.isNaN(parsed.getTime())) return 'Срок не рассчитан';
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(parsed);
 }
 
-function routingModeLabel(value: "SHADOW" | "LIVE_PROPOSAL" | null): string {
-  if (value === "SHADOW") return "Теневой подбор";
-  if (value === "LIVE_PROPOSAL") return "Рабочий подбор";
-  return "Режим не указан";
+function routingModeLabel(value: 'SHADOW' | 'LIVE_PROPOSAL' | null): string {
+  if (value === 'SHADOW') return 'Теневой подбор';
+  if (value === 'LIVE_PROPOSAL') return 'Рабочий подбор';
+  return 'Режим не указан';
 }
 </script>
 
@@ -153,9 +147,7 @@ function routingModeLabel(value: "SHADOW" | "LIVE_PROPOSAL" | null): string {
 
     <div class="operations-block" aria-label="SLA обращения">
       <div class="block-heading">
-        <span class="block-icon"
-          ><i class="pi pi-stopwatch" aria-hidden="true"
-        /></span>
+        <span class="block-icon"><i class="pi pi-stopwatch" aria-hidden="true" /></span>
         <div>
           <strong>SLA</strong>
           <span>Снимок серверного рабочего времени</span>
@@ -171,20 +163,14 @@ function routingModeLabel(value: "SHADOW" | "LIVE_PROPOSAL" | null): string {
         <span>Активных SLA-часов нет</span>
       </div>
       <ul v-else class="sla-clocks">
-        <li
-          v-for="clock in sla.clocks"
-          :key="clock.kind"
-          :class="clockTone(clock)"
-        >
+        <li v-for="clock in sla.clocks" :key="clock.kind" :class="clockTone(clock)">
           <span class="clock-status" aria-hidden="true" />
           <div class="clock-copy">
             <strong>{{ clockKindTitle(clock.kind) }}</strong>
             <span>{{ slaClockStatus(clock) }}</span>
           </div>
           <div class="clock-time">
-            <strong>{{
-              formatBusinessDuration(clock.remainingBusinessMs)
-            }}</strong>
+            <strong>{{ formatBusinessDuration(clock.remainingBusinessMs) }}</strong>
             <span>{{ dateTime(clock.currentDeadlineAt) }}</span>
           </div>
         </li>
@@ -193,9 +179,7 @@ function routingModeLabel(value: "SHADOW" | "LIVE_PROPOSAL" | null): string {
 
     <div class="operations-block" aria-label="Маршрутизация обращения">
       <div class="block-heading">
-        <span class="block-icon"
-          ><i class="pi pi-sitemap" aria-hidden="true"
-        /></span>
+        <span class="block-icon"><i class="pi pi-sitemap" aria-hidden="true" /></span>
         <div>
           <strong>Маршрутизация</strong>
           <span>Очередь, подбор и ограничения</span>
@@ -214,32 +198,25 @@ function routingModeLabel(value: "SHADOW" | "LIVE_PROPOSAL" | null): string {
         <div class="routing-summary">
           <div>
             <span>Очередь</span>
-            <strong>{{
-              availableRouting.queue?.name ?? "Не определена"
-            }}</strong>
+            <strong>{{ availableRouting.queue?.name ?? 'Не определена' }}</strong>
           </div>
           <div>
             <span>Назначение</span>
-            <strong>{{
-              assignmentStateLabel(availableRouting.assignmentState)
-            }}</strong>
+            <strong>{{ assignmentStateLabel(availableRouting.assignmentState) }}</strong>
           </div>
         </div>
 
         <div class="routing-reason" role="status">
           <i
             :class="
-              availableRouting.outcome === 'DEGRADED' ||
-              availableRouting.outcome === 'STALE_INPUT'
+              availableRouting.outcome === 'DEGRADED' || availableRouting.outcome === 'STALE_INPUT'
                 ? 'pi pi-exclamation-triangle'
                 : 'pi pi-directions'
             "
             aria-hidden="true"
           />
           <div>
-            <strong>{{
-              routingReasonLabel(availableRouting.reasonCode)
-            }}</strong>
+            <strong>{{ routingReasonLabel(availableRouting.reasonCode) }}</strong>
             <span>{{ routingModeLabel(availableRouting.mode) }}</span>
           </div>
         </div>
@@ -252,8 +229,7 @@ function routingModeLabel(value: "SHADOW" | "LIVE_PROPOSAL" | null): string {
               {{ availableRouting.candidateCount }} подходят
             </strong>
             <strong v-else
-              >{{ availableRouting.candidateCount }} кандидатов · неполный
-              список</strong
+              >{{ availableRouting.candidateCount }} кандидатов · неполный список</strong
             >
           </div>
           <ul v-if="orderedExclusions.length" class="exclusion-list">
@@ -262,8 +238,7 @@ function routingModeLabel(value: "SHADOW" | "LIVE_PROPOSAL" | null): string {
             </li>
           </ul>
           <p v-else class="context-note">
-            Сервер не вернул ограничений. Детализация навыков и языков не
-            показана.
+            Сервер не вернул ограничений. Детализация навыков и языков не показана.
           </p>
         </div>
 
@@ -272,18 +247,18 @@ function routingModeLabel(value: "SHADOW" | "LIVE_PROPOSAL" | null): string {
           <div>
             <strong>{{
               reservationPending
-                ? "Проверяем актуальность…"
+                ? 'Проверяем актуальность…'
                 : reservationReconcileExhausted
-                  ? "Нужно обновить статус"
-                : "Оператор зарезервирован"
+                  ? 'Нужно обновить статус'
+                  : 'Оператор зарезервирован'
             }}</strong>
             <span>
               {{
                 reservationPending
-                  ? "Обновляем назначение и доступные действия"
+                  ? 'Обновляем назначение и доступные действия'
                   : reservationReconcileExhausted
-                    ? "Сервер пока подтверждает резерв — обновите рабочее место"
-                  : `Резерв до ${dateTime(availableRouting.reservation.expiresAt)}`
+                    ? 'Сервер пока подтверждает резерв — обновите рабочее место'
+                    : `Резерв до ${dateTime(availableRouting.reservation.expiresAt)}`
               }}
             </span>
           </div>

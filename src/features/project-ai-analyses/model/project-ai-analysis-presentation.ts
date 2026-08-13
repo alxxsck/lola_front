@@ -1,4 +1,4 @@
-import { aiLimitationMessage } from "@/features/ai-errors/model/ai-error-message";
+import { aiLimitationMessage } from '@/features/ai-errors/model/ai-error-message';
 
 export interface PresentedAnalysisResult {
   clarification: {
@@ -14,13 +14,13 @@ export interface PresentedAnalysisResult {
     rows: Array<Array<string | null>>;
   } | null;
   definitions: Array<{
-    kind: "EVENT" | "EVENT_FIELD" | "USER_ATTRIBUTE";
+    kind: 'EVENT' | 'EVENT_FIELD' | 'USER_ATTRIBUTE';
     code: string;
     eventCode: string | null;
     description: string;
   }>;
   receiptOrdinals: number[];
-  completeness: "COMPLETE" | "PARTIAL" | "UNKNOWN" | null;
+  completeness: 'COMPLETE' | 'PARTIAL' | 'UNKNOWN' | null;
   limitations: Array<{ code: string; message: string }>;
   actors: {
     createdByCmsUserId: string | null;
@@ -41,43 +41,39 @@ export interface PresentedAnalysisResult {
   } | null;
 }
 
-export type AnalysisStatusSeverity =
-  "success" | "info" | "warn" | "danger" | "secondary";
+export type AnalysisStatusSeverity = 'success' | 'info' | 'warn' | 'danger' | 'secondary';
 
-const STATUS_PRESENTATION: Record<
-  string,
-  { label: string; severity: AnalysisStatusSeverity }
-> = {
-  SCHEDULED: { label: "Запланирован", severity: "info" },
-  QUEUED: { label: "В очереди", severity: "info" },
-  RUNNING: { label: "Выполняется", severity: "info" },
-  NEEDS_CLARIFICATION: { label: "Нужно уточнение", severity: "warn" },
-  SUCCEEDED: { label: "Готов", severity: "success" },
-  COMPLETED: { label: "Готов", severity: "success" },
-  ACTIVE: { label: "Активен", severity: "info" },
-  FAILED: { label: "Ошибка", severity: "danger" },
-  PAUSED: { label: "Приостановлен", severity: "warn" },
-  CANCELLED: { label: "Отменён", severity: "secondary" },
-  EXPIRED: { label: "Истёк", severity: "secondary" },
-  OUTCOME_UNKNOWN: { label: "Исход неизвестен", severity: "warn" },
+const STATUS_PRESENTATION: Record<string, { label: string; severity: AnalysisStatusSeverity }> = {
+  SCHEDULED: { label: 'Запланирован', severity: 'info' },
+  QUEUED: { label: 'В очереди', severity: 'info' },
+  RUNNING: { label: 'Выполняется', severity: 'info' },
+  NEEDS_CLARIFICATION: { label: 'Нужно уточнение', severity: 'warn' },
+  SUCCEEDED: { label: 'Готов', severity: 'success' },
+  COMPLETED: { label: 'Готов', severity: 'success' },
+  ACTIVE: { label: 'Активен', severity: 'info' },
+  FAILED: { label: 'Ошибка', severity: 'danger' },
+  PAUSED: { label: 'Приостановлен', severity: 'warn' },
+  CANCELLED: { label: 'Отменён', severity: 'secondary' },
+  EXPIRED: { label: 'Истёк', severity: 'secondary' },
+  OUTCOME_UNKNOWN: { label: 'Исход неизвестен', severity: 'warn' },
 };
 
 export function presentAnalysisStatus(status: string) {
   return (
     STATUS_PRESENTATION[status] ?? {
       label: status,
-      severity: "secondary" as const,
+      severity: 'secondary' as const,
     }
   );
 }
 
 const COST_STATUS_LABELS: Record<string, string> = {
-  UNKNOWN: "Стоимость неизвестна",
-  ESTIMATED: "Предварительная оценка",
-  PROVIDER_REPORTED_USAGE: "Usage подтверждён провайдером",
-  INCOMPLETE_USAGE: "Usage учтён не полностью",
-  UNPRICED_MODEL: "Для модели нет тарифа",
-  UNPRICED_SERVICE_TIER: "Для уровня сервиса нет тарифа",
+  UNKNOWN: 'Стоимость неизвестна',
+  ESTIMATED: 'Предварительная оценка',
+  PROVIDER_REPORTED_USAGE: 'Usage подтверждён провайдером',
+  INCOMPLETE_USAGE: 'Usage учтён не полностью',
+  UNPRICED_MODEL: 'Для модели нет тарифа',
+  UNPRICED_SERVICE_TIER: 'Для уровня сервиса нет тарифа',
 };
 
 export function presentAnalysisCostStatus(status?: string): string | null {
@@ -88,11 +84,8 @@ export function formatUsdTicks(value: string): string {
   const ticks = BigInt(value);
   const scale = 10_000_000_000n;
   const whole = ticks / scale;
-  const fraction = (ticks % scale)
-    .toString()
-    .padStart(10, "0")
-    .replace(/0+$/u, "");
-  return `$${whole.toString()}${fraction ? `.${fraction}` : ""}`;
+  const fraction = (ticks % scale).toString().padStart(10, '0').replace(/0+$/u, '');
+  return `$${whole.toString()}${fraction ? `.${fraction}` : ''}`;
 }
 
 export function presentAnalysisResult(value: unknown): PresentedAnalysisResult {
@@ -106,9 +99,9 @@ export function presentAnalysisResult(value: unknown): PresentedAnalysisResult {
     answer: presentAnswer(text(source.answer, 20_000), limitations),
     scope: text(interpretedScope.description, 1_000),
     time:
-      typeof interpretedTime.from === "string" &&
-      typeof interpretedTime.to === "string" &&
-      typeof interpretedTime.timezone === "string" &&
+      typeof interpretedTime.from === 'string' &&
+      typeof interpretedTime.to === 'string' &&
+      typeof interpretedTime.timezone === 'string' &&
       validDate(interpretedTime.from) &&
       validDate(interpretedTime.to)
         ? {
@@ -130,8 +123,8 @@ export function presentAnalysisResult(value: unknown): PresentedAnalysisResult {
 function presentClarification(
   kind: unknown,
   value: unknown,
-): PresentedAnalysisResult["clarification"] {
-  if (kind !== "CLARIFICATION_REQUIRED") return null;
+): PresentedAnalysisResult['clarification'] {
+  if (kind !== 'CLARIFICATION_REQUIRED') return null;
   const source = record(value);
   const question = text(source.question, 2_000);
   if (!question || !Array.isArray(source.candidates)) return null;
@@ -148,22 +141,18 @@ function presentClarification(
 
 function presentAnswer(
   answer: string | null,
-  limitations: PresentedAnalysisResult["limitations"],
+  limitations: PresentedAnalysisResult['limitations'],
 ): string | null {
   if (!answer) return null;
   return limitations.reduce((current, limitation) => {
-    const occurrence = new RegExp(
-      `${limitation.code}(?:[.!?](?=\\s|$))?`,
-      "gu",
-    );
+    const occurrence = new RegExp(`${limitation.code}(?:[.!?](?=\\s|$))?`, 'gu');
     return current.replace(occurrence, limitation.message);
   }, answer);
 }
 
-function presentTable(value: unknown): PresentedAnalysisResult["table"] {
+function presentTable(value: unknown): PresentedAnalysisResult['table'] {
   const source = record(value);
-  if (!Array.isArray(source.columns) || !Array.isArray(source.rows))
-    return null;
+  if (!Array.isArray(source.columns) || !Array.isArray(source.rows)) return null;
   if (source.columns.length > 50 || source.rows.length > 1_000) return null;
   const columns = source.columns.map((item) => {
     const column = record(item);
@@ -174,15 +163,10 @@ function presentTable(value: unknown): PresentedAnalysisResult["table"] {
   if (columns.some((item) => item === null)) return null;
   const rows = source.rows.map((item) => {
     const row = record(item);
-    if (!Array.isArray(row.cells) || row.cells.length !== columns.length)
-      return null;
+    if (!Array.isArray(row.cells) || row.cells.length !== columns.length) return null;
     const sourceCells = row.cells;
-    const cells = sourceCells.map((cell) =>
-      cell === null ? null : text(cell, 5_000),
-    );
-    return cells.some((cell, index) => sourceCells[index] !== null && !cell)
-      ? null
-      : cells;
+    const cells = sourceCells.map((cell) => (cell === null ? null : text(cell, 5_000)));
+    return cells.some((cell, index) => sourceCells[index] !== null && !cell) ? null : cells;
   });
   if (rows.some((item) => item === null)) return null;
   return {
@@ -191,23 +175,17 @@ function presentTable(value: unknown): PresentedAnalysisResult["table"] {
   };
 }
 
-function presentLimitations(
-  value: unknown,
-): PresentedAnalysisResult["limitations"] {
+function presentLimitations(value: unknown): PresentedAnalysisResult['limitations'] {
   if (!Array.isArray(value)) return [];
   return value.slice(0, 100).flatMap((item) => {
     const limitation = record(item);
     const code = text(limitation.code, 200);
     const message = text(limitation.message, 2_000);
-    return code && message
-      ? [{ code, message: aiLimitationMessage(code, message) }]
-      : [];
+    return code && message ? [{ code, message: aiLimitationMessage(code, message) }] : [];
   });
 }
 
-function presentDefinitions(
-  value: unknown,
-): PresentedAnalysisResult["definitions"] {
+function presentDefinitions(value: unknown): PresentedAnalysisResult['definitions'] {
   if (!Array.isArray(value)) return [];
   return value.slice(0, 100).flatMap((item) => {
     const definition = record(item);
@@ -215,12 +193,10 @@ function presentDefinitions(
     const code = text(definition.code, 200);
     const eventCode = text(definition.eventCode, 200);
     const description = text(definition.description, 2_000);
-    return ["EVENT", "EVENT_FIELD", "USER_ATTRIBUTE"].includes(String(kind)) &&
-      code &&
-      description
+    return ['EVENT', 'EVENT_FIELD', 'USER_ATTRIBUTE'].includes(String(kind)) && code && description
       ? [
           {
-            kind: kind as "EVENT" | "EVENT_FIELD" | "USER_ATTRIBUTE",
+            kind: kind as 'EVENT' | 'EVENT_FIELD' | 'USER_ATTRIBUTE',
             code,
             eventCode,
             description,
@@ -237,22 +213,19 @@ function presentReceiptOrdinals(value: unknown): number[] {
       value
         .slice(0, 100)
         .filter(
-          (ordinal): ordinal is number =>
-            Number.isSafeInteger(ordinal) && Number(ordinal) > 0,
+          (ordinal): ordinal is number => Number.isSafeInteger(ordinal) && Number(ordinal) > 0,
         ),
     ),
   ];
 }
 
-function presentCompleteness(
-  value: unknown,
-): PresentedAnalysisResult["completeness"] {
-  return ["COMPLETE", "PARTIAL", "UNKNOWN"].includes(String(value))
-    ? (value as "COMPLETE" | "PARTIAL" | "UNKNOWN")
+function presentCompleteness(value: unknown): PresentedAnalysisResult['completeness'] {
+  return ['COMPLETE', 'PARTIAL', 'UNKNOWN'].includes(String(value))
+    ? (value as 'COMPLETE' | 'PARTIAL' | 'UNKNOWN')
     : null;
 }
 
-function presentActors(value: unknown): PresentedAnalysisResult["actors"] {
+function presentActors(value: unknown): PresentedAnalysisResult['actors'] {
   const source = record(value);
   const createdByCmsUserId = text(source.createdByCmsUserId, 200);
   const costAttributedToCmsUserId = text(source.costAttributedToCmsUserId, 200);
@@ -261,9 +234,7 @@ function presentActors(value: unknown): PresentedAnalysisResult["actors"] {
     : null;
 }
 
-function presentProvenance(
-  value: unknown,
-): PresentedAnalysisResult["provenance"] {
+function presentProvenance(value: unknown): PresentedAnalysisResult['provenance'] {
   const source = record(value);
   const rawReceipts = source.queryReceipts;
   if (Array.isArray(rawReceipts) && rawReceipts.length > 100) return null;
@@ -280,8 +251,8 @@ function presentProvenance(
           queryHash &&
           Number.isSafeInteger(receipt.ordinal) &&
           Number(receipt.ordinal) > 0 &&
-          typeof receipt.complete === "boolean" &&
-          typeof receipt.truncated === "boolean"
+          typeof receipt.complete === 'boolean' &&
+          typeof receipt.truncated === 'boolean'
           ? [
               {
                 id,
@@ -312,15 +283,13 @@ function presentProvenance(
 }
 
 function record(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value)
+  return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
 }
 
 function text(value: unknown, maxLength: number): string | null {
-  return typeof value === "string" && value.length > 0
-    ? value.slice(0, maxLength)
-    : null;
+  return typeof value === 'string' && value.length > 0 ? value.slice(0, maxLength) : null;
 }
 
 function validDate(value: string): boolean {
@@ -328,7 +297,5 @@ function validDate(value: string): boolean {
 }
 
 function digest(value: unknown): string | null {
-  return typeof value === "string" && /^[0-9a-f]{64}$/u.test(value)
-    ? value
-    : null;
+  return typeof value === 'string' && /^[0-9a-f]{64}$/u.test(value) ? value : null;
 }

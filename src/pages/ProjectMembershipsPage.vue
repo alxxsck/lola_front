@@ -1,48 +1,48 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import Button from 'primevue/button'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import MultiSelect from 'primevue/multiselect'
-import Select from 'primevue/select'
-import Skeleton from 'primevue/skeleton'
-import Tag from 'primevue/tag'
-import Textarea from 'primevue/textarea'
-import { useAuthStore } from '@/features/auth/auth.store'
+import { computed, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Column from 'primevue/column';
+import DataTable from 'primevue/datatable';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import MultiSelect from 'primevue/multiselect';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import Textarea from 'primevue/textarea';
+import { useAuthStore } from '@/features/auth/auth.store';
 import {
   canAttachExistingCmsUser,
   canManageProjectMemberships,
   canReadProjectMemberships,
-} from '@/features/project-memberships/model/project-membership-permissions'
+} from '@/features/project-memberships/model/project-membership-permissions';
 import {
   useProjectMemberships,
   type ProjectMembershipAction,
   type ProjectMembershipStatusFilter,
-} from '@/features/project-memberships/model/use-project-memberships'
-import type { ProjectMembershipResponseDto } from '@/shared/api/generated/models'
+} from '@/features/project-memberships/model/use-project-memberships';
+import type { ProjectMembershipResponseDto } from '@/shared/api/generated/models';
 
-const auth = useAuthStore()
-const router = useRouter()
-const dialogAction = ref<ProjectMembershipAction | null>(null)
-const target = ref<ProjectMembershipResponseDto | null>(null)
-let clearDirectory: () => void = () => undefined
+const auth = useAuthStore();
+const router = useRouter();
+const dialogAction = ref<ProjectMembershipAction | null>(null);
+const target = ref<ProjectMembershipResponseDto | null>(null);
+let clearDirectory: () => void = () => undefined;
 const directory = useProjectMemberships(undefined, {
   onCommitted: async (membership) => {
-    if (membership.cmsUser.id !== auth.user?.id) return
+    if (membership.cmsUser.id !== auth.user?.id) return;
     try {
-      await auth.refreshContext()
+      await auth.refreshContext();
     } catch {
-      clearDirectory()
-      dialogAction.value = null
-      target.value = null
-      await router.replace({ name: 'login' })
-      return
+      clearDirectory();
+      dialogAction.value = null;
+      target.value = null;
+      await router.replace({ name: 'login' });
+      return;
     }
-    const selectedProject = auth.project
+    const selectedProject = auth.project;
     if (
       !selectedProject ||
       !canReadProjectMemberships(
@@ -50,14 +50,14 @@ const directory = useProjectMemberships(undefined, {
         selectedProject.effectivePermissionCodes ?? [],
       )
     ) {
-      clearDirectory()
-      dialogAction.value = null
-      target.value = null
-      await router.replace({ name: 'overview' })
+      clearDirectory();
+      dialogAction.value = null;
+      target.value = null;
+      await router.replace({ name: 'overview' });
     }
   },
-})
-clearDirectory = directory.clear
+});
+clearDirectory = directory.clear;
 const {
   items,
   roles,
@@ -69,44 +69,33 @@ const {
   listError,
   rolesError,
   operation,
-} = directory
+} = directory;
 
-const cmsUserId = ref('')
-const roleIds = ref<string[]>([])
-const reason = ref('')
-const validationError = ref('')
-const stepUpPending = ref(false)
+const cmsUserId = ref('');
+const roleIds = ref<string[]>([]);
+const reason = ref('');
+const validationError = ref('');
+const stepUpPending = ref(false);
 
 const statusOptions: Array<{
-  label: string
-  value: ProjectMembershipStatusFilter
+  label: string;
+  value: ProjectMembershipStatusFilter;
 }> = [
   { label: 'Все состояния', value: 'ALL' },
   { label: 'Активные', value: 'ACTIVE' },
   { label: 'Удалённые', value: 'REMOVED' },
-]
-const platformPermissions = computed(
-  () => auth.user?.platformPermissionCodes ?? [],
-)
-const projectPermissions = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-)
+];
+const platformPermissions = computed(() => auth.user?.platformPermissionCodes ?? []);
+const projectPermissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
 const canManage = computed(() =>
-  canManageProjectMemberships(
-    platformPermissions.value,
-    projectPermissions.value,
-  ),
-)
-const canAttach = computed(() =>
-  canAttachExistingCmsUser(platformPermissions.value),
-)
+  canManageProjectMemberships(platformPermissions.value, projectPermissions.value),
+);
+const canAttach = computed(() => canAttachExistingCmsUser(platformPermissions.value));
 const assignableRoles = computed(() => {
-  if (canAttach.value) return roles.value
-  const effective = new Set(projectPermissions.value)
-  return roles.value.filter((role) =>
-    role.permissionCodes.every((code) => effective.has(code)),
-  )
-})
+  if (canAttach.value) return roles.value;
+  const effective = new Set(projectPermissions.value);
+  return roles.value.filter((role) => role.permissionCodes.every((code) => effective.has(code)));
+});
 const dialogTitle = computed(
   () =>
     ({
@@ -115,80 +104,77 @@ const dialogTitle = computed(
       REMOVE: 'Удалить доступ',
       RESTORE: 'Восстановить доступ',
     })[dialogAction.value ?? 'CREATE'],
-)
+);
 
 function beginCreate(): void {
-  target.value = null
-  cmsUserId.value = ''
-  roleIds.value = []
-  reason.value = ''
-  validationError.value = ''
-  dialogAction.value = 'CREATE'
+  target.value = null;
+  cmsUserId.value = '';
+  roleIds.value = [];
+  reason.value = '';
+  validationError.value = '';
+  dialogAction.value = 'CREATE';
 }
 
 function beginMutation(
   action: 'UPDATE' | 'REMOVE' | 'RESTORE',
   membership: ProjectMembershipResponseDto,
 ): void {
-  target.value = membership
-  cmsUserId.value = membership.cmsUser.id
-  roleIds.value = membership.roles.map(({ id }) => id)
-  reason.value = ''
-  validationError.value = ''
-  dialogAction.value = action
+  target.value = membership;
+  cmsUserId.value = membership.cmsUser.id;
+  roleIds.value = membership.roles.map(({ id }) => id);
+  reason.value = '';
+  validationError.value = '';
+  dialogAction.value = action;
 }
 
 function closeDialog(): void {
-  if (operation.value.kind === 'SUBMITTING') return
-  dialogAction.value = null
-  target.value = null
+  if (operation.value.kind === 'SUBMITTING') return;
+  dialogAction.value = null;
+  target.value = null;
 }
 
 async function requireFreshLogin(): Promise<void> {
-  if (stepUpPending.value) return
-  stepUpPending.value = true
+  if (stepUpPending.value) return;
+  stepUpPending.value = true;
   try {
-    await auth.logout()
-    directory.clear()
-    dialogAction.value = null
-    target.value = null
+    await auth.logout();
+    directory.clear();
+    dialogAction.value = null;
+    target.value = null;
     await router.replace({
       name: 'login',
       query: { redirect: '/project/memberships' },
-    })
+    });
   } finally {
-    stepUpPending.value = false
+    stepUpPending.value = false;
   }
 }
 
 async function submit(): Promise<void> {
-  const projectId = auth.project?.id
-  const action = dialogAction.value
-  const membership = target.value
-  if (!projectId || !action) return
-  const normalizedReason = reason.value.trim().normalize('NFC')
+  const projectId = auth.project?.id;
+  const action = dialogAction.value;
+  const membership = target.value;
+  if (!projectId || !action) return;
+  const normalizedReason = reason.value.trim().normalize('NFC');
   if (normalizedReason.length < 10 || normalizedReason.length > 500) {
-    validationError.value = 'Укажите причину от 10 до 500 символов.'
-    return
+    validationError.value = 'Укажите причину от 10 до 500 символов.';
+    return;
   }
-  if (
-    action !== 'REMOVE' &&
-    (roleIds.value.length < 1 || roleIds.value.length > 5)
-  ) {
-    validationError.value = 'Выберите от одной до пяти ролей.'
-    return
+  if (action !== 'REMOVE' && (roleIds.value.length < 1 || roleIds.value.length > 5)) {
+    validationError.value = 'Выберите от одной до пяти ролей.';
+    return;
   }
   if (action === 'CREATE' && !cmsUserId.value.trim()) {
-    validationError.value = 'Укажите ID существующего CMS User.'
-    return
+    validationError.value = 'Укажите ID существующего CMS User.';
+    return;
   }
-  validationError.value = ''
+  validationError.value = '';
   if (action === 'CREATE') {
     await directory.create(projectId, {
       cmsUserId: cmsUserId.value.trim(),
       roleIds: roleIds.value,
       reason: normalizedReason,
-    })
+    });
   } else if (action === 'RESTORE' && membership) {
     await directory.create(
       projectId,
@@ -199,50 +185,42 @@ async function submit(): Promise<void> {
         reason: normalizedReason,
       },
       'RESTORE',
-    )
+    );
   } else if (action === 'UPDATE' && membership) {
-    await directory.update(
-      projectId,
-      membership,
-      roleIds.value,
-      normalizedReason,
-    )
+    await directory.update(projectId, membership, roleIds.value, normalizedReason);
   } else if (action === 'REMOVE' && membership) {
-    await directory.remove(projectId, membership, normalizedReason)
+    await directory.remove(projectId, membership, normalizedReason);
   }
-  if (
-    operation.value.kind === 'SUCCESS' ||
-    operation.value.kind === 'STEP_UP_REQUIRED'
-  ) {
-    closeDialog()
+  if (operation.value.kind === 'SUCCESS' || operation.value.kind === 'STEP_UP_REQUIRED') {
+    closeDialog();
   }
 }
 
 function statusLabel(value: string): string {
-  return value === 'ACTIVE' ? 'Активен' : 'Удалён'
+  return value === 'ACTIVE' ? 'Активен' : 'Удалён';
 }
 
 function emailVerificationLabel(verified: boolean): string {
-  return verified ? 'Email подтверждён' : 'Email не подтверждён'
+  return verified ? 'Email подтверждён' : 'Email не подтверждён';
 }
 
 function lastLoginLabel(value: string | null): string {
-  if (!value) return 'Последний вход: ещё не было'
-  const date = new Date(value)
-  if (!Number.isFinite(date.getTime())) return 'Последний вход: неизвестно'
+  if (!value) return 'Последний вход: ещё не было';
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return 'Последний вход: неизвестно';
   return `Последний вход: ${new Intl.DateTimeFormat('ru-RU', {
     dateStyle: 'medium',
     timeStyle: 'short',
-  }).format(date)}`
+  }).format(date)}`;
 }
 
 watch(
   () => auth.project?.id,
   (projectId) => {
-    if (projectId) void directory.initialize(projectId)
+    if (projectId) void directory.initialize(projectId);
   },
   { immediate: true },
-)
+);
 </script>
 
 <template>
@@ -274,46 +252,22 @@ watch(
       </div>
     </header>
 
-    <Message v-if="listError" severity="error" :closable="false">{{
-      listError
-    }}</Message>
-    <Message v-if="rolesError" severity="error" :closable="false">{{
-      rolesError
-    }}</Message>
-    <Message
-      v-if="operation.kind === 'VERSION_CONFLICT'"
-      severity="warn"
-      :closable="false"
-    >
-      Доступ уже изменён другим оператором. Загружена актуальная версия;
-      проверьте её перед повтором.
+    <Message v-if="listError" severity="error" :closable="false">{{ listError }}</Message>
+    <Message v-if="rolesError" severity="error" :closable="false">{{ rolesError }}</Message>
+    <Message v-if="operation.kind === 'VERSION_CONFLICT'" severity="warn" :closable="false">
+      Доступ уже изменён другим оператором. Загружена актуальная версия; проверьте её перед
+      повтором.
     </Message>
-    <Message
-      v-else-if="operation.kind === 'LAST_PROJECT_OWNER'"
-      severity="warn"
-      :closable="false"
-    >
+    <Message v-else-if="operation.kind === 'LAST_PROJECT_OWNER'" severity="warn" :closable="false">
       Нельзя удалить или понизить последнего активного владельца проекта.
     </Message>
-    <Message
-      v-else-if="operation.kind === 'NOT_FOUND'"
-      severity="warn"
-      :closable="false"
-    >
+    <Message v-else-if="operation.kind === 'NOT_FOUND'" severity="warn" :closable="false">
       Доступ или CMS User не найден. Обновите список.
     </Message>
-    <Message
-      v-else-if="operation.kind === 'PERMISSION_DENIED'"
-      severity="error"
-      :closable="false"
-    >
+    <Message v-else-if="operation.kind === 'PERMISSION_DENIED'" severity="error" :closable="false">
       Недостаточно прав для этого изменения. Действие не повторялось.
     </Message>
-    <Message
-      v-else-if="operation.kind === 'STEP_UP_REQUIRED'"
-      severity="warn"
-      :closable="false"
-    >
+    <Message v-else-if="operation.kind === 'STEP_UP_REQUIRED'" severity="warn" :closable="false">
       <div class="message-action">
         <span><strong>Требуется свежий вход с MFA.</strong> Действие не повторялось.</span>
         <Button
@@ -325,11 +279,7 @@ watch(
         />
       </div>
     </Message>
-    <Message
-      v-else-if="operation.kind === 'ERROR'"
-      severity="error"
-      :closable="false"
-    >
+    <Message v-else-if="operation.kind === 'ERROR'" severity="error" :closable="false">
       {{ operation.message }}
     </Message>
 
@@ -342,9 +292,7 @@ watch(
           option-label="label"
           option-value="value"
           aria-label="Состояние доступа"
-          @update:model-value="
-            auth.project && directory.setStatus(auth.project.id, $event)
-          "
+          @update:model-value="auth.project && directory.setStatus(auth.project.id, $event)"
         />
       </label>
       <span>Фильтр и непрозрачный курсор обрабатываются сервером.</span>
@@ -356,9 +304,7 @@ watch(
       </div>
       <DataTable v-else :value="items" data-key="id" row-hover>
         <template #empty>
-          <div class="empty">
-            <i class="pi pi-users" /><strong>Доступы не найдены</strong>
-          </div>
+          <div class="empty"><i class="pi pi-users" /><strong>Доступы не найдены</strong></div>
         </template>
         <Column header="CMS User">
           <template #body="{ data }">
@@ -382,12 +328,7 @@ watch(
         <Column header="Роли">
           <template #body="{ data }">
             <div class="tag-list">
-              <Tag
-                v-for="role in data.roles"
-                :key="role.id"
-                :value="role.name"
-                severity="info"
-              />
+              <Tag v-for="role in data.roles" :key="role.id" :value="role.name" severity="info" />
             </div>
           </template>
         </Column>
@@ -395,9 +336,7 @@ watch(
           <template #body="{ data }">
             <details>
               <summary>{{ data.effectivePermissionCodes.length }} прав</summary>
-              <code v-for="code in data.effectivePermissionCodes" :key="code">{{
-                code
-              }}</code>
+              <code v-for="code in data.effectivePermissionCodes" :key="code">{{ code }}</code>
             </details>
           </template>
         </Column>
@@ -456,11 +395,7 @@ watch(
     <div class="membership-form">
       <label v-if="dialogAction === 'CREATE'">
         <span>ID существующего CMS User</span>
-        <InputText
-          v-model="cmsUserId"
-          data-testid="cms-user-id"
-          autocomplete="off"
-        />
+        <InputText v-model="cmsUserId" data-testid="cms-user-id" autocomplete="off" />
       </label>
       <div v-else-if="target" class="target-identity">
         <strong>{{ target.cmsUser.displayName }}</strong
@@ -481,17 +416,9 @@ watch(
       </label>
       <label>
         <span>Причина для security audit</span>
-        <Textarea
-          v-model="reason"
-          data-testid="membership-reason"
-          rows="4"
-          maxlength="500"
-        />
+        <Textarea v-model="reason" data-testid="membership-reason" rows="4" maxlength="500" />
       </label>
-      <small
-        >{{ reason.length }}/500. Не указывайте пароли, токены и другие
-        секреты.</small
-      >
+      <small>{{ reason.length }}/500. Не указывайте пароли, токены и другие секреты.</small>
       <Message v-if="validationError" severity="error" :closable="false">{{
         validationError
       }}</Message>

@@ -2,20 +2,20 @@ import {
   integrationActivityContent,
   integrationActivityGet,
   integrationActivityList,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   IntegrationActivityContentResponseDto,
   IntegrationActivityDetailResponseDto,
   IntegrationActivityItemDto,
   IntegrationActivityListParams,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 import type {
   IntegrationActivityContent,
   IntegrationActivityDetail,
   IntegrationActivityFilters,
   IntegrationActivityItem,
   IntegrationActivityRepository,
-} from "../model/integration-activity";
+} from '../model/integration-activity';
 
 const nullable = <T>(value: T | null | undefined): T | null => value ?? null;
 
@@ -37,9 +37,7 @@ function mapItem(dto: IntegrationActivityItemDto): IntegrationActivityItem {
   };
 }
 
-function mapDetail(
-  dto: IntegrationActivityDetailResponseDto,
-): IntegrationActivityDetail {
+function mapDetail(dto: IntegrationActivityDetailResponseDto): IntegrationActivityDetail {
   return {
     ...mapItem(dto),
     sourceResourceKind: dto.sourceResourceKind,
@@ -60,9 +58,7 @@ function mapDetail(
   };
 }
 
-function mapContent(
-  dto: IntegrationActivityContentResponseDto,
-): IntegrationActivityContent {
+function mapContent(dto: IntegrationActivityContentResponseDto): IntegrationActivityContent {
   return {
     state: dto.state,
     kind: dto.kind,
@@ -79,22 +75,18 @@ function mapContent(
   };
 }
 
-function toParams(
-  filters: IntegrationActivityFilters,
-): IntegrationActivityListParams {
+function toParams(filters: IntegrationActivityFilters): IntegrationActivityListParams {
   return {
     ...filters,
-    provider: filters.provider as IntegrationActivityListParams["provider"],
+    provider: filters.provider as IntegrationActivityListParams['provider'],
   };
 }
 
 export const apiIntegrationActivityRepository: IntegrationActivityRepository = {
   async list(projectId, filters = {}) {
-    const response = await integrationActivityList(
-      projectId,
-      toParams(filters),
-      { paramsSerializer: { indexes: null } },
-    );
+    const response = await integrationActivityList(projectId, toParams(filters), {
+      paramsSerializer: { indexes: null },
+    });
     return {
       items: response.items.map(mapItem),
       nextCursor: response.pageInfo.nextCursor ?? null,

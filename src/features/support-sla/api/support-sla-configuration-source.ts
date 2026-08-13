@@ -3,7 +3,7 @@ import {
   supportSlaConfigurationPublish,
   supportSlaConfigurationRead,
   supportSlaConfigurationReplaceDraft,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   DiscardSupportSlaDraftMutationResponseDto,
   PublishSupportSlaConfigurationMutationResponseDto,
@@ -11,26 +11,30 @@ import type {
   ReplaceSupportSlaDraftMutationResponseDto,
   SupportSlaConfigurationSettingsResponseDto,
   SupportSlaConfigurationDraftResponseDto,
-} from "@/shared/api/generated/models";
-import { ApiError, normalizeApiError } from "@/shared/api/http/api-error";
-import { noAuthRetryRequestOptions } from "@/shared/api/http/axios-instance";
-import { dataMode } from "@/shared/config/data-mode";
+} from '@/shared/api/generated/models';
+import { ApiError, normalizeApiError } from '@/shared/api/http/api-error';
+import { noAuthRetryRequestOptions } from '@/shared/api/http/axios-instance';
+import { dataMode } from '@/shared/config/data-mode';
 
 export type SupportSlaConfigurationSnapshot = Omit<
-  Pick<SupportSlaConfigurationSettingsResponseDto, "mode" | "rootVersion" | "actionEtag" | "draft" | "publishedConfiguration">,
-  "draft"
+  Pick<
+    SupportSlaConfigurationSettingsResponseDto,
+    'mode' | 'rootVersion' | 'actionEtag' | 'draft' | 'publishedConfiguration'
+  >,
+  'draft'
 > & {
-  draft?: (Omit<SupportSlaConfigurationDraftResponseDto, "catalogRevisionId" | "configuration"> & {
-    catalogRevisionId?: string;
-    configuration?: Omit<ReplaceSupportSlaConfigurationDraftDto, "catalogRevisionId"> & { catalogRevisionId?: string };
-  }) | null;
+  draft?:
+    | (Omit<SupportSlaConfigurationDraftResponseDto, 'catalogRevisionId' | 'configuration'> & {
+        catalogRevisionId?: string;
+        configuration?: Omit<ReplaceSupportSlaConfigurationDraftDto, 'catalogRevisionId'> & {
+          catalogRevisionId?: string;
+        };
+      })
+    | null;
 };
 
 export interface SupportSlaConfigurationSource {
-  read(
-    projectId: string,
-    signal?: AbortSignal,
-  ): Promise<SupportSlaConfigurationSnapshot>;
+  read(projectId: string, signal?: AbortSignal): Promise<SupportSlaConfigurationSnapshot>;
   replaceDraft(
     projectId: string,
     configuration: ReplaceSupportSlaConfigurationDraftDto,
@@ -52,17 +56,13 @@ export interface SupportSlaConfigurationSource {
   ): Promise<PublishSupportSlaConfigurationMutationResponseDto>;
 }
 
-function commandOptions(
-  actionEtag: string,
-  idempotencyKey: string,
-  signal?: AbortSignal,
-) {
+function commandOptions(actionEtag: string, idempotencyKey: string, signal?: AbortSignal) {
   return {
     ...noAuthRetryRequestOptions(),
     ...(signal ? { signal } : {}),
     headers: {
-      "Idempotency-Key": idempotencyKey,
-      "If-Match": actionEtag,
+      'Idempotency-Key': idempotencyKey,
+      'If-Match': actionEtag,
     },
   };
 }
@@ -70,10 +70,10 @@ function commandOptions(
 function unexpectedReceipt(intent: string | undefined): never {
   throw new ApiError(
     502,
-    "Сервер вернул результат другой SLA-команды.",
+    'Сервер вернул результат другой SLA-команды.',
     { intent },
     undefined,
-    "SLA_COMMAND_RECEIPT_MISMATCH",
+    'SLA_COMMAND_RECEIPT_MISMATCH',
   );
 }
 
@@ -88,22 +88,14 @@ export const apiSupportSlaConfigurationSource: SupportSlaConfigurationSource = {
     }
   },
 
-  async replaceDraft(
-    projectId,
-    configuration,
-    actionEtag,
-    idempotencyKey,
-    signal,
-  ) {
+  async replaceDraft(projectId, configuration, actionEtag, idempotencyKey, signal) {
     try {
       const receipt = await supportSlaConfigurationReplaceDraft(
         projectId,
         configuration,
         commandOptions(actionEtag, idempotencyKey, signal),
       );
-      return receipt.intent === "REPLACE_SLA_DRAFT"
-        ? receipt
-        : unexpectedReceipt(receipt.intent);
+      return receipt.intent === 'REPLACE_SLA_DRAFT' ? receipt : unexpectedReceipt(receipt.intent);
     } catch (cause) {
       throw normalizeApiError(cause);
     }
@@ -116,9 +108,7 @@ export const apiSupportSlaConfigurationSource: SupportSlaConfigurationSource = {
         {},
         commandOptions(actionEtag, idempotencyKey, signal),
       );
-      return receipt.intent === "DISCARD_SLA_DRAFT"
-        ? receipt
-        : unexpectedReceipt(receipt.intent);
+      return receipt.intent === 'DISCARD_SLA_DRAFT' ? receipt : unexpectedReceipt(receipt.intent);
     } catch (cause) {
       throw normalizeApiError(cause);
     }
@@ -128,10 +118,10 @@ export const apiSupportSlaConfigurationSource: SupportSlaConfigurationSource = {
     try {
       const receipt = await supportSlaConfigurationPublish(
         projectId,
-        { reason: "Publish SLA configuration from CMS" },
+        { reason: 'Publish SLA configuration from CMS' },
         commandOptions(actionEtag, idempotencyKey, signal),
       );
-      return receipt.intent === "PUBLISH_SLA_CONFIGURATION"
+      return receipt.intent === 'PUBLISH_SLA_CONFIGURATION'
         ? receipt
         : unexpectedReceipt(receipt.intent);
     } catch (cause) {
@@ -144,27 +134,26 @@ const mockRoots = new Map<string, SupportSlaConfigurationSnapshot>();
 const mockReceipts = new Map<string, unknown>();
 
 function mockEtag(version: number): string {
-  return `"ssla1.${String(version).padStart(43, "a")}"`;
+  return `"ssla1.${String(version).padStart(43, 'a')}"`;
 }
 
 function mockConfiguration(): ReplaceSupportSlaConfigurationDraftDto {
   return {
-    catalogRevisionId: "mock-sla-catalog-r1",
+    catalogRevisionId: 'mock-sla-catalog-r1',
     calendar: {
-      timeZone: "Europe/Madrid",
+      timeZone: 'Europe/Madrid',
       weekly: Array.from({ length: 7 }, (_, index) => ({
         isoWeekday: index + 1,
-        intervals:
-          index < 5 ? [{ startMinute: 540, endMinute: 1080 }] : [],
+        intervals: index < 5 ? [{ startMinute: 540, endMinute: 1080 }] : [],
       })),
       exceptions: [],
     },
     policy: {
       rules: [
         {
-          code: "URGENT",
+          code: 'URGENT',
           order: 0,
-          when: { priorities: ["URGENT", "CRITICAL"] },
+          when: { priorities: ['URGENT', 'CRITICAL'] },
           targets: {
             firstHumanResponseBusinessSeconds: 1800,
             nextHumanResponseBusinessSeconds: 3600,
@@ -173,12 +162,12 @@ function mockConfiguration(): ReplaceSupportSlaConfigurationDraftDto {
           atRiskRemainingPercent: 25,
           pause: {
             firstHumanResponseStatuses: [],
-            nextHumanResponseStatuses: ["WAITING_END_USER"],
-            resolutionStatuses: ["WAITING_END_USER", "WAITING_SYSTEM"],
+            nextHumanResponseStatuses: ['WAITING_END_USER'],
+            resolutionStatuses: ['WAITING_END_USER', 'WAITING_SYSTEM'],
           },
         },
         {
-          code: "DEFAULT",
+          code: 'DEFAULT',
           order: 1,
           when: {},
           targets: {
@@ -189,8 +178,8 @@ function mockConfiguration(): ReplaceSupportSlaConfigurationDraftDto {
           atRiskRemainingPercent: 20,
           pause: {
             firstHumanResponseStatuses: [],
-            nextHumanResponseStatuses: ["WAITING_END_USER"],
-            resolutionStatuses: ["WAITING_END_USER", "WAITING_SYSTEM"],
+            nextHumanResponseStatuses: ['WAITING_END_USER'],
+            resolutionStatuses: ['WAITING_END_USER', 'WAITING_SYSTEM'],
           },
         },
       ],
@@ -201,36 +190,36 @@ function mockConfiguration(): ReplaceSupportSlaConfigurationDraftDto {
 function initialMockRoot(): SupportSlaConfigurationSnapshot {
   const configuration = mockConfiguration();
   return {
-    mode: "SLA_SETTINGS",
+    mode: 'SLA_SETTINGS',
     rootVersion: 1,
     actionEtag: mockEtag(1),
     draft: null,
     publishedConfiguration: {
       configurationRevision: {
-        id: "mock-configuration-revision-3",
+        id: 'mock-configuration-revision-3',
         revisionNumber: 3,
         catalogRevisionId: configuration.catalogRevisionId,
-        configurationHash: "d".repeat(64),
-        publicationKind: "PUBLISH",
+        configurationHash: 'd'.repeat(64),
+        publicationKind: 'PUBLISH',
         publishedAt: new Date(Date.now() - 86_400_000).toISOString(),
-        publishReason: "Начальная публикация",
+        publishReason: 'Начальная публикация',
         rollbackSourceRevisionId: null,
       },
       calendarRevision: {
-        id: "mock-calendar-revision-3",
+        id: 'mock-calendar-revision-3',
         revisionNumber: 3,
         sourceDraftGeneration: 3,
-        contentHash: "a".repeat(64),
+        contentHash: 'a'.repeat(64),
         publishedAt: new Date(Date.now() - 86_400_000).toISOString(),
-        calendarEngineRevision: "calendar-engine-mock",
-        tzdbVersion: "2026a",
+        calendarEngineRevision: 'calendar-engine-mock',
+        tzdbVersion: '2026a',
         calendar: configuration.calendar,
       },
       policyRevision: {
-        id: "mock-policy-revision-3",
+        id: 'mock-policy-revision-3',
         revisionNumber: 3,
         sourceDraftGeneration: 3,
-        contentHash: "b".repeat(64),
+        contentHash: 'b'.repeat(64),
         publishedAt: new Date(Date.now() - 86_400_000).toISOString(),
         policy: configuration.policy,
       },
@@ -261,20 +250,20 @@ function assertMockCommand(
     if (retained.fingerprint !== fingerprint)
       throw new ApiError(
         409,
-        "Idempotency key was reused",
+        'Idempotency key was reused',
         undefined,
         undefined,
-        "IDEMPOTENCY_KEY_REUSED",
+        'IDEMPOTENCY_KEY_REUSED',
       );
     return structuredClone(retained.receipt);
   }
   if (mockRoot(projectId).actionEtag !== actionEtag)
     throw new ApiError(
       409,
-      "SLA configuration changed",
+      'SLA configuration changed',
       undefined,
       undefined,
-      "SLA_CONCURRENT_UPDATE",
+      'SLA_CONCURRENT_UPDATE',
     );
   return null;
 }
@@ -297,12 +286,7 @@ export const mockSupportSlaConfigurationSource: SupportSlaConfigurationSource = 
   },
   async replaceDraft(projectId, configuration, actionEtag, idempotencyKey) {
     const fingerprint = JSON.stringify({ actionEtag, configuration });
-    const retained = assertMockCommand(
-      projectId,
-      actionEtag,
-      idempotencyKey,
-      fingerprint,
-    );
+    const retained = assertMockCommand(projectId, actionEtag, idempotencyKey, fingerprint);
     if (retained) return retained as ReplaceSupportSlaDraftMutationResponseDto;
     const current = mockRoot(projectId);
     const nextVersion = current.rootVersion + 1;
@@ -311,11 +295,11 @@ export const mockSupportSlaConfigurationSource: SupportSlaConfigurationSource = 
       catalogRevisionId: configuration.catalogRevisionId,
       generation,
       version: (current.draft?.version ?? 0) + 1,
-      contentHash: "c".repeat(64),
+      contentHash: 'c'.repeat(64),
       configuration: structuredClone(configuration),
     };
     const receipt: ReplaceSupportSlaDraftMutationResponseDto = {
-      intent: "REPLACE_SLA_DRAFT",
+      intent: 'REPLACE_SLA_DRAFT',
       rootVersion: nextVersion,
       actionEtag: mockEtag(nextVersion),
       draft: {
@@ -335,27 +319,15 @@ export const mockSupportSlaConfigurationSource: SupportSlaConfigurationSource = 
     return structuredClone(receipt);
   },
   async discardDraft(projectId, actionEtag, idempotencyKey) {
-    const fingerprint = JSON.stringify({ actionEtag, kind: "DISCARD" });
-    const retained = assertMockCommand(
-      projectId,
-      actionEtag,
-      idempotencyKey,
-      fingerprint,
-    );
-    if (retained)
-      return retained as DiscardSupportSlaDraftMutationResponseDto;
+    const fingerprint = JSON.stringify({ actionEtag, kind: 'DISCARD' });
+    const retained = assertMockCommand(projectId, actionEtag, idempotencyKey, fingerprint);
+    if (retained) return retained as DiscardSupportSlaDraftMutationResponseDto;
     const current = mockRoot(projectId);
     if (!current.draft)
-      throw new ApiError(
-        409,
-        "Draft is missing",
-        undefined,
-        undefined,
-        "SLA_DRAFT_NOT_FOUND",
-      );
+      throw new ApiError(409, 'Draft is missing', undefined, undefined, 'SLA_DRAFT_NOT_FOUND');
     const nextVersion = current.rootVersion + 1;
     const receipt: DiscardSupportSlaDraftMutationResponseDto = {
-      intent: "DISCARD_SLA_DRAFT",
+      intent: 'DISCARD_SLA_DRAFT',
       rootVersion: nextVersion,
       actionEtag: mockEtag(nextVersion),
       draft: null,
@@ -370,27 +342,14 @@ export const mockSupportSlaConfigurationSource: SupportSlaConfigurationSource = 
     return structuredClone(receipt);
   },
   async publish(projectId, actionEtag, idempotencyKey) {
-    const fingerprint = JSON.stringify({ actionEtag, kind: "PUBLISH" });
-    const retained = assertMockCommand(
-      projectId,
-      actionEtag,
-      idempotencyKey,
-      fingerprint,
-    );
-    if (retained)
-      return retained as PublishSupportSlaConfigurationMutationResponseDto;
+    const fingerprint = JSON.stringify({ actionEtag, kind: 'PUBLISH' });
+    const retained = assertMockCommand(projectId, actionEtag, idempotencyKey, fingerprint);
+    if (retained) return retained as PublishSupportSlaConfigurationMutationResponseDto;
     const current = mockRoot(projectId);
     if (!current.draft?.configuration)
-      throw new ApiError(
-        409,
-        "Draft is missing",
-        undefined,
-        undefined,
-        "SLA_DRAFT_NOT_FOUND",
-      );
+      throw new ApiError(409, 'Draft is missing', undefined, undefined, 'SLA_DRAFT_NOT_FOUND');
     const nextVersion = current.rootVersion + 1;
-    const revisionNumber =
-      (current.publishedConfiguration?.policyRevision.revisionNumber ?? 0) + 1;
+    const revisionNumber = (current.publishedConfiguration?.policyRevision.revisionNumber ?? 0) + 1;
     const publishedAt = new Date().toISOString();
     const publishedConfiguration = {
       configurationRevision: {
@@ -399,11 +358,11 @@ export const mockSupportSlaConfigurationSource: SupportSlaConfigurationSource = 
         catalogRevisionId:
           current.draft.configuration.catalogRevisionId ??
           current.draft.catalogRevisionId ??
-          "mock-sla-catalog-r1",
+          'mock-sla-catalog-r1',
         configurationHash: current.draft.contentHash,
-        publicationKind: "PUBLISH" as const,
+        publicationKind: 'PUBLISH' as const,
         publishedAt,
-        publishReason: "Публикация из CMS",
+        publishReason: 'Публикация из CMS',
         rollbackSourceRevisionId: null,
       },
       calendarRevision: {
@@ -412,8 +371,8 @@ export const mockSupportSlaConfigurationSource: SupportSlaConfigurationSource = 
         sourceDraftGeneration: current.draft.generation,
         contentHash: current.draft.contentHash,
         publishedAt,
-        calendarEngineRevision: "calendar-engine-mock",
-        tzdbVersion: "2026a",
+        calendarEngineRevision: 'calendar-engine-mock',
+        tzdbVersion: '2026a',
         calendar: structuredClone(current.draft.configuration.calendar),
       },
       policyRevision: {
@@ -426,7 +385,7 @@ export const mockSupportSlaConfigurationSource: SupportSlaConfigurationSource = 
       },
     };
     const receipt: PublishSupportSlaConfigurationMutationResponseDto = {
-      intent: "PUBLISH_SLA_CONFIGURATION",
+      intent: 'PUBLISH_SLA_CONFIGURATION',
       rootVersion: nextVersion,
       actionEtag: mockEtag(nextVersion),
       draft: null,
@@ -454,6 +413,6 @@ export function resetMockSupportSlaConfiguration(): void {
 }
 
 export const supportSlaConfigurationSource =
-  dataMode === "mock" || import.meta.env.MODE === "test"
+  dataMode === 'mock' || import.meta.env.MODE === 'test'
     ? mockSupportSlaConfigurationSource
     : apiSupportSlaConfigurationSource;

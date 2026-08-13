@@ -10,4 +10,4 @@ export const RULE_LIMITS = {
   maxWindowMs: 90 * 86_400_000,
   maxTotalWindowMs: 365 * 86_400_000,
   maxStreakDays: 365,
-} as const
+} as const;

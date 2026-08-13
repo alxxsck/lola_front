@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import Textarea from "primevue/textarea";
-import { localeDisplayName } from "@/shared/lib/locale";
-import type { ReplyTranslationPreviewModel } from "../model/translation-presentation";
+import { ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import Textarea from 'primevue/textarea';
+import { localeDisplayName } from '@/shared/lib/locale';
+import type { ReplyTranslationPreviewModel } from '../model/translation-presentation';
 
 const props = defineProps<{
   draft: ReplyTranslationPreviewModel | null;
@@ -22,13 +22,12 @@ const emit = defineEmits<{
   saveEdit: [text: string];
   send: [text: string];
 }>();
-const editedText = ref("");
+const editedText = ref('');
 
 watch(
   () => props.draft,
   (draft) => {
-    editedText.value =
-      draft?.editedTranslatedText ?? draft?.translatedText ?? "";
+    editedText.value = draft?.editedTranslatedText ?? draft?.translatedText ?? '';
   },
   { immediate: true },
 );
@@ -39,17 +38,11 @@ watch(
     class="reply-preview"
     :class="{
       'is-ready': draft?.status === 'READY',
-      'is-processing':
-        draft?.status === 'PENDING' || draft?.status === 'RUNNING',
+      'is-processing': draft?.status === 'PENDING' || draft?.status === 'RUNNING',
     }"
     aria-label="Предпросмотр перевода ответа"
   >
-    <Message
-      v-if="stale"
-      severity="info"
-      :closable="false"
-      class="reply-preview__message"
-    >
+    <Message v-if="stale" severity="info" :closable="false" class="reply-preview__message">
       <div class="reply-preview__error">
         <span>Текст или язык изменён — текущий перевод устарел.</span>
         <Button
@@ -73,15 +66,13 @@ watch(
         <strong>{{
           targetLocale
             ? `${localeDisplayName(targetLocale)} · ${targetLocale.toUpperCase()}`
-            : "Язык не определён"
+            : 'Язык не определён'
         }}</strong>
       </div>
       <Button
         type="button"
         :label="
-          targetLocale
-            ? `Перевести на ${targetLocale.toUpperCase()}`
-            : 'Перевести и проверить'
+          targetLocale ? `Перевести на ${targetLocale.toUpperCase()}` : 'Перевести и проверить'
         "
         icon="pi pi-sparkles"
         :loading="busy"
@@ -96,8 +87,7 @@ watch(
     >
       <span>
         <strong
-          >Переводим<template v-if="targetLocale">
-            на {{ targetLocale.toUpperCase() }}</template
+          >Переводим<template v-if="targetLocale"> на {{ targetLocale.toUpperCase() }}</template
           >…</strong
         >
         <i class="translation-skeleton" />
@@ -136,12 +126,10 @@ watch(
     <div v-else-if="draft.status === 'READY'" class="reply-preview__ready">
       <div class="reply-preview__heading">
         <span
-          ><i class="pi pi-check-circle" aria-hidden="true" /> Уйдёт
-          пользователю · {{ draft.targetLocale.toUpperCase() }}</span
+          ><i class="pi pi-check-circle" aria-hidden="true" /> Уйдёт пользователю ·
+          {{ draft.targetLocale.toUpperCase() }}</span
         >
-        <small v-if="showProviderDetails">{{
-          draft.model ?? "модель проекта"
-        }}</small>
+        <small v-if="showProviderDetails">{{ draft.model ?? 'модель проекта' }}</small>
       </div>
       <Textarea
         v-model="editedText"
@@ -150,8 +138,7 @@ watch(
         auto-resize
         aria-label="Переведённый текст для пользователя"
         @blur="
-          editedText !==
-            (draft.editedTranslatedText ?? draft.translatedText ?? '') &&
+          editedText !== (draft.editedTranslatedText ?? draft.translatedText ?? '') &&
           emit('saveEdit', editedText)
         "
       />
@@ -206,14 +193,9 @@ watch(
 .reply-preview__processing,
 .reply-preview__ready {
   padding: 10px 12px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-accent-text) 18%, var(--line));
+  border: 1px solid color-mix(in srgb, var(--status-accent-text) 18%, var(--line));
   border-radius: 12px;
-  background: color-mix(
-    in srgb,
-    var(--status-accent-soft) 34%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--status-accent-soft) 34%, var(--surface-card));
 }
 .reply-preview__start > div {
   display: grid;
@@ -284,7 +266,7 @@ watch(
   border-radius: 5px;
   background: var(--status-accent-soft);
   color: var(--status-accent-text);
-  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
   font-size: 10px;
   font-weight: 700;
 }

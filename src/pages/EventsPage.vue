@@ -1,47 +1,47 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Textarea from "primevue/textarea";
-import ToggleSwitch from "primevue/toggleswitch";
-import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { DocumentationCallout } from "@/features/documentation/ui";
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Textarea from 'primevue/textarea';
+import ToggleSwitch from 'primevue/toggleswitch';
+import { useConfirm } from 'primevue/useconfirm';
+import { useToast } from 'primevue/usetoast';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { DocumentationCallout } from '@/features/documentation/ui';
 import {
   eventDefinitionError,
   type EventDefinitionError,
-} from "@/features/events/event-definition-error";
+} from '@/features/events/event-definition-error';
 import {
   buildEventSchemaExample,
   parseEventSchema,
   serializeEventSchema,
   validateEventSchemaDraft,
-} from "@/features/event-schema/model/event-schema";
+} from '@/features/event-schema/model/event-schema';
 import type {
   EventSchemaDraft,
   EventSchemaDraftIssue,
-} from "@/features/event-schema/model/event-schema";
-import { findCatalogEventForDefinition } from "@/features/event-schema/model/event-schema-capability";
-import EventPayloadStudio from "@/features/event-schema/ui/EventPayloadStudio.vue";
-import EventDefinitionHistory from "@/features/events/EventDefinitionHistory.vue";
+} from '@/features/event-schema/model/event-schema';
+import { findCatalogEventForDefinition } from '@/features/event-schema/model/event-schema-capability';
+import EventPayloadStudio from '@/features/event-schema/ui/EventPayloadStudio.vue';
+import EventDefinitionHistory from '@/features/events/EventDefinitionHistory.vue';
 import {
   eventCatalogRepository,
   type EventCatalogDefinition,
-} from "@/shared/api/repository/event-catalog";
-import { isMockMode } from "@/shared/config/data-mode";
-import { scenarioAuthoringRepository } from "@/shared/api/repository/scenario-authoring";
-import type { ScenarioAuthoringContract } from "@/shared/api/repository/scenario-authoring";
-import { formatEventContractMarkdown } from "@/shared/lib/data-contract-markdown";
-import { slugify } from "@/shared/lib/format";
-import { useUnsavedChangesGuard } from "@/shared/lib/use-unsaved-changes-guard";
-import type { EventDefinition } from "@/shared/types/domain";
+} from '@/shared/api/repository/event-catalog';
+import { isMockMode } from '@/shared/config/data-mode';
+import { scenarioAuthoringRepository } from '@/shared/api/repository/scenario-authoring';
+import type { ScenarioAuthoringContract } from '@/shared/api/repository/scenario-authoring';
+import { formatEventContractMarkdown } from '@/shared/lib/data-contract-markdown';
+import { slugify } from '@/shared/lib/format';
+import { useUnsavedChangesGuard } from '@/shared/lib/use-unsaved-changes-guard';
+import type { EventDefinition } from '@/shared/types/domain';
 
 interface EventForm {
   id?: string;
@@ -55,15 +55,14 @@ interface EventForm {
 }
 
 type EventPayload = Partial<EventDefinition> &
-  Pick<EventDefinition, "name" | "code" | "payloadSchema">;
-type EventOwnershipFilter = "ALL" | "SYSTEM" | "CUSTOM";
-type EventReceptionFilter = "ALL" | "ENABLED" | "DISABLED";
-type FrontendReceptionState =
-  "ACCEPTING" | "POLICY_BLOCKED" | "BACKEND_DISABLED";
-type FrontendReceptionFilter = "ALL" | FrontendReceptionState;
-type EventSort = "NAME" | "CODE" | "UPDATED" | "STATUS" | "VERSION";
+  Pick<EventDefinition, 'name' | 'code' | 'payloadSchema'>;
+type EventOwnershipFilter = 'ALL' | 'SYSTEM' | 'CUSTOM';
+type EventReceptionFilter = 'ALL' | 'ENABLED' | 'DISABLED';
+type FrontendReceptionState = 'ACCEPTING' | 'POLICY_BLOCKED' | 'BACKEND_DISABLED';
+type FrontendReceptionFilter = 'ALL' | FrontendReceptionState;
+type EventSort = 'NAME' | 'CODE' | 'UPDATED' | 'STATUS' | 'VERSION';
 type PolicyFeedback = {
-  tone: "pending" | "success" | "error";
+  tone: 'pending' | 'success' | 'error';
   message: string;
 };
 
@@ -74,25 +73,25 @@ const toast = useToast();
 const confirm = useConfirm();
 const events = ref<EventDefinition[]>([]);
 const catalogDefinitions = ref<EventCatalogDefinition[]>([]);
-const search = ref("");
-const ownershipFilter = ref<EventOwnershipFilter>("ALL");
-const receptionFilter = ref<EventReceptionFilter>("ALL");
-const frontendReceptionFilter = ref<FrontendReceptionFilter>("ALL");
-const sortMode = ref<EventSort>("NAME");
+const search = ref('');
+const ownershipFilter = ref<EventOwnershipFilter>('ALL');
+const receptionFilter = ref<EventReceptionFilter>('ALL');
+const frontendReceptionFilter = ref<FrontendReceptionFilter>('ALL');
+const sortMode = ref<EventSort>('NAME');
 const expandedDescriptions = ref<Set<string>>(new Set());
 const retainedAfterPolicyChangeIds = ref<Set<string>>(new Set());
 const policyFeedbackByEventId = ref<Record<string, PolicyFeedback>>({});
 const loading = ref(true);
 const saving = ref(false);
 const togglingId = ref<string | null>(null);
-const loadError = ref("");
-const catalogError = ref("");
+const loadError = ref('');
+const catalogError = ref('');
 const authoringContract = ref<ScenarioAuthoringContract | null>(null);
 const formError = ref<EventDefinitionError | null>(null);
 const dialogVisible = ref(false);
 const eventFormStep = ref(0);
-const nameError = ref("");
-const codeError = ref("");
+const nameError = ref('');
+const codeError = ref('');
 const schemaIssues = ref<EventSchemaDraftIssue[]>([]);
 const formErrorSummary = ref<HTMLElement | null>(null);
 const eventStepPanel = ref<HTMLElement | null>(null);
@@ -101,16 +100,13 @@ const hasTechnicalDraft = ref(false);
 const codeTouched = ref(false);
 const form = ref<EventForm>(emptyForm());
 const canManage = computed(() =>
-  hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
-    "project.event_catalog.write",
-  ),
+  hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.event_catalog.write'),
 );
-const lifecycle = computed<"ACTIVE" | "ARCHIVED">(() =>
-  route.query.lifecycle === "ARCHIVED" ? "ARCHIVED" : "ACTIVE",
+const lifecycle = computed<'ACTIVE' | 'ARCHIVED'>(() =>
+  route.query.lifecycle === 'ARCHIVED' ? 'ARCHIVED' : 'ACTIVE',
 );
-const initialFormSnapshot = ref("");
-const initialSchemaSnapshot = ref("");
+const initialFormSnapshot = ref('');
+const initialSchemaSnapshot = ref('');
 const baselineSchema = ref<Record<string, unknown> | undefined>();
 let eventsRequestId = 0;
 let contractRequestId = 0;
@@ -123,41 +119,41 @@ const isFormDirty = computed(
 );
 const { confirmDiscard } = useUnsavedChangesGuard(
   isFormDirty,
-  "Есть несохранённые изменения события. Закрыть форму?",
+  'Есть несохранённые изменения события. Закрыть форму?',
 );
 
 const eventSteps = [
-  { label: "Смысл", description: "Что произошло" },
-  { label: "Данные", description: "Какие поля придут" },
-  { label: "Пример", description: "Как выглядит событие" },
-  { label: "Изменения", description: "Что будет опубликовано" },
+  { label: 'Смысл', description: 'Что произошло' },
+  { label: 'Данные', description: 'Какие поля придут' },
+  { label: 'Пример', description: 'Как выглядит событие' },
+  { label: 'Изменения', description: 'Что будет опубликовано' },
 ] as const;
 const ownershipOptions = [
-  { label: "Все события", value: "ALL" },
-  { label: "Системные", value: "SYSTEM" },
-  { label: "Пользовательские", value: "CUSTOM" },
+  { label: 'Все события', value: 'ALL' },
+  { label: 'Системные', value: 'SYSTEM' },
+  { label: 'Пользовательские', value: 'CUSTOM' },
 ];
 const receptionOptions = [
-  { label: "Любой приём", value: "ALL" },
-  { label: "Приём включён", value: "ENABLED" },
-  { label: "Приём выключен", value: "DISABLED" },
+  { label: 'Любой приём', value: 'ALL' },
+  { label: 'Приём включён', value: 'ENABLED' },
+  { label: 'Приём выключен', value: 'DISABLED' },
 ];
 const frontendReceptionOptions = [
-  { label: "Любой статус", value: "ALL" },
-  { label: "Фронтенд принимает", value: "ACCEPTING" },
-  { label: "Запрещён политикой", value: "POLICY_BLOCKED" },
-  { label: "Бэкенд выключен", value: "BACKEND_DISABLED" },
+  { label: 'Любой статус', value: 'ALL' },
+  { label: 'Фронтенд принимает', value: 'ACCEPTING' },
+  { label: 'Запрещён политикой', value: 'POLICY_BLOCKED' },
+  { label: 'Бэкенд выключен', value: 'BACKEND_DISABLED' },
 ];
 const sortOptions = [
-  { label: "По названию", value: "NAME" },
-  { label: "По коду", value: "CODE" },
-  { label: "Сначала обновлённые", value: "UPDATED" },
-  { label: "По статусу", value: "STATUS" },
-  { label: "По версии", value: "VERSION" },
+  { label: 'По названию', value: 'NAME' },
+  { label: 'По коду', value: 'CODE' },
+  { label: 'Сначала обновлённые', value: 'UPDATED' },
+  { label: 'По статусу', value: 'STATUS' },
+  { label: 'По версии', value: 'VERSION' },
 ];
 
 const activeStudioSection = computed(
-  () => (["payload", "sample", "review"] as const)[eventFormStep.value - 1],
+  () => (['payload', 'sample', 'review'] as const)[eventFormStep.value - 1],
 );
 
 const filteredEvents = computed(() => {
@@ -169,11 +165,11 @@ const filteredEvents = computed(() => {
           item.name.toLowerCase().includes(query) ||
           item.code.toLowerCase().includes(query) ||
           item.description?.toLowerCase().includes(query)) &&
-        (ownershipFilter.value === "ALL" ||
-          (ownershipFilter.value === "SYSTEM") === isSystemEvent(item)) &&
+        (ownershipFilter.value === 'ALL' ||
+          (ownershipFilter.value === 'SYSTEM') === isSystemEvent(item)) &&
         (retainedAfterPolicyChangeIds.value.has(item.id) ||
-          ((receptionFilter.value === "ALL" ||
-            (receptionFilter.value === "ENABLED") === item.enabled) &&
+          ((receptionFilter.value === 'ALL' ||
+            (receptionFilter.value === 'ENABLED') === item.enabled) &&
             matchesFrontendReceptionFilter(item))),
     )
     .sort(compareEvents);
@@ -181,45 +177,42 @@ const filteredEvents = computed(() => {
 const eventGroups = computed(() =>
   [
     {
-      key: "system",
-      title: "Системные события Retenive",
-      description: "Создаются и обновляются системой",
+      key: 'system',
+      title: 'Системные события Retenive',
+      description: 'Создаются и обновляются системой',
       items: filteredEvents.value.filter(isSystemEvent),
     },
     {
-      key: "project",
-      title: "События проекта",
-      description: "Настраиваются командой проекта",
+      key: 'project',
+      title: 'События проекта',
+      description: 'Настраиваются командой проекта',
       items: filteredEvents.value.filter((item) => !isSystemEvent(item)),
     },
   ].filter((group) => group.items.length),
 );
 const activeFilterCount = computed(
   () =>
-    Number(ownershipFilter.value !== "ALL") +
-    Number(receptionFilter.value !== "ALL") +
-    Number(frontendReceptionFilter.value !== "ALL"),
+    Number(ownershipFilter.value !== 'ALL') +
+    Number(receptionFilter.value !== 'ALL') +
+    Number(frontendReceptionFilter.value !== 'ALL'),
 );
 const hasActiveFilters = computed(
   () =>
     Boolean(search.value.trim()) ||
-    ownershipFilter.value !== "ALL" ||
-    receptionFilter.value !== "ALL" ||
-    frontendReceptionFilter.value !== "ALL",
+    ownershipFilter.value !== 'ALL' ||
+    receptionFilter.value !== 'ALL' ||
+    frontendReceptionFilter.value !== 'ALL',
 );
 
-watch(
-  [search, ownershipFilter, receptionFilter, frontendReceptionFilter, sortMode],
-  () => {
-    retainedAfterPolicyChangeIds.value = new Set();
-  },
-);
+watch([search, ownershipFilter, receptionFilter, frontendReceptionFilter, sortMode], () => {
+  retainedAfterPolicyChangeIds.value = new Set();
+});
 
 const eventExample = computed(() =>
   JSON.stringify(
     {
-      userId: "customer_12345",
-      externalEventId: "event_12345",
+      userId: 'customer_12345',
+      externalEventId: 'event_12345',
       eventCode: form.value.code.trim(),
       payload: buildEventSchemaExample(form.value.schema),
     },
@@ -227,9 +220,7 @@ const eventExample = computed(() =>
     2,
   ),
 );
-const enabledCount = computed(
-  () => events.value.filter((item) => item.enabled).length,
-);
+const enabledCount = computed(() => events.value.filter((item) => item.enabled).length);
 const catalogEvent = computed(() =>
   findCatalogEventForDefinition(authoringContract.value, form.value.id),
 );
@@ -237,8 +228,7 @@ const catalogEvent = computed(() =>
 onMounted(async () => {
   await loadEvents();
   await loadAuthoringContract();
-  const requestedEvent =
-    typeof route.query.event === "string" ? route.query.event : "";
+  const requestedEvent = typeof route.query.event === 'string' ? route.query.event : '';
   const item = events.value.find(
     (event) => event.id === requestedEvent || event.code === requestedEvent,
   );
@@ -247,17 +237,16 @@ onMounted(async () => {
 watch(
   () => [auth.project?.id, lifecycle.value] as const,
   ([projectId, nextLifecycle], [previousProjectId, previousLifecycle]) => {
-    if (projectId === previousProjectId && nextLifecycle === previousLifecycle)
-      return;
+    if (projectId === previousProjectId && nextLifecycle === previousLifecycle) return;
     eventsRequestId += 1;
     contractRequestId += 1;
     events.value = [];
     catalogDefinitions.value = [];
     authoringContract.value = null;
-    loadError.value = "";
-    catalogError.value = "";
+    loadError.value = '';
+    catalogError.value = '';
     loading.value = Boolean(projectId);
-    search.value = "";
+    search.value = '';
     expandedDescriptions.value = new Set();
     void loadEvents();
     void loadAuthoringContract();
@@ -266,14 +255,14 @@ watch(
 
 function emptyForm(): EventForm {
   return {
-    name: "",
-    code: "",
-    description: "",
+    name: '',
+    code: '',
+    description: '',
     enabled: true,
     clientIngestible: false,
     countsAsActivity: false,
     schema: parseEventSchema({
-      type: "object",
+      type: 'object',
       additionalProperties: false,
       properties: {},
       required: [],
@@ -292,20 +281,15 @@ async function loadEvents() {
     return;
   }
   loading.value = true;
-  loadError.value = "";
+  loadError.value = '';
   try {
-    const loaded = await eventCatalogRepository.listDefinitions(
-      projectId,
-      requestedLifecycle,
-    );
-    if (!isCurrentEventsRequest(projectId, requestedLifecycle, requestId))
-      return;
+    const loaded = await eventCatalogRepository.listDefinitions(projectId, requestedLifecycle);
+    if (!isCurrentEventsRequest(projectId, requestedLifecycle, requestId)) return;
     catalogDefinitions.value = loaded;
     events.value = catalogDefinitions.value.map(toEventCard);
   } catch (cause) {
-    if (!isCurrentEventsRequest(projectId, requestedLifecycle, requestId))
-      return;
-    loadError.value = errorMessage(cause, "Не удалось загрузить события");
+    if (!isCurrentEventsRequest(projectId, requestedLifecycle, requestId)) return;
+    loadError.value = errorMessage(cause, 'Не удалось загрузить события');
   } finally {
     if (isCurrentEventsRequest(projectId, requestedLifecycle, requestId)) {
       loading.value = false;
@@ -315,7 +299,7 @@ async function loadEvents() {
 
 function isCurrentEventsRequest(
   projectId: string,
-  requestedLifecycle: "ACTIVE" | "ARCHIVED",
+  requestedLifecycle: 'ACTIVE' | 'ARCHIVED',
   requestId: number,
 ) {
   return (
@@ -329,75 +313,68 @@ async function loadAuthoringContract() {
   const projectId = auth.project?.id;
   const requestId = ++contractRequestId;
   if (!projectId || isMockMode) return;
-  catalogError.value = "";
+  catalogError.value = '';
   try {
     const loaded = await scenarioAuthoringRepository.getContract(projectId);
-    if (requestId !== contractRequestId || auth.project?.id !== projectId)
-      return;
+    if (requestId !== contractRequestId || auth.project?.id !== projectId) return;
     authoringContract.value = loaded;
   } catch (cause) {
-    if (requestId !== contractRequestId || auth.project?.id !== projectId)
-      return;
-    catalogError.value = errorMessage(
-      cause,
-      "Не удалось загрузить capabilities сценариев",
-    );
+    if (requestId !== contractRequestId || auth.project?.id !== projectId) return;
+    catalogError.value = errorMessage(cause, 'Не удалось загрузить capabilities сценариев');
   }
 }
 
 function openCreate() {
-  if (!canManage.value || lifecycle.value === "ARCHIVED") return;
+  if (!canManage.value || lifecycle.value === 'ARCHIVED') return;
   form.value = emptyForm();
   codeTouched.value = false;
   formError.value = null;
   resetLocalValidation();
   eventFormStep.value = 0;
   hasTechnicalDraft.value = false;
-  initialSchemaSnapshot.value = "";
+  initialSchemaSnapshot.value = '';
   baselineSchema.value = undefined;
   initialFormSnapshot.value = JSON.stringify(form.value);
   dialogVisible.value = true;
 }
 
 function compareEvents(left: EventDefinition, right: EventDefinition) {
-  if (sortMode.value === "CODE") return left.code.localeCompare(right.code);
-  if (sortMode.value === "UPDATED")
-    return eventUpdatedAt(right) - eventUpdatedAt(left);
-  if (sortMode.value === "STATUS")
-    return eventStatusRank(left) - eventStatusRank(right);
-  if (sortMode.value === "VERSION")
+  if (sortMode.value === 'CODE') return left.code.localeCompare(right.code);
+  if (sortMode.value === 'UPDATED') return eventUpdatedAt(right) - eventUpdatedAt(left);
+  if (sortMode.value === 'STATUS') return eventStatusRank(left) - eventStatusRank(right);
+  if (sortMode.value === 'VERSION')
     return right.version - left.version || left.name.localeCompare(right.name);
-  return left.name.localeCompare(right.name, "ru");
+  return left.name.localeCompare(right.name, 'ru');
 }
 
 function eventUpdatedAt(item: EventDefinition) {
-  const timestamp = Date.parse(item.updatedAt ?? "");
+  const timestamp = Date.parse(item.updatedAt ?? '');
   return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
 function frontendReception(item: EventDefinition): {
   state: FrontendReceptionState;
   label: string;
-  tone: "positive" | "negative";
+  tone: 'positive' | 'negative';
 } {
   if (!item.enabled) {
     return {
-      state: "BACKEND_DISABLED",
-      label: "Недоступен: бэкенд выключен",
-      tone: "negative",
+      state: 'BACKEND_DISABLED',
+      label: 'Недоступен: бэкенд выключен',
+      tone: 'negative',
     };
   }
   if (!item.clientIngestible) {
     return {
-      state: "POLICY_BLOCKED",
-      label: "Запрещён политикой",
-      tone: "negative",
+      state: 'POLICY_BLOCKED',
+      label: 'Запрещён политикой',
+      tone: 'negative',
     };
   }
   return {
-    state: "ACCEPTING",
-    label: "Принимает",
-    tone: "positive",
+    state: 'ACCEPTING',
+    label: 'Принимает',
+    tone: 'positive',
   };
 }
 
@@ -411,16 +388,16 @@ function eventStatusRank(item: EventDefinition) {
 
 function matchesFrontendReceptionFilter(item: EventDefinition) {
   return (
-    frontendReceptionFilter.value === "ALL" ||
+    frontendReceptionFilter.value === 'ALL' ||
     frontendReception(item).state === frontendReceptionFilter.value
   );
 }
 
 function resetFilters() {
-  search.value = "";
-  ownershipFilter.value = "ALL";
-  receptionFilter.value = "ALL";
-  frontendReceptionFilter.value = "ALL";
+  search.value = '';
+  ownershipFilter.value = 'ALL';
+  receptionFilter.value = 'ALL';
+  frontendReceptionFilter.value = 'ALL';
 }
 
 function isLongDescription(item: EventDefinition) {
@@ -440,7 +417,7 @@ function toggleDescription(item: EventDefinition) {
 
 function openEdit(item: EventDefinition) {
   return router.push({
-    name: "event-definition-workspace",
+    name: 'event-definition-workspace',
     params: { definitionKeyId: item.definitionKeyId ?? item.id },
   });
 }
@@ -457,25 +434,24 @@ function requestDialogVisibility(value: boolean) {
 }
 
 function onEventNameInput() {
-  nameError.value = "";
-  if (!codeTouched.value && !form.value.id)
-    form.value.code = slugify(form.value.name);
+  nameError.value = '';
+  if (!codeTouched.value && !form.value.id) form.value.code = slugify(form.value.name);
 }
 
 function onEventCodeInput() {
   codeTouched.value = true;
-  codeError.value = "";
+  codeError.value = '';
 }
 
 async function copyEventExample() {
   try {
     await navigator.clipboard.writeText(eventExample.value);
-    toast.add({ severity: "success", summary: "JSON скопирован", life: 2200 });
+    toast.add({ severity: 'success', summary: 'JSON скопирован', life: 2200 });
   } catch {
     toast.add({
-      severity: "error",
-      summary: "Не удалось скопировать",
-      detail: "Выделите и скопируйте JSON вручную.",
+      severity: 'error',
+      summary: 'Не удалось скопировать',
+      detail: 'Выделите и скопируйте JSON вручную.',
       life: 3200,
     });
   }
@@ -492,38 +468,34 @@ async function copyEventContract(item: EventDefinition) {
       }),
     );
     toast.add({
-      severity: "success",
-      summary: "Контракт события скопирован",
-      detail:
-        "Event code, параметры, типы и обязательность готовы для передачи команде.",
+      severity: 'success',
+      summary: 'Контракт события скопирован',
+      detail: 'Event code, параметры, типы и обязательность готовы для передачи команде.',
       life: 2600,
     });
   } catch {
     toast.add({
-      severity: "error",
-      summary: "Не удалось скопировать контракт",
-      detail: "Разрешите доступ к буферу обмена и повторите попытку.",
+      severity: 'error',
+      summary: 'Не удалось скопировать контракт',
+      detail: 'Разрешите доступ к буферу обмена и повторите попытку.',
       life: 3200,
     });
   }
 }
 
 function resetLocalValidation() {
-  nameError.value = "";
-  codeError.value = "";
+  nameError.value = '';
+  codeError.value = '';
   schemaIssues.value = [];
 }
 
 function validateMeaning(): string | null {
-  nameError.value = form.value.name.trim()
-    ? ""
-    : "Укажите понятное название события.";
+  nameError.value = form.value.name.trim() ? '' : 'Укажите понятное название события.';
   codeError.value = !/^[a-z][a-z0-9_.-]*$/.test(form.value.code.trim())
-    ? "Имя для интеграции должно начинаться с латинской буквы и содержать только a–z, 0–9, точку, дефис или подчёркивание."
-    : !form.value.id &&
-        events.value.some((item) => item.code === form.value.code.trim())
-      ? "Событие с таким именем для интеграции уже существует."
-      : "";
+    ? 'Имя для интеграции должно начинаться с латинской буквы и содержать только a–z, 0–9, точку, дефис или подчёркивание.'
+    : !form.value.id && events.value.some((item) => item.code === form.value.code.trim())
+      ? 'Событие с таким именем для интеграции уже существует.'
+      : '';
   return nameError.value || codeError.value || null;
 }
 
@@ -569,11 +541,11 @@ function afterTechnicalDraftGuard(action: () => void) {
     return;
   }
   confirm.require({
-    header: "Отменить изменения JSON?",
+    header: 'Отменить изменения JSON?',
     message:
-      "В технических деталях есть неприменённые изменения. Они не попадут в настройку события.",
-    rejectLabel: "Продолжить редактирование",
-    acceptLabel: "Отменить изменения",
+      'В технических деталях есть неприменённые изменения. Они не попадут в настройку события.',
+    rejectLabel: 'Продолжить редактирование',
+    acceptLabel: 'Отменить изменения',
     accept: () => {
       payloadStudio.value?.discardAdvancedDraft?.();
       hasTechnicalDraft.value = false;
@@ -618,20 +590,18 @@ function submitEvent() {
   const value = form.value.id
     ? ({ ...common } as EventPayload)
     : ({ ...common, code: form.value.code.trim() } as EventPayload);
-  if (form.value.id)
-    attachUpdateIdentity(value, form.value.id, form.value.code.trim());
+  if (form.value.id) attachUpdateIdentity(value, form.value.id, form.value.code.trim());
 
   const schemaChanged =
-    Boolean(form.value.id) &&
-    canonicalJson(value.payloadSchema) !== initialSchemaSnapshot.value;
+    Boolean(form.value.id) && canonicalJson(value.payloadSchema) !== initialSchemaSnapshot.value;
   if (schemaChanged) {
     confirm.require({
-      header: "Опубликовать новую версию события?",
+      header: 'Опубликовать новую версию события?',
       message:
-        "Система не может проверить приложения, которые отправляют это событие. Убедитесь, что они готовы передавать данные в новом формате.",
-      icon: "pi pi-exclamation-triangle",
-      rejectLabel: "Вернуться к проверке",
-      acceptLabel: "Опубликовать версию",
+        'Система не может проверить приложения, которые отправляют это событие. Убедитесь, что они готовы передавать данные в новом формате.',
+      icon: 'pi pi-exclamation-triangle',
+      rejectLabel: 'Вернуться к проверке',
+      acceptLabel: 'Опубликовать версию',
       accept: () => persistEvent(projectId, value),
     });
     return;
@@ -643,8 +613,7 @@ function submitEvent() {
 async function persistEvent(projectId: string, value: EventPayload) {
   saving.value = true;
   try {
-    if (form.value.id)
-      throw new Error("Редактирование выполняется в workspace события");
+    if (form.value.id) throw new Error('Редактирование выполняется в workspace события');
     const saved = await eventCatalogRepository.createDefinition(projectId, {
       code: value.code,
       name: value.name,
@@ -655,20 +624,17 @@ async function persistEvent(projectId: string, value: EventPayload) {
       countsAsActivity: value.countsAsActivity,
     });
     await loadEvents();
-    initialFormSnapshot.value = "";
+    initialFormSnapshot.value = '';
     dialogVisible.value = false;
     toast.add({
-      severity: "success",
-      summary: "Событие создано",
+      severity: 'success',
+      summary: 'Событие создано',
       detail: saved.metadata.name,
       life: 2800,
     });
     void loadAuthoringContract();
   } catch (cause) {
-    formError.value = eventDefinitionError(
-      cause,
-      "Не удалось сохранить событие",
-    );
+    formError.value = eventDefinitionError(cause, 'Не удалось сохранить событие');
     void nextTick(() => formErrorSummary.value?.focus());
   } finally {
     saving.value = false;
@@ -682,25 +648,22 @@ async function toggleEvent(item: EventDefinition, enabled: boolean) {
   if (!current) return;
   if (!enabled) {
     try {
-      const usage = await eventCatalogRepository.getUsage(
-        projectId,
-        current.definitionKeyId,
-      );
+      const usage = await eventCatalogRepository.getUsage(projectId, current.definitionKeyId);
       if (usage.scenarios.total > 0 || usage.activeWaitCount > 0) {
         confirm.require({
-          header: "Выключить приём событий?",
+          header: 'Выключить приём событий?',
           message: `Новые события перестанут запускать и продвигать сценарии. Связано сценариев: ${usage.scenarios.total}.`,
-          rejectLabel: "Отмена",
-          acceptLabel: "Выключить",
+          rejectLabel: 'Отмена',
+          acceptLabel: 'Выключить',
           accept: () => applyPolicyToggle(projectId, current, false),
         });
         return;
       }
     } catch (cause) {
-      setPolicyFeedback(item.id, "error", errorMessage(cause));
+      setPolicyFeedback(item.id, 'error', errorMessage(cause));
       toast.add({
-        severity: "error",
-        summary: "Статус не изменён",
+        severity: 'error',
+        summary: 'Статус не изменён',
         detail: errorMessage(cause),
         life: 3500,
       });
@@ -717,37 +680,26 @@ async function applyPolicyToggle(
 ) {
   const eventId = current.currentSchema.revisionId;
   togglingId.value = eventId;
-  setPolicyFeedback(eventId, "pending", "Сохраняем изменение…");
+  setPolicyFeedback(eventId, 'pending', 'Сохраняем изменение…');
   try {
-    await eventCatalogRepository.updatePolicy(
-      projectId,
-      current.definitionKeyId,
-      {
-        enabled,
-        clientIngestible: current.policy.clientIngestible,
-        countsAsActivity: current.policy.countsAsActivity,
-        expectedVersion: current.policy.version,
-        reason: enabled ? "Enabled from CMS" : "Disabled from CMS",
-      },
-    );
-    retainedAfterPolicyChangeIds.value = new Set([
-      ...retainedAfterPolicyChangeIds.value,
-      eventId,
-    ]);
+    await eventCatalogRepository.updatePolicy(projectId, current.definitionKeyId, {
+      enabled,
+      clientIngestible: current.policy.clientIngestible,
+      countsAsActivity: current.policy.countsAsActivity,
+      expectedVersion: current.policy.version,
+      reason: enabled ? 'Enabled from CMS' : 'Disabled from CMS',
+    });
+    retainedAfterPolicyChangeIds.value = new Set([...retainedAfterPolicyChangeIds.value, eventId]);
     const changedEvent = events.value.find((item) => item.id === eventId);
     if (changedEvent) changedEvent.enabled = enabled;
-    setPolicyFeedback(
-      eventId,
-      "success",
-      enabled ? "Приём включён" : "Приём выключен",
-    );
+    setPolicyFeedback(eventId, 'success', enabled ? 'Приём включён' : 'Приём выключен');
     await loadEvents();
   } catch (cause) {
-    const message = eventDefinitionError(cause, "Произошла ошибка").message;
-    setPolicyFeedback(eventId, "error", message);
+    const message = eventDefinitionError(cause, 'Произошла ошибка').message;
+    setPolicyFeedback(eventId, 'error', message);
     toast.add({
-      severity: "error",
-      summary: "Статус не изменён",
+      severity: 'error',
+      summary: 'Статус не изменён',
       detail: message,
       life: 3500,
     });
@@ -756,22 +708,14 @@ async function applyPolicyToggle(
   }
 }
 
-function setPolicyFeedback(
-  eventId: string,
-  tone: PolicyFeedback["tone"],
-  message: string,
-) {
+function setPolicyFeedback(eventId: string, tone: PolicyFeedback['tone'], message: string) {
   policyFeedbackByEventId.value = {
     ...policyFeedbackByEventId.value,
     [eventId]: { tone, message },
   };
 }
 
-function attachUpdateIdentity(
-  value: Partial<EventDefinition>,
-  id: string,
-  code: string,
-) {
+function attachUpdateIdentity(value: Partial<EventDefinition>, id: string, code: string) {
   if (isMockMode) {
     value.id = id;
     value.code = code;
@@ -785,8 +729,7 @@ function attachUpdateIdentity(
 
 function catalogDefinition(item: EventDefinition) {
   return catalogDefinitions.value.find(
-    (definition) =>
-      definition.definitionKeyId === (item.definitionKeyId ?? item.id),
+    (definition) => definition.definitionKeyId === (item.definitionKeyId ?? item.id),
   );
 }
 
@@ -814,37 +757,33 @@ function toEventCard(definition: EventCatalogDefinition): EventDefinition {
 
 function eventFields(item: EventDefinition) {
   const properties = item.payloadSchema?.properties;
-  return properties && typeof properties === "object"
-    ? Object.keys(properties)
-    : [];
+  return properties && typeof properties === 'object' ? Object.keys(properties) : [];
 }
 
 function isSystemEvent(item: EventDefinition) {
-  return item.origin === "RETENIVE_MANAGED" || Boolean(item.readOnly);
+  return item.origin === 'RETENIVE_MANAGED' || Boolean(item.readOnly);
 }
 
 function openEventLogs(item: EventDefinition) {
-  return router.push({ name: "event-logs", query: { eventCode: item.code } });
+  return router.push({ name: 'event-logs', query: { eventCode: item.code } });
 }
 
 function requiredCount(item: EventDefinition) {
-  return Array.isArray(item.payloadSchema?.required)
-    ? item.payloadSchema.required.length
-    : 0;
+  return Array.isArray(item.payloadSchema?.required) ? item.payloadSchema.required.length : 0;
 }
 
 function canonicalJson(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
-  if (value && typeof value === "object") {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  if (value && typeof value === 'object') {
     return `{${Object.entries(value as Record<string, unknown>)
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([key, item]) => `${JSON.stringify(key)}:${canonicalJson(item)}`)
-      .join(",")}}`;
+      .join(',')}}`;
   }
   return JSON.stringify(value);
 }
 
-function errorMessage(cause: unknown, fallback = "Произошла ошибка") {
+function errorMessage(cause: unknown, fallback = 'Произошла ошибка') {
   return cause instanceof Error ? cause.message : fallback;
 }
 </script>
@@ -856,8 +795,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
         <div class="eyebrow">Каталог событий</div>
         <h1>События</h1>
         <p class="subtitle">
-          Опишите сигналы продукта и данные, с которыми будут запускаться
-          сценарии.
+          Опишите сигналы продукта и данные, с которыми будут запускаться сценарии.
         </p>
       </div>
       <div class="header-actions">
@@ -895,9 +833,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
         type="button"
         :class="{ active: lifecycle === 'ARCHIVED' }"
         :aria-pressed="lifecycle === 'ARCHIVED'"
-        @click="
-          router.push({ name: 'events', query: { lifecycle: 'ARCHIVED' } })
-        "
+        @click="router.push({ name: 'events', query: { lifecycle: 'ARCHIVED' } })"
       >
         Архив
       </button>
@@ -922,10 +858,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
         <i class="pi pi-shield" />
         <div>
           <strong>Проверка данных</strong
-          ><span
-            >Система сверяет поля, типы и обязательность до запуска
-            сценария.</span
-          >
+          ><span>Система сверяет поля, типы и обязательность до запуска сценария.</span>
         </div>
       </div>
     </div>
@@ -982,12 +915,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
       <div class="toolbar-result">
         <span class="toolbar-result-label">Результат</span>
         <div class="toolbar-result-content">
-          <span
-            class="result-count"
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-          >
+          <span class="result-count" role="status" aria-live="polite" aria-atomic="true">
             {{ filteredEvents.length }} из {{ events.length }}
           </span>
           <span v-if="activeFilterCount" class="active-filter-count">
@@ -1047,14 +975,10 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
                 <div class="event-title">
                   <h3>{{ item.name }}</h3>
                   <span class="event-origin">
-                    {{ isSystemEvent(item) ? "Системное" : "Проектное" }}
+                    {{ isSystemEvent(item) ? 'Системное' : 'Проектное' }}
                   </span>
-                  <span v-if="lifecycle === 'ARCHIVED'" class="event-status"
-                    >В архиве</span
-                  >
-                  <span v-else-if="!item.enabled" class="event-status"
-                    >Выключено</span
-                  >
+                  <span v-if="lifecycle === 'ARCHIVED'" class="event-status">В архиве</span>
+                  <span v-else-if="!item.enabled" class="event-status">Выключено</span>
                   <span
                     v-if="isSystemEvent(item)"
                     class="system-lock"
@@ -1067,8 +991,8 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
                       :id="`system-event-tooltip-${item.id}`"
                       class="system-tooltip"
                       role="tooltip"
-                      >Это системное событие Retenive. Его техническое имя и схема
-                      данных задаются системой и недоступны для изменения.</span
+                      >Это системное событие Retenive. Его техническое имя и схема данных задаются
+                      системой и недоступны для изменения.</span
                     >
                   </span>
                 </div>
@@ -1078,11 +1002,9 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
                 ><span>Версия {{ item.version }}</span>
               </div>
               <dl class="event-signals">
-                <div
-                  :class="{ positive: item.enabled, negative: !item.enabled }"
-                >
+                <div :class="{ positive: item.enabled, negative: !item.enabled }">
                   <dt><i class="pi pi-server" />Бэкенд</dt>
-                  <dd>{{ item.enabled ? "Принимает" : "Не принимает" }}</dd>
+                  <dd>{{ item.enabled ? 'Принимает' : 'Не принимает' }}</dd>
                 </div>
                 <div :class="frontendReception(item).tone">
                   <dt><i class="pi pi-desktop" />Фронтенд</dt>
@@ -1091,18 +1013,13 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
                 <div>
                   <dt><i class="pi pi-chart-line" />Активность</dt>
                   <dd>
-                    {{
-                      item.countsAsActivity
-                        ? "Считает активность"
-                        : "Не считает активность"
-                    }}
+                    {{ item.countsAsActivity ? 'Считает активность' : 'Не считает активность' }}
                   </dd>
                 </div>
                 <div>
                   <dt><i class="pi pi-database" />Данные</dt>
                   <dd>
-                    {{ eventFields(item).length }} полей ·
-                    {{ requiredCount(item) }} обязательных
+                    {{ eventFields(item).length }} полей · {{ requiredCount(item) }} обязательных
                   </dd>
                 </div>
               </dl>
@@ -1112,19 +1029,14 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
                   class="event-description"
                   :class="{
                     'system-description': isSystemEvent(item),
-                    clamped:
-                      isLongDescription(item) && !isDescriptionExpanded(item),
+                    clamped: isLongDescription(item) && !isDescriptionExpanded(item),
                   }"
                 >
                   {{ item.description }}
                 </p>
                 <Button
                   v-if="isLongDescription(item)"
-                  :label="
-                    isDescriptionExpanded(item)
-                      ? 'Свернуть описание'
-                      : 'Показать полностью'
-                  "
+                  :label="isDescriptionExpanded(item) ? 'Свернуть описание' : 'Показать полностью'"
                   severity="secondary"
                   text
                   size="small"
@@ -1134,26 +1046,16 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
                   @click="toggleDescription(item)"
                 />
               </div>
-              <p v-else class="event-description event-description-empty">
-                Описание не добавлено.
-              </p>
+              <p v-else class="event-description event-description-empty">Описание не добавлено.</p>
               <div class="field-pills">
-                <span
-                  v-for="field in eventFields(item).slice(0, 5)"
-                  :key="field"
+                <span v-for="field in eventFields(item).slice(0, 5)" :key="field"
                   ><code>{{ field }}</code
-                  ><i
-                    v-if="item.payloadSchema.required?.includes(field)"
-                    title="Обязательное поле"
+                  ><i v-if="item.payloadSchema.required?.includes(field)" title="Обязательное поле"
                     >*</i
                   ></span
                 >
-                <span v-if="eventFields(item).length > 5"
-                  >+{{ eventFields(item).length - 5 }}</span
-                >
-                <small v-if="!eventFields(item).length"
-                  >Без дополнительных данных</small
-                >
+                <span v-if="eventFields(item).length > 5">+{{ eventFields(item).length - 5 }}</span>
+                <small v-if="!eventFields(item).length">Без дополнительных данных</small>
               </div>
             </div>
             <div class="event-actions">
@@ -1162,10 +1064,10 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
                   <strong>Приём события</strong>
                   <small>{{
                     item.readOnly
-                      ? "Управляется Retenive"
+                      ? 'Управляется Retenive'
                       : item.enabled
-                        ? "Новые события принимаются"
-                        : "Новые события отклоняются"
+                        ? 'Новые события принимаются'
+                        : 'Новые события отклоняются'
                   }}</small>
                   <small
                     v-if="policyFeedbackByEventId[item.id]"
@@ -1210,10 +1112,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
                   @click="openEventLogs(item)"
                 />
                 <details class="event-more-actions">
-                  <summary
-                    :aria-label="`Другие действия для ${item.name}`"
-                    title="Другие действия"
-                  >
+                  <summary :aria-label="`Другие действия для ${item.name}`" title="Другие действия">
                     <i class="pi pi-ellipsis-h" aria-hidden="true" />
                   </summary>
                   <div class="event-more-menu">
@@ -1243,18 +1142,18 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
       <i :class="search ? 'pi pi-search' : 'pi pi-bolt'" />
       <strong>{{
         hasActiveFilters
-          ? "События не найдены"
-          : lifecycle === "ARCHIVED"
-            ? "Архив пуст"
-            : "Каталог событий пока пуст"
+          ? 'События не найдены'
+          : lifecycle === 'ARCHIVED'
+            ? 'Архив пуст'
+            : 'Каталог событий пока пуст'
       }}</strong>
       <p>
         {{
           hasActiveFilters
-            ? "Измените фильтры или сбросьте их, чтобы увидеть весь каталог."
-            : lifecycle === "ARCHIVED"
-              ? "Архивированные события появятся здесь."
-              : "Опишите первое событие, которое сможет запускать сценарий."
+            ? 'Измените фильтры или сбросьте их, чтобы увидеть весь каталог.'
+            : lifecycle === 'ARCHIVED'
+              ? 'Архивированные события появятся здесь.'
+              : 'Опишите первое событие, которое сможет запускать сценарий.'
         }}
       </p>
       <Button
@@ -1312,8 +1211,8 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
             <span>Шаг 1 из 4</span>
             <h3 id="event-meaning-title">Что означает событие?</h3>
             <p>
-              Опишите бизнес-факт понятными словами. Техническое имя потребуется
-              интеграции один раз.
+              Опишите бизнес-факт понятными словами. Техническое имя потребуется интеграции один
+              раз.
             </p>
           </header>
           <div class="form-grid">
@@ -1327,12 +1226,9 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
                 :invalid="Boolean(nameError)"
                 :aria-describedby="nameError ? 'event-name-error' : undefined"
                 @input="onEventNameInput"
-              /><small
-                v-if="nameError"
-                id="event-name-error"
-                class="field-error"
-                >{{ nameError }}</small
-              >
+              /><small v-if="nameError" id="event-name-error" class="field-error">{{
+                nameError
+              }}</small>
             </div>
             <div class="field">
               <label for="event-code">Имя для интеграции</label
@@ -1345,19 +1241,14 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
                 :invalid="Boolean(codeError)"
                 :aria-describedby="codeError ? 'event-code-error' : undefined"
                 @input="onEventCodeInput"
-              /><small
-                v-if="codeError"
-                id="event-code-error"
-                class="field-error"
-                >{{ codeError }}</small
-              ><small v-else-if="form.id"
-                >После первой публикации это имя не меняется.</small
-              >
+              /><small v-if="codeError" id="event-code-error" class="field-error">{{
+                codeError
+              }}</small
+              ><small v-else-if="form.id">После первой публикации это имя не меняется.</small>
             </div>
           </div>
           <div class="field">
-            <label for="event-description"
-              >Описание <span>необязательно</span></label
+            <label for="event-description">Описание <span>необязательно</span></label
             ><Textarea
               id="event-description"
               v-model="form.description"
@@ -1371,21 +1262,17 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
               <div>
                 <strong>Принимать событие</strong
                 ><span
-                  >Если выключить, настройка останется в каталоге, но новые
-                  события приниматься не будут.</span
+                  >Если выключить, настройка останется в каталоге, но новые события приниматься не
+                  будут.</span
                 >
               </div>
-              <ToggleSwitch
-                v-model="form.enabled"
-                aria-label="Принимать событие"
-              />
+              <ToggleSwitch v-model="form.enabled" aria-label="Принимать событие" />
             </div>
             <div class="enabled-row surface-soft">
               <div>
                 <strong>Можно отправлять из браузера</strong
                 ><span
-                  >Включайте только для данных, которым можно доверять со
-                  стороны клиента.</span
+                  >Включайте только для данных, которым можно доверять со стороны клиента.</span
                 >
               </div>
               <ToggleSwitch
@@ -1397,9 +1284,8 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
               <div>
                 <strong>Засчитывать как активность пользователя</strong
                 ><span
-                  >Событие продлевает текущий визит и отмечает активный
-                  календарный день. Техническое переподключение само по себе
-                  новым визитом не считается.</span
+                  >Событие продлевает текущий визит и отмечает активный календарный день.
+                  Техническое переподключение само по себе новым визитом не считается.</span
                 >
               </div>
               <ToggleSwitch
@@ -1418,15 +1304,14 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
         >
           <div v-if="eventFormStep === 1" class="catalog-status">
             <span v-if="catalogError"
-              >Возможности полей могут быть устаревшими:
-              {{ catalogError }}</span
+              >Возможности полей могут быть устаревшими: {{ catalogError }}</span
             >
             <span v-else-if="authoringContract"
               >Возможности использования полей в сценариях обновлены.</span
             >
             <span v-else
-              >После создания события здесь появится информация о его
-              использовании в сценариях.</span
+              >После создания события здесь появится информация о его использовании в
+              сценариях.</span
             >
             <Button
               v-if="!isMockMode"
@@ -1469,45 +1354,43 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
           <div v-if="eventFormStep === 3" class="publication-note">
             <strong>{{
               form.id
-                ? "Будет создана новая опубликованная версия"
-                : "Событие будет создано и станет доступно интеграции"
+                ? 'Будет создана новая опубликованная версия'
+                : 'Событие будет создано и станет доступно интеграции'
             }}</strong>
             <p v-if="form.id">
-              Система публикует следующую версию сразу после подтверждения.
-              Полная история и оценка влияния пока недоступны, поэтому проверьте
-              интеграцию перед сохранением.
+              Система публикует следующую версию сразу после подтверждения. Полная история и оценка
+              влияния пока недоступны, поэтому проверьте интеграцию перед сохранением.
             </p>
             <p v-else>
-              Проверьте смысл, поля и пример. Имя для интеграции после первой
-              публикации не меняется; остальные настройки обновляются новой
-              версией.
+              Проверьте смысл, поля и пример. Имя для интеграции после первой публикации не
+              меняется; остальные настройки обновляются новой версией.
             </p>
             <dl class="event-review-summary">
               <div>
                 <dt>Название</dt>
-                <dd>{{ form.name || "Не указано" }}</dd>
+                <dd>{{ form.name || 'Не указано' }}</dd>
               </div>
               <div>
                 <dt>Имя для интеграции</dt>
                 <dd>
-                  <code>{{ form.code || "Не указано" }}</code>
+                  <code>{{ form.code || 'Не указано' }}</code>
                 </dd>
               </div>
               <div class="wide">
                 <dt>Описание</dt>
-                <dd>{{ form.description || "Не указано" }}</dd>
+                <dd>{{ form.description || 'Не указано' }}</dd>
               </div>
               <div>
                 <dt>Принимать событие</dt>
-                <dd>{{ form.enabled ? "Да" : "Нет" }}</dd>
+                <dd>{{ form.enabled ? 'Да' : 'Нет' }}</dd>
               </div>
               <div>
                 <dt>Можно отправлять из браузера</dt>
-                <dd>{{ form.clientIngestible ? "Да" : "Нет" }}</dd>
+                <dd>{{ form.clientIngestible ? 'Да' : 'Нет' }}</dd>
               </div>
               <div>
                 <dt>Засчитывать как активность</dt>
-                <dd>{{ form.countsAsActivity ? "Да" : "Нет" }}</dd>
+                <dd>{{ form.countsAsActivity ? 'Да' : 'Нет' }}</dd>
               </div>
               <div>
                 <dt>Полей данных</dt>
@@ -1517,12 +1400,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
           </div>
         </section>
 
-        <Message
-          v-if="formError"
-          severity="error"
-          size="small"
-          :closable="false"
-        >
+        <Message v-if="formError" severity="error" size="small" :closable="false">
           <div ref="formErrorSummary" class="event-error-message" tabindex="-1">
             <strong>{{ formError.message }}</strong
             ><Button
@@ -1534,10 +1412,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
               @click="focusFirstSchemaIssue"
             />
             <ul v-if="formError.scenarios.length" class="dependency-list">
-              <li
-                v-for="scenario in formError.scenarios"
-                :key="scenario.id || scenario.code"
-              >
+              <li v-for="scenario in formError.scenarios" :key="scenario.id || scenario.code">
                 <div>
                   <span>{{ scenario.name }}</span
                   ><code v-if="scenario.code">{{ scenario.code }}</code>
@@ -1650,10 +1525,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
 }
 .summary-grid {
   display: grid;
-  grid-template-columns: minmax(190px, 220px) minmax(190px, 220px) minmax(
-      360px,
-      1fr
-    );
+  grid-template-columns: minmax(190px, 220px) minmax(190px, 220px) minmax(360px, 1fr);
   gap: 12px;
   margin-bottom: 18px;
 }
@@ -1873,11 +1745,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
   border-color: var(--border-strong);
 }
 .event-card.system {
-  background: color-mix(
-    in srgb,
-    var(--status-accent-soft) 20%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--status-accent-soft) 20%, var(--surface-card));
 }
 .event-card > .event-icon {
   margin-top: 2px;
@@ -1934,7 +1802,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
   height: 5px;
   border-radius: 50%;
   background: currentColor;
-  content: "";
+  content: '';
 }
 .system-lock {
   position: relative;
@@ -1985,7 +1853,7 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
   width: 8px;
   height: 8px;
   background: var(--surface-emphasis);
-  content: "";
+  content: '';
   transform: translate(-50%, -50%) rotate(45deg);
 }
 .system-lock:hover .system-tooltip,
@@ -2076,23 +1944,11 @@ function errorMessage(cause: unknown, fallback = "Произошла ошибк�
   line-height: 1.3;
 }
 .event-signals .positive {
-  border-color: color-mix(
-    in srgb,
-    var(--status-success) 25%,
-    var(--border-default)
-  );
-  background: color-mix(
-    in srgb,
-    var(--status-success-soft) 55%,
-    var(--surface-subtle)
-  );
+  border-color: color-mix(in srgb, var(--status-success) 25%, var(--border-default));
+  background: color-mix(in srgb, var(--status-success-soft) 55%, var(--surface-subtle));
 }
 .event-signals .negative {
-  border-color: color-mix(
-    in srgb,
-    var(--status-danger) 20%,
-    var(--border-default)
-  );
+  border-color: color-mix(in srgb, var(--status-danger) 20%, var(--border-default));
 }
 .field-pills {
   display: flex;

@@ -3,7 +3,7 @@ import type {
   SupportSlaPauseDtoFirstHumanResponseStatusesItem,
   SupportSlaRuleWhenDtoCaseTypesItem,
   SupportSlaRuleWhenDtoPrioritiesItem,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 export interface SupportSlaTimeIntervalForm {
   id: string;
@@ -49,22 +49,22 @@ export interface SupportSlaConfigurationForm {
 }
 
 export type SupportSlaFormIssueCode =
-  | "TIME_ZONE_REQUIRED"
-  | "TIME_ZONE_INVALID"
-  | "CALENDAR_COVERAGE_REQUIRED"
-  | "INTERVAL_INVALID"
-  | "INTERVAL_OVERLAP"
-  | "INTERVAL_LIMIT"
-  | "EXCEPTION_DATE_INVALID"
-  | "EXCEPTION_DATE_DUPLICATE"
-  | "EXCEPTION_LIMIT"
-  | "RULE_REQUIRED"
-  | "RULE_CODE_INVALID"
-  | "RULE_CODE_DUPLICATE"
-  | "RULE_TARGET_INVALID"
-  | "AT_RISK_INVALID"
-  | "GROUP_CODE_INVALID"
-  | "FALLBACK_CONDITIONED";
+  | 'TIME_ZONE_REQUIRED'
+  | 'TIME_ZONE_INVALID'
+  | 'CALENDAR_COVERAGE_REQUIRED'
+  | 'INTERVAL_INVALID'
+  | 'INTERVAL_OVERLAP'
+  | 'INTERVAL_LIMIT'
+  | 'EXCEPTION_DATE_INVALID'
+  | 'EXCEPTION_DATE_DUPLICATE'
+  | 'EXCEPTION_LIMIT'
+  | 'RULE_REQUIRED'
+  | 'RULE_CODE_INVALID'
+  | 'RULE_CODE_DUPLICATE'
+  | 'RULE_TARGET_INVALID'
+  | 'AT_RISK_INVALID'
+  | 'GROUP_CODE_INVALID'
+  | 'FALLBACK_CONDITIONED';
 
 export interface SupportSlaFormIssue {
   code: SupportSlaFormIssueCode;
@@ -86,11 +86,11 @@ export function createSupportSlaLocalId(prefix: string): string {
 
 export function createEmptySupportSlaRule(isFallback = false): SupportSlaRuleForm {
   return {
-    id: createSupportSlaLocalId("rule"),
-    code: isFallback ? "DEFAULT" : "",
+    id: createSupportSlaLocalId('rule'),
+    code: isFallback ? 'DEFAULT' : '',
     priorities: [],
     caseTypes: [],
-    groupCodesText: "",
+    groupCodesText: '',
     targetsMinutes: {
       firstHumanResponse: null,
       nextHumanResponse: null,
@@ -98,14 +98,14 @@ export function createEmptySupportSlaRule(isFallback = false): SupportSlaRuleFor
     },
     atRiskRemainingPercent: null,
     firstHumanResponsePause: [],
-    nextHumanResponsePause: ["WAITING_END_USER"],
-    resolutionPause: ["WAITING_END_USER"],
+    nextHumanResponsePause: ['WAITING_END_USER'],
+    resolutionPause: ['WAITING_END_USER'],
   };
 }
 
 export function createEmptySupportSlaConfigurationForm(): SupportSlaConfigurationForm {
   return {
-    timeZone: "",
+    timeZone: '',
     weekly: Array.from({ length: 7 }, (_, index) => ({
       isoWeekday: index + 1,
       intervals: [],
@@ -116,12 +116,12 @@ export function createEmptySupportSlaConfigurationForm(): SupportSlaConfiguratio
 }
 
 function formatMinute(value: number): string {
-  if (value === 1440) return "24:00";
-  return `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
+  if (value === 1440) return '24:00';
+  return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
 }
 
 export function createSupportSlaConfigurationForm(
-  configuration: Pick<ReplaceSupportSlaConfigurationDraftDto, "calendar" | "policy">,
+  configuration: Pick<ReplaceSupportSlaConfigurationDraftDto, 'calendar' | 'policy'>,
 ): SupportSlaConfigurationForm {
   const weekly = Array.from({ length: 7 }, (_, index) => {
     const day = configuration.calendar.weekly.find(
@@ -130,7 +130,7 @@ export function createSupportSlaConfigurationForm(
     return {
       isoWeekday: index + 1,
       intervals: (day?.intervals ?? []).map((interval) => ({
-        id: createSupportSlaLocalId("interval"),
+        id: createSupportSlaLocalId('interval'),
         start: formatMinute(interval.startMinute),
         end: formatMinute(interval.endMinute),
       })),
@@ -139,21 +139,18 @@ export function createSupportSlaConfigurationForm(
   const rules = [...configuration.policy.rules]
     .sort((left, right) => left.order - right.order)
     .map((rule) => ({
-      id: createSupportSlaLocalId("rule"),
+      id: createSupportSlaLocalId('rule'),
       code: rule.code,
       priorities: [...(rule.when.priorities ?? [])],
       caseTypes: [...(rule.when.caseTypes ?? [])],
-      groupCodesText: (rule.when.groupCodes ?? []).join("\n"),
+      groupCodesText: (rule.when.groupCodes ?? []).join('\n'),
       targetsMinutes: {
-        firstHumanResponse:
-          rule.targets.firstHumanResponseBusinessSeconds / 60,
+        firstHumanResponse: rule.targets.firstHumanResponseBusinessSeconds / 60,
         nextHumanResponse: rule.targets.nextHumanResponseBusinessSeconds / 60,
         resolution: rule.targets.resolutionBusinessSeconds / 60,
       },
       atRiskRemainingPercent: rule.atRiskRemainingPercent,
-      firstHumanResponsePause: [
-        ...rule.pause.firstHumanResponseStatuses,
-      ],
+      firstHumanResponsePause: [...rule.pause.firstHumanResponseStatuses],
       nextHumanResponsePause: [...rule.pause.nextHumanResponseStatuses],
       resolutionPause: [...rule.pause.resolutionStatuses],
     }));
@@ -161,10 +158,10 @@ export function createSupportSlaConfigurationForm(
     timeZone: configuration.calendar.timeZone,
     weekly,
     exceptions: configuration.calendar.exceptions.map((exception) => ({
-      id: createSupportSlaLocalId("exception"),
+      id: createSupportSlaLocalId('exception'),
       localDate: exception.localDate,
       intervals: exception.intervals.map((interval) => ({
-        id: createSupportSlaLocalId("interval"),
+        id: createSupportSlaLocalId('interval'),
         start: formatMinute(interval.startMinute),
         end: formatMinute(interval.endMinute),
       })),
@@ -176,22 +173,20 @@ export function createSupportSlaConfigurationForm(
 function validTimeZone(value: string): boolean {
   if (!value.trim()) return false;
   try {
-    new Intl.DateTimeFormat("en", { timeZone: value }).format();
-    return value.includes("/") || value === "UTC";
+    new Intl.DateTimeFormat('en', { timeZone: value }).format();
+    return value.includes('/') || value === 'UTC';
   } catch {
     return false;
   }
 }
 
 function parseTime(value: string, allowEndOfDay: boolean): number | null {
-  if (allowEndOfDay && value === "24:00") return 1440;
+  if (allowEndOfDay && value === '24:00') return 1440;
   const match = /^(\d{2}):(\d{2})$/.exec(value);
   if (!match) return null;
   const hour = Number(match[1]);
   const minute = Number(match[2]);
-  return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59
-    ? hour * 60 + minute
-    : null;
+  return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59 ? hour * 60 + minute : null;
 }
 
 function validLocalDate(value: string): boolean {
@@ -202,9 +197,7 @@ function validLocalDate(value: string): boolean {
   const day = Number(match[3]);
   const date = new Date(Date.UTC(year, month - 1, day));
   return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
+    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
   );
 }
 
@@ -227,18 +220,12 @@ function parseGroupCodes(value: string): string[] {
 
 function isConditioned(rule: SupportSlaRuleForm): boolean {
   return Boolean(
-    rule.priorities.length ||
-      rule.caseTypes.length ||
-      parseGroupCodes(rule.groupCodesText).length,
+    rule.priorities.length || rule.caseTypes.length || parseGroupCodes(rule.groupCodesText).length,
   );
 }
 
-function intervalIssue(
-  issues: SupportSlaFormIssue[],
-  path: string,
-  message: string,
-): void {
-  issues.push({ code: "INTERVAL_INVALID", path, message });
+function intervalIssue(issues: SupportSlaFormIssue[], path: string, message: string): void {
+  issues.push({ code: 'INTERVAL_INVALID', path, message });
 }
 
 function validateIntervals(
@@ -249,17 +236,17 @@ function validateIntervals(
   intervals.sort((left, right) => left.startMinute - right.startMinute);
   if (intervals.length > 8) {
     issues.push({
-      code: "INTERVAL_LIMIT",
+      code: 'INTERVAL_LIMIT',
       path,
-      message: "На один день можно задать не больше восьми интервалов.",
+      message: 'На один день можно задать не больше восьми интервалов.',
     });
   }
   for (let index = 1; index < intervals.length; index += 1) {
     if (intervals[index]!.startMinute < intervals[index - 1]!.endMinute) {
       issues.push({
-        code: "INTERVAL_OVERLAP",
+        code: 'INTERVAL_OVERLAP',
         path,
-        message: "Рабочие интервалы одного дня не должны пересекаться.",
+        message: 'Рабочие интервалы одного дня не должны пересекаться.',
       });
       break;
     }
@@ -268,21 +255,21 @@ function validateIntervals(
 
 export function serializeSupportSlaConfiguration(
   form: SupportSlaConfigurationForm,
-  catalogRevisionId = "mock-sla-catalog-r1",
+  catalogRevisionId = 'mock-sla-catalog-r1',
 ): SupportSlaSerializationResult {
   const issues: SupportSlaFormIssue[] = [];
   const timeZone = form.timeZone.trim();
   if (!timeZone) {
     issues.push({
-      code: "TIME_ZONE_REQUIRED",
-      path: "calendar.timeZone",
-      message: "Выберите часовой пояс рабочего календаря.",
+      code: 'TIME_ZONE_REQUIRED',
+      path: 'calendar.timeZone',
+      message: 'Выберите часовой пояс рабочего календаря.',
     });
   } else if (!validTimeZone(timeZone)) {
     issues.push({
-      code: "TIME_ZONE_INVALID",
-      path: "calendar.timeZone",
-      message: "Укажите часовой пояс IANA, например Europe/Madrid.",
+      code: 'TIME_ZONE_INVALID',
+      path: 'calendar.timeZone',
+      message: 'Укажите часовой пояс IANA, например Europe/Madrid.',
     });
   }
 
@@ -295,16 +282,8 @@ export function serializeSupportSlaConfiguration(
       const startMinute = parseTime(interval.start, false);
       const endMinute = parseTime(interval.end, true);
       const path = `calendar.weekly.${day.isoWeekday}.${interval.id}`;
-      if (
-        startMinute === null ||
-        endMinute === null ||
-        startMinute === endMinute
-      ) {
-        intervalIssue(
-          issues,
-          path,
-          "Проверьте начало и конец рабочего интервала.",
-        );
+      if (startMinute === null || endMinute === null || startMinute === endMinute) {
+        intervalIssue(issues, path, 'Проверьте начало и конец рабочего интервала.');
         continue;
       }
       const current = weekly[day.isoWeekday - 1];
@@ -322,39 +301,36 @@ export function serializeSupportSlaConfiguration(
     validateIntervals(day.intervals, `calendar.weekly.${day.isoWeekday}`, issues);
   if (!weekly.some((day) => day.intervals.length)) {
     issues.push({
-      code: "CALENDAR_COVERAGE_REQUIRED",
-      path: "calendar.weekly",
-      message: "Добавьте хотя бы один рабочий интервал.",
+      code: 'CALENDAR_COVERAGE_REQUIRED',
+      path: 'calendar.weekly',
+      message: 'Добавьте хотя бы один рабочий интервал.',
     });
   }
 
   if (form.exceptions.length > 730) {
     issues.push({
-      code: "EXCEPTION_LIMIT",
-      path: "calendar.exceptions",
-      message: "Календарь поддерживает не больше 730 исключений.",
+      code: 'EXCEPTION_LIMIT',
+      path: 'calendar.exceptions',
+      message: 'Календарь поддерживает не больше 730 исключений.',
     });
   }
   const exceptionDates = new Set<string>();
-  const exceptionMap = new Map<
-    string,
-    { startMinute: number; endMinute: number }[]
-  >();
+  const exceptionMap = new Map<string, { startMinute: number; endMinute: number }[]>();
   for (const exception of form.exceptions) {
     const datePath = `calendar.exceptions.${exception.id}`;
     if (!validLocalDate(exception.localDate)) {
       issues.push({
-        code: "EXCEPTION_DATE_INVALID",
+        code: 'EXCEPTION_DATE_INVALID',
         path: datePath,
-        message: "Укажите корректную дату исключения.",
+        message: 'Укажите корректную дату исключения.',
       });
       continue;
     }
     if (exceptionDates.has(exception.localDate)) {
       issues.push({
-        code: "EXCEPTION_DATE_DUPLICATE",
+        code: 'EXCEPTION_DATE_DUPLICATE',
         path: datePath,
-        message: "Для одной даты можно задать только одно исключение.",
+        message: 'Для одной даты можно задать только одно исключение.',
       });
       continue;
     }
@@ -364,16 +340,8 @@ export function serializeSupportSlaConfiguration(
     for (const interval of exception.intervals) {
       const startMinute = parseTime(interval.start, false);
       const endMinute = parseTime(interval.end, true);
-      if (
-        startMinute === null ||
-        endMinute === null ||
-        startMinute === endMinute
-      ) {
-        intervalIssue(
-          issues,
-          `${datePath}.${interval.id}`,
-          "Проверьте интервал исключения.",
-        );
+      if (startMinute === null || endMinute === null || startMinute === endMinute) {
+        intervalIssue(issues, `${datePath}.${interval.id}`, 'Проверьте интервал исключения.');
         continue;
       }
       if (endMinute > startMinute) {
@@ -392,9 +360,9 @@ export function serializeSupportSlaConfiguration(
 
   if (!form.rules.length) {
     issues.push({
-      code: "RULE_REQUIRED",
-      path: "policy.rules",
-      message: "Добавьте обязательное правило для остальных обращений.",
+      code: 'RULE_REQUIRED',
+      path: 'policy.rules',
+      message: 'Добавьте обязательное правило для остальных обращений.',
     });
   }
   const ruleCodes = new Set<string>();
@@ -403,15 +371,15 @@ export function serializeSupportSlaConfiguration(
     const code = rule.code.trim();
     if (!/^[A-Z][A-Z0-9_]{1,63}$/.test(code)) {
       issues.push({
-        code: "RULE_CODE_INVALID",
+        code: 'RULE_CODE_INVALID',
         path,
-        message: "Код правила: 2–64 заглавных латинских символа, цифры или _.",
+        message: 'Код правила: 2–64 заглавных латинских символа, цифры или _.',
       });
     } else if (ruleCodes.has(code)) {
       issues.push({
-        code: "RULE_CODE_DUPLICATE",
+        code: 'RULE_CODE_DUPLICATE',
         path,
-        message: "Коды правил не должны повторяться.",
+        message: 'Коды правил не должны повторяться.',
       });
     }
     ruleCodes.add(code);
@@ -419,25 +387,21 @@ export function serializeSupportSlaConfiguration(
     const groupCodes = parseGroupCodes(rule.groupCodesText);
     if (groupCodes.some((groupCode) => !/^[A-Z][A-Z0-9_]{1,63}$/.test(groupCode))) {
       issues.push({
-        code: "GROUP_CODE_INVALID",
+        code: 'GROUP_CODE_INVALID',
         path,
-        message: "Проверьте коды групп в условии.",
+        message: 'Проверьте коды групп в условии.',
       });
     }
     const targets = Object.values(rule.targetsMinutes);
     if (
       targets.some(
-        (value) =>
-          value === null ||
-          !Number.isInteger(value) ||
-          value < 1 ||
-          value > 43_200,
+        (value) => value === null || !Number.isInteger(value) || value < 1 || value > 43_200,
       )
     ) {
       issues.push({
-        code: "RULE_TARGET_INVALID",
+        code: 'RULE_TARGET_INVALID',
         path,
-        message: "Каждая цель должна быть от 1 минуты до 30 дней.",
+        message: 'Каждая цель должна быть от 1 минуты до 30 дней.',
       });
     }
     if (
@@ -447,16 +411,16 @@ export function serializeSupportSlaConfiguration(
       rule.atRiskRemainingPercent > 90
     ) {
       issues.push({
-        code: "AT_RISK_INVALID",
+        code: 'AT_RISK_INVALID',
         path,
-        message: "Порог риска должен быть от 1 до 90%.",
+        message: 'Порог риска должен быть от 1 до 90%.',
       });
     }
     if (index === form.rules.length - 1 && isConditioned(rule)) {
       issues.push({
-        code: "FALLBACK_CONDITIONED",
+        code: 'FALLBACK_CONDITIONED',
         path,
-        message: "Последнее правило для остальных обращений не может содержать условия.",
+        message: 'Последнее правило для остальных обращений не может содержать условия.',
       });
     }
 
@@ -469,12 +433,9 @@ export function serializeSupportSlaConfiguration(
         ...(groupCodes.length ? { groupCodes } : {}),
       },
       targets: {
-        firstHumanResponseBusinessSeconds:
-          (rule.targetsMinutes.firstHumanResponse ?? 0) * 60,
-        nextHumanResponseBusinessSeconds:
-          (rule.targetsMinutes.nextHumanResponse ?? 0) * 60,
-        resolutionBusinessSeconds:
-          (rule.targetsMinutes.resolution ?? 0) * 60,
+        firstHumanResponseBusinessSeconds: (rule.targetsMinutes.firstHumanResponse ?? 0) * 60,
+        nextHumanResponseBusinessSeconds: (rule.targetsMinutes.nextHumanResponse ?? 0) * 60,
+        resolutionBusinessSeconds: (rule.targetsMinutes.resolution ?? 0) * 60,
       },
       atRiskRemainingPercent: rule.atRiskRemainingPercent ?? 0,
       pause: {

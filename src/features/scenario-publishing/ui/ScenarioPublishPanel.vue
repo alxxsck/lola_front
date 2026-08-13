@@ -1,35 +1,35 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, shallowRef, watch } from "vue";
-import InputText from "primevue/inputtext";
+import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
+import InputText from 'primevue/inputtext';
 
 import {
   deliveryPolicySummary,
   serializeDeliveryPolicy,
   type DeliveryPolicyDraft,
-} from "@/features/scenario-delivery/model";
+} from '@/features/scenario-delivery/model';
 import {
   serializeAudienceDraft,
   summarizeAudience,
   type AudienceDomainContext,
   type AudienceDraft,
-} from "@/features/scenario-audience/model";
-import { createScenarioPublishStateMachine } from "@/features/scenario-publishing/model";
+} from '@/features/scenario-audience/model';
+import { createScenarioPublishStateMachine } from '@/features/scenario-publishing/model';
 import {
   serializeRuleDraft,
   summarizeRule,
   type RuleDomainContext,
   type RuleDraft,
-} from "@/features/scenario-rules/model";
-import { toPlainScenarioAction } from "@/features/scenarios/model/scenario-graph";
+} from '@/features/scenario-rules/model';
+import { toPlainScenarioAction } from '@/features/scenarios/model/scenario-graph';
 import {
   scenarioAuthoringRepository,
   type ScenarioAuthoringContract,
   type ScenarioPublishInput,
   type ValidateScenarioDraftResponseDto,
-} from "@/shared/api/repository/scenario-authoring";
-import type { ScenarioAction } from "@/shared/types/domain";
-import type { ScenarioLocalizationPolicyDto } from "@/shared/api/generated/models";
-import { defaultLocalizationPolicy } from "@/features/scenario-localization/model";
+} from '@/shared/api/repository/scenario-authoring';
+import type { ScenarioAction } from '@/shared/types/domain';
+import type { ScenarioLocalizationPolicyDto } from '@/shared/api/generated/models';
+import { defaultLocalizationPolicy } from '@/features/scenario-localization/model';
 
 const props = defineProps<{
   projectId: string;
@@ -60,16 +60,12 @@ const emit = defineEmits<{
     },
   ];
   publishing: [pending: boolean];
-  "head-change": [revisionId: string];
-  "reload-request": [];
-  "resave-required": [];
-  "focus-issue": [
-    issue: { code: string; path: string; message: string; locale?: string },
-  ];
+  'head-change': [revisionId: string];
+  'reload-request': [];
+  'resave-required': [];
+  'focus-issue': [issue: { code: string; path: string; message: string; locale?: string }];
 }>();
-const localizationPolicy = computed(
-  () => props.localizationPolicy ?? defaultLocalizationPolicy(),
-);
+const localizationPolicy = computed(() => props.localizationPolicy ?? defaultLocalizationPolicy());
 
 let submittedSnapshot: {
   ruleSnapshot: string;
@@ -87,35 +83,26 @@ watch(
 );
 const recoveredContract = shallowRef<ScenarioAuthoringContract | null>(null);
 const effectiveContext = computed<RuleDomainContext>(() =>
-  recoveredContract.value
-    ? { ...props.context, contract: recoveredContract.value }
-    : props.context,
+  recoveredContract.value ? { ...props.context, contract: recoveredContract.value } : props.context,
 );
 
 const machine = createScenarioPublishStateMachine((request) =>
-  scenarioAuthoringRepository.publishScenario(
-    props.projectId,
-    props.scenarioId,
-    request,
-  ),
+  scenarioAuthoringRepository.publishScenario(props.projectId, props.scenarioId, request),
 );
 const state = shallowRef(machine.getState());
 const unsubscribe = machine.subscribe((next) => {
   state.value = next;
-  if (next.status === "published") {
+  if (next.status === 'published') {
     expectedHead.value = next.currentRevisionId;
-    emit("head-change", next.currentRevisionId);
-    if (submittedSnapshot)
-      emit("published", next.currentRevisionId, submittedSnapshot);
+    emit('head-change', next.currentRevisionId);
+    if (submittedSnapshot) emit('published', next.currentRevisionId, submittedSnapshot);
   }
 });
 onBeforeUnmount(unsubscribe);
 
-const ruleSummary = computed(() =>
-  summarizeRule(props.draft, effectiveContext.value),
-);
+const ruleSummary = computed(() => summarizeRule(props.draft, effectiveContext.value));
 const ruleResult = computed(() =>
-  ruleSummary.value.status === "empty"
+  ruleSummary.value.status === 'empty'
     ? null
     : serializeRuleDraft(props.draft, effectiveContext.value),
 );
@@ -134,17 +121,12 @@ const audienceResult = computed(() => {
   if (
     !props.audienceDraft ||
     !effectiveAudienceContext.value ||
-    audienceSummary.value?.status === "empty"
+    audienceSummary.value?.status === 'empty'
   )
     return null;
-  return serializeAudienceDraft(
-    props.audienceDraft,
-    effectiveAudienceContext.value,
-  );
+  return serializeAudienceDraft(props.audienceDraft, effectiveAudienceContext.value);
 });
-const deliveryResult = computed(() =>
-  serializeDeliveryPolicy(props.deliveryPolicy),
-);
+const deliveryResult = computed(() => serializeDeliveryPolicy(props.deliveryPolicy));
 const localIssues = computed(() => [
   ...(!ruleResult.value || ruleResult.value.ok
     ? []
@@ -152,26 +134,22 @@ const localIssues = computed(() => [
   ...(audienceResult.value && !audienceResult.value.ok
     ? audienceResult.value.issues.map((issue) => issue.message)
     : []),
-  ...(deliveryResult.value.ok
-    ? []
-    : deliveryResult.value.issues.map((issue) => issue.message)),
+  ...(deliveryResult.value.ok ? [] : deliveryResult.value.issues.map((issue) => issue.message)),
 ]);
-const catalogLabel = computed(() =>
-  compactIdentifier(effectiveContext.value.contract.revision),
-);
+const catalogLabel = computed(() => compactIdentifier(effectiveContext.value.contract.revision));
 const actionTypes = computed(() => [
   ...new Set((props.actions ?? []).map((action) => action.type)),
 ]);
 const goalEventCodes = computed(() => [
   ...new Set(
     (props.actions ?? [])
-      .filter((action) => action.type === "WAIT_FOR_GOAL")
+      .filter((action) => action.type === 'WAIT_FOR_GOAL')
       .map((action) => {
         const goal = action.config.goal;
         return goal &&
-          typeof goal === "object" &&
-          "eventCode" in goal &&
-          typeof goal.eventCode === "string"
+          typeof goal === 'object' &&
+          'eventCode' in goal &&
+          typeof goal.eventCode === 'string'
           ? goal.eventCode
           : null;
       })
@@ -179,15 +157,15 @@ const goalEventCodes = computed(() => [
   ),
 ]);
 type ReviewState =
-  | { status: "idle" | "pending" | "error" }
-  | { status: "local-invalid" }
+  | { status: 'idle' | 'pending' | 'error' }
+  | { status: 'local-invalid' }
   | {
-      status: "ready" | "semantic-invalid";
+      status: 'ready' | 'semantic-invalid';
       response: ValidateScenarioDraftResponseDto;
     };
-const reviewState = shallowRef<ReviewState>({ status: "idle" });
+const reviewState = shallowRef<ReviewState>({ status: 'idle' });
 const requiresResave = ref(false);
-const securityPublishReason = ref("");
+const securityPublishReason = ref('');
 let reviewSequence = 0;
 const canPublish = computed(
   () =>
@@ -198,68 +176,49 @@ const canPublish = computed(
     (!ruleResult.value || ruleResult.value.ok) &&
     (!audienceResult.value || audienceResult.value.ok) &&
     deliveryResult.value.ok &&
-    reviewState.value.status === "ready" &&
-    (props.importanceClass !== "SECURITY" ||
-      securityPublishReason.value.trim().length >= 10) &&
-    (state.value.status === "idle" || state.value.status === "error"),
+    reviewState.value.status === 'ready' &&
+    (props.importanceClass !== 'SECURITY' || securityPublishReason.value.trim().length >= 10) &&
+    (state.value.status === 'idle' || state.value.status === 'error'),
 );
 
 function compactIdentifier(value: string): string {
   return value.length > 18 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
 }
 
-function focusIssue(issue: {
-  code: string;
-  path: string;
-  message: string;
-  locale?: string;
-}) {
-  emit("focus-issue", issue);
+function focusIssue(issue: { code: string; path: string; message: string; locale?: string }) {
+  emit('focus-issue', issue);
 }
 
-function focusAudienceIssue(issue: {
-  code: string;
-  path: string;
-  message: string;
-}) {
-  emit("focus-issue", { ...issue, path: `audience.${issue.path}` });
+function focusAudienceIssue(issue: { code: string; path: string; message: string }) {
+  emit('focus-issue', { ...issue, path: `audience.${issue.path}` });
 }
 
-function request(
-  currentRevisionId = expectedHead.value,
-): ScenarioPublishInput | null {
-  if ((ruleResult.value && !ruleResult.value.ok) || !deliveryResult.value.ok)
-    return null;
+function request(currentRevisionId = expectedHead.value): ScenarioPublishInput | null {
+  if ((ruleResult.value && !ruleResult.value.ok) || !deliveryResult.value.ok) return null;
   if (audienceResult.value && !audienceResult.value.ok) return null;
   return {
     catalogRevision: effectiveContext.value.contract.revision,
     expectedCurrentRevisionId: currentRevisionId,
     deliveryPolicy: deliveryResult.value.value,
     ...(ruleResult.value?.ok ? { rule: ruleResult.value.value } : {}),
-    ...(props.expectedDraftVersion
-      ? { expectedDraftVersion: props.expectedDraftVersion }
-      : {}),
+    ...(props.expectedDraftVersion ? { expectedDraftVersion: props.expectedDraftVersion } : {}),
     ...(effectiveContext.value.contract.localization?.enabled
       ? { localization: localizationPolicy.value }
       : {}),
-    ...(audienceResult.value?.ok
-      ? { audience: audienceResult.value.value }
-      : {}),
+    ...(audienceResult.value?.ok ? { audience: audienceResult.value.value } : {}),
     ...(effectiveAudienceContext.value?.catalog.version === 2
       ? {
           profileFreshness: props.audienceDraft?.freshness ?? {
-            mode: "USE_LAST_KNOWN",
+            mode: 'USE_LAST_KNOWN',
           },
         }
       : {}),
-    ...(props.importanceClass === "SECURITY"
-      ? { reason: securityPublishReason.value.trim() }
-      : {}),
+    ...(props.importanceClass === 'SECURITY' ? { reason: securityPublishReason.value.trim() } : {}),
   };
 }
 
 async function publish(currentRevisionId = expectedHead.value) {
-  emit("publishing", true);
+  emit('publishing', true);
   try {
     if (!(await reviewNow())) return;
     if (props.blockedReason) return;
@@ -267,53 +226,48 @@ async function publish(currentRevisionId = expectedHead.value) {
     if (!prepared) return;
     submittedSnapshot = {
       ruleSnapshot: JSON.stringify(props.draft),
-      ...(props.audienceDraft
-        ? { audienceSnapshot: JSON.stringify(props.audienceDraft) }
-        : {}),
+      ...(props.audienceDraft ? { audienceSnapshot: JSON.stringify(props.audienceDraft) } : {}),
       deliverySnapshot: JSON.stringify(props.deliveryPolicy),
-      authoringSnapshot: props.authoringSnapshot ?? "",
+      authoringSnapshot: props.authoringSnapshot ?? '',
     };
     await machine.publish(prepared);
     if (
-      state.value.status === "published" &&
+      state.value.status === 'published' &&
       submittedSnapshot &&
       (submittedSnapshot.ruleSnapshot !== JSON.stringify(props.draft) ||
         submittedSnapshot.audienceSnapshot !==
-          (props.audienceDraft
-            ? JSON.stringify(props.audienceDraft)
-            : undefined) ||
-        submittedSnapshot.deliverySnapshot !==
-          JSON.stringify(props.deliveryPolicy) ||
-        submittedSnapshot.authoringSnapshot !== (props.authoringSnapshot ?? ""))
+          (props.audienceDraft ? JSON.stringify(props.audienceDraft) : undefined) ||
+        submittedSnapshot.deliverySnapshot !== JSON.stringify(props.deliveryPolicy) ||
+        submittedSnapshot.authoringSnapshot !== (props.authoringSnapshot ?? ''))
     ) {
       machine.reset();
     }
   } finally {
     submittedSnapshot = null;
-    emit("publishing", false);
+    emit('publishing', false);
   }
 }
 
 async function reviewNow(): Promise<boolean> {
   const requestId = ++reviewSequence;
   if (!props.scenarioId) {
-    reviewState.value = { status: "idle" };
+    reviewState.value = { status: 'idle' };
     return false;
   }
   const serialized = ruleResult.value;
   if (serialized && !serialized.ok) {
-    reviewState.value = { status: "local-invalid" };
+    reviewState.value = { status: 'local-invalid' };
     return false;
   }
-  reviewState.value = { status: "pending" };
+  reviewState.value = { status: 'pending' };
   try {
     const serializedAudience = audienceResult.value;
     if (serializedAudience && !serializedAudience.ok) {
-      reviewState.value = { status: "local-invalid" };
+      reviewState.value = { status: 'local-invalid' };
       return false;
     }
     if (!deliveryResult.value.ok) {
-      reviewState.value = { status: "local-invalid" };
+      reviewState.value = { status: 'local-invalid' };
       return false;
     }
     const response = await scenarioAuthoringRepository.validateScenarioDraft(
@@ -322,13 +276,11 @@ async function reviewNow(): Promise<boolean> {
       {
         catalogRevision: effectiveContext.value.contract.revision,
         ...(serialized?.ok ? { rule: serialized.value } : {}),
-        ...(serializedAudience?.ok
-          ? { audience: serializedAudience.value }
-          : {}),
+        ...(serializedAudience?.ok ? { audience: serializedAudience.value } : {}),
         ...(effectiveAudienceContext.value?.catalog.version === 2
           ? {
               profileFreshness: props.audienceDraft?.freshness ?? {
-                mode: "USE_LAST_KNOWN",
+                mode: 'USE_LAST_KNOWN',
               },
             }
           : {}),
@@ -344,9 +296,7 @@ async function reviewNow(): Promise<boolean> {
               type: plain.type,
               config: plain.config,
               ...(plain.nodeKey ? { nodeKey: plain.nodeKey } : {}),
-              ...(plain.nextNodeKey !== undefined
-                ? { nextNodeKey: plain.nextNodeKey }
-                : {}),
+              ...(plain.nextNodeKey !== undefined ? { nextNodeKey: plain.nextNodeKey } : {}),
             };
           }),
         },
@@ -354,11 +304,11 @@ async function reviewNow(): Promise<boolean> {
     );
     if (requestId !== reviewSequence) return false;
     reviewState.value = response.valid
-      ? { status: "ready", response }
-      : { status: "semantic-invalid", response };
+      ? { status: 'ready', response }
+      : { status: 'semantic-invalid', response };
     return response.valid;
   } catch {
-    if (requestId === reviewSequence) reviewState.value = { status: "error" };
+    if (requestId === reviewSequence) reviewState.value = { status: 'error' };
     return false;
   }
 }
@@ -367,11 +317,11 @@ async function recoverCatalog() {
   try {
     recoveredContract.value = await props.refreshCatalog();
     requiresResave.value = true;
-    reviewState.value = { status: "idle" };
+    reviewState.value = { status: 'idle' };
     machine.reset();
-    emit("resave-required");
+    emit('resave-required');
   } catch {
-    reviewState.value = { status: "error" };
+    reviewState.value = { status: 'error' };
   }
 }
 
@@ -414,8 +364,8 @@ onBeforeUnmount(() => {
       <span>Проверка и публикация</span>
       <h2 id="publish-title">Проверка перед публикацией</h2>
       <p>
-        Публикация создаёт зафиксированную версию и включает её для новых
-        запусков. Уже начатые запуски продолжают исходную версию.
+        Публикация создаёт зафиксированную версию и включает её для новых запусков. Уже начатые
+        запуски продолжают исходную версию.
       </p>
     </header>
 
@@ -425,9 +375,8 @@ onBeforeUnmount(() => {
         <div>
           <strong>Условия</strong><span>{{ ruleSummary.text }}</span
           ><small
-            >{{ ruleSummary.leaves }} условий ·
-            {{ ruleSummary.aggregateLeaves }} агрегатов · каталог
-            {{ catalogLabel }}</small
+            >{{ ruleSummary.leaves }} условий · {{ ruleSummary.aggregateLeaves }} агрегатов ·
+            каталог {{ catalogLabel }}</small
           >
         </div>
       </article>
@@ -436,17 +385,15 @@ onBeforeUnmount(() => {
         <div>
           <strong>Аудитория</strong><span>{{ audienceSummary.text }}</span
           ><small
-            >{{ audienceSummary.leaves }} условий ·
-            {{ audienceSummary.segmentLeaves }} сегментов · каталог
-            {{ effectiveAudienceContext?.catalog.revision }}</small
+            >{{ audienceSummary.leaves }} условий · {{ audienceSummary.segmentLeaves }} сегментов ·
+            каталог {{ effectiveAudienceContext?.catalog.revision }}</small
           >
         </div>
       </article>
       <article>
         <i class="pi pi-send" />
         <div>
-          <strong>Доставка</strong
-          ><span>{{ deliveryPolicySummary(deliveryPolicy) }}</span
+          <strong>Доставка</strong><span>{{ deliveryPolicySummary(deliveryPolicy) }}</span
           ><small>Отдельно от срока цели</small>
         </div>
       </article>
@@ -454,24 +401,16 @@ onBeforeUnmount(() => {
         <i class="pi pi-lock" />
         <div>
           <strong>Текущая опубликованная версия</strong
-          ><span>{{ expectedHead ?? "Первая публикация в этой вкладке" }}</span
+          ><span>{{ expectedHead ?? 'Первая публикация в этой вкладке' }}</span
           ><small>Защита от одновременных изменений</small>
         </div>
       </article>
     </div>
 
-    <div
-      v-if="reviewState.status === 'pending'"
-      class="review-state"
-      role="status"
-    >
+    <div v-if="reviewState.status === 'pending'" class="review-state" role="status">
       Проверяем весь черновик сценария на сервере…
     </div>
-    <div
-      v-else-if="reviewState.status === 'error'"
-      class="review-state error"
-      role="alert"
-    >
+    <div v-else-if="reviewState.status === 'error'" class="review-state error" role="alert">
       Не удалось выполнить предпубликационную проверку.
       <button type="button" @click="reviewNow">Повторить</button>
     </div>
@@ -515,7 +454,7 @@ onBeforeUnmount(() => {
         ><span>{{
           reviewState.response.cost
             ? `${reviewState.response.cost.class} · ${reviewState.response.cost.leaves} условий · ${reviewState.response.cost.aggregateLeaves} агрегатов · ${reviewState.response.cost.historyWindowDays} дней истории`
-            : "Не рассчитана"
+            : 'Не рассчитана'
         }}</span>
       </div>
       <div>
@@ -523,36 +462,28 @@ onBeforeUnmount(() => {
         ><span>{{
           reviewState.response.dependencies
             .map((item) => `${item.eventCode} · схема v${item.schemaVersion}`)
-            .join("; ") || "Нет"
+            .join('; ') || 'Нет'
         }}</span>
       </div>
       <div>
         <strong>Предупреждения условий</strong
         ><span>{{
-          reviewState.response.warnings.map((item) => item.code).join(", ") ||
-          "Нет"
+          reviewState.response.warnings.map((item) => item.code).join(', ') || 'Нет'
         }}</span>
       </div>
       <div v-if="reviewState.response.audience">
         <strong>Зависимости аудитории</strong
         ><span
-          >{{
-            reviewState.response.audience.dependencies.attributeRevisionIds
-              .length
-          }}
+          >{{ reviewState.response.audience.dependencies.attributeRevisionIds.length }}
           атрибутов ·
-          {{
-            reviewState.response.audience.dependencies.segmentRevisionIds.length
-          }}
+          {{ reviewState.response.audience.dependencies.segmentRevisionIds.length }}
           сегментов</span
         ><code
-          v-for="id in reviewState.response.audience.dependencies
-            .attributeRevisionIds"
+          v-for="id in reviewState.response.audience.dependencies.attributeRevisionIds"
           :key="id"
           >{{ id }}</code
         ><code
-          v-for="id in reviewState.response.audience.dependencies
-            .segmentRevisionIds"
+          v-for="id in reviewState.response.audience.dependencies.segmentRevisionIds"
           :key="id"
           >{{ id }}</code
         >
@@ -562,134 +493,96 @@ onBeforeUnmount(() => {
         ><span>{{
           reviewState.response.audience.cost
             ? `${reviewState.response.audience.cost.leaves} условий · ${reviewState.response.audience.cost.segmentLeaves} сегментов`
-            : "Не рассчитана"
+            : 'Не рассчитана'
         }}</span>
       </div>
       <div v-if="reviewState.response.audience">
         <strong>Предупреждения аудитории</strong
         ><span>{{
-          reviewState.response.audience.warnings
-            .map((warning) => warning.code)
-            .join(", ") || "Нет"
+          reviewState.response.audience.warnings.map((warning) => warning.code).join(', ') || 'Нет'
         }}</span>
       </div>
     </div>
     <div class="document-dependencies">
       <strong>Зависимости действий и целей</strong
-      ><span>Типы действий: {{ actionTypes.join(", ") || "нет" }}</span
-      ><span>События целей: {{ goalEventCodes.join(", ") || "нет" }}</span>
+      ><span>Типы действий: {{ actionTypes.join(', ') || 'нет' }}</span
+      ><span>События целей: {{ goalEventCodes.join(', ') || 'нет' }}</span>
     </div>
     <p class="diff-gap">
-      <i class="pi pi-info-circle" /> Сервер проверяет условия, аудиторию, граф,
-      действия, цели и доставку как единый документ. Публикуется конкретная
-      сохранённая версия черновика.
+      <i class="pi pi-info-circle" /> Сервер проверяет условия, аудиторию, граф, действия, цели и
+      доставку как единый документ. Публикуется конкретная сохранённая версия черновика.
     </p>
 
     <ul v-if="localIssues.length" class="publish-issues">
       <li v-for="issue in localIssues" :key="issue">{{ issue }}</li>
     </ul>
-    <p v-if="blockedReason" class="blocked-reason">
-      <i class="pi pi-save" /> {{ blockedReason }}
-    </p>
+    <p v-if="blockedReason" class="blocked-reason"><i class="pi pi-save" /> {{ blockedReason }}</p>
     <p v-else-if="requiresResave" class="blocked-reason">
-      <i class="pi pi-save" /> Каталог изменился. Проверьте поля и снова
-      сохраните черновик перед публикацией.
+      <i class="pi pi-save" /> Каталог изменился. Проверьте поля и снова сохраните черновик перед
+      публикацией.
     </p>
     <p v-else-if="!expectedDraftVersion" class="blocked-reason">
       <i class="pi pi-save" /> Сохраните черновик перед публикацией.
     </p>
     <label v-if="importanceClass === 'SECURITY'" class="security-reason">
       <strong>Причина публикации сообщения безопасности</strong>
-      <InputText
-        v-model="securityPublishReason"
-        placeholder="Почему обход ограничений необходим"
-      />
+      <InputText v-model="securityPublishReason" placeholder="Почему обход ограничений необходим" />
       <small>Минимум 10 символов. Причина попадёт в аудит публикации.</small>
     </label>
 
     <div v-if="state.status === 'conflict'" class="conflict" role="alert">
       <template v-if="state.kind === 'catalog'">
         <strong>Каталог условий изменился</strong>
-        <p>
-          Обновите каталог, проверьте изменившиеся поля и обязательно снова
-          сохраните черновик.
-        </p>
-        <button
-          type="button"
-          aria-label="Обновить каталог"
-          @click="recoverCatalog"
-        >
+        <p>Обновите каталог, проверьте изменившиеся поля и обязательно снова сохраните черновик.</p>
+        <button type="button" aria-label="Обновить каталог" @click="recoverCatalog">
           Обновить каталог
         </button>
       </template>
       <template v-else-if="state.kind === 'draft'">
         <strong>Черновик изменён в другой вкладке</strong>
         <p>
-          Эта версия черновика устарела. Автоматическое объединение небезопасно:
-          загрузите актуальный документ и повторите изменения.
+          Эта версия черновика устарела. Автоматическое объединение небезопасно: загрузите
+          актуальный документ и повторите изменения.
         </p>
-        <button type="button" @click="emit('reload-request')">
-          Загрузить актуальный черновик
-        </button>
+        <button type="button" @click="emit('reload-request')">Загрузить актуальный черновик</button>
       </template>
       <template v-else>
         <strong>Сценарий опубликован в другой вкладке</strong>
         <p>
           Текущая версия:
-          {{ state.currentRevisionId ?? "не указана сервером" }}. Автоматическое
-          объединение недоступно: загрузите актуальную версию и сохраните новый
-          черновик осознанно.
+          {{ state.currentRevisionId ?? 'не указана сервером' }}. Автоматическое объединение
+          недоступно: загрузите актуальную версию и сохраните новый черновик осознанно.
         </p>
-        <button type="button" @click="emit('reload-request')">
-          Загрузить актуальную версию
-        </button>
+        <button type="button" @click="emit('reload-request')">Загрузить актуальную версию</button>
       </template>
     </div>
-    <div
-      v-else-if="state.status === 'error'"
-      class="publish-error"
-      role="alert"
-    >
+    <div v-else-if="state.status === 'error'" class="publish-error" role="alert">
       Не удалось опубликовать. Черновик остаётся в этой вкладке.
     </div>
 
-    <div
-      v-if="state.status === 'published'"
-      class="published-card"
-      role="status"
-    >
+    <div v-if="state.status === 'published'" class="published-card" role="status">
       <div>
         <i class="pi pi-check-circle" />
         <div>
-          <strong
-            >Версия №{{
-              state.response.revision.revisionNumber
-            }}
-            опубликована</strong
-          ><span
-            >{{ state.response.revision.id }} ·
-            {{ state.response.revision.contentHash }}</span
-          >
+          <strong>Версия №{{ state.response.revision.revisionNumber }} опубликована</strong
+          ><span>{{ state.response.revision.id }} · {{ state.response.revision.contentHash }}</span>
         </div>
       </div>
       <p>
-        Новые запуски используют эту версию. Уже начатые продолжают работать с
-        версией, с которой стартовали.
+        Новые запуски используют эту версию. Уже начатые продолжают работать с версией, с которой
+        стартовали.
       </p>
       <dl>
         <dt>Стоимость</dt>
         <dd>
-          {{ state.response.cost.class }} ·
-          {{ state.response.cost.leaves }} условий ·
+          {{ state.response.cost.class }} · {{ state.response.cost.leaves }} условий ·
           {{ state.response.cost.aggregateLeaves }} агрегатов
         </dd>
         <template v-if="state.response.audienceCost"
           ><dt>Снимок аудитории</dt>
           <dd>
             {{ state.response.audienceCost.leaves }} условий ·
-            {{
-              state.response.dependencies.userAttributeRevisionIds?.length ?? 0
-            }}
+            {{ state.response.dependencies.userAttributeRevisionIds?.length ?? 0 }}
             атрибутов ·
             {{ state.response.dependencies.segmentRevisionIds?.length ?? 0 }}
             сегментов
@@ -697,7 +590,7 @@ onBeforeUnmount(() => {
         >
         <dt>Действия</dt>
         <dd>
-          {{ state.response.dependencies.actionTypes.join(", ") || "Нет" }}
+          {{ state.response.dependencies.actionTypes.join(', ') || 'Нет' }}
         </dd>
         <dt>Версии событий</dt>
         <dd>
@@ -705,10 +598,7 @@ onBeforeUnmount(() => {
         </dd>
         <dt>Предупреждения</dt>
         <dd>
-          {{
-            state.response.warnings.map((warning) => warning.code).join(", ") ||
-            "Нет"
-          }}
+          {{ state.response.warnings.map((warning) => warning.code).join(', ') || 'Нет' }}
         </dd>
       </dl>
     </div>
@@ -720,11 +610,11 @@ onBeforeUnmount(() => {
       :disabled="!canPublish"
       @click="publish()"
     >
-      {{ state.status === "pending" ? "Публикуем…" : "Опубликовать версию" }}
+      {{ state.status === 'pending' ? 'Публикуем…' : 'Опубликовать версию' }}
     </button>
     <p class="session-warning">
-      <i class="pi pi-database" /> Черновик хранится на сервере с защитой от
-      одновременного изменения черновика и опубликованной версии.
+      <i class="pi pi-database" /> Черновик хранится на сервере с защитой от одновременного
+      изменения черновика и опубликованной версии.
     </p>
   </section>
 </template>

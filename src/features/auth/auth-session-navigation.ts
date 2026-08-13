@@ -1,6 +1,6 @@
-import type { Router } from "vue-router";
+import type { Router } from 'vue-router';
 
-export type AuthSessionEndReason = "LOGOUT" | "SESSION_EXPIRED";
+export type AuthSessionEndReason = 'LOGOUT' | 'SESSION_EXPIRED';
 
 type AuthSessionEndHandler = (reason: AuthSessionEndReason) => void;
 
@@ -12,13 +12,10 @@ export function notifyAuthSessionEnded(reason: AuthSessionEndReason): void {
 
 export function installAuthSessionNavigation(router: Router): () => void {
   const handler: AuthSessionEndHandler = (reason) => {
-    if (router.currentRoute.value.name === "login") return;
-    const redirect =
-      reason === "SESSION_EXPIRED"
-        ? router.currentRoute.value.fullPath
-        : undefined;
+    if (router.currentRoute.value.name === 'login') return;
+    const redirect = reason === 'SESSION_EXPIRED' ? router.currentRoute.value.fullPath : undefined;
     void router.replace({
-      name: "login",
+      name: 'login',
       ...(redirect ? { query: { redirect } } : {}),
     });
   };

@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { createSupportWorkspaceLiveController } from "./use-support-workspace-live";
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createSupportWorkspaceLiveController } from './use-support-workspace-live';
 
 function fakeRealtimeClient() {
   const subscriptions = new Map<string, (value: unknown) => void>();
@@ -10,9 +10,7 @@ function fakeRealtimeClient() {
     unwatchConversation: vi.fn(),
     subscribe: vi.fn((events: string[], handler: (value: unknown) => void) => {
       events.forEach((event) => subscriptions.set(event, handler));
-      return vi.fn(() =>
-        events.forEach((event) => subscriptions.delete(event)),
-      );
+      return vi.fn(() => events.forEach((event) => subscriptions.delete(event)));
     }),
     reconcile: vi.fn((handler: () => void) => {
       reconnect = handler;
@@ -30,140 +28,125 @@ function fakeRealtimeClient() {
   };
 }
 
-describe("support workspace live controller", () => {
+describe('support workspace live controller', () => {
   afterEach(() => vi.useRealTimers());
 
-  it("reconciles only the currently selected conversation after a live hint", async () => {
+  it('reconciles only the currently selected conversation after a live hint', async () => {
     vi.useFakeTimers();
     const client = fakeRealtimeClient();
     const reconcile = vi.fn().mockResolvedValue(undefined);
-    const controller = createSupportWorkspaceLiveController(
-      { reconcile },
-      client,
-    );
+    const controller = createSupportWorkspaceLiveController({ reconcile }, client);
 
-    await controller.setSelection("project-1", "conversation-1");
-    client.emit("conversation.message.upserted.v1", {
-      projectId: "project-1",
-      conversationId: "conversation-other",
+    await controller.setSelection('project-1', 'conversation-1');
+    client.emit('conversation.message.upserted.v1', {
+      projectId: 'project-1',
+      conversationId: 'conversation-other',
     });
     await vi.runAllTimersAsync();
 
     expect(reconcile).not.toHaveBeenCalled();
 
-    client.emit("conversation.message.upserted.v1", {
-      projectId: "project-1",
-      conversationId: "conversation-1",
+    client.emit('conversation.message.upserted.v1', {
+      projectId: 'project-1',
+      conversationId: 'conversation-1',
     });
     await vi.runAllTimersAsync();
 
-    expect(client.activateProject).toHaveBeenCalledWith("project-1");
-    expect(client.watchConversation).toHaveBeenCalledWith("conversation-1");
+    expect(client.activateProject).toHaveBeenCalledWith('project-1');
+    expect(client.watchConversation).toHaveBeenCalledWith('conversation-1');
     expect(reconcile).toHaveBeenCalledTimes(1);
   });
 
-  it("reconciles the selected conversation when its delivery receipt changes", async () => {
+  it('reconciles the selected conversation when its delivery receipt changes', async () => {
     vi.useFakeTimers();
     const client = fakeRealtimeClient();
     const reconcile = vi.fn().mockResolvedValue(undefined);
-    const controller = createSupportWorkspaceLiveController(
-      { reconcile },
-      client,
-    );
+    const controller = createSupportWorkspaceLiveController({ reconcile }, client);
 
-    await controller.setSelection("project-1", "conversation-1");
-    client.emit("conversation.message.delivery.upserted.v1", {
-      projectId: "project-1",
-      conversationId: "conversation-1",
+    await controller.setSelection('project-1', 'conversation-1');
+    client.emit('conversation.message.delivery.upserted.v1', {
+      projectId: 'project-1',
+      conversationId: 'conversation-1',
     });
     await vi.runAllTimersAsync();
 
     expect(reconcile).toHaveBeenCalledTimes(1);
   });
 
-  it("treats delivery revoke and a sequence gap as authoritative REST recovery hints", async () => {
+  it('treats delivery revoke and a sequence gap as authoritative REST recovery hints', async () => {
     vi.useFakeTimers();
     const client = fakeRealtimeClient();
     const reconcile = vi.fn().mockResolvedValue(undefined);
-    const controller = createSupportWorkspaceLiveController(
-      { reconcile },
-      client,
-    );
+    const controller = createSupportWorkspaceLiveController({ reconcile }, client);
 
-    await controller.setSelection("project-1", "conversation-1");
-    client.emit("conversation.message.delivery.upserted.v1", {
-      projectId: "project-1",
-      conversationId: "conversation-1",
-      eventSequence: "41",
+    await controller.setSelection('project-1', 'conversation-1');
+    client.emit('conversation.message.delivery.upserted.v1', {
+      projectId: 'project-1',
+      conversationId: 'conversation-1',
+      eventSequence: '41',
     });
-    client.emit("conversation.message.delivery.revoked.v1", {
-      projectId: "project-1",
-      conversationId: "conversation-1",
-      eventSequence: "43",
+    client.emit('conversation.message.delivery.revoked.v1', {
+      projectId: 'project-1',
+      conversationId: 'conversation-1',
+      eventSequence: '43',
     });
     await vi.runAllTimersAsync();
 
     expect(reconcile).toHaveBeenCalledTimes(1);
-    expect(reconcile).toHaveBeenLastCalledWith("GAP");
+    expect(reconcile).toHaveBeenLastCalledWith('GAP');
 
     client.reconnect();
     await vi.runAllTimersAsync();
-    expect(reconcile).toHaveBeenLastCalledWith("RECONNECT");
+    expect(reconcile).toHaveBeenLastCalledWith('RECONNECT');
   });
 
-  it("unwatches and rejects a queued reconcile after selection changes", async () => {
+  it('unwatches and rejects a queued reconcile after selection changes', async () => {
     vi.useFakeTimers();
     const client = fakeRealtimeClient();
     const reconcile = vi.fn().mockResolvedValue(undefined);
-    const controller = createSupportWorkspaceLiveController(
-      { reconcile },
-      client,
-    );
+    const controller = createSupportWorkspaceLiveController({ reconcile }, client);
 
-    await controller.setSelection("project-1", "conversation-1");
-    client.emit("conversation.message.upserted.v1", {
-      projectId: "project-1",
-      conversationId: "conversation-1",
+    await controller.setSelection('project-1', 'conversation-1');
+    client.emit('conversation.message.upserted.v1', {
+      projectId: 'project-1',
+      conversationId: 'conversation-1',
     });
-    await controller.setSelection("project-1", "conversation-2");
+    await controller.setSelection('project-1', 'conversation-2');
     await vi.runAllTimersAsync();
 
-    expect(client.unwatchConversation).toHaveBeenCalledWith("conversation-1");
+    expect(client.unwatchConversation).toHaveBeenCalledWith('conversation-1');
     expect(reconcile).not.toHaveBeenCalled();
   });
 
-  it("does not let the previous selection debounce swallow a current delivery gap", async () => {
+  it('does not let the previous selection debounce swallow a current delivery gap', async () => {
     vi.useFakeTimers();
     const client = fakeRealtimeClient();
     const reconcile = vi.fn().mockResolvedValue(undefined);
-    const controller = createSupportWorkspaceLiveController(
-      { reconcile },
-      client,
-    );
+    const controller = createSupportWorkspaceLiveController({ reconcile }, client);
 
-    await controller.setSelection("project-1", "conversation-1");
-    client.emit("conversation.message.upserted.v1", {
-      projectId: "project-1",
-      conversationId: "conversation-1",
+    await controller.setSelection('project-1', 'conversation-1');
+    client.emit('conversation.message.upserted.v1', {
+      projectId: 'project-1',
+      conversationId: 'conversation-1',
     });
-    await controller.setSelection("project-1", "conversation-2");
-    client.emit("conversation.message.delivery.upserted.v1", {
-      projectId: "project-1",
-      conversationId: "conversation-2",
-      eventSequence: "41",
+    await controller.setSelection('project-1', 'conversation-2');
+    client.emit('conversation.message.delivery.upserted.v1', {
+      projectId: 'project-1',
+      conversationId: 'conversation-2',
+      eventSequence: '41',
     });
-    client.emit("conversation.message.delivery.upserted.v1", {
-      projectId: "project-1",
-      conversationId: "conversation-2",
-      eventSequence: "43",
+    client.emit('conversation.message.delivery.upserted.v1', {
+      projectId: 'project-1',
+      conversationId: 'conversation-2',
+      eventSequence: '43',
     });
     await vi.runAllTimersAsync();
 
     expect(reconcile).toHaveBeenCalledTimes(1);
-    expect(reconcile).toHaveBeenLastCalledWith("GAP");
+    expect(reconcile).toHaveBeenLastCalledWith('GAP');
   });
 
-  it("scopes collaboration hints, sends only typing state, and purges on revoke", async () => {
+  it('scopes collaboration hints, sends only typing state, and purges on revoke', async () => {
     const client = fakeRealtimeClient();
     const collaboration = {
       select: vi.fn().mockResolvedValue(undefined),
@@ -184,29 +167,29 @@ describe("support workspace live controller", () => {
       },
       client,
     );
-    await controller.setSelection("project-1", "conversation-1");
+    await controller.setSelection('project-1', 'conversation-1');
     await controller.setDraftActive(true);
     await controller.setDraftActive(true);
     await controller.recordTypingActivity(true);
-    client.emit("conversation.typing.hint.v1", {
-      projectId: "project-1",
-      conversationId: "conversation-1",
-      generation: "2",
-      watchGeneration: "7",
+    client.emit('conversation.typing.hint.v1', {
+      projectId: 'project-1',
+      conversationId: 'conversation-1',
+      generation: '2',
+      watchGeneration: '7',
       isTyping: true,
-      expiresAt: "2026-08-08T10:00:05.000Z",
+      expiresAt: '2026-08-08T10:00:05.000Z',
       actor: {
-        cmsUserId: "operator-2",
-        displayName: "Анна",
-        generation: "7",
-        expiresAt: "2026-08-08T10:01:00.000Z",
+        cmsUserId: 'operator-2',
+        displayName: 'Анна',
+        generation: '7',
+        expiresAt: '2026-08-08T10:01:00.000Z',
       },
     });
-    client.emit("conversation.watch.revoked.v1", {
-      projectId: "project-1",
-      conversationId: "conversation-1",
-      generation: "7",
-      reason: "AUTHORIZATION_REVOKED",
+    client.emit('conversation.watch.revoked.v1', {
+      projectId: 'project-1',
+      conversationId: 'conversation-1',
+      generation: '7',
+      reason: 'AUTHORIZATION_REVOKED',
     });
 
     expect(collaboration.setDraftActive).toHaveBeenCalledWith(true, 14);
@@ -214,17 +197,12 @@ describe("support workspace live controller", () => {
     expect(client.setConversationTyping).toHaveBeenCalledTimes(1);
     expect(collaboration.reconcile).toHaveBeenCalledTimes(1);
     expect(collaboration.applyTypingHint).toHaveBeenCalledTimes(1);
-    expect(collaboration.revoke).toHaveBeenCalledWith(
-      "project-1",
-      "conversation-1",
-    );
+    expect(collaboration.revoke).toHaveBeenCalledWith('project-1', 'conversation-1');
     expect(onAccessRevoked).toHaveBeenCalledTimes(1);
-    expect(JSON.stringify(client.setConversationTyping.mock.calls)).not.toContain(
-      "draft",
-    );
+    expect(JSON.stringify(client.setConversationTyping.mock.calls)).not.toContain('draft');
   });
 
-  it("stops typing after idle time without clearing the collision baseline", async () => {
+  it('stops typing after idle time without clearing the collision baseline', async () => {
     vi.useFakeTimers();
     const client = fakeRealtimeClient();
     const collaboration = {
@@ -244,7 +222,7 @@ describe("support workspace live controller", () => {
       },
       client,
     );
-    await controller.setSelection("project-1", "conversation-1");
+    await controller.setSelection('project-1', 'conversation-1');
     await controller.setDraftActive(true);
     await controller.recordTypingActivity(true);
 
@@ -255,20 +233,15 @@ describe("support workspace live controller", () => {
     controller.dispose();
   });
 
-  it("does not let an older idle timer stop typing after newer input", async () => {
+  it('does not let an older idle timer stop typing after newer input', async () => {
     vi.useFakeTimers();
     const client = fakeRealtimeClient();
     let releaseStart!: (accepted: boolean) => void;
     client.setConversationTyping.mockImplementation((active: boolean) =>
-      active
-        ? new Promise<boolean>((resolve) => (releaseStart = resolve))
-        : Promise.resolve(true),
+      active ? new Promise<boolean>((resolve) => (releaseStart = resolve)) : Promise.resolve(true),
     );
-    const controller = createSupportWorkspaceLiveController(
-      { reconcile: vi.fn() },
-      client,
-    );
-    await controller.setSelection("project-1", "conversation-1");
+    const controller = createSupportWorkspaceLiveController({ reconcile: vi.fn() }, client);
+    await controller.setSelection('project-1', 'conversation-1');
 
     const firstActivity = controller.recordTypingActivity(true);
     await vi.advanceTimersByTimeAsync(100);
@@ -286,7 +259,7 @@ describe("support workspace live controller", () => {
     controller.dispose();
   });
 
-  it("re-arms collision protection for a restored draft after watch startup", async () => {
+  it('re-arms collision protection for a restored draft after watch startup', async () => {
     const client = fakeRealtimeClient();
     const collaboration = {
       select: vi.fn().mockResolvedValue(undefined),
@@ -309,19 +282,15 @@ describe("support workspace live controller", () => {
       client,
     );
 
-    await controller.setSelection("project-1", "conversation-1");
+    await controller.setSelection('project-1', 'conversation-1');
 
-    expect(collaboration.select).toHaveBeenCalledWith(
-      "project-1",
-      "conversation-1",
-      19,
-    );
+    expect(collaboration.select).toHaveBeenCalledWith('project-1', 'conversation-1', 19);
     expect(collaboration.setDraftActive).toHaveBeenCalledWith(true, 19);
     expect(collaboration.reconcile).toHaveBeenCalledTimes(1);
     expect(client.setConversationTyping).not.toHaveBeenCalled();
     expect(recordTelemetry).toHaveBeenCalledWith({
-      operation: "draft_recovery",
-      outcome: "restored",
+      operation: 'draft_recovery',
+      outcome: 'restored',
       duration_ms: 0,
       recovered: true,
     });

@@ -1,54 +1,49 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import Textarea from "primevue/textarea";
-import { useAuthStore } from "@/features/auth/auth.store";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import Textarea from 'primevue/textarea';
+import { useAuthStore } from '@/features/auth/auth.store';
 import {
   type CaseIntelligenceOperationsAuthority,
   useSupportCaseIntelligenceOperations,
-} from "@/features/support-case-intelligence/model/use-support-case-intelligence-operations";
+} from '@/features/support-case-intelligence/model/use-support-case-intelligence-operations';
 import type {
   CaseIntelligenceDecision,
   CaseIntelligenceEvaluationSide,
   CaseIntelligenceGateName,
   CaseIntelligenceOperationsSection,
   CaseIntelligenceRelease,
-} from "@/features/support-case-intelligence/model/support-case-intelligence-operations-domain";
+} from '@/features/support-case-intelligence/model/support-case-intelligence-operations-domain';
 
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 const period = ref<7 | 30>(30);
 const rollbackTarget = ref<CaseIntelligenceRelease | null>(null);
-const rollbackReason = ref("");
+const rollbackReason = ref('');
 const correctionVisible = ref(false);
-const correctionReason = ref("OPERATOR_REVIEW");
-const correctionNotes = ref("");
-const correctionCaseDecision = ref("CREATE");
-const correctionClass = ref("ISSUE");
-const correctionReview = ref("REVIEW");
-const correctionHandoff = ref("NONE");
-const correctionSafety = ref("CLEAR");
+const correctionReason = ref('OPERATOR_REVIEW');
+const correctionNotes = ref('');
+const correctionCaseDecision = ref('CREATE');
+const correctionClass = ref('ISSUE');
+const correctionReview = ref('REVIEW');
+const correctionHandoff = ref('NONE');
+const correctionSafety = ref('CLEAR');
 
-const permissions = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
-const permissionSignature = computed(() =>
-  [...permissions.value].sort().join("\0"),
-);
+const permissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
+const permissionSignature = computed(() => [...permissions.value].sort().join('\0'));
 const section = computed<CaseIntelligenceOperationsSection>(() => {
-  if (route.name === "support-case-intelligence-observability")
-    return "observability";
-  if (route.name === "support-case-intelligence-decisions") return "decisions";
-  if (route.name === "support-case-intelligence-versions") return "versions";
-  return "evaluation";
+  if (route.name === 'support-case-intelligence-observability') return 'observability';
+  if (route.name === 'support-case-intelligence-decisions') return 'decisions';
+  if (route.name === 'support-case-intelligence-versions') return 'versions';
+  return 'evaluation';
 });
 
 function authority(): CaseIntelligenceOperationsAuthority | null {
@@ -77,7 +72,7 @@ const controller = useSupportCaseIntelligenceOperations({
       /* Local authority is cleared first. */
     } finally {
       await router.replace({
-        path: "/login",
+        path: '/login',
         query: { redirect: route.fullPath },
       });
     }
@@ -86,15 +81,13 @@ const controller = useSupportCaseIntelligenceOperations({
 
 const selectedDatasetId = computed(() => {
   const value = route.query.dataset;
-  return typeof value === "string"
-    ? value
-    : (controller.datasets.value[0]?.id ?? "");
+  return typeof value === 'string' ? value : (controller.datasets.value[0]?.id ?? '');
 });
 const selectedEvaluationId = computed(() =>
-  typeof route.query.evaluation === "string" ? route.query.evaluation : "",
+  typeof route.query.evaluation === 'string' ? route.query.evaluation : '',
 );
 const selectedDecisionId = computed(() =>
-  typeof route.query.decision === "string" ? route.query.decision : "",
+  typeof route.query.decision === 'string' ? route.query.decision : '',
 );
 const canOpenEvaluation = computed(() => controller.canManageRelease.value);
 const allGatesPassed = computed(() =>
@@ -102,59 +95,56 @@ const allGatesPassed = computed(() =>
     ? Object.values(controller.evaluation.value.gates).every(Boolean)
     : false,
 );
-const currentRelease = computed(
-  () => controller.current.value?.release ?? null,
-);
+const currentRelease = computed(() => controller.current.value?.release ?? null);
 const safetyNotice = computed(() => {
   const snapshot = controller.current.value;
-  if (!snapshot || snapshot.safetyState === "READY") return null;
-  return snapshot.safetyState === "SAFETY_RECONCILING"
+  if (!snapshot || snapshot.safetyState === 'READY') return null;
+  return snapshot.safetyState === 'SAFETY_RECONCILING'
     ? {
-        severity: "warn" as const,
-        text: "Платформа применяет обязательную версию безопасности. Публикация временно закрыта; проект не может остановить или откатить это обновление.",
+        severity: 'warn' as const,
+        text: 'Платформа применяет обязательную версию безопасности. Публикация временно закрыта; проект не может остановить или откатить это обновление.',
       }
     : {
-        severity: "warn" as const,
-        text: "Администратор платформы ещё не опубликовал обязательную политику безопасности. Это не ошибка ваших прав: настройки проекта доступны, но проверка и публикация останутся закрыты до настройки на сервере.",
+        severity: 'warn' as const,
+        text: 'Администратор платформы ещё не опубликовал обязательную политику безопасности. Это не ошибка ваших прав: настройки проекта доступны, но проверка и публикация останутся закрыты до настройки на сервере.',
       };
 });
 const pageTitle = computed(
   () =>
     ({
-      evaluation: "Качество и публикация",
-      observability: "Расходы и путь обращения",
-      decisions: "Журнал решений",
-      versions: "Версии",
+      evaluation: 'Качество и публикация',
+      observability: 'Расходы и путь обращения',
+      decisions: 'Журнал решений',
+      versions: 'Версии',
     })[section.value],
 );
 const pageDescription = computed(
   () =>
     ({
       evaluation:
-        "Сравните новую конфигурацию с рабочей и публикуйте только после всех серверных проверок.",
+        'Сравните новую конфигурацию с рабочей и публикуйте только после всех серверных проверок.',
       observability:
-        "Серверная воронка решений, расходы и полнота данных без пересчёта в браузере.",
-      decisions:
-        "Почему Lola приняла решение, какие версии участвовали и что исправил сотрудник.",
+        'Серверная воронка решений, расходы и полнота данных без пересчёта в браузере.',
+      decisions: 'Почему Lola приняла решение, какие версии участвовали и что исправил сотрудник.',
       versions:
-        "Неизменяемая история рабочих версий и безопасный возврат к проверенной конфигурации.",
+        'Неизменяемая история рабочих версий и безопасный возврат к проверенной конфигурации.',
     })[section.value],
 );
 
 const navItems = [
   {
-    label: "Качество и публикация",
-    to: "/support/settings/case-intelligence/evaluation",
+    label: 'Качество и публикация',
+    to: '/support/settings/case-intelligence/evaluation',
   },
   {
-    label: "Расходы и путь обращения",
-    to: "/support/settings/case-intelligence/observability",
+    label: 'Расходы и путь обращения',
+    to: '/support/settings/case-intelligence/observability',
   },
   {
-    label: "Журнал решений",
-    to: "/support/settings/case-intelligence/decision-log",
+    label: 'Журнал решений',
+    to: '/support/settings/case-intelligence/decision-log',
   },
-  { label: "Версии", to: "/support/settings/case-intelligence/versions-audit" },
+  { label: 'Версии', to: '/support/settings/case-intelligence/versions-audit' },
 ];
 const gateRows: Array<{
   key: CaseIntelligenceGateName;
@@ -162,203 +152,178 @@ const gateRows: Array<{
   description: string;
 }> = [
   {
-    key: "security",
-    label: "Безопасность",
-    description:
-      "Критические риски распознаны во всех обязательных языках и каналах.",
+    key: 'security',
+    label: 'Безопасность',
+    description: 'Критические риски распознаны во всех обязательных языках и каналах.',
   },
   {
-    key: "quality",
-    label: "Качество",
-    description: "Точность, полнота и ошибки соответствуют порогам проекта.",
+    key: 'quality',
+    label: 'Качество',
+    description: 'Точность, полнота и ошибки соответствуют порогам проекта.',
   },
   {
-    key: "calibration",
-    label: "Калибровка",
-    description: "Порог уверенности подтверждён достаточным числом примеров.",
+    key: 'calibration',
+    label: 'Калибровка',
+    description: 'Порог уверенности подтверждён достаточным числом примеров.',
   },
   {
-    key: "cost",
-    label: "Расходы",
-    description:
-      "Стоимость проверки и одного принятого обращения укладывается в лимиты.",
+    key: 'cost',
+    label: 'Расходы',
+    description: 'Стоимость проверки и одного принятого обращения укладывается в лимиты.',
   },
   {
-    key: "capacity",
-    label: "Нагрузка",
-    description:
-      "Изменение очереди и передачи оператору допустимо для команды.",
+    key: 'capacity',
+    label: 'Нагрузка',
+    description: 'Изменение очереди и передачи оператору допустимо для команды.',
   },
 ];
 const metricRows: Array<{
   key: keyof Pick<
     CaseIntelligenceEvaluationSide,
-    | "accuracy"
-    | "macroF1"
-    | "criticalRecall"
-    | "attachReopenAccuracy"
-    | "handoffRecall"
+    'accuracy' | 'macroF1' | 'criticalRecall' | 'attachReopenAccuracy' | 'handoffRecall'
   >;
   label: string;
 }> = [
-  { key: "accuracy", label: "Общая точность" },
-  { key: "macroF1", label: "Сбалансированное качество" },
-  { key: "criticalRecall", label: "Полнота критических рисков" },
-  { key: "attachReopenAccuracy", label: "Привязка и повторное открытие" },
-  { key: "handoffRecall", label: "Полнота передачи оператору" },
+  { key: 'accuracy', label: 'Общая точность' },
+  { key: 'macroF1', label: 'Сбалансированное качество' },
+  { key: 'criticalRecall', label: 'Полнота критических рисков' },
+  { key: 'attachReopenAccuracy', label: 'Привязка и повторное открытие' },
+  { key: 'handoffRecall', label: 'Полнота передачи оператору' },
 ];
 const funnelLabels: Record<string, string> = {
-  ELIGIBLE_SIGNALS: "Сообщения, подходящие для проверки",
-  DETECTED: "Распознано решение",
-  DEFERRED: "Передано на проверку",
-  CASE_CREATED: "Создано обращение",
-  CASE_ATTACHED: "Привязано к открытому",
-  CASE_REOPENED: "Открыто повторно",
-  HANDOFF_OFFERED: "Предложена передача",
-  HANDOFF_ACCEPTED: "Передача принята",
+  ELIGIBLE_SIGNALS: 'Сообщения, подходящие для проверки',
+  DETECTED: 'Распознано решение',
+  DEFERRED: 'Передано на проверку',
+  CASE_CREATED: 'Создано обращение',
+  CASE_ATTACHED: 'Привязано к открытому',
+  CASE_REOPENED: 'Открыто повторно',
+  HANDOFF_OFFERED: 'Предложена передача',
+  HANDOFF_ACCEPTED: 'Передача принята',
 };
 const decisionOptions = [
-  { label: "Не создавать обращение", value: "NO_CASE" },
-  { label: "Создать обращение", value: "CREATE" },
-  { label: "Привязать к открытому", value: "ATTACH" },
-  { label: "Открыть повторно", value: "REOPEN" },
-  { label: "Передать на проверку", value: "DEFER" },
+  { label: 'Не создавать обращение', value: 'NO_CASE' },
+  { label: 'Создать обращение', value: 'CREATE' },
+  { label: 'Привязать к открытому', value: 'ATTACH' },
+  { label: 'Открыть повторно', value: 'REOPEN' },
+  { label: 'Передать на проверку', value: 'DEFER' },
 ];
 const classOptions = [
-  { label: "Проблема", value: "ISSUE" },
-  { label: "Запрос", value: "REQUEST" },
-  { label: "Вопрос", value: "QUESTION" },
-  { label: "Отзыв", value: "FEEDBACK" },
-  { label: "Другое", value: "OTHER" },
+  { label: 'Проблема', value: 'ISSUE' },
+  { label: 'Запрос', value: 'REQUEST' },
+  { label: 'Вопрос', value: 'QUESTION' },
+  { label: 'Отзыв', value: 'FEEDBACK' },
+  { label: 'Другое', value: 'OTHER' },
 ];
 const reviewOptions = [
-  { label: "Применить автоматически", value: "AUTO_APPLY" },
-  { label: "Проверить человеку", value: "REVIEW" },
-  { label: "Заблокировать", value: "BLOCK" },
+  { label: 'Применить автоматически', value: 'AUTO_APPLY' },
+  { label: 'Проверить человеку', value: 'REVIEW' },
+  { label: 'Заблокировать', value: 'BLOCK' },
 ];
 const handoffOptions = [
-  { label: "Не передавать", value: "NONE" },
-  { label: "Предложить оператора", value: "OFFER" },
-  { label: "Передать немедленно", value: "ESCALATE" },
+  { label: 'Не передавать', value: 'NONE' },
+  { label: 'Предложить оператора', value: 'OFFER' },
+  { label: 'Передать немедленно', value: 'ESCALATE' },
 ];
 const safetyOptions = [
-  { label: "Риска нет", value: "CLEAR" },
-  { label: "Возможен риск", value: "SUSPECTED" },
-  { label: "Срочный риск", value: "URGENT" },
-  { label: "Проверка продолжается", value: "PENDING" },
-  { label: "Проверка не завершилась", value: "FAILED" },
+  { label: 'Риска нет', value: 'CLEAR' },
+  { label: 'Возможен риск', value: 'SUSPECTED' },
+  { label: 'Срочный риск', value: 'URGENT' },
+  { label: 'Проверка продолжается', value: 'PENDING' },
+  { label: 'Проверка не завершилась', value: 'FAILED' },
 ];
 
 function pct(value: number | null | undefined) {
   return value == null
-    ? "—"
-    : new Intl.NumberFormat("ru-RU", {
-        style: "percent",
+    ? '—'
+    : new Intl.NumberFormat('ru-RU', {
+        style: 'percent',
         maximumFractionDigits: 1,
       }).format(value);
 }
 function number(value: number) {
-  return new Intl.NumberFormat("ru-RU").format(value);
+  return new Intl.NumberFormat('ru-RU').format(value);
 }
 function money(microUsd: string | null | undefined) {
-  if (!microUsd) return "Нет данных";
-  return new Intl.NumberFormat("ru-RU", {
-    style: "currency",
-    currency: "USD",
+  if (!microUsd) return 'Нет данных';
+  return new Intl.NumberFormat('ru-RU', {
+    style: 'currency',
+    currency: 'USD',
     maximumFractionDigits: 3,
   }).format(Number(microUsd) / 1_000_000);
 }
 function date(value: string | null | undefined) {
   return value
-    ? new Intl.DateTimeFormat("ru-RU", {
-        dateStyle: "medium",
-        timeStyle: "short",
+    ? new Intl.DateTimeFormat('ru-RU', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
       }).format(new Date(value))
-    : "—";
+    : '—';
 }
 function shortId(value: string | null | undefined) {
-  return value
-    ? value.length > 18
-      ? `${value.slice(0, 8)}…${value.slice(-6)}`
-      : value
-    : "—";
+  return value ? (value.length > 18 ? `${value.slice(0, 8)}…${value.slice(-6)}` : value) : '—';
 }
 function statusLabel(value: string) {
   return (
     (
       {
-        LIVE: "Рабочая",
-        SUPERSEDED: "Предыдущая",
-        PASSED: "Допущена",
-        FAILED: "Не допущена",
-        PENDING: "В очереди",
-        PROCESSING: "Проверяется",
-        OUTCOME_UNKNOWN: "Нужна сверка",
+        LIVE: 'Рабочая',
+        SUPERSEDED: 'Предыдущая',
+        PASSED: 'Допущена',
+        FAILED: 'Не допущена',
+        PENDING: 'В очереди',
+        PROCESSING: 'Проверяется',
+        OUTCOME_UNKNOWN: 'Нужна сверка',
       } as Record<string, string>
-    )[value] ?? "Состояние уточняется"
+    )[value] ?? 'Состояние уточняется'
   );
 }
 function channelLabel(value: string) {
   return (
-    (
-      { TEXT: "Текст", VOICE: "Голос", TELEGRAM: "Telegram" } as Record<
-        string,
-        string
-      >
-    )[value] ?? "Другой канал"
+    ({ TEXT: 'Текст', VOICE: 'Голос', TELEGRAM: 'Telegram' } as Record<string, string>)[value] ??
+    'Другой канал'
   );
 }
 function riskLabel(value: string) {
   return (
     (
       {
-        NONE: "Без критического риска",
-        RESPONSIBLE_GAMING: "Риск ответственной игры",
-        RESPONSIBLE_GAMING_CRISIS: "Кризис ответственной игры",
-        SELF_HARM_OR_SUICIDE: "Риск самоповреждения",
-        CREDIBLE_THREAT_OR_VIOLENCE: "Угроза насилия",
-        HARM_INVOLVING_MINORS: "Риск для несовершеннолетних",
+        NONE: 'Без критического риска',
+        RESPONSIBLE_GAMING: 'Риск ответственной игры',
+        RESPONSIBLE_GAMING_CRISIS: 'Кризис ответственной игры',
+        SELF_HARM_OR_SUICIDE: 'Риск самоповреждения',
+        CREDIBLE_THREAT_OR_VIOLENCE: 'Угроза насилия',
+        HARM_INVOLVING_MINORS: 'Риск для несовершеннолетних',
       } as Record<string, string>
-    )[value] ?? "Критический риск"
+    )[value] ?? 'Критический риск'
   );
 }
 function decisionLabel(value: string) {
-  return (
-    decisionOptions.find((item) => item.value === value)?.label ??
-    "Решение сервера"
-  );
+  return decisionOptions.find((item) => item.value === value)?.label ?? 'Решение сервера';
 }
 function classLabel(value: string | null) {
-  return (
-    classOptions.find((item) => item.value === value)?.label ?? "Без класса"
-  );
+  return classOptions.find((item) => item.value === value)?.label ?? 'Без класса';
 }
 function handoffLabel(value: string | null) {
-  return (
-    handoffOptions.find((item) => item.value === value)?.label ??
-    "Не передавать"
-  );
+  return handoffOptions.find((item) => item.value === value)?.label ?? 'Не передавать';
 }
 function safetyLabel(value: string | null) {
-  return (
-    safetyOptions.find((item) => item.value === value)?.label ?? "Нет решения"
-  );
+  return safetyOptions.find((item) => item.value === value)?.label ?? 'Нет решения';
 }
 function reasonLabel(value: string) {
   return (
     (
       {
-        EXACT_RULE_MATCH: "Сработало точное правило",
-        SEMANTIC_MATCH: "Совпало по смыслу",
-        CASE_INTELLIGENCE_DETERMINISTIC_RULE_MATCH: "Сработало точное правило",
-        CASE_INTELLIGENCE_NO_DETERMINISTIC_MATCH: "Точного правила нет",
+        EXACT_RULE_MATCH: 'Сработало точное правило',
+        SEMANTIC_MATCH: 'Совпало по смыслу',
+        CASE_INTELLIGENCE_DETERMINISTIC_RULE_MATCH: 'Сработало точное правило',
+        CASE_INTELLIGENCE_NO_DETERMINISTIC_MATCH: 'Точного правила нет',
       } as Record<string, string>
-    )[value] ?? "Серверное основание"
+    )[value] ?? 'Серверное основание'
   );
 }
 function metricValue(
   side: CaseIntelligenceEvaluationSide | null,
-  key: (typeof metricRows)[number]["key"],
+  key: (typeof metricRows)[number]['key'],
 ) {
   return side?.[key] ?? null;
 }
@@ -370,14 +335,13 @@ async function load() {
     from: from.toISOString(),
     to: to.toISOString(),
   });
-  if (section.value === "evaluation" && selectedDatasetId.value)
+  if (section.value === 'evaluation' && selectedDatasetId.value)
     await controller.selectDataset(selectedDatasetId.value);
-  if (section.value === "evaluation") {
-    const id =
-      selectedEvaluationId.value || controller.evaluations.value[0]?.id;
+  if (section.value === 'evaluation') {
+    const id = selectedEvaluationId.value || controller.evaluations.value[0]?.id;
     if (id) await controller.selectEvaluation(id);
   }
-  if (section.value === "decisions" && selectedDecisionId.value)
+  if (section.value === 'decisions' && selectedDecisionId.value)
     await controller.selectDecision(selectedDecisionId.value);
 }
 
@@ -411,11 +375,11 @@ function openCorrection() {
   const item = controller.decision.value;
   if (!item) return;
   correctionCaseDecision.value = item.caseDecision;
-  correctionClass.value = item.conversationClass ?? "ISSUE";
-  correctionReview.value = item.reviewDisposition ?? "REVIEW";
-  correctionHandoff.value = item.handoffAction ?? "NONE";
-  correctionSafety.value = item.safetyDecision ?? "CLEAR";
-  correctionNotes.value = "";
+  correctionClass.value = item.conversationClass ?? 'ISSUE';
+  correctionReview.value = item.reviewDisposition ?? 'REVIEW';
+  correctionHandoff.value = item.handoffAction ?? 'NONE';
+  correctionSafety.value = item.safetyDecision ?? 'CLEAR';
+  correctionNotes.value = '';
   correctionVisible.value = true;
 }
 async function saveCorrection() {
@@ -440,38 +404,33 @@ async function saveCorrection() {
 }
 async function confirmRollback() {
   if (!rollbackTarget.value) return;
-  const completed = await controller.rollback(
-    rollbackTarget.value,
-    rollbackReason.value,
-  );
+  const completed = await controller.rollback(rollbackTarget.value, rollbackReason.value);
   if (!completed) return;
   rollbackTarget.value = null;
-  rollbackReason.value = "";
+  rollbackReason.value = '';
 }
 
 watch(
   () =>
     [
-      auth.user?.id ?? "",
-      auth.project?.id ?? "",
+      auth.user?.id ?? '',
+      auth.project?.id ?? '',
       permissionSignature.value,
       section.value,
     ] as const,
   (next, previous) => {
     const pendingPermission =
-      controller.pending.value?.operation === "CORRECT_DECISION"
-        ? "project.case_intelligence.labels.review"
+      controller.pending.value?.operation === 'CORRECT_DECISION'
+        ? 'project.case_intelligence.labels.review'
         : controller.pending.value
-          ? "project.case_intelligence.release.manage"
+          ? 'project.case_intelligence.release.manage'
           : null;
-    const previousPermissions = new Set(
-      (previous?.[2] ?? "").split("\0").filter(Boolean),
-    );
-    const nextPermissions = new Set(next[2].split("\0").filter(Boolean));
+    const previousPermissions = new Set((previous?.[2] ?? '').split('\0').filter(Boolean));
+    const nextPermissions = new Set(next[2].split('\0').filter(Boolean));
     const actorChanged = !!previous?.[0] && previous[0] !== next[0];
     const lostRead =
-      previousPermissions.has("project.case_intelligence.read") &&
-      !nextPermissions.has("project.case_intelligence.read");
+      previousPermissions.has('project.case_intelligence.read') &&
+      !nextPermissions.has('project.case_intelligence.read');
     const lostCommandAuthority =
       !!pendingPermission &&
       previousPermissions.has(pendingPermission) &&
@@ -483,10 +442,10 @@ watch(
   },
 );
 watch(period, () => {
-  if (section.value === "observability") void load();
+  if (section.value === 'observability') void load();
 });
 watch(selectedDecisionId, (id) => {
-  if (section.value === "decisions") void controller.selectDecision(id || null);
+  if (section.value === 'decisions') void controller.selectDecision(id || null);
 });
 onMounted(load);
 onBeforeUnmount(() => controller.reset());
@@ -532,53 +491,32 @@ onBeforeUnmount(() => controller.reset());
     <Message v-if="controller.error.value" severity="error" :closable="false">{{
       controller.error.value
     }}</Message>
-    <Message
-      v-if="controller.feedback.value"
-      severity="success"
-      :closable="false"
-      >{{ controller.feedback.value }}</Message
-    >
+    <Message v-if="controller.feedback.value" severity="success" :closable="false">{{
+      controller.feedback.value
+    }}</Message>
     <Message v-if="controller.pending.value" severity="warn" :closable="false">
       <div class="pending-command">
-        <span
-          >Исход последней команды ещё не подтверждён. Новые изменения
-          заблокированы.</span
-        ><Button
-          label="Проверить исход"
-          size="small"
-          @click="controller.reconcilePending"
-        />
+        <span>Исход последней команды ещё не подтверждён. Новые изменения заблокированы.</span
+        ><Button label="Проверить исход" size="small" @click="controller.reconcilePending" />
       </div>
     </Message>
-    <Message
-      v-if="safetyNotice"
-      :severity="safetyNotice.severity"
-      :closable="false"
-      >{{ safetyNotice.text }}</Message
-    >
+    <Message v-if="safetyNotice" :severity="safetyNotice.severity" :closable="false">{{
+      safetyNotice.text
+    }}</Message>
 
-    <section
-      v-if="controller.loading.value"
-      class="skeleton-grid"
-      aria-label="Загрузка данных"
-    >
-      <Skeleton height="10rem" /><Skeleton height="22rem" /><Skeleton
-        height="22rem"
-      />
+    <section v-if="controller.loading.value" class="skeleton-grid" aria-label="Загрузка данных">
+      <Skeleton height="10rem" /><Skeleton height="22rem" /><Skeleton height="22rem" />
     </section>
 
     <template v-else-if="controller.canRead.value">
       <template v-if="section === 'evaluation'">
         <Message v-if="!canOpenEvaluation" severity="info" :closable="false"
-          >Для запуска проверок и публикации нужен доступ к управлению версиями.
-          Рабочее состояние проекта остаётся доступным в обзоре.</Message
+          >Для запуска проверок и публикации нужен доступ к управлению версиями. Рабочее состояние
+          проекта остаётся доступным в обзоре.</Message
         >
         <section class="admission-card" aria-labelledby="admission-title">
           <div class="admission-card__summary">
-            <div
-              class="admission-orb"
-              :class="{ 'admission-orb--pass': allGatesPassed }"
-            >
+            <div class="admission-orb" :class="{ 'admission-orb--pass': allGatesPassed }">
               <i :class="allGatesPassed ? 'pi pi-check' : 'pi pi-shield'" />
             </div>
             <div>
@@ -586,24 +524,22 @@ onBeforeUnmount(() => controller.reset());
               <h2 id="admission-title">
                 {{
                   allGatesPassed
-                    ? "Кандидат готов к публикации"
+                    ? 'Кандидат готов к публикации'
                     : controller.evaluation.value
-                      ? "Публикация заблокирована"
-                      : "Сначала запустите проверку"
+                      ? 'Публикация заблокирована'
+                      : 'Сначала запустите проверку'
                 }}
               </h2>
               <p>
-                Решение принимает сервер по полному набору версии. Один зелёный
-                показатель не может скрыть проблему в другом.
+                Решение принимает сервер по полному набору версии. Один зелёный показатель не может
+                скрыть проблему в другом.
               </p>
             </div>
             <Button
               v-if="controller.evaluation.value && allGatesPassed"
               label="Сделать рабочей"
               icon="pi pi-check-circle"
-              :disabled="
-                !controller.canActivate.value || !!controller.pending.value
-              "
+              :disabled="!controller.canActivate.value || !!controller.pending.value"
               :loading="controller.mutating.value"
               @click="controller.activateSelected"
             />
@@ -612,10 +548,7 @@ onBeforeUnmount(() => controller.reset());
             <article
               v-for="gate in gateRows"
               :key="gate.key"
-              :class="[
-                'gate',
-                { 'gate--pass': controller.evaluation.value?.gates[gate.key] },
-              ]"
+              :class="['gate', { 'gate--pass': controller.evaluation.value?.gates[gate.key] }]"
             >
               <i
                 :class="
@@ -661,27 +594,19 @@ onBeforeUnmount(() => controller.reset());
             <div v-if="controller.dataset.value" class="dataset-summary">
               <strong>{{ controller.dataset.value.name }}</strong
               ><span>{{ controller.dataset.value.description }}</span
-              ><b
-                >{{ number(controller.dataset.value.sampleCount) }} примеров</b
-              >
+              ><b>{{ number(controller.dataset.value.sampleCount) }} примеров</b>
               <dl>
                 <div>
                   <dt>Языки</dt>
                   <dd>
-                    {{
-                      controller.dataset.value.locales
-                        .map((x) => x.code)
-                        .join(", ")
-                    }}
+                    {{ controller.dataset.value.locales.map((x) => x.code).join(', ') }}
                   </dd>
                 </div>
                 <div>
                   <dt>Каналы</dt>
                   <dd>
                     {{
-                      controller.dataset.value.channels
-                        .map((x) => channelLabel(x.code))
-                        .join(", ")
+                      controller.dataset.value.channels.map((x) => channelLabel(x.code)).join(', ')
                     }}
                   </dd>
                 </div>
@@ -690,7 +615,7 @@ onBeforeUnmount(() => controller.reset());
                   <dd>
                     {{
                       controller.dataset.value.risks
-                        .filter((x) => x.code !== "NONE")
+                        .filter((x) => x.code !== 'NONE')
                         .reduce((sum, x) => sum + x.count, 0)
                     }}
                   </dd>
@@ -699,9 +624,7 @@ onBeforeUnmount(() => controller.reset());
               <Button
                 label="Запустить проверку"
                 icon="pi pi-play"
-                :disabled="
-                  !!controller.pending.value || controller.mutating.value
-                "
+                :disabled="!!controller.pending.value || controller.mutating.value"
                 :loading="controller.mutating.value"
                 @click="controller.runEvaluation(controller.dataset.value.id)"
               />
@@ -718,8 +641,7 @@ onBeforeUnmount(() => controller.reset());
               type="button"
               class="history-row"
               :class="{
-                'history-row--active':
-                  controller.evaluation.value?.id === item.id,
+                'history-row--active': controller.evaluation.value?.id === item.id,
               }"
               @click="openEvaluation(item.id)"
             >
@@ -749,80 +671,41 @@ onBeforeUnmount(() => controller.reset());
                   <p class="eyebrow">Сравнение</p>
                   <h2>Кандидат и рабочая версия</h2>
                 </div>
-                <Button
-                  label="Закрыть"
-                  icon="pi pi-times"
-                  text
-                  @click="closeEvaluation"
-                />
+                <Button label="Закрыть" icon="pi pi-times" text @click="closeEvaluation" />
               </div>
               <p class="compatibility-note">
-                <i class="pi pi-lock" /> Сравнение построено сервером на одном
-                наборе примеров и закреплённых версиях модели и калибровки.
+                <i class="pi pi-lock" /> Сравнение построено сервером на одном наборе примеров и
+                закреплённых версиях модели и калибровки.
               </p>
               <div class="metric-table" aria-label="Сравнение качества">
                 <div class="metric-row metric-row--head">
                   <span>Показатель</span><b>Рабочая</b><b>Кандидат</b>
                 </div>
-                <div
-                  v-for="metric in metricRows"
-                  :key="metric.key"
-                  class="metric-row"
-                >
+                <div v-for="metric in metricRows" :key="metric.key" class="metric-row">
                   <span>{{ metric.label }}</span
-                  ><b>{{
-                    pct(
-                      metricValue(
-                        controller.evaluation.value.published,
-                        metric.key,
-                      ),
-                    )
-                  }}</b
+                  ><b>{{ pct(metricValue(controller.evaluation.value.published, metric.key)) }}</b
                   ><b class="candidate-value">{{
-                    pct(
-                      metricValue(
-                        controller.evaluation.value.candidate,
-                        metric.key,
-                      ),
-                    )
+                    pct(metricValue(controller.evaluation.value.candidate, metric.key))
                   }}</b>
                 </div>
               </div>
-              <div
-                v-if="controller.evaluation.value.queueImpact"
-                class="queue-impact"
-              >
+              <div v-if="controller.evaluation.value.queueImpact" class="queue-impact">
                 <div>
                   <span>Обращения в очереди</span
                   ><strong
-                    >{{
-                      controller.evaluation.value.queueImpact
-                        .candidateCaseDelta > 0
-                        ? "+"
-                        : ""
-                    }}{{
-                      controller.evaluation.value.queueImpact.candidateCaseDelta
-                    }}</strong
+                    >{{ controller.evaluation.value.queueImpact.candidateCaseDelta > 0 ? '+' : ''
+                    }}{{ controller.evaluation.value.queueImpact.candidateCaseDelta }}</strong
                   >
                 </div>
                 <div>
                   <span>Передачи оператору</span
                   ><strong
                     >{{
-                      controller.evaluation.value.queueImpact
-                        .candidateHandoffDelta > 0
-                        ? "+"
-                        : ""
-                    }}{{
-                      controller.evaluation.value.queueImpact
-                        .candidateHandoffDelta
-                    }}</strong
+                      controller.evaluation.value.queueImpact.candidateHandoffDelta > 0 ? '+' : ''
+                    }}{{ controller.evaluation.value.queueImpact.candidateHandoffDelta }}</strong
                   >
                 </div>
-                <p>
-                  Прогноз получен на проверочном наборе и не изменяет рабочие
-                  обращения.
-                </p>
+                <p>Прогноз получен на проверочном наборе и не изменяет рабочие обращения.</p>
               </div>
             </section>
 
@@ -839,9 +722,7 @@ onBeforeUnmount(() => controller.reset());
                       : 'Есть пропуски'
                   "
                   :severity="
-                    controller.evaluation.value.safety.every((x) => x.passed)
-                      ? 'success'
-                      : 'danger'
+                    controller.evaluation.value.safety.every((x) => x.passed) ? 'success' : 'danger'
                   "
                 />
               </div>
@@ -853,15 +734,11 @@ onBeforeUnmount(() => controller.reset());
                 >
                   <div>
                     <strong>{{ riskLabel(cell.riskClass) }}</strong
-                    ><span
-                      >{{ cell.locale }} ·
-                      {{ channelLabel(cell.channel) }}</span
-                    >
+                    ><span>{{ cell.locale }} · {{ channelLabel(cell.channel) }}</span>
                   </div>
                   <b>{{ pct(cell.criticalRecall) }}</b
                   ><small
-                    >{{ cell.sampleCount }} примеров ·
-                    {{ cell.falseNegatives }} пропусков</small
+                    >{{ cell.sampleCount }} примеров · {{ cell.falseNegatives }} пропусков</small
                   >
                 </article>
               </div>
@@ -875,17 +752,9 @@ onBeforeUnmount(() => controller.reset());
                 </div>
               </div>
               <div class="calibration-grid">
-                <article
-                  v-for="cell in controller.evaluation.value.calibration"
-                  :key="cell.key"
-                >
-                  <strong
-                    >{{ cell.locale }} ·
-                    {{ channelLabel(cell.channel) }}</strong
-                  ><span
-                    >{{ decisionLabel(cell.caseDecision) }} ·
-                    {{ cell.samples }} примеров</span
-                  >
+                <article v-for="cell in controller.evaluation.value.calibration" :key="cell.key">
+                  <strong>{{ cell.locale }} · {{ channelLabel(cell.channel) }}</strong
+                  ><span>{{ decisionLabel(cell.caseDecision) }} · {{ cell.samples }} примеров</span>
                   <div class="confidence-bar">
                     <i :style="{ width: `${cell.threshold * 100}%` }" />
                   </div>
@@ -914,14 +783,11 @@ onBeforeUnmount(() => controller.reset());
               </div>
               <div class="observation-list">
                 <article
-                  v-for="item in controller.evaluation.value.observations.slice(
-                    0,
-                    12,
-                  )"
+                  v-for="item in controller.evaluation.value.observations.slice(0, 12)"
                   :key="item.id"
                 >
                   <div>
-                    <strong>{{ item.topicCode ?? "Без темы" }}</strong
+                    <strong>{{ item.topicCode ?? 'Без темы' }}</strong
                     ><span
                       >{{ item.locale }} · {{ channelLabel(item.channel) }} ·
                       {{ riskLabel(item.riskClass) }}</span
@@ -929,17 +795,11 @@ onBeforeUnmount(() => controller.reset());
                   </div>
                   <p>
                     Ожидалось:
-                    <b>{{ decisionLabel(item.expectedCaseDecision) }}</b> ·
-                    кандидат:
-                    <b>{{ decisionLabel(item.candidateCaseDecision) }}</b> ·
-                    рабочая:
+                    <b>{{ decisionLabel(item.expectedCaseDecision) }}</b> · кандидат:
+                    <b>{{ decisionLabel(item.candidateCaseDecision) }}</b> · рабочая:
                     <b>{{ decisionLabel(item.publishedCaseDecision) }}</b>
                   </p>
-                  <Tag
-                    v-if="item.corrected"
-                    value="Проверено человеком"
-                    severity="info"
-                  />
+                  <Tag v-if="item.corrected" value="Проверено человеком" severity="info" />
                 </article>
               </div>
             </section>
@@ -948,8 +808,8 @@ onBeforeUnmount(() => controller.reset());
             <i class="pi pi-chart-line" />
             <h2>Выберите проверку</h2>
             <p>
-              Здесь появятся сравнение, матрица безопасности, калибровка и
-              ошибки без скрытых средних.
+              Здесь появятся сравнение, матрица безопасности, калибровка и ошибки без скрытых
+              средних.
             </p>
           </section>
         </section>
@@ -969,46 +829,34 @@ onBeforeUnmount(() => controller.reset());
             @click="period = 30"
           />
         </div>
-        <Message
-          v-if="!controller.canReadCost.value"
-          severity="info"
-          :closable="false"
-          >Расходы и воронка доступны только сотрудникам с правом просмотра
-          стоимости Case Intelligence.</Message
+        <Message v-if="!controller.canReadCost.value" severity="info" :closable="false"
+          >Расходы и воронка доступны только сотрудникам с правом просмотра стоимости Case
+          Intelligence.</Message
         >
         <template v-else-if="controller.observability.value">
           <section class="surface authority-strip">
             <div>
               <p class="eyebrow">Полнота</p>
               <strong>{{
-                controller.observability.value.cost.completeness === "COMPLETE"
-                  ? "Данные полные"
-                  : "Данные ещё собираются"
+                controller.observability.value.cost.completeness === 'COMPLETE'
+                  ? 'Данные полные'
+                  : 'Данные ещё собираются'
               }}</strong
-              ><span
-                >Учтено по
-                {{ date(controller.observability.value.completeThrough) }}</span
-              >
+              ><span>Учтено по {{ date(controller.observability.value.completeThrough) }}</span>
             </div>
             <div>
               <p class="eyebrow">Рабочие версии</p>
               <strong>{{
-                controller.observability.value.mixedRevisions
-                  ? "Несколько версий"
-                  : "Одна версия"
+                controller.observability.value.mixedRevisions ? 'Несколько версий' : 'Одна версия'
               }}</strong
               ><span>{{
-                controller.observability.value.releaseRevisionIds
-                  .map(shortId)
-                  .join(", ")
+                controller.observability.value.releaseRevisionIds.map(shortId).join(', ')
               }}</span>
             </div>
             <div>
               <p class="eyebrow">Источник</p>
               <strong>Серверный расчёт</strong
-              ><span>{{
-                controller.observability.value.definitionsRevision
-              }}</span>
+              ><span>{{ controller.observability.value.definitionsRevision }}</span>
             </div>
           </section>
           <section class="funnel-layout">
@@ -1020,18 +868,13 @@ onBeforeUnmount(() => controller.reset());
                 </div>
               </div>
               <ol class="funnel">
-                <li
-                  v-for="(item, index) in controller.observability.value.funnel"
-                  :key="item.code"
-                >
+                <li v-for="(item, index) in controller.observability.value.funnel" :key="item.code">
                   <span class="funnel-index">{{ index + 1 }}</span>
                   <div>
-                    <strong>{{
-                      funnelLabels[item.code] ?? "Этап обработки"
-                    }}</strong
+                    <strong>{{ funnelLabels[item.code] ?? 'Этап обработки' }}</strong
                     ><small>{{
                       item.denominator == null
-                        ? "Начальная выборка"
+                        ? 'Начальная выборка'
                         : `${pct(item.rate)} от предыдущей базы`
                     }}</small>
                   </div>
@@ -1042,9 +885,7 @@ onBeforeUnmount(() => controller.reset());
             <div class="cost-stack">
               <section class="surface cost-primary">
                 <p class="eyebrow">Итого за период</p>
-                <strong>{{
-                  money(controller.observability.value.cost.billedMicroUsd)
-                }}</strong
+                <strong>{{ money(controller.observability.value.cost.billedMicroUsd) }}</strong
                 ><span>Счёт сервера, без клиентских оценок</span>
               </section>
               <section class="surface unit-costs">
@@ -1053,67 +894,36 @@ onBeforeUnmount(() => controller.reset());
                   <div>
                     <dt>1 000 сообщений</dt>
                     <dd>
-                      {{
-                        money(
-                          controller.observability.value.cost
-                            .perThousandSignalsMicroUsd,
-                        )
-                      }}
+                      {{ money(controller.observability.value.cost.perThousandSignalsMicroUsd) }}
                     </dd>
                   </div>
                   <div>
                     <dt>Одно обращение</dt>
                     <dd>
-                      {{
-                        money(
-                          controller.observability.value.cost.perCaseMicroUsd,
-                        )
-                      }}
+                      {{ money(controller.observability.value.cost.perCaseMicroUsd) }}
                     </dd>
                   </div>
                   <div>
                     <dt>Одна передача</dt>
                     <dd>
-                      {{
-                        money(
-                          controller.observability.value.cost
-                            .perEscalationMicroUsd,
-                        )
-                      }}
+                      {{ money(controller.observability.value.cost.perEscalationMicroUsd) }}
                     </dd>
                   </div>
                   <div>
                     <dt>Одно завершение</dt>
                     <dd>
-                      {{
-                        money(
-                          controller.observability.value.cost
-                            .perResolutionMicroUsd,
-                        )
-                      }}
+                      {{ money(controller.observability.value.cost.perResolutionMicroUsd) }}
                     </dd>
                   </div>
                 </dl>
               </section>
               <section class="surface token-use">
                 <h2>Использование модели</h2>
-                <span
-                  >Вход:
-                  {{
-                    number(controller.observability.value.cost.inputTokens)
-                  }}</span
-                ><span
-                  >Ответ:
-                  {{
-                    number(controller.observability.value.cost.outputTokens)
-                  }}</span
+                <span>Вход: {{ number(controller.observability.value.cost.inputTokens) }}</span
+                ><span>Ответ: {{ number(controller.observability.value.cost.outputTokens) }}</span
                 ><span
                   >Из кэша:
-                  {{
-                    number(
-                      controller.observability.value.cost.cachedInputTokens,
-                    )
-                  }}</span
+                  {{ number(controller.observability.value.cost.cachedInputTokens) }}</span
                 >
               </section>
             </div>
@@ -1122,12 +932,8 @@ onBeforeUnmount(() => controller.reset());
       </template>
 
       <template v-else-if="section === 'decisions'">
-        <Message
-          v-if="!controller.canReadDecisions.value"
-          severity="info"
-          :closable="false"
-          >Для просмотра объяснений нужен отдельный доступ к журналу
-          решений.</Message
+        <Message v-if="!controller.canReadDecisions.value" severity="info" :closable="false"
+          >Для просмотра объяснений нужен отдельный доступ к журналу решений.</Message
         >
         <section
           v-else
@@ -1147,8 +953,7 @@ onBeforeUnmount(() => controller.reset());
               type="button"
               class="decision-row"
               :class="{
-                'decision-row--active':
-                  controller.decision.value?.id === item.id,
+                'decision-row--active': controller.decision.value?.id === item.id,
               }"
               @click="openDecision(item)"
             >
@@ -1166,9 +971,7 @@ onBeforeUnmount(() => controller.reset());
                 ><small
                   >{{ date(item.decidedAt) }} ·
                   {{
-                    item.confidence
-                      ? pct(Number(item.confidence))
-                      : "без оценки уверенности"
+                    item.confidence ? pct(Number(item.confidence)) : 'без оценки уверенности'
                   }}</small
                 ></span
               ><i class="pi pi-chevron-right" /></button
@@ -1182,10 +985,7 @@ onBeforeUnmount(() => controller.reset());
               @click="controller.loadMore('decisions')"
             />
           </div>
-          <section
-            v-if="controller.decision.value"
-            class="surface decision-detail"
-          >
+          <section v-if="controller.decision.value" class="surface decision-detail">
             <div class="section-heading">
               <div>
                 <p class="eyebrow">Почему принято решение</p>
@@ -1194,12 +994,7 @@ onBeforeUnmount(() => controller.reset());
                   {{ classLabel(controller.decision.value.conversationClass) }}
                 </h2>
               </div>
-              <Button
-                label="Назад"
-                icon="pi pi-arrow-left"
-                text
-                @click="closeDecision"
-              />
+              <Button label="Назад" icon="pi pi-arrow-left" text @click="closeDecision" />
             </div>
             <div class="decision-verdict">
               <div>
@@ -1207,20 +1002,16 @@ onBeforeUnmount(() => controller.reset());
                 ><strong>{{
                   controller.decision.value.confidence
                     ? pct(Number(controller.decision.value.confidence))
-                    : "Не рассчитывалась"
+                    : 'Не рассчитывалась'
                 }}</strong>
               </div>
               <div>
                 <span>Передача оператору</span
-                ><strong>{{
-                  handoffLabel(controller.decision.value.handoffAction)
-                }}</strong>
+                ><strong>{{ handoffLabel(controller.decision.value.handoffAction) }}</strong>
               </div>
               <div>
                 <span>Безопасность</span
-                ><strong>{{
-                  safetyLabel(controller.decision.value.safetyDecision)
-                }}</strong>
+                ><strong>{{ safetyLabel(controller.decision.value.safetyDecision) }}</strong>
               </div>
             </div>
             <div class="explain-block">
@@ -1239,9 +1030,8 @@ onBeforeUnmount(() => controller.reset());
                 />
               </div>
               <p>
-                Показаны только безопасные причины и ссылки на доказательства.
-                Текст сообщений, внутренние рассуждения модели и личные данные
-                здесь не раскрываются.
+                Показаны только безопасные причины и ссылки на доказательства. Текст сообщений,
+                внутренние рассуждения модели и личные данные здесь не раскрываются.
               </p>
             </div>
             <div class="explain-block">
@@ -1256,45 +1046,31 @@ onBeforeUnmount(() => controller.reset());
                 <div>
                   <dt>Категории</dt>
                   <dd>
-                    {{
-                      shortId(
-                        controller.decision.value.detectionPolicyRevisionId,
-                      )
-                    }}
+                    {{ shortId(controller.decision.value.detectionPolicyRevisionId) }}
                   </dd>
                 </div>
                 <div>
                   <dt>Передача</dt>
                   <dd>
-                    {{
-                      shortId(
-                        controller.decision.value.escalationPolicyRevisionId,
-                      )
-                    }}
+                    {{ shortId(controller.decision.value.escalationPolicyRevisionId) }}
                   </dd>
                 </div>
                 <div>
                   <dt>Безопасность</dt>
                   <dd>
-                    {{
-                      shortId(controller.decision.value.safetyPolicyRevisionId)
-                    }}
+                    {{ shortId(controller.decision.value.safetyPolicyRevisionId) }}
                   </dd>
                 </div>
                 <div>
                   <dt>Модель</dt>
                   <dd>
-                    {{
-                      shortId(controller.decision.value.modelProfileRevisionId)
-                    }}
+                    {{ shortId(controller.decision.value.modelProfileRevisionId) }}
                   </dd>
                 </div>
                 <div>
                   <dt>Калибровка</dt>
                   <dd>
-                    {{
-                      shortId(controller.decision.value.calibratorRevisionId)
-                    }}
+                    {{ shortId(controller.decision.value.calibratorRevisionId) }}
                   </dd>
                 </div>
               </dl>
@@ -1317,23 +1093,18 @@ onBeforeUnmount(() => controller.reset());
               >
                 <strong>{{ item.reasonCode }}</strong
                 ><span>{{ date(item.createdAt) }}</span>
-                <p>{{ item.notes || "Без комментария" }}</p>
+                <p>{{ item.notes || 'Без комментария' }}</p>
               </article>
-              <p
-                v-if="controller.decision.value.corrections.length === 0"
-                class="muted"
-              >
-                Исправлений нет. Новое исправление сохранит исходное решение и
-                добавит отдельную запись — история не перезаписывается.
+              <p v-if="controller.decision.value.corrections.length === 0" class="muted">
+                Исправлений нет. Новое исправление сохранит исходное решение и добавит отдельную
+                запись — история не перезаписывается.
               </p>
             </div>
           </section>
           <section v-else class="surface empty-report">
             <i class="pi pi-list" />
             <h2>Выберите решение</h2>
-            <p>
-              Откроются безопасные причины, версии правил и история исправлений.
-            </p>
+            <p>Откроются безопасные причины, версии правил и история исправлений.</p>
           </section>
         </section>
       </template>
@@ -1342,18 +1113,14 @@ onBeforeUnmount(() => controller.reset());
         <section class="surface version-hero">
           <div>
             <p class="eyebrow">Сейчас работает</p>
-            <h2>Версия {{ currentRelease?.version ?? "—" }}</h2>
+            <h2>Версия {{ currentRelease?.version ?? '—' }}</h2>
             <p>
-              Это атомарный набор категорий, передачи оператору, безопасности,
-              модели, калибровки и маршрутизации.
+              Это атомарный набор категорий, передачи оператору, безопасности, модели, калибровки и
+              маршрутизации.
             </p>
           </div>
           <Tag
-            :value="
-              currentRelease
-                ? statusLabel(currentRelease.status)
-                : 'Нет рабочей версии'
-            "
+            :value="currentRelease ? statusLabel(currentRelease.status) : 'Нет рабочей версии'"
             :severity="currentRelease?.status === 'LIVE' ? 'success' : 'warn'"
           />
         </section>
@@ -1367,7 +1134,7 @@ onBeforeUnmount(() => controller.reset());
             <div class="section-heading">
               <div>
                 <p class="eyebrow">
-                  {{ index === 0 ? "Текущая" : "Предыдущая" }}
+                  {{ index === 0 ? 'Текущая' : 'Предыдущая' }}
                 </p>
                 <h2>Версия {{ item.version }}</h2>
               </div>
@@ -1415,8 +1182,8 @@ onBeforeUnmount(() => controller.reset());
           </article>
         </section>
         <Message severity="info" :closable="false"
-          >Возврат не переписывает историю. Сервер создаст новую рабочую версию
-          из выбранной конфигурации и снова проверит её целиком.</Message
+          >Возврат не переписывает историю. Сервер создаст новую рабочую версию из выбранной
+          конфигурации и снова проверит её целиком.</Message
         >
       </template>
     </template>
@@ -1437,11 +1204,7 @@ onBeforeUnmount(() => controller.reset());
         ><Textarea v-model="rollbackReason" rows="4" maxlength="2000" fluid
       /></label>
       <template #footer
-        ><Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="rollbackTarget = null" /><Button
+        ><Button label="Отмена" severity="secondary" text @click="rollbackTarget = null" /><Button
           label="Создать новую рабочую версию"
           severity="danger"
           :disabled="rollbackReason.trim().length < 3"
@@ -1502,8 +1265,7 @@ onBeforeUnmount(() => controller.reset());
             option-value="value"
             fluid /></label
         ><label
-          ><span>Причина</span
-          ><InputText v-model="correctionReason" maxlength="64" fluid /></label
+          ><span>Причина</span><InputText v-model="correctionReason" maxlength="64" fluid /></label
         ><label class="correction-form__wide"
           ><span>Комментарий без личных данных</span
           ><Textarea v-model="correctionNotes" rows="3" maxlength="2000" fluid
@@ -1609,15 +1371,10 @@ onBeforeUnmount(() => controller.reset());
   font-weight: 700;
   text-decoration: none;
 }
-.ci-ops__nav a[aria-current="page"] {
+.ci-ops__nav a[aria-current='page'] {
   color: var(--status-info-text);
-  background: color-mix(
-    in srgb,
-    var(--status-info-text) 10%,
-    var(--ops-surface)
-  );
-  box-shadow: inset 0 0 0 1px
-    color-mix(in srgb, var(--status-info-text) 28%, var(--ops-line));
+  background: color-mix(in srgb, var(--status-info-text) 10%, var(--ops-surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--status-info-text) 28%, var(--ops-line));
 }
 .pending-command,
 .section-heading,
@@ -1666,19 +1423,11 @@ onBeforeUnmount(() => controller.reset());
   place-items: center;
   border-radius: 15px;
   color: var(--status-warning-text);
-  background: color-mix(
-    in srgb,
-    var(--status-warning-text) 12%,
-    var(--ops-surface)
-  );
+  background: color-mix(in srgb, var(--status-warning-text) 12%, var(--ops-surface));
 }
 .admission-orb--pass {
   color: var(--status-success-text);
-  background: color-mix(
-    in srgb,
-    var(--status-success-text) 12%,
-    var(--ops-surface)
-  );
+  background: color-mix(in srgb, var(--status-success-text) 12%, var(--ops-surface));
 }
 .gate-line {
   display: grid;
@@ -1811,11 +1560,7 @@ onBeforeUnmount(() => controller.reset());
   padding: 12px;
   border-radius: 11px;
   color: var(--status-info-text);
-  background: color-mix(
-    in srgb,
-    var(--status-info-text) 9%,
-    var(--ops-surface)
-  );
+  background: color-mix(in srgb, var(--status-info-text) 9%, var(--ops-surface));
   font-size: 0.82rem;
 }
 .metric-table {
@@ -1873,14 +1618,9 @@ onBeforeUnmount(() => controller.reset());
   grid-template-columns: 1fr auto;
   gap: 4px 12px;
   padding: 14px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-success-text) 25%, var(--ops-line));
+  border: 1px solid color-mix(in srgb, var(--status-success-text) 25%, var(--ops-line));
   border-radius: 12px;
-  background: color-mix(
-    in srgb,
-    var(--status-success-text) 7%,
-    var(--ops-surface)
-  );
+  background: color-mix(in srgb, var(--status-success-text) 7%, var(--ops-surface));
 }
 .matrix-list article > div {
   display: grid;
@@ -1897,16 +1637,8 @@ onBeforeUnmount(() => controller.reset());
   grid-column: 1 / -1;
 }
 .matrix-cell--fail {
-  border-color: color-mix(
-    in srgb,
-    var(--status-danger-text) 35%,
-    var(--ops-line)
-  ) !important;
-  background: color-mix(
-    in srgb,
-    var(--status-danger-text) 8%,
-    var(--ops-surface)
-  ) !important;
+  border-color: color-mix(in srgb, var(--status-danger-text) 35%, var(--ops-line)) !important;
+  background: color-mix(in srgb, var(--status-danger-text) 8%, var(--ops-surface)) !important;
 }
 .calibration-grid article {
   grid-template-columns: 1fr;
@@ -2031,11 +1763,7 @@ onBeforeUnmount(() => controller.reset());
 }
 .cost-primary {
   color: var(--text-on-emphasis);
-  background: linear-gradient(
-    145deg,
-    var(--action-primary-active),
-    var(--action-primary)
-  );
+  background: linear-gradient(145deg, var(--action-primary-active), var(--action-primary));
 }
 .cost-primary > strong {
   display: block;
@@ -2086,11 +1814,7 @@ onBeforeUnmount(() => controller.reset());
   place-items: center;
   border-radius: 11px;
   color: var(--status-info-text);
-  background: color-mix(
-    in srgb,
-    var(--status-info-text) 10%,
-    var(--ops-surface)
-  );
+  background: color-mix(in srgb, var(--status-info-text) 10%, var(--ops-surface));
 }
 .decision-verdict {
   display: grid;
@@ -2167,7 +1891,7 @@ onBeforeUnmount(() => controller.reset());
   bottom: 0;
   left: 10px;
   width: 2px;
-  content: "";
+  content: '';
   background: var(--ops-line);
 }
 .version-card {

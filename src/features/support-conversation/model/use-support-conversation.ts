@@ -1,19 +1,16 @@
-import { ref } from "vue";
-import type { ConversationMessage } from "@/shared/types/domain";
-import { ApiError } from "@/shared/api/http/api-error";
-import { mergeConversationMessageDelivery } from "@/features/conversation-delivery/model/conversation-delivery-receipt";
+import { ref } from 'vue';
+import type { ConversationMessage } from '@/shared/types/domain';
+import { ApiError } from '@/shared/api/http/api-error';
+import { mergeConversationMessageDelivery } from '@/features/conversation-delivery/model/conversation-delivery-receipt';
 import {
   SUPPORT_WORKSPACE_MESSAGE_PAGE_LIMIT,
   type SupportConversationReadState,
   type SupportWorkspaceSelection,
   type SupportWorkspaceSource,
-} from "@/features/support-workspace/api/support-workspace-source";
+} from '@/features/support-workspace/api/support-workspace-source';
 
-export type SupportConversationSource = Pick<
-  SupportWorkspaceSource,
-  "readSelection"
-> &
-  Partial<Pick<SupportWorkspaceSource, "markConversationRead">>;
+export type SupportConversationSource = Pick<SupportWorkspaceSource, 'readSelection'> &
+  Partial<Pick<SupportWorkspaceSource, 'markConversationRead'>>;
 
 export interface SupportConversationContext {
   projectId(): string | undefined;
@@ -24,19 +21,12 @@ export interface SupportConversationContext {
     conversationId: string,
     state: SupportConversationReadState,
   ): void | Promise<void>;
-  recordTelemetry?(
-    payload: Record<string, string | number | boolean>,
-  ): void;
+  recordTelemetry?(payload: Record<string, string | number | boolean>): void;
 }
 
 function readStateMismatchCount(state: SupportConversationReadState): number {
-  const expectedUnread = Math.max(
-    0,
-    state.highestOrdinal - state.lastReadOrdinal,
-  );
-  const expectedFirstUnread = expectedUnread
-    ? state.lastReadOrdinal + 1
-    : null;
+  const expectedUnread = Math.max(0, state.highestOrdinal - state.lastReadOrdinal);
+  const expectedFirstUnread = expectedUnread ? state.lastReadOrdinal + 1 : null;
   return Math.min(
     3,
     Number(state.unreadMessageCount !== expectedUnread) +
@@ -45,9 +35,7 @@ function readStateMismatchCount(state: SupportConversationReadState): number {
   );
 }
 
-function authoritativeOrder(
-  items: readonly ConversationMessage[],
-): ConversationMessage[] | null {
+function authoritativeOrder(items: readonly ConversationMessage[]): ConversationMessage[] | null {
   const ordered = [...items].sort((left, right) => {
     const leftOrdinal = left.ordinal;
     const rightOrdinal = right.ordinal;
@@ -63,11 +51,7 @@ function authoritativeOrder(
   let previousOrdinal: number | undefined;
   for (const message of ordered) {
     if (!Number.isSafeInteger(message.ordinal)) return null;
-    if (
-      previousOrdinal !== undefined &&
-      message.ordinal !== previousOrdinal + 1
-    )
-      return null;
+    if (previousOrdinal !== undefined && message.ordinal !== previousOrdinal + 1) return null;
     previousOrdinal = message.ordinal;
   }
   return ordered;
@@ -90,8 +74,8 @@ export function createSupportConversationController(
   const loading = ref(false);
   const loadingOlder = ref(false);
   const loadingNewer = ref(false);
-  const error = ref("");
-  const readError = ref("");
+  const error = ref('');
+  const readError = ref('');
   let selectionGeneration = 0;
   let olderRequestGeneration = 0;
   let newerRequestGeneration = 0;
@@ -113,16 +97,13 @@ export function createSupportConversationController(
     loading.value = false;
     loadingOlder.value = false;
     loadingNewer.value = false;
-    error.value = "";
-    readError.value = "";
+    error.value = '';
+    readError.value = '';
     desiredReadOrdinal = 0;
     readAck = null;
   }
 
-  function purgeOperationsContext(options: {
-    sla: boolean;
-    routing: boolean;
-  }): void {
+  function purgeOperationsContext(options: { sla: boolean; routing: boolean }): void {
     if (!options.sla && !options.routing) return;
     selectionGeneration += 1;
     olderRequestGeneration += 1;
@@ -137,7 +118,7 @@ export function createSupportConversationController(
     selection.value = {
       ...projection,
       ...(options.sla ? { sla: null } : {}),
-      ...(options.routing ? { routing: { state: "REDACTED" } } : {}),
+      ...(options.routing ? { routing: { state: 'REDACTED' } } : {}),
     };
   }
 
@@ -156,9 +137,7 @@ export function createSupportConversationController(
 
   function selectedTarget(): { conversationId?: string; caseId?: string } {
     return {
-      ...(context.conversationId()
-        ? { conversationId: context.conversationId() }
-        : {}),
+      ...(context.conversationId() ? { conversationId: context.conversationId() } : {}),
       ...(context.caseId?.() ? { caseId: context.caseId?.() } : {}),
     };
   }
@@ -168,10 +147,7 @@ export function createSupportConversationController(
     await context.onForbidden?.();
   }
 
-  function commitReadState(
-    state: SupportConversationReadState,
-    requestGeneration: number,
-  ): void {
+  function commitReadState(state: SupportConversationReadState, requestGeneration: number): void {
     const current = readState.value;
     if (current && state.lastReadOrdinal < current.lastReadOrdinal) return;
     if (requestGeneration !== selectionGeneration) return;
@@ -217,20 +193,14 @@ export function createSupportConversationController(
     incoming: readonly ConversationMessage[],
     conversationId: string,
   ): ConversationMessage[] | null {
-    if (
-      [...current, ...incoming].some(
-        (message) => message.conversationId !== conversationId,
-      )
-    )
+    if ([...current, ...incoming].some((message) => message.conversationId !== conversationId))
       return null;
     const byId = new Map(current.map((message) => [message.id, message]));
     for (const message of incoming) {
       const currentMessage = byId.get(message.id);
       byId.set(
         message.id,
-        currentMessage
-          ? mergeConversationMessageDelivery(currentMessage, message)
-          : message,
+        currentMessage ? mergeConversationMessageDelivery(currentMessage, message) : message,
       );
     }
     return authoritativeOrder([...byId.values()]);
@@ -254,8 +224,8 @@ export function createSupportConversationController(
     readState.value = null;
     desiredReadOrdinal = 0;
     readAck = null;
-    readError.value = "";
-    error.value = "";
+    readError.value = '';
+    error.value = '';
     if (!projectId || (!target.conversationId && !target.caseId)) {
       loading.value = false;
       return;
@@ -270,9 +240,7 @@ export function createSupportConversationController(
       const conversationId = projection.conversation?.id;
       if (!conversationId) {
         if (projection.messages.items.length)
-          throw new Error(
-            "Support workspace returned messages without a conversation",
-          );
+          throw new Error('Support workspace returned messages without a conversation');
         selection.value = projection;
         messages.value = [];
         nextMessageCursor.value = null;
@@ -280,13 +248,9 @@ export function createSupportConversationController(
         firstUnreadOrdinal.value = null;
         return;
       }
-      const ordered = mergeMessages(
-        [],
-        projection.messages.items,
-        conversationId,
-      );
+      const ordered = mergeMessages([], projection.messages.items, conversationId);
       if (!ordered) {
-        error.value = "История сообщений требует обновления";
+        error.value = 'История сообщений требует обновления';
         return;
       }
       selection.value = projection;
@@ -297,20 +261,17 @@ export function createSupportConversationController(
       commitProjectionReadState(projection, requestGeneration);
     } catch (cause) {
       if (!isCurrent(projectId, target, requestGeneration)) return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         await purgeConcealedSelection();
         return;
       }
-      error.value = "Не удалось загрузить сообщения выбранного диалога";
+      error.value = 'Не удалось загрузить сообщения выбранного диалога';
     } finally {
       if (requestGeneration === selectionGeneration) {
         loading.value = false;
         context.recordTelemetry?.({
-          operation: "conversation_load",
-          outcome: selection.value ? "loaded" : "failed",
+          operation: 'conversation_load',
+          outcome: selection.value ? 'loaded' : 'failed',
           duration_ms: Math.round(performance.now() - startedAt),
         });
       }
@@ -321,36 +282,24 @@ export function createSupportConversationController(
     const projectId = context.projectId();
     const target = selectedTarget();
     const cursor = nextMessageCursor.value;
-    if (
-      !projectId ||
-      (!target.conversationId && !target.caseId) ||
-      !cursor ||
-      loadingOlder.value
-    )
+    if (!projectId || (!target.conversationId && !target.caseId) || !cursor || loadingOlder.value)
       return;
     const requestGeneration = selectionGeneration;
     const requestId = ++olderRequestGeneration;
     loadingOlder.value = true;
-    error.value = "";
+    error.value = '';
     try {
       const projection = await source.readSelection(projectId, target, {
         messageCursor: cursor,
         messageLimit: SUPPORT_WORKSPACE_MESSAGE_PAGE_LIMIT,
       });
-      if (
-        requestId !== olderRequestGeneration ||
-        !isCurrent(projectId, target, requestGeneration)
-      )
+      if (requestId !== olderRequestGeneration || !isCurrent(projectId, target, requestGeneration))
         return;
       const conversationId = projection.conversation?.id;
       if (!conversationId) return;
-      const merged = mergeMessages(
-        messages.value,
-        projection.messages.items,
-        conversationId,
-      );
+      const merged = mergeMessages(messages.value, projection.messages.items, conversationId);
       if (!merged) {
-        error.value = "История сообщений требует обновления";
+        error.value = 'История сообщений требует обновления';
         return;
       }
       selection.value = projection;
@@ -358,19 +307,13 @@ export function createSupportConversationController(
       nextMessageCursor.value = projection.messages.nextCursor;
       commitProjectionReadState(projection, requestGeneration);
     } catch (cause) {
-      if (
-        requestId !== olderRequestGeneration ||
-        !isCurrent(projectId, target, requestGeneration)
-      )
+      if (requestId !== olderRequestGeneration || !isCurrent(projectId, target, requestGeneration))
         return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         await purgeConcealedSelection();
         return;
       }
-      error.value = "Не удалось загрузить более ранние сообщения";
+      error.value = 'Не удалось загрузить более ранние сообщения';
     } finally {
       if (requestId === olderRequestGeneration) loadingOlder.value = false;
     }
@@ -380,36 +323,24 @@ export function createSupportConversationController(
     const projectId = context.projectId();
     const target = selectedTarget();
     const cursor = newerMessageCursor.value;
-    if (
-      !projectId ||
-      (!target.conversationId && !target.caseId) ||
-      !cursor ||
-      loadingNewer.value
-    )
+    if (!projectId || (!target.conversationId && !target.caseId) || !cursor || loadingNewer.value)
       return;
     const requestGeneration = selectionGeneration;
     const requestId = ++newerRequestGeneration;
     loadingNewer.value = true;
-    error.value = "";
+    error.value = '';
     try {
       const projection = await source.readSelection(projectId, target, {
         messageNewerCursor: cursor,
         messageLimit: SUPPORT_WORKSPACE_MESSAGE_PAGE_LIMIT,
       });
-      if (
-        requestId !== newerRequestGeneration ||
-        !isCurrent(projectId, target, requestGeneration)
-      )
+      if (requestId !== newerRequestGeneration || !isCurrent(projectId, target, requestGeneration))
         return;
       const conversationId = projection.conversation?.id;
       if (!conversationId) return;
-      const merged = mergeMessages(
-        messages.value,
-        projection.messages.items,
-        conversationId,
-      );
+      const merged = mergeMessages(messages.value, projection.messages.items, conversationId);
       if (!merged) {
-        error.value = "История сообщений требует обновления";
+        error.value = 'История сообщений требует обновления';
         return;
       }
       selection.value = projection;
@@ -417,19 +348,13 @@ export function createSupportConversationController(
       newerMessageCursor.value = projection.messages.newerCursor;
       commitProjectionReadState(projection, requestGeneration);
     } catch (cause) {
-      if (
-        requestId !== newerRequestGeneration ||
-        !isCurrent(projectId, target, requestGeneration)
-      )
+      if (requestId !== newerRequestGeneration || !isCurrent(projectId, target, requestGeneration))
         return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         await purgeConcealedSelection();
         return;
       }
-      error.value = "Не удалось загрузить следующие сообщения";
+      error.value = 'Не удалось загрузить следующие сообщения';
     } finally {
       if (requestId === newerRequestGeneration) loadingNewer.value = false;
     }
@@ -455,26 +380,23 @@ export function createSupportConversationController(
           requestedOrdinal,
         );
         if (!isCurrent(projectId, target, requestGeneration)) return;
-        readError.value = "";
+        readError.value = '';
         commitReadState(authoritative, requestGeneration);
         const mismatchCount = readStateMismatchCount(authoritative);
         context.recordTelemetry?.({
-          operation: "unread_ack",
-          outcome: mismatchCount ? "mismatch" : "matched",
+          operation: 'unread_ack',
+          outcome: mismatchCount ? 'mismatch' : 'matched',
           duration_ms: 0,
           mismatch_count: mismatchCount,
         });
       } catch (cause) {
         if (requestGeneration !== selectionGeneration) return;
         desiredReadOrdinal = readState.value?.lastReadOrdinal ?? 0;
-        if (
-          cause instanceof ApiError &&
-          (cause.status === 403 || cause.status === 404)
-        ) {
+        if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
           await purgeConcealedSelection();
           return;
         }
-        readError.value = "Не удалось сохранить позицию чтения";
+        readError.value = 'Не удалось сохранить позицию чтения';
         return;
       }
     }
@@ -500,12 +422,7 @@ export function createSupportConversationController(
     }
     if (!readAck) {
       const requestGeneration = selectionGeneration;
-      const ack = flushReadAck(
-        projectId,
-        conversationId,
-        target,
-        requestGeneration,
-      ).finally(() => {
+      const ack = flushReadAck(projectId, conversationId, target, requestGeneration).finally(() => {
         if (readAck === ack) readAck = null;
       });
       readAck = ack;
@@ -531,22 +448,16 @@ export function createSupportConversationController(
       const conversationId = projection.conversation?.id;
       if (!conversationId) {
         if (projection.messages.items.length)
-          throw new Error(
-            "Support workspace returned messages without a conversation",
-          );
+          throw new Error('Support workspace returned messages without a conversation');
         selection.value = projection;
         messages.value = [];
         nextMessageCursor.value = null;
         newerMessageCursor.value = null;
         return;
       }
-      const merged = mergeMessages(
-        messages.value,
-        projection.messages.items,
-        conversationId,
-      );
+      const merged = mergeMessages(messages.value, projection.messages.items, conversationId);
       if (!merged) {
-        error.value = "История сообщений требует обновления";
+        error.value = 'История сообщений требует обновления';
         return;
       }
       selection.value = projection;
@@ -560,20 +471,17 @@ export function createSupportConversationController(
         !isCurrent(projectId, target, requestGeneration)
       )
         return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         await purgeConcealedSelection();
         return;
       }
-      error.value = "Не удалось синхронизировать выбранный диалог";
+      error.value = 'Не удалось синхронизировать выбранный диалог';
     }
   }
 
   function applyDeliveryReceipt(
     messageId: string,
-    delivery: NonNullable<ConversationMessage["delivery"]>,
+    delivery: NonNullable<ConversationMessage['delivery']>,
   ): void {
     const index = messages.value.findIndex((message) => message.id === messageId);
     if (index < 0) return;
@@ -584,8 +492,8 @@ export function createSupportConversationController(
     });
     if (merged.delivery === current.delivery) {
       context.recordTelemetry?.({
-        operation: "delivery_reconcile",
-        outcome: "stale_ignored",
+        operation: 'delivery_reconcile',
+        outcome: 'stale_ignored',
         duration_ms: 0,
         mismatch_count: 0,
       });
@@ -595,8 +503,8 @@ export function createSupportConversationController(
     next[index] = merged;
     messages.value = next;
     context.recordTelemetry?.({
-      operation: "delivery_reconcile",
-      outcome: "updated",
+      operation: 'delivery_reconcile',
+      outcome: 'updated',
       duration_ms: 0,
       mismatch_count: 0,
     });

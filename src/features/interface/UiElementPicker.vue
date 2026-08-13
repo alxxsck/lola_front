@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed } from 'vue';
 import CatalogPicker, {
   type CatalogPickerFilter,
   type CatalogPickerOption,
-} from "@/shared/ui/CatalogPicker.vue";
-import type { EntityKind, UiElement } from "@/shared/types/domain";
+} from '@/shared/ui/CatalogPicker.vue';
+import type { EntityKind, UiElement } from '@/shared/types/domain';
 import {
   createLocalUiElementPickerLoader,
   toUiElementPickerOption,
   uiElementKindIcon,
   uiElementKindLabel,
-} from "./ui-element-picker-loader";
+} from './ui-element-picker-loader';
 
-defineOptions({ name: "UiElementPicker" });
+defineOptions({ name: 'UiElementPicker' });
 
 const props = withDefaults(
   defineProps<{
@@ -36,7 +36,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  "update:modelValue": [value: string];
+  'update:modelValue': [value: string];
   select: [element: UiElement];
 }>();
 
@@ -45,10 +45,7 @@ const availableKinds = computed<EntityKind[]>(() => {
   return Array.from(
     new Set(
       props.elements
-        .filter(
-          (element) =>
-            element.enabled && (!allowed.size || allowed.has(element.kind)),
-        )
+        .filter((element) => element.enabled && (!allowed.size || allowed.has(element.kind)))
         .map((element) => element.kind),
     ),
   );
@@ -69,12 +66,12 @@ const selectedOption = computed(() => {
 });
 const scopeKey = computed(() =>
   [
-    props.allowedKinds.join(","),
+    props.allowedKinds.join(','),
     ...props.elements.map(
       (element) =>
-        `${element.id}:${element.updatedAt ?? ""}:${element.enabled}:${element.aiEnabled}`,
+        `${element.id}:${element.updatedAt ?? ''}:${element.enabled}:${element.aiEnabled}`,
     ),
-  ].join("|"),
+  ].join('|'),
 );
 const load = createLocalUiElementPickerLoader(
   () => props.elements,
@@ -83,7 +80,7 @@ const load = createLocalUiElementPickerLoader(
 
 function select(option: CatalogPickerOption | CatalogPickerOption[]): void {
   if (Array.isArray(option) || !option.data) return;
-  emit("select", option.data as UiElement);
+  emit('select', option.data as UiElement);
 }
 </script>
 
@@ -111,9 +108,7 @@ function select(option: CatalogPickerOption | CatalogPickerOption[]): void {
     apply-label="Выбрать элемент"
     icon="pi pi-objects-column"
     test-id-prefix="ui-element-picker"
-    @update:model-value="
-      !Array.isArray($event) && emit('update:modelValue', $event)
-    "
+    @update:model-value="!Array.isArray($event) && emit('update:modelValue', $event)"
     @select="select"
   />
 </template>

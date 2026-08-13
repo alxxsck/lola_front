@@ -7,7 +7,7 @@ import {
   integrationConnectionRotateCustomerIoInbound,
   integrationConnectionSetupAmplitudeInbound,
   integrationConnectionSetupCustomerIoInbound,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   AmplitudeInboundSetupReplayResponseDto,
   AmplitudeInboundSetupResponseDto,
@@ -15,9 +15,9 @@ import type {
   CustomerIoInboundSetupReplayResponseDto,
   CustomerIoInboundSetupResponseDto,
   IntegrationConnectionResponseDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
-export type InboundIntegrationProvider = "AMPLITUDE" | "CUSTOMER_IO";
+export type InboundIntegrationProvider = 'AMPLITUDE' | 'CUSTOMER_IO';
 export type InboundSetupReceipt =
   | AmplitudeInboundSetupResponseDto
   | AmplitudeInboundSetupReplayResponseDto
@@ -25,7 +25,7 @@ export type InboundSetupReceipt =
   | CustomerIoInboundSetupReplayResponseDto;
 
 const commandOptions = (idempotencyKey: string) => ({
-  headers: { "Idempotency-Key": idempotencyKey },
+  headers: { 'Idempotency-Key': idempotencyKey },
 });
 
 export const integrationInboundConnectionsApi = {
@@ -39,7 +39,7 @@ export const integrationInboundConnectionsApi = {
     input: CreateAmplitudeInboundConnectionDto,
     idempotencyKey: string,
   ): Promise<IntegrationConnectionResponseDto> {
-    return provider === "AMPLITUDE"
+    return provider === 'AMPLITUDE'
       ? integrationConnectionCreateAmplitudeInbound(
           projectId,
           input,
@@ -59,7 +59,7 @@ export const integrationInboundConnectionsApi = {
     expectedVersion: number,
     idempotencyKey: string,
   ): Promise<InboundSetupReceipt> {
-    return provider === "AMPLITUDE"
+    return provider === 'AMPLITUDE'
       ? integrationConnectionSetupAmplitudeInbound(
           projectId,
           connectionId,
@@ -82,7 +82,7 @@ export const integrationInboundConnectionsApi = {
     overlapSeconds: number,
     idempotencyKey: string,
   ): Promise<InboundSetupReceipt> {
-    return provider === "AMPLITUDE"
+    return provider === 'AMPLITUDE'
       ? integrationConnectionRotateAmplitudeInbound(
           projectId,
           connectionId,

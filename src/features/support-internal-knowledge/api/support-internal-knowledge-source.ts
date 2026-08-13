@@ -5,7 +5,7 @@ import {
   supportInternalKnowledgeOpen,
   supportInternalKnowledgeSearch,
   supportInternalKnowledgeUpdateCitationDraft,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   SupportKnowledgeCitationDraftResponseDto,
   SupportKnowledgeFileDownloadResponseDto,
@@ -13,9 +13,9 @@ import type {
   SupportKnowledgeSearchItemResponseDto,
   SupportKnowledgeSearchPageResponseDto,
   SupportKnowledgeTextDocumentResponseDto,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
-import { isMockMode } from "@/shared/config/data-mode";
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
+import { isMockMode } from '@/shared/config/data-mode';
 
 export interface SupportKnowledgeScope {
   projectId: string;
@@ -27,23 +27,44 @@ export interface SupportKnowledgeScope {
 
 export type SupportKnowledgeFreshness = Pick<
   SupportKnowledgeFreshnessResponseDto,
-  "state" | "catalogGeneration" | "evaluatedAt"
+  'state' | 'catalogGeneration' | 'evaluatedAt'
 >;
 export type SupportKnowledgeSearchPage = Omit<
   SupportKnowledgeSearchPageResponseDto,
-  "freshness"
+  'freshness'
 > & { freshness: SupportKnowledgeFreshness };
 export type SupportKnowledgeTextDocument = Omit<
   SupportKnowledgeTextDocumentResponseDto,
-  "freshness"
+  'freshness'
 > & { freshness: SupportKnowledgeFreshness };
 
 export interface SupportInternalKnowledgeSource {
-  search(scope: SupportKnowledgeScope, query: string, cursor?: string, signal?: AbortSignal): Promise<SupportKnowledgeSearchPage>;
-  open(scope: SupportKnowledgeScope, item: SupportKnowledgeSearchItemResponseDto, signal?: AbortSignal): Promise<SupportKnowledgeTextDocument>;
-  createCitation(scope: SupportKnowledgeScope, item: SupportKnowledgeSearchItemResponseDto, mode: "QUOTE" | "LINK", selectedText?: string): Promise<SupportKnowledgeCitationDraftResponseDto>;
-  updateCitation(scope: SupportKnowledgeScope, draft: SupportKnowledgeCitationDraftResponseDto, text: string): Promise<SupportKnowledgeCitationDraftResponseDto>;
-  download(scope: SupportKnowledgeScope, item: SupportKnowledgeSearchItemResponseDto): Promise<SupportKnowledgeFileDownloadResponseDto>;
+  search(
+    scope: SupportKnowledgeScope,
+    query: string,
+    cursor?: string,
+    signal?: AbortSignal,
+  ): Promise<SupportKnowledgeSearchPage>;
+  open(
+    scope: SupportKnowledgeScope,
+    item: SupportKnowledgeSearchItemResponseDto,
+    signal?: AbortSignal,
+  ): Promise<SupportKnowledgeTextDocument>;
+  createCitation(
+    scope: SupportKnowledgeScope,
+    item: SupportKnowledgeSearchItemResponseDto,
+    mode: 'QUOTE' | 'LINK',
+    selectedText?: string,
+  ): Promise<SupportKnowledgeCitationDraftResponseDto>;
+  updateCitation(
+    scope: SupportKnowledgeScope,
+    draft: SupportKnowledgeCitationDraftResponseDto,
+    text: string,
+  ): Promise<SupportKnowledgeCitationDraftResponseDto>;
+  download(
+    scope: SupportKnowledgeScope,
+    item: SupportKnowledgeSearchItemResponseDto,
+  ): Promise<SupportKnowledgeFileDownloadResponseDto>;
 }
 
 function options(signal?: AbortSignal) {
@@ -66,7 +87,7 @@ const apiSource: SupportInternalKnowledgeSource = {
         {
           caseId: scope.caseId,
           q: query,
-          audience: "ALL",
+          audience: 'ALL',
           limit: 20,
           ...(scope.locale ? { locale: scope.locale } : {}),
           ...(scope.topicCode ? { topicCode: scope.topicCode } : {}),
@@ -100,7 +121,7 @@ const apiSource: SupportInternalKnowledgeSource = {
         documentId: item.documentId,
         revisionId: item.revisionId,
         mode,
-        ...(mode === "QUOTE" && selectedText ? { selectedText } : {}),
+        ...(mode === 'QUOTE' && selectedText ? { selectedText } : {}),
       });
     } catch (cause) {
       throw normalizeApiError(cause);
@@ -125,11 +146,8 @@ const apiSource: SupportInternalKnowledgeSource = {
         item.documentId,
         { caseId: scope.caseId, revisionId: item.revisionId },
       );
-      if (
-        grant.documentId !== item.documentId ||
-        grant.revisionId !== item.revisionId
-      )
-        throw new Error("Knowledge download grant changed identity");
+      if (grant.documentId !== item.documentId || grant.revisionId !== item.revisionId)
+        throw new Error('Knowledge download grant changed identity');
       const result = await supportInternalKnowledgeExchangeDownloadGrant(
         scope.projectId,
         grant.grantId,
@@ -140,7 +158,7 @@ const apiSource: SupportInternalKnowledgeSource = {
         result.documentId !== item.documentId ||
         result.revisionId !== item.revisionId
       )
-        throw new Error("Knowledge download changed identity");
+        throw new Error('Knowledge download changed identity');
       return result;
     } catch (cause) {
       throw normalizeApiError(cause);
@@ -148,38 +166,41 @@ const apiSource: SupportInternalKnowledgeSource = {
   },
 };
 
-const MOCK_TEXT = "Попросите пользователя проверить статус операции и время последней попытки. Если платёж не появился через 15 минут, зафиксируйте способ оплаты и передайте обращение команде PAYMENTS.";
+const MOCK_TEXT =
+  'Попросите пользователя проверить статус операции и время последней попытки. Если платёж не появился через 15 минут, зафиксируйте способ оплаты и передайте обращение команде PAYMENTS.';
 const mockItem: SupportKnowledgeSearchItemResponseDto = {
-  documentId: "knowledge-payments-1",
-  revisionId: "knowledge-payments-revision-3",
+  documentId: 'knowledge-payments-1',
+  revisionId: 'knowledge-payments-revision-3',
   revisionNumber: 3,
-  sourceType: "TEXT",
-  title: "Депозит не поступил: первичная проверка",
-  language: "ru",
-  publishedAt: "2026-08-08T10:00:00.000Z",
-  snippet: "Проверка статуса депозита, безопасный ответ и момент передачи в PAYMENTS.",
-  allowedActions: ["OPEN", "INSERT_QUOTE", "INSERT_LINK", "REPORT_PROBLEM"],
+  sourceType: 'TEXT',
+  title: 'Депозит не поступил: первичная проверка',
+  language: 'ru',
+  publishedAt: '2026-08-08T10:00:00.000Z',
+  snippet: 'Проверка статуса депозита, безопасный ответ и момент передачи в PAYMENTS.',
+  allowedActions: ['OPEN', 'INSERT_QUOTE', 'INSERT_LINK', 'REPORT_PROBLEM'],
 };
 
 const mockSource: SupportInternalKnowledgeSource = {
   async search(_scope, query) {
-    const matches = `${mockItem.title} ${mockItem.snippet}`.toLowerCase().includes(query.toLowerCase());
+    const matches = `${mockItem.title} ${mockItem.snippet}`
+      .toLowerCase()
+      .includes(query.toLowerCase());
     return {
       items: matches ? [mockItem] : [],
       nextCursor: null,
-      freshness: { state: "CURRENT", catalogGeneration: 7, evaluatedAt: new Date().toISOString() },
+      freshness: { state: 'CURRENT', catalogGeneration: 7, evaluatedAt: new Date().toISOString() },
     };
   },
   async open(_scope, item) {
     return {
       ...item,
-      sourceType: "TEXT",
+      sourceType: 'TEXT',
       allowedActions: item.allowedActions.filter(
-        (action): action is "INSERT_QUOTE" | "INSERT_LINK" | "REPORT_PROBLEM" =>
-          action === "INSERT_QUOTE" || action === "INSERT_LINK" || action === "REPORT_PROBLEM",
+        (action): action is 'INSERT_QUOTE' | 'INSERT_LINK' | 'REPORT_PROBLEM' =>
+          action === 'INSERT_QUOTE' || action === 'INSERT_LINK' || action === 'REPORT_PROBLEM',
       ),
       contentText: MOCK_TEXT,
-      freshness: { state: "CURRENT", catalogGeneration: 7, evaluatedAt: new Date().toISOString() },
+      freshness: { state: 'CURRENT', catalogGeneration: 7, evaluatedAt: new Date().toISOString() },
     };
   },
   async createCitation(_scope, item, mode, selectedText) {
@@ -189,9 +210,12 @@ const mockSource: SupportInternalKnowledgeSource = {
       revisionId: item.revisionId,
       revisionNumber: item.revisionNumber,
       mode,
-      state: "READY",
+      state: 'READY',
       version: 1,
-      text: mode === "QUOTE" ? selectedText ?? null : `[${item.title}](support-knowledge://${item.documentId}/${item.revisionId})`,
+      text:
+        mode === 'QUOTE'
+          ? (selectedText ?? null)
+          : `[${item.title}](support-knowledge://${item.documentId}/${item.revisionId})`,
       expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
       actionEtag: '"skd1.mock"',
     };
@@ -203,9 +227,9 @@ const mockSource: SupportInternalKnowledgeSource = {
     return {
       documentId: item.documentId,
       revisionId: item.revisionId,
-      grantId: "mock-grant",
+      grantId: 'mock-grant',
       filename: `${item.title}.txt`,
-      url: "https://downloads.example.test/support-knowledge.txt",
+      url: 'https://downloads.example.test/support-knowledge.txt',
       expiresAt: new Date(Date.now() + 60_000).toISOString(),
     };
   },

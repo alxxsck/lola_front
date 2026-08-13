@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch } from 'vue';
 
 const props = withDefaults(
   defineProps<{
@@ -17,10 +17,10 @@ const emit = defineEmits<{
   submit: [];
 }>();
 
-const subject = ref("");
-const category = ref("PAYMENTS");
-const priority = ref<"LOW" | "MEDIUM" | "HIGH">("MEDIUM");
-const description = ref("");
+const subject = ref('');
+const category = ref('PAYMENTS');
+const priority = ref<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
+const description = ref('');
 const includeMessages = ref(true);
 const includeProfile = ref(true);
 const includeEvents = ref(false);
@@ -99,8 +99,7 @@ watch(
           <label>
             <input v-model="includeMessages" type="checkbox" />
             <span>
-              Последние {{ Math.min(messageCount, 20) }} сообщений
-              (оригиналы + переводы)
+              Последние {{ Math.min(messageCount, 20) }} сообщений (оригиналы + переводы)
             </span>
           </label>
           <label>
@@ -114,15 +113,13 @@ watch(
         </fieldset>
 
         <p v-if="!supportAvailable" class="ticket-drawer__notice">
-          Support API для ручного создания тикетов ещё не подключён. Форму можно
-          проверить, но отправка выключена.
+          Support API для ручного создания тикетов ещё не подключён. Форму можно проверить, но
+          отправка выключена.
         </p>
       </div>
 
       <footer>
-        <button type="button" class="secondary" @click="emit('close')">
-          Отмена
-        </button>
+        <button type="button" class="secondary" @click="emit('close')">Отмена</button>
         <button
           type="button"
           class="primary"
@@ -167,7 +164,7 @@ watch(
 }
 .ticket-drawer header span {
   color: var(--text-tertiary);
-  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
   font-size: 10px;
   font-weight: 700;
 }
@@ -211,7 +208,7 @@ watch(
   font-size: 12px;
   font-weight: 600;
 }
-.ticket-drawer input:not([type="checkbox"]),
+.ticket-drawer input:not([type='checkbox']),
 .ticket-drawer select,
 .ticket-drawer textarea {
   width: 100%;
@@ -222,7 +219,7 @@ watch(
   color: var(--text-primary);
   font: 500 13px/1.5 inherit;
 }
-.ticket-drawer input:not([type="checkbox"]),
+.ticket-drawer input:not([type='checkbox']),
 .ticket-drawer select {
   min-height: 42px;
   padding: 0 12px;
@@ -266,7 +263,7 @@ watch(
   color: var(--text-primary);
   font-weight: 700;
 }
-.priority-switch button[data-priority="HIGH"] {
+.priority-switch button[data-priority='HIGH'] {
   color: var(--status-danger-text);
 }
 .ticket-attachments {

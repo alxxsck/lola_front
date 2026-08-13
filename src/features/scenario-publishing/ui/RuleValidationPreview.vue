@@ -1,15 +1,7 @@
 <script setup lang="ts">
-import {
-  computed,
-  onBeforeUnmount,
-  onMounted,
-  reactive,
-  ref,
-  shallowRef,
-  watch,
-} from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from 'vue';
 
-import { createLatestRuleRequestStateMachine } from "@/features/scenario-publishing/model";
+import { createLatestRuleRequestStateMachine } from '@/features/scenario-publishing/model';
 import {
   mapAudienceIssues,
   serializeAudienceDraft,
@@ -18,29 +10,29 @@ import {
   type AudienceDraft,
   type AudienceDraftNode,
   type AudiencePathIndex,
-} from "@/features/scenario-audience/model";
+} from '@/features/scenario-audience/model';
 import {
   mapBackendRuleIssues,
   serializeRuleDraft,
   summarizeRule,
-} from "@/features/scenario-rules/model";
+} from '@/features/scenario-rules/model';
 import type {
   DraftIssue,
   RuleDomainContext,
   RuleDraft,
   RuleDraftNode,
   RulePathIndex,
-} from "@/features/scenario-rules/model";
-import { repository } from "@/shared/api/repository";
-import type { EventLogFilters } from "@/shared/api/repository/contracts";
+} from '@/features/scenario-rules/model';
+import { repository } from '@/shared/api/repository';
+import type { EventLogFilters } from '@/shared/api/repository/contracts';
 import {
   scenarioAuthoringRepository,
   type AudienceRuleDto,
   type PreviewScenarioRuleResponseDto,
   type ScenarioRuleDto,
   type ValidateScenarioRuleResponseDto,
-} from "@/shared/api/repository/scenario-authoring";
-import type { EventLog } from "@/shared/types/domain";
+} from '@/shared/api/repository/scenario-authoring';
+import type { EventLog } from '@/shared/types/domain';
 
 const props = defineProps<{
   projectId: string;
@@ -53,12 +45,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "focus-node": [
-    target: { nodeId?: string; fieldPath?: string; message?: string },
-  ];
-  "focus-audience-node": [
-    target: { nodeId?: string; fieldPath?: string; message?: string },
-  ];
+  'focus-node': [target: { nodeId?: string; fieldPath?: string; message?: string }];
+  'focus-audience-node': [target: { nodeId?: string; fieldPath?: string; message?: string }];
 }>();
 
 interface ValidationRequest {
@@ -76,47 +64,47 @@ interface PreviewRequest extends ValidationRequest {
 }
 
 function record(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 function isIssue(value: unknown) {
   return (
     record(value) &&
-    typeof value.code === "string" &&
-    typeof value.message === "string" &&
-    typeof value.path === "string"
+    typeof value.code === 'string' &&
+    typeof value.message === 'string' &&
+    typeof value.path === 'string'
   );
 }
 
 function isDependency(value: unknown) {
   return (
     record(value) &&
-    typeof value.eventCode === "string" &&
-    typeof value.definitionKeyId === "string" &&
-    typeof value.eventDefinitionRevisionId === "string" &&
-    typeof value.schemaVersion === "number"
+    typeof value.eventCode === 'string' &&
+    typeof value.definitionKeyId === 'string' &&
+    typeof value.eventDefinitionRevisionId === 'string' &&
+    typeof value.schemaVersion === 'number'
   );
 }
 
 function isWarning(value: unknown) {
-  return record(value) && typeof value.code === "string";
+  return record(value) && typeof value.code === 'string';
 }
 
 function isCost(value: unknown) {
   return (
     value === null ||
     (record(value) &&
-      ["LOW", "MEDIUM", "HIGH"].includes(String(value.class)) &&
-      typeof value.leaves === "number" &&
-      typeof value.aggregateLeaves === "number" &&
-      typeof value.historyWindowDays === "number")
+      ['LOW', 'MEDIUM', 'HIGH'].includes(String(value.class)) &&
+      typeof value.leaves === 'number' &&
+      typeof value.aggregateLeaves === 'number' &&
+      typeof value.historyWindowDays === 'number')
   );
 }
 
 function isAudienceReport(value: unknown) {
   return (
     record(value) &&
-    typeof value.valid === "boolean" &&
+    typeof value.valid === 'boolean' &&
     Array.isArray(value.issues) &&
     value.issues.every(isIssue) &&
     record(value.dependencies) &&
@@ -126,135 +114,103 @@ function isAudienceReport(value: unknown) {
   );
 }
 
-function isValidationResponse(
-  value: unknown,
-): value is ValidateScenarioRuleResponseDto {
+function isValidationResponse(value: unknown): value is ValidateScenarioRuleResponseDto {
   return (
     record(value) &&
-    typeof value.valid === "boolean" &&
+    typeof value.valid === 'boolean' &&
     Array.isArray(value.issues) &&
     value.issues.every(isIssue) &&
     Array.isArray(value.dependencies) &&
     value.dependencies.every(isDependency) &&
     Array.isArray(value.warnings) &&
     value.warnings.every(isWarning) &&
-    Object.prototype.hasOwnProperty.call(value, "cost") &&
+    Object.prototype.hasOwnProperty.call(value, 'cost') &&
     isCost(value.cost) &&
-    (!("audience" in value) ||
-      value.audience === undefined ||
-      isAudienceReport(value.audience))
+    (!('audience' in value) || value.audience === undefined || isAudienceReport(value.audience))
   );
 }
 
 function isExplainValue(value: unknown) {
-  return (
-    record(value) &&
-    ["VISIBLE", "REDACTED", "UNAVAILABLE"].includes(String(value.visibility))
-  );
+  return record(value) && ['VISIBLE', 'REDACTED', 'UNAVAILABLE'].includes(String(value.visibility));
 }
 
 function isExplanation(value: unknown, depth = 0): boolean {
   if (
     !record(value) ||
     depth > 5 ||
-    typeof value.matched !== "boolean" ||
-    typeof value.kind !== "string"
+    typeof value.matched !== 'boolean' ||
+    typeof value.kind !== 'string'
   )
     return false;
-  if (value.kind === "all" || value.kind === "any") {
+  if (value.kind === 'all' || value.kind === 'any') {
     return (
       Array.isArray(value.children) &&
       value.children.every((child) => isExplanation(child, depth + 1))
     );
   }
-  if (value.kind === "not") return isExplanation(value.child, depth + 1);
+  if (value.kind === 'not') return isExplanation(value.child, depth + 1);
   if (
-    ![
-      "eventField",
-      "eventAggregate",
-      "activityDayStreak",
-      "legacy",
-      "unavailable",
-    ].includes(value.kind)
+    !['eventField', 'eventAggregate', 'activityDayStreak', 'legacy', 'unavailable'].includes(
+      value.kind,
+    )
   )
     return false;
   return (
-    (!("actual" in value) || isExplainValue(value.actual)) &&
-    (!("expected" in value) || isExplainValue(value.expected)) &&
-    (!("matchedCount" in value) || typeof value.matchedCount === "string") &&
-    (!("window" in value) ||
+    (!('actual' in value) || isExplainValue(value.actual)) &&
+    (!('expected' in value) || isExplainValue(value.expected)) &&
+    (!('matchedCount' in value) || typeof value.matchedCount === 'string') &&
+    (!('window' in value) ||
       (record(value.window) &&
-        typeof value.window.from === "string" &&
-        typeof value.window.to === "string"))
+        typeof value.window.from === 'string' &&
+        typeof value.window.to === 'string'))
   );
 }
 
-function isPreviewResponse(
-  value: unknown,
-): value is PreviewScenarioRuleResponseDto {
+function isPreviewResponse(value: unknown): value is PreviewScenarioRuleResponseDto {
   return (
     isValidationResponse(value) &&
-    typeof (value as unknown as Record<string, unknown>).matched ===
-      "boolean" &&
-    (!("explanation" in value) || isExplanation(value.explanation))
+    typeof (value as unknown as Record<string, unknown>).matched === 'boolean' &&
+    (!('explanation' in value) || isExplanation(value.explanation))
   );
 }
 
-function audienceExplanationMatches(
-  node: AudienceDraftNode,
-  explanation: unknown,
-): boolean {
+function audienceExplanationMatches(node: AudienceDraftNode, explanation: unknown): boolean {
   if (
     !record(explanation) ||
     explanation.kind !== node.kind ||
-    typeof explanation.matched !== "boolean"
+    typeof explanation.matched !== 'boolean'
   )
     return false;
   const children = explanation.children;
-  if (node.kind === "all" || node.kind === "any")
+  if (node.kind === 'all' || node.kind === 'any')
     return (
       Array.isArray(children) &&
       children.length === node.children.length &&
-      node.children.every((child, index) =>
-        audienceExplanationMatches(child, children[index]),
-      )
+      node.children.every((child, index) => audienceExplanationMatches(child, children[index]))
     );
-  if (node.kind === "not")
+  if (node.kind === 'not')
     return (
       Array.isArray(children) &&
       children.length === 1 &&
       audienceExplanationMatches(node.child, children[0])
     );
-  return [
-    "locale",
-    "language",
-    "country",
-    "userAttribute",
-    "segmentMembership",
-    "opaque",
-  ].includes(node.kind);
+  return ['locale', 'language', 'country', 'userAttribute', 'segmentMembership', 'opaque'].includes(
+    node.kind,
+  );
 }
 
-function explanationMatches(
-  node: RuleDraftNode,
-  explanation: unknown,
-): boolean {
+function explanationMatches(node: RuleDraftNode, explanation: unknown): boolean {
   if (!record(explanation) || explanation.kind !== node.kind) return false;
-  if (node.kind === "all" || node.kind === "any") {
+  if (node.kind === 'all' || node.kind === 'any') {
     const children = explanation.children;
     return (
       Array.isArray(children) &&
       children.length === node.children.length &&
-      node.children.every((child, index) =>
-        explanationMatches(child, children[index]),
-      )
+      node.children.every((child, index) => explanationMatches(child, children[index]))
     );
   }
-  if (node.kind === "not")
-    return explanationMatches(node.child, explanation.child);
-  return ["eventField", "eventAggregate", "activityDayStreak"].includes(
-    node.kind,
-  );
+  if (node.kind === 'not') return explanationMatches(node.child, explanation.child);
+  return ['eventField', 'eventAggregate', 'activityDayStreak'].includes(node.kind);
 }
 
 function preparedValidation() {
@@ -264,16 +220,12 @@ function preparedValidation() {
       ? summarizeAudience(props.audienceDraft, props.audienceContext)
       : null;
   const serializedAudience =
-    props.audienceDraft &&
-    props.audienceContext &&
-    audienceSummary?.status !== "empty"
+    props.audienceDraft && props.audienceContext && audienceSummary?.status !== 'empty'
       ? serializeAudienceDraft(props.audienceDraft, props.audienceContext)
       : null;
   const localIssues = [
     ...(serialized.ok ? [] : serialized.issues),
-    ...(serializedAudience && !serializedAudience.ok
-      ? serializedAudience.issues
-      : []),
+    ...(serializedAudience && !serializedAudience.ok ? serializedAudience.issues : []),
   ];
   return serialized.ok && (!serializedAudience || serializedAudience.ok)
     ? {
@@ -303,11 +255,7 @@ const validationMachine = createLatestRuleRequestStateMachine<
           { signal },
           request.audience,
         )
-      : scenarioAuthoringRepository.validateRule(
-          request.projectId,
-          request.rule,
-          { signal },
-        ),
+      : scenarioAuthoringRepository.validateRule(request.projectId, request.rule, { signal }),
   isResponse: isValidationResponse,
 });
 const validationState = shallowRef(validationMachine.getState());
@@ -328,36 +276,27 @@ watch(
     ] as const,
   () => {
     const prepared = preparedValidation();
-    validationPathIndex.value = prepared.valid
-      ? prepared.request.pathIndex
-      : {};
-    validationAudiencePathIndex.value = prepared.valid
-      ? prepared.request.audiencePathIndex
-      : {};
+    validationPathIndex.value = prepared.valid ? prepared.request.pathIndex : {};
+    validationAudiencePathIndex.value = prepared.valid ? prepared.request.audiencePathIndex : {};
     validationMachine.schedule(prepared);
   },
   { immediate: true },
 );
 
 const validationResponse = computed(() =>
-  validationState.value.status === "valid" ||
-  validationState.value.status === "semantic-invalid"
+  validationState.value.status === 'valid' || validationState.value.status === 'semantic-invalid'
     ? validationState.value.response
     : null,
 );
 const validationIssues = computed(() => {
-  if (validationState.value.status === "local-invalid")
-    return validationState.value.issues;
-  if (validationState.value.status === "semantic-invalid") {
-    return mapBackendRuleIssues(
-      validationState.value.response.issues,
-      validationPathIndex.value,
-    );
+  if (validationState.value.status === 'local-invalid') return validationState.value.issues;
+  if (validationState.value.status === 'semantic-invalid') {
+    return mapBackendRuleIssues(validationState.value.response.issues, validationPathIndex.value);
   }
   return [];
 });
 const validationAudienceIssues = computed(() => {
-  if (validationState.value.status !== "semantic-invalid") return [];
+  if (validationState.value.status !== 'semantic-invalid') return [];
   return validationState.value.response.audience
     ? mapAudienceIssues(
         validationState.value.response.audience.issues,
@@ -369,30 +308,20 @@ const validationAudienceIssues = computed(() => {
 function validateNow() {
   const prepared = preparedValidation();
   validationPathIndex.value = prepared.valid ? prepared.request.pathIndex : {};
-  validationAudiencePathIndex.value = prepared.valid
-    ? prepared.request.audiencePathIndex
-    : {};
+  validationAudiencePathIndex.value = prepared.valid ? prepared.request.audiencePathIndex : {};
   return validationMachine.runNow(prepared);
 }
 
-function focusIssue(issue: {
-  nodeId?: string;
-  fieldPath?: string;
-  message?: string;
-}) {
-  emit("focus-node", {
+function focusIssue(issue: { nodeId?: string; fieldPath?: string; message?: string }) {
+  emit('focus-node', {
     ...(issue.nodeId ? { nodeId: issue.nodeId } : {}),
     ...(issue.fieldPath ? { fieldPath: issue.fieldPath } : {}),
     ...(issue.message ? { message: issue.message } : {}),
   });
 }
 
-function focusAudienceIssue(issue: {
-  nodeId?: string;
-  fieldPath?: string;
-  message?: string;
-}) {
-  emit("focus-audience-node", {
+function focusAudienceIssue(issue: { nodeId?: string; fieldPath?: string; message?: string }) {
+  emit('focus-audience-node', {
     ...(issue.nodeId ? { nodeId: issue.nodeId } : {}),
     ...(issue.fieldPath ? { fieldPath: issue.fieldPath } : {}),
     ...(issue.message ? { message: issue.message } : {}),
@@ -401,19 +330,19 @@ function focusAudienceIssue(issue: {
 
 const logs = ref<EventLog[]>([]);
 const logsLoading = ref(false);
-const logsError = ref("");
+const logsError = ref('');
 const nextCursor = ref<string | null>(null);
 const pageIndex = ref(0);
 const pageCursors = ref<Array<string | undefined>>([undefined]);
-const selectedEventLogId = ref("");
+const selectedEventLogId = ref('');
 const logFilters = reactive({
-  externalUserId: "",
-  source: "",
-  status: "",
-  receivedFrom: "",
-  receivedTo: "",
-  occurredFrom: "",
-  occurredTo: "",
+  externalUserId: '',
+  source: '',
+  status: '',
+  receivedFrom: '',
+  receivedTo: '',
+  occurredFrom: '',
+  occurredTo: '',
   limit: 25,
 });
 const appliedLogFilters = ref<EventLogFilters>({});
@@ -437,24 +366,12 @@ function eventLogFilters(): EventLogFilters {
     ...(logFilters.externalUserId.trim()
       ? { externalUserId: logFilters.externalUserId.trim() }
       : {}),
-    ...(logFilters.source
-      ? { source: [logFilters.source as EventLog["source"]] }
-      : {}),
-    ...(logFilters.status
-      ? { status: [logFilters.status as EventLog["status"]] }
-      : {}),
-    ...(iso(logFilters.receivedFrom)
-      ? { receivedFrom: iso(logFilters.receivedFrom) }
-      : {}),
-    ...(iso(logFilters.receivedTo)
-      ? { receivedTo: iso(logFilters.receivedTo) }
-      : {}),
-    ...(iso(logFilters.occurredFrom)
-      ? { occurredFrom: iso(logFilters.occurredFrom) }
-      : {}),
-    ...(iso(logFilters.occurredTo)
-      ? { occurredTo: iso(logFilters.occurredTo) }
-      : {}),
+    ...(logFilters.source ? { source: [logFilters.source as EventLog['source']] } : {}),
+    ...(logFilters.status ? { status: [logFilters.status as EventLog['status']] } : {}),
+    ...(iso(logFilters.receivedFrom) ? { receivedFrom: iso(logFilters.receivedFrom) } : {}),
+    ...(iso(logFilters.receivedTo) ? { receivedTo: iso(logFilters.receivedTo) } : {}),
+    ...(iso(logFilters.occurredFrom) ? { occurredFrom: iso(logFilters.occurredFrom) } : {}),
+    ...(iso(logFilters.occurredTo) ? { occurredTo: iso(logFilters.occurredTo) } : {}),
   };
 }
 
@@ -466,7 +383,7 @@ async function loadLogs(
 ) {
   const sequence = ++logsSequence;
   logsLoading.value = true;
-  logsError.value = "";
+  logsError.value = '';
   try {
     const page = await repository.getEventLogPage(props.projectId, {
       ...requestFilters,
@@ -474,8 +391,7 @@ async function loadLogs(
     });
     if (sequence !== logsSequence) return false;
     logs.value = page.items.filter(
-      (item) =>
-        item.eventDefinitionId === props.context.triggerEventDefinitionId,
+      (item) => item.eventDefinitionId === props.context.triggerEventDefinitionId,
     );
     nextCursor.value = page.nextCursor;
     pageIndex.value = index;
@@ -484,8 +400,7 @@ async function loadLogs(
     return true;
   } catch (error) {
     if (sequence !== logsSequence) return false;
-    logsError.value =
-      error instanceof Error ? error.message : "Не удалось загрузить события";
+    logsError.value = error instanceof Error ? error.message : 'Не удалось загрузить события';
     failedLogsRequest.value = {
       cursor,
       index,
@@ -503,26 +418,21 @@ async function applyLogFilters() {
   await loadLogs(undefined, 0, nextFilters, () => {
     appliedLogFilters.value = nextFilters;
     pageCursors.value = [undefined];
-    selectedEventLogId.value = "";
+    selectedEventLogId.value = '';
   });
 }
 
 function refreshLogs() {
   return loadLogs(undefined, 0, appliedLogFilters.value, () => {
     pageCursors.value = [undefined];
-    selectedEventLogId.value = "";
+    selectedEventLogId.value = '';
   });
 }
 
 function retryLogs() {
   const request = failedLogsRequest.value;
   if (!request) return;
-  return loadLogs(
-    request.cursor,
-    request.index,
-    request.filters,
-    request.afterSuccess,
-  );
+  return loadLogs(request.cursor, request.index, request.filters, request.afterSuccess);
 }
 
 function nextLogsPage() {
@@ -544,7 +454,7 @@ const previewMachine = createLatestRuleRequestStateMachine<
   DraftIssue
 >({
   execute: async (request, { signal }) => {
-    const scope = { kind: "eventLog" as const, eventLogId: request.eventLogId };
+    const scope = { kind: 'eventLog' as const, eventLogId: request.eventLogId };
     const response = request.audience
       ? await scenarioAuthoringRepository.previewRule(
           request.projectId,
@@ -553,22 +463,15 @@ const previewMachine = createLatestRuleRequestStateMachine<
           { signal },
           request.audience,
         )
-      : await scenarioAuthoringRepository.previewRule(
-          request.projectId,
-          request.rule,
-          scope,
-          { signal },
-        );
+      : await scenarioAuthoringRepository.previewRule(request.projectId, request.rule, scope, {
+          signal,
+        });
     return isPreviewResponse(response) &&
       (!response.valid ||
-        (response.explanation &&
-          explanationMatches(request.draft.root, response.explanation))) &&
+        (response.explanation && explanationMatches(request.draft.root, response.explanation))) &&
       (!request.audienceDraft ||
         !response.audience?.explanation ||
-        audienceExplanationMatches(
-          request.audienceDraft.root,
-          response.audience.explanation,
-        ))
+        audienceExplanationMatches(request.audienceDraft.root, response.audience.explanation))
       ? response
       : null;
   },
@@ -587,9 +490,7 @@ function previewNow() {
         request: {
           ...validation.request,
           draft: props.draft,
-          ...(props.audienceDraft
-            ? { audienceDraft: props.audienceDraft }
-            : {}),
+          ...(props.audienceDraft ? { audienceDraft: props.audienceDraft } : {}),
           eventLogId: selectedEventLogId.value,
         },
       }
@@ -626,7 +527,7 @@ watch(
     nextCursor.value = null;
     pageIndex.value = 0;
     pageCursors.value = [undefined];
-    selectedEventLogId.value = "";
+    selectedEventLogId.value = '';
     appliedLogFilters.value = eventLogFilters();
     void loadLogs(undefined, 0, appliedLogFilters.value);
   },
@@ -645,20 +546,17 @@ interface ExplanationRow {
 
 function explainValue(value: unknown): string | undefined {
   if (!record(value)) return undefined;
-  if (value.visibility === "REDACTED")
-    return "Скрыто из-за чувствительности данных";
-  if (value.visibility === "UNAVAILABLE") return "Значение недоступно";
-  if (!("value" in value)) return undefined;
-  return typeof value.value === "string"
-    ? value.value
-    : JSON.stringify(value.value);
+  if (value.visibility === 'REDACTED') return 'Скрыто из-за чувствительности данных';
+  if (value.visibility === 'UNAVAILABLE') return 'Значение недоступно';
+  if (!('value' in value)) return undefined;
+  return typeof value.value === 'string' ? value.value : JSON.stringify(value.value);
 }
 
 function flattenExplanation(
   node: RuleDraftNode,
   explanation: unknown,
   depth = 0,
-  key = "root",
+  key = 'root',
 ): ExplanationRow[] {
   if (!record(explanation)) return [];
   const row: ExplanationRow = {
@@ -666,61 +564,40 @@ function flattenExplanation(
     depth,
     summary: summarizeRule({ version: 1, root: node }, props.context).text,
     matched: Boolean(explanation.matched),
-    ...(explainValue(explanation.actual)
-      ? { actual: explainValue(explanation.actual) }
-      : {}),
-    ...(explainValue(explanation.expected)
-      ? { expected: explainValue(explanation.expected) }
-      : {}),
-    ...(typeof explanation.matchedCount === "string"
+    ...(explainValue(explanation.actual) ? { actual: explainValue(explanation.actual) } : {}),
+    ...(explainValue(explanation.expected) ? { expected: explainValue(explanation.expected) } : {}),
+    ...(typeof explanation.matchedCount === 'string'
       ? { matchedCount: explanation.matchedCount }
       : {}),
     ...(record(explanation.window) &&
-    typeof explanation.window.from === "string" &&
-    typeof explanation.window.to === "string"
+    typeof explanation.window.from === 'string' &&
+    typeof explanation.window.to === 'string'
       ? {
-          window: `${new Date(explanation.window.from).toLocaleString("ru-RU")} — ${new Date(explanation.window.to).toLocaleString("ru-RU")}`,
+          window: `${new Date(explanation.window.from).toLocaleString('ru-RU')} — ${new Date(explanation.window.to).toLocaleString('ru-RU')}`,
         }
       : {}),
   };
   const children = explanation.children;
-  if ((node.kind === "all" || node.kind === "any") && Array.isArray(children)) {
+  if ((node.kind === 'all' || node.kind === 'any') && Array.isArray(children)) {
     return [
       row,
       ...node.children.flatMap((child, index) =>
-        flattenExplanation(
-          child,
-          children[index],
-          depth + 1,
-          `${key}.${index}`,
-        ),
+        flattenExplanation(child, children[index], depth + 1, `${key}.${index}`),
       ),
     ];
   }
-  if (node.kind === "not")
-    return [
-      row,
-      ...flattenExplanation(
-        node.child,
-        explanation.child,
-        depth + 1,
-        `${key}.child`,
-      ),
-    ];
+  if (node.kind === 'not')
+    return [row, ...flattenExplanation(node.child, explanation.child, depth + 1, `${key}.child`)];
   return [row];
 }
 
 const explanationRows = computed(() =>
-  previewState.value.status === "valid" &&
-  previewState.value.response.explanation
-    ? flattenExplanation(
-        props.draft.root,
-        previewState.value.response.explanation,
-      )
+  previewState.value.status === 'valid' && previewState.value.response.explanation
+    ? flattenExplanation(props.draft.root, previewState.value.response.explanation)
     : [],
 );
 const audienceExplanationRows = computed(() =>
-  previewState.value.status === "valid" &&
+  previewState.value.status === 'valid' &&
   props.audienceDraft &&
   props.audienceContext &&
   previewState.value.response.audience?.explanation
@@ -735,49 +612,29 @@ function flattenAudienceExplanation(
   node: AudienceDraftNode,
   explanation: unknown,
   depth = 0,
-  key = "audience-root",
+  key = 'audience-root',
 ): ExplanationRow[] {
   if (!record(explanation)) return [];
   const row: ExplanationRow = {
     key,
     depth,
     summary: props.audienceContext
-      ? summarizeAudience({ version: 1, root: node }, props.audienceContext)
-          .text
+      ? summarizeAudience({ version: 1, root: node }, props.audienceContext).text
       : node.kind,
     matched: Boolean(explanation.matched),
-    ...(explainValue(explanation.actual)
-      ? { actual: explainValue(explanation.actual) }
-      : {}),
-    ...(explainValue(explanation.expected)
-      ? { expected: explainValue(explanation.expected) }
-      : {}),
+    ...(explainValue(explanation.actual) ? { actual: explainValue(explanation.actual) } : {}),
+    ...(explainValue(explanation.expected) ? { expected: explainValue(explanation.expected) } : {}),
   };
-  const children = Array.isArray(explanation.children)
-    ? explanation.children
-    : [];
-  if (node.kind === "all" || node.kind === "any")
+  const children = Array.isArray(explanation.children) ? explanation.children : [];
+  if (node.kind === 'all' || node.kind === 'any')
     return [
       row,
       ...node.children.flatMap((child, index) =>
-        flattenAudienceExplanation(
-          child,
-          children[index],
-          depth + 1,
-          `${key}.${index}`,
-        ),
+        flattenAudienceExplanation(child, children[index], depth + 1, `${key}.${index}`),
       ),
     ];
-  if (node.kind === "not")
-    return [
-      row,
-      ...flattenAudienceExplanation(
-        node.child,
-        children[0],
-        depth + 1,
-        `${key}.child`,
-      ),
-    ];
+  if (node.kind === 'not')
+    return [row, ...flattenAudienceExplanation(node.child, children[0], depth + 1, `${key}.child`)];
   return [
     row,
     ...children.flatMap((child, index) =>
@@ -792,29 +649,22 @@ function flattenAudienceEvidence(
   key: string,
 ): ExplanationRow[] {
   if (!record(explanation)) return [];
-  const kind =
-    typeof explanation.kind === "string" ? explanation.kind : "unknown";
+  const kind = typeof explanation.kind === 'string' ? explanation.kind : 'unknown';
   const identity =
-    typeof explanation.definitionId === "string"
+    typeof explanation.definitionId === 'string'
       ? ` · поле ${explanation.definitionId}`
-      : typeof explanation.segmentRevisionId === "string"
+      : typeof explanation.segmentRevisionId === 'string'
         ? ` · версия сегмента ${explanation.segmentRevisionId}`
-        : "";
+        : '';
   const row: ExplanationRow = {
     key,
     depth,
     summary: `${kind}${identity}`,
     matched: Boolean(explanation.matched),
-    ...(explainValue(explanation.actual)
-      ? { actual: explainValue(explanation.actual) }
-      : {}),
-    ...(explainValue(explanation.expected)
-      ? { expected: explainValue(explanation.expected) }
-      : {}),
+    ...(explainValue(explanation.actual) ? { actual: explainValue(explanation.actual) } : {}),
+    ...(explainValue(explanation.expected) ? { expected: explainValue(explanation.expected) } : {}),
   };
-  const children = Array.isArray(explanation.children)
-    ? explanation.children
-    : [];
+  const children = Array.isArray(explanation.children) ? explanation.children : [];
   return [
     row,
     ...children.flatMap((child, index) =>
@@ -823,8 +673,7 @@ function flattenAudienceEvidence(
   ];
 }
 const summaryResponse = computed(() =>
-  previewState.value.status === "valid" ||
-  previewState.value.status === "semantic-invalid"
+  previewState.value.status === 'valid' || previewState.value.status === 'semantic-invalid'
     ? previewState.value.response
     : validationResponse.value,
 );
@@ -832,11 +681,11 @@ const summaryWarnings = computed(() =>
   summaryResponse.value
     ? [
         ...summaryResponse.value.warnings.map((warning) => ({
-          scope: "Условия",
+          scope: 'Условия',
           code: warning.code,
         })),
         ...(summaryResponse.value.audience?.warnings ?? []).map((warning) => ({
-          scope: "Аудитория",
+          scope: 'Аудитория',
           code: warning.code,
         })),
       ]
@@ -857,38 +706,22 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section
-    class="validation-preview rule-validation-preview"
-    aria-labelledby="validation-title"
-  >
+  <section class="validation-preview rule-validation-preview" aria-labelledby="validation-title">
     <header class="section-header">
       <div>
         <p class="eyebrow">Проверка правила</p>
         <h2 id="validation-title">Работает ли это условие?</h2>
       </div>
-      <button type="button" class="primary-button" @click="validateNow">
-        Проверить сейчас
-      </button>
+      <button type="button" class="primary-button" @click="validateNow">Проверить сейчас</button>
     </header>
 
-    <div
-      role="status"
-      aria-live="polite"
-      class="validation-status"
-      :class="validationState.status"
-    >
-      <span v-if="validationState.status === 'idle'"
-        >Проверка ещё не запускалась.</span
-      >
+    <div role="status" aria-live="polite" class="validation-status" :class="validationState.status">
+      <span v-if="validationState.status === 'idle'">Проверка ещё не запускалась.</span>
       <span v-else-if="validationState.status === 'debounce'"
         >Подготовка проверки после изменений…</span
       >
-      <span v-else-if="validationState.status === 'pending'"
-        >Проверяем правило…</span
-      >
-      <span v-else-if="validationState.status === 'valid'"
-        >Правило прошло проверку.</span
-      >
+      <span v-else-if="validationState.status === 'pending'">Проверяем правило…</span>
+      <span v-else-if="validationState.status === 'valid'">Правило прошло проверку.</span>
       <span v-else-if="validationState.status === 'local-invalid'"
         >Сначала заполните обязательные поля правила.</span
       >
@@ -901,19 +734,13 @@ onBeforeUnmount(() => {
       <span v-else>Ответ сервера имеет неподдерживаемый формат.</span>
     </div>
 
-    <ul
-      v-if="validationIssues.length"
-      class="issue-list"
-      aria-label="Ошибки правила"
-    >
+    <ul v-if="validationIssues.length" class="issue-list" aria-label="Ошибки правила">
       <li
         v-for="issue in validationIssues"
         :key="`${issue.code}:${issue.nodeId}:${issue.fieldPath}`"
       >
         <span>{{ issue.message }}</span>
-        <button type="button" @click="focusIssue(issue)">
-          Открыть условие
-        </button>
+        <button type="button" @click="focusIssue(issue)">Открыть условие</button>
       </li>
     </ul>
     <ul
@@ -926,16 +753,10 @@ onBeforeUnmount(() => {
         :key="`${issue.code}:${issue.nodeId}:${issue.fieldPath}`"
       >
         <span><strong>Аудитория:</strong> {{ issue.message }}</span>
-        <button type="button" @click="focusAudienceIssue(issue)">
-          Открыть аудиторию
-        </button>
+        <button type="button" @click="focusAudienceIssue(issue)">Открыть аудиторию</button>
       </li>
     </ul>
-    <button
-      v-if="validationState.status === 'network-error'"
-      type="button"
-      @click="validateNow"
-    >
+    <button v-if="validationState.status === 'network-error'" type="button" @click="validateNow">
       Повторить проверку
     </button>
 
@@ -945,9 +766,7 @@ onBeforeUnmount(() => {
           <p class="eyebrow">Событие для проверки</p>
           <h3 id="anchor-title">Выберите реальное событие</h3>
         </div>
-        <button type="button" :disabled="logsLoading" @click="refreshLogs">
-          Обновить события
-        </button>
+        <button type="button" :disabled="logsLoading" @click="refreshLogs">Обновить события</button>
       </div>
       <p>
         Показываем только события
@@ -963,10 +782,7 @@ onBeforeUnmount(() => {
               placeholder="customer-42"
           /></label>
           <label
-            >Источник<select
-              v-model="logFilters.source"
-              aria-label="Источник события для проверки"
-            >
+            >Источник<select v-model="logFilters.source" aria-label="Источник события для проверки">
               <option value="">Все</option>
               <option value="SERVER">Сервер продукта</option>
               <option value="FRONTEND">Интерфейс продукта</option>
@@ -975,10 +791,7 @@ onBeforeUnmount(() => {
             </select></label
           >
           <label
-            >Статус<select
-              v-model="logFilters.status"
-              aria-label="Статус события для проверки"
-            >
+            >Статус<select v-model="logFilters.status" aria-label="Статус события для проверки">
               <option value="">Все</option>
               <option value="PROCESSED">Обработано</option>
               <option value="FAILED">Ошибка</option>
@@ -1019,11 +832,7 @@ onBeforeUnmount(() => {
               <option :value="100">100</option>
             </select></label
           >
-          <button
-            type="button"
-            aria-label="Применить фильтры событий"
-            @click="applyLogFilters"
-          >
+          <button type="button" aria-label="Применить фильтры событий" @click="applyLogFilters">
             Применить фильтры
           </button>
         </form>
@@ -1047,26 +856,18 @@ onBeforeUnmount(() => {
               ><strong>{{ log.eventName }}</strong
               ><small
                 >{{ log.userExternalId }} ·
-                {{ new Date(log.receivedAt).toLocaleString("ru-RU") }}</small
+                {{ new Date(log.receivedAt).toLocaleString('ru-RU') }}</small
               ></span
             >
           </label>
         </li>
       </ul>
       <nav class="pagination" aria-label="Страницы событий">
-        <button
-          type="button"
-          :disabled="pageIndex === 0 || logsLoading"
-          @click="previousLogsPage"
-        >
+        <button type="button" :disabled="pageIndex === 0 || logsLoading" @click="previousLogsPage">
           Назад
         </button>
         <span>Страница {{ pageIndex + 1 }}</span>
-        <button
-          type="button"
-          :disabled="!nextCursor || logsLoading"
-          @click="nextLogsPage"
-        >
+        <button type="button" :disabled="!nextCursor || logsLoading" @click="nextLogsPage">
           Дальше
         </button>
       </nav>
@@ -1080,31 +881,19 @@ onBeforeUnmount(() => {
         Проверить на выбранном событии
       </button>
       <div class="preview-status" aria-live="polite">
-        <p v-if="previewState.status === 'pending'" role="status">
-          Строим объяснение…
-        </p>
+        <p v-if="previewState.status === 'pending'" role="status">Строим объяснение…</p>
         <p
           v-else-if="previewState.status === 'valid'"
           :class="previewState.response.matched ? 'matched' : 'not-matched'"
         >
-          {{
-            previewState.response.matched
-              ? "Условие совпало"
-              : "Условие не совпало"
-          }}
+          {{ previewState.response.matched ? 'Условие совпало' : 'Условие не совпало' }}
         </p>
         <p
-          v-if="
-            previewState.status === 'valid' && previewState.response.audience
-          "
-          :class="
-            previewState.response.audience.matched ? 'matched' : 'not-matched'
-          "
+          v-if="previewState.status === 'valid' && previewState.response.audience"
+          :class="previewState.response.audience.matched ? 'matched' : 'not-matched'"
         >
           {{
-            previewState.response.audience.matched
-              ? "Аудитория подходит"
-              : "Аудитория не подходит"
+            previewState.response.audience.matched ? 'Аудитория подходит' : 'Аудитория не подходит'
           }}
         </p>
         <p v-else-if="previewState.status === 'semantic-invalid'">
@@ -1121,18 +910,10 @@ onBeforeUnmount(() => {
           Сервер вернул ответ, который пока нельзя показать.
         </p>
       </div>
-      <ol
-        v-if="explanationRows.length"
-        class="explanation-tree"
-        aria-label="Объяснение результата"
-      >
-        <li
-          v-for="row in explanationRows"
-          :key="row.key"
-          :style="{ '--depth': row.depth }"
-        >
+      <ol v-if="explanationRows.length" class="explanation-tree" aria-label="Объяснение результата">
+        <li v-for="row in explanationRows" :key="row.key" :style="{ '--depth': row.depth }">
           <div>
-            <strong>{{ row.matched ? "Совпало" : "Не совпало" }}</strong
+            <strong>{{ row.matched ? 'Совпало' : 'Не совпало' }}</strong
             ><span>{{ row.summary }}</span>
           </div>
           <dl>
@@ -1160,12 +941,9 @@ onBeforeUnmount(() => {
         class="audience-explanation"
         aria-labelledby="audience-explanation-title"
       >
-        <h4 id="audience-explanation-title">
-          Почему пользователь подходит аудитории
-        </h4>
+        <h4 id="audience-explanation-title">Почему пользователь подходит аудитории</h4>
         <p>
-          Здесь показаны только разрешённые данные профиля. Чувствительные
-          значения скрывает сервер.
+          Здесь показаны только разрешённые данные профиля. Чувствительные значения скрывает сервер.
         </p>
         <ol class="explanation-tree" aria-label="Объяснение аудитории">
           <li
@@ -1174,7 +952,7 @@ onBeforeUnmount(() => {
             :style="{ '--depth': row.depth }"
           >
             <div>
-              <strong>{{ row.matched ? "Совпало" : "Не совпало" }}</strong
+              <strong>{{ row.matched ? 'Совпало' : 'Не совпало' }}</strong
               ><span>{{ row.summary }}</span>
             </div>
             <dl>
@@ -1191,11 +969,7 @@ onBeforeUnmount(() => {
       </section>
     </section>
 
-    <section
-      v-if="summaryResponse"
-      class="summary-grid"
-      aria-label="Стоимость и зависимости"
-    >
+    <section v-if="summaryResponse" class="summary-grid" aria-label="Стоимость и зависимости">
       <article>
         <h3>Сложность проверки</h3>
         <template v-if="summaryResponse.cost"
@@ -1223,10 +997,7 @@ onBeforeUnmount(() => {
       <article>
         <h3>Предупреждения</h3>
         <ul v-if="summaryWarnings.length">
-          <li
-            v-for="warning in summaryWarnings"
-            :key="`${warning.scope}:${warning.code}`"
-          >
+          <li v-for="warning in summaryWarnings" :key="`${warning.scope}:${warning.code}`">
             {{ warning.scope }} · {{ warning.code }}
           </li>
         </ul>
@@ -1236,30 +1007,20 @@ onBeforeUnmount(() => {
         <h3>Аудитория</h3>
         <template v-if="summaryResponse.audience.cost"
           ><strong>{{ summaryResponse.audience.cost.leaves }} условий</strong>
-          <p>
-            {{ summaryResponse.audience.cost.segmentLeaves }} проверок сегментов
-          </p></template
+          <p>{{ summaryResponse.audience.cost.segmentLeaves }} проверок сегментов</p></template
         >
         <p>
-          {{
-            summaryResponse.audience.dependencies.attributeRevisionIds.length
-          }}
+          {{ summaryResponse.audience.dependencies.attributeRevisionIds.length }}
           версий полей ·
-          {{
-            summaryResponse.audience.dependencies.segmentRevisionIds.length
-          }}
+          {{ summaryResponse.audience.dependencies.segmentRevisionIds.length }}
           версий сегментов
         </p>
-        <code
-          v-for="id in summaryResponse.audience.dependencies
-            .attributeRevisionIds"
-          :key="id"
-          >{{ id }}</code
-        ><code
-          v-for="id in summaryResponse.audience.dependencies.segmentRevisionIds"
-          :key="id"
-          >{{ id }}</code
-        >
+        <code v-for="id in summaryResponse.audience.dependencies.attributeRevisionIds" :key="id">{{
+          id
+        }}</code
+        ><code v-for="id in summaryResponse.audience.dependencies.segmentRevisionIds" :key="id">{{
+          id
+        }}</code>
       </article>
     </section>
   </section>

@@ -5,7 +5,7 @@ export {
   serializeGoalDraft,
   summarizeGoalDraft,
   validateGoalDraft,
-} from './goal-domain'
+} from './goal-domain';
 export type {
   GoalCompareOperator,
   GoalDraft,
@@ -14,4 +14,4 @@ export type {
   GoalFilterOperator,
   GoalMeasure,
   GoalSerializationResult,
-} from './goal-domain'
+} from './goal-domain';

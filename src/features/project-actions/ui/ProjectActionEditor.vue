@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import { RouterLink } from "vue-router";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Textarea from "primevue/textarea";
-import ToggleSwitch from "primevue/toggleswitch";
-import type { UiElement } from "@/shared/types/domain";
+import { computed, ref, watch } from 'vue';
+import { RouterLink } from 'vue-router';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Textarea from 'primevue/textarea';
+import ToggleSwitch from 'primevue/toggleswitch';
+import type { UiElement } from '@/shared/types/domain';
 import {
   canManageProjectActionAiExposure,
   canConfigureProjectActions,
@@ -19,8 +19,8 @@ import {
   type ConfigureProjectActionInput,
   type ProjectAction,
   type ProjectActionDraftIssue,
-} from "../model/project-action";
-import type { ProjectActionError } from "../model/project-action-error";
+} from '../model/project-action';
+import type { ProjectActionError } from '../model/project-action-error';
 import {
   actionConfirmationLabel,
   actionExecutorLabel,
@@ -29,13 +29,10 @@ import {
   needsInterfaceSetup,
   projectActionDescription,
   projectActionName,
-} from "../model/project-action-presentation";
-import {
-  buildProjectActionForm,
-  validateProjectActionConfiguration,
-} from "../model/schema-form";
-import AiCapabilityPreviewPanel from "./AiCapabilityPreview.vue";
-import ProjectActionSchemaForm from "./ProjectActionSchemaForm.vue";
+} from '../model/project-action-presentation';
+import { buildProjectActionForm, validateProjectActionConfiguration } from '../model/schema-form';
+import AiCapabilityPreviewPanel from './AiCapabilityPreview.vue';
+import ProjectActionSchemaForm from './ProjectActionSchemaForm.vue';
 
 const props = defineProps<{
   action: ProjectAction;
@@ -63,50 +60,36 @@ const confirmArchiveVisible = ref(false);
 const canEdit = computed(
   () =>
     canConfigureProjectActions(props.effectivePermissionCodes) &&
-    props.action.lifecycle !== "ARCHIVED",
+    props.action.lifecycle !== 'ARCHIVED',
 );
 const canEditAiExposure = computed(
-  () =>
-    canEdit.value &&
-    canManageProjectActionAiExposure(props.effectivePermissionCodes),
+  () => canEdit.value && canManageProjectActionAiExposure(props.effectivePermissionCodes),
 );
 const canEditConfiguration = computed(
-  () =>
-    canEdit.value &&
-    (!props.action.aiEnabled || canEditAiExposure.value),
+  () => canEdit.value && (!props.action.aiEnabled || canEditAiExposure.value),
 );
 const supportsScenario = computed(() =>
-  props.action.actionTypeRevision.supportedSurfaces.includes("SCENARIO"),
+  props.action.actionTypeRevision.supportedSurfaces.includes('SCENARIO'),
 );
-const supportsAi = computed(() =>
-  props.action.actionTypeRevision.supportedSurfaces.includes("AI"),
-);
-const needsAuditReason = computed(() =>
-  requiresAiAuditReason(props.action, draft.value),
-);
+const supportsAi = computed(() => props.action.actionTypeRevision.supportedSurfaces.includes('AI'));
+const needsAuditReason = computed(() => requiresAiAuditReason(props.action, draft.value));
 const schemaForm = computed(() =>
   buildProjectActionForm(
     props.action.actionTypeRevision.projectConfigSchema,
     props.action.actionTypeRevision.uiSchema,
   ),
 );
-const originLabel = computed(() =>
-  actionOriginLabel(props.action.actionType.origin),
-);
+const originLabel = computed(() => actionOriginLabel(props.action.actionType.origin));
 const executorLabel = computed(() =>
   actionExecutorLabel(props.action.actionTypeRevision.executorAdapter),
 );
-const riskLabel = computed(() =>
-  actionRiskLabel(props.action.actionTypeRevision.risk),
-);
+const riskLabel = computed(() => actionRiskLabel(props.action.actionTypeRevision.risk));
 const confirmationLabel = computed(() =>
   actionConfirmationLabel(props.action.actionTypeRevision.confirmationPolicy),
 );
 const description = computed(() => projectActionDescription(props.action));
 const name = computed(() => projectActionName(props.action));
-const showInterfaceSetup = computed(() =>
-  needsInterfaceSetup(props.action.code),
-);
+const showInterfaceSetup = computed(() => needsInterfaceSetup(props.action.code));
 
 watch(
   () => props.action,
@@ -126,21 +109,20 @@ function submit() {
   );
   if (schemaForm.value.blocked) {
     issues.value.push({
-      field: "configuration",
-      code: "PROJECT_ACTION_CONFIGURATION_SCHEMA_UNSUPPORTED",
+      field: 'configuration',
+      code: 'PROJECT_ACTION_CONFIGURATION_SCHEMA_UNSUPPORTED',
       message:
-        "Эти настройки пока нельзя безопасно изменить в Retenive. Обратитесь к разработчику проекта.",
+        'Эти настройки пока нельзя безопасно изменить в Retenive. Обратитесь к разработчику проекта.',
     });
   } else {
     issues.value.push(
-      ...validateProjectActionConfiguration(
-        schemaForm.value,
-        draft.value.configuration,
-      ).map((issue) => ({
-        field: "configuration" as const,
-        code: issue.code,
-        message: issue.message,
-      })),
+      ...validateProjectActionConfiguration(schemaForm.value, draft.value.configuration).map(
+        (issue) => ({
+          field: 'configuration' as const,
+          code: issue.code,
+          message: issue.message,
+        }),
+      ),
     );
   }
   if (issues.value.length) return;
@@ -149,12 +131,12 @@ function submit() {
 
 function confirmSave() {
   confirmSaveVisible.value = false;
-  emit("save", toConfigureProjectActionInput(props.action, draft.value));
+  emit('save', toConfigureProjectActionInput(props.action, draft.value));
 }
 
 function confirmArchive() {
   confirmArchiveVisible.value = false;
-  emit("archive");
+  emit('archive');
 }
 </script>
 
@@ -164,13 +146,10 @@ function confirmArchive() {
       <div class="summary-heading">
         <span class="eyebrow">Сведения о действии</span>
         <span class="origin"
-          >{{ originLabel }} · версия
-          {{ action.actionTypeRevision.version }}</span
+          >{{ originLabel }} · версия {{ action.actionTypeRevision.version }}</span
         >
       </div>
-      <p class="contract-effect">
-        <strong>Что произойдёт</strong>{{ description }}
-      </p>
+      <p class="contract-effect"><strong>Что произойдёт</strong>{{ description }}</p>
       <dl>
         <div>
           <dt>Где выполняется</dt>
@@ -189,20 +168,16 @@ function confirmArchive() {
 
     <Message v-if="!canEdit" severity="info" :closable="false">
       {{
-        action.lifecycle === "ARCHIVED"
-          ? "Архивное действие доступно только для чтения."
-          : "Для изменения и архивирования требуется разрешение управления действиями."
+        action.lifecycle === 'ARCHIVED'
+          ? 'Архивное действие доступно только для чтения.'
+          : 'Для изменения и архивирования требуется разрешение управления действиями.'
       }}
     </Message>
-    <Message
-      v-if="supportsAi && canEdit && !canEditAiExposure"
-      severity="info"
-      :closable="false"
-    >
+    <Message v-if="supportsAi && canEdit && !canEditAiExposure" severity="info" :closable="false">
       <p>Настройки доступа Retenive может изменять только владелец проекта.</p>
       <p v-if="action.aiEnabled">
-        Конфигурацию AI-enabled действия может изменять только владелец.
-        Сценарии и архивирование доступны администратору.
+        Конфигурацию AI-enabled действия может изменять только владелец. Сценарии и архивирование
+        доступны администратору.
       </p>
       <p v-else>Остальные настройки действия доступны для редактирования.</p>
     </Message>
@@ -219,9 +194,7 @@ function confirmArchive() {
       role="alert"
       aria-labelledby="project-action-validation-title"
     >
-      <strong id="project-action-validation-title"
-        >Исправьте настройки перед публикацией</strong
-      >
+      <strong id="project-action-validation-title">Исправьте настройки перед публикацией</strong>
       <ul>
         <li v-for="issue in issues" :key="`${issue.field}:${issue.code}`">
           {{ issue.message }}
@@ -233,24 +206,17 @@ function confirmArchive() {
       <div class="section-heading">
         <div>
           <h3>Доступность</h3>
-          <p>
-            Выберите, где можно использовать действие. Каждое разрешение
-            сохраняется отдельно.
-          </p>
+          <p>Выберите, где можно использовать действие. Каждое разрешение сохраняется отдельно.</p>
         </div>
       </div>
       <div class="surface-controls">
-        <label
-          class="surface-control"
-          :class="{ unsupported: !supportsScenario }"
-        >
+        <label class="surface-control" :class="{ unsupported: !supportsScenario }">
           <span class="surface-copy"
-            ><strong
-              ><i class="pi pi-sitemap" /> Использовать в сценариях</strong
+            ><strong><i class="pi pi-sitemap" /> Использовать в сценариях</strong
             ><small>{{
               supportsScenario
-                ? "Появится в новых сценариях после сохранения."
-                : "Это действие нельзя добавить в сценарий."
+                ? 'Появится в новых сценариях после сохранения.'
+                : 'Это действие нельзя добавить в сценарий.'
             }}</small></span
           >
           <ToggleSwitch
@@ -261,12 +227,11 @@ function confirmArchive() {
         </label>
         <label class="surface-control ai" :class="{ unsupported: !supportsAi }">
           <span class="surface-copy"
-            ><strong
-              ><i class="pi pi-sparkles" /> Разрешить помощнику Retenive</strong
+            ><strong><i class="pi pi-sparkles" /> Разрешить помощнику Retenive</strong
             ><small>{{
               supportsAi
-                ? "Retenive сможет выбрать это действие, когда оно подходит к запросу пользователя."
-                : "Retenive не умеет самостоятельно выбирать это действие."
+                ? 'Retenive сможет выбрать это действие, когда оно подходит к запросу пользователя.'
+                : 'Retenive не умеет самостоятельно выбирать это действие.'
             }}</small></span
           >
           <ToggleSwitch
@@ -283,15 +248,13 @@ function confirmArchive() {
         <div>
           <h3>Когда Retenive может выбрать действие</h3>
           <p>
-            Объясните простыми словами, в каких запросах пользователя это
-            действие уместно, а в каких — нет.
+            Объясните простыми словами, в каких запросах пользователя это действие уместно, а в
+            каких — нет.
           </p>
         </div>
         <span>{{ draft.aiUsageDescription.trim().length }}/2000</span>
       </div>
-      <label for="ai-usage-description" class="field-label"
-        >Подсказка для Retenive</label
-      >
+      <label for="ai-usage-description" class="field-label">Подсказка для Retenive</label>
       <Textarea
         id="ai-usage-description"
         v-model="draft.aiUsageDescription"
@@ -303,14 +266,11 @@ function confirmArchive() {
       />
       <div class="effect-lock">
         <i class="pi pi-lock" /><span
-          ><strong>Эта подсказка не меняет результат действия:</strong>
-          {{ description }}</span
+          ><strong>Эта подсказка не меняет результат действия:</strong> {{ description }}</span
         >
       </div>
       <label v-if="needsAuditReason" for="ai-audit-reason" class="audit-field">
-        <span class="field-label"
-          >Зачем Retenive нужен доступ <em>обязательно</em></span
-        >
+        <span class="field-label">Зачем Retenive нужен доступ <em>обязательно</em></span>
         <InputText
           id="ai-audit-reason"
           v-model="draft.auditReason"
@@ -319,9 +279,7 @@ function confirmArchive() {
           :disabled="!canEditAiExposure"
           placeholder="Например: пользователи часто просят открыть окно пополнения"
         />
-        <small
-          >Причина сохранится в истории изменений для администраторов.</small
-        >
+        <small>Причина сохранится в истории изменений для администраторов.</small>
       </label>
     </section>
 
@@ -330,8 +288,8 @@ function confirmArchive() {
         <div>
           <h3>Настройки действия</h3>
           <p>
-            Здесь показаны только настройки, которые можно менять безопасно.
-            Адреса, ключи доступа и программный код Retenive не принимает.
+            Здесь показаны только настройки, которые можно менять безопасно. Адреса, ключи доступа и
+            программный код Retenive не принимает.
           </p>
         </div>
       </div>
@@ -340,9 +298,8 @@ function confirmArchive() {
         <div>
           <strong>Сначала добавьте доступный элемент интерфейса</strong>
           <p>
-            Откройте раздел «Интерфейс», добавьте страницу, окно, анимацию или
-            элемент и разрешите его использование. После публикации он станет
-            доступен здесь и в сценариях.
+            Откройте раздел «Интерфейс», добавьте страницу, окно, анимацию или элемент и разрешите
+            его использование. После публикации он станет доступен здесь и в сценариях.
           </p>
           <RouterLink to="/interface">Открыть раздел «Интерфейс»</RouterLink>
         </div>
@@ -400,9 +357,8 @@ function confirmArchive() {
   >
     <div class="confirmation">
       <Message severity="warn" :closable="false"
-        ><strong>Настройки вступят в силу сразу после сохранения.</strong>
-        Использование в сценариях и доступ для Retenive включаются независимо друг
-        от друга.</Message
+        ><strong>Настройки вступят в силу сразу после сохранения.</strong> Использование в сценариях
+        и доступ для Retenive включаются независимо друг от друга.</Message
       >
       <dl>
         <div>
@@ -414,11 +370,11 @@ function confirmArchive() {
         </div>
         <div>
           <dt>Сценарии</dt>
-          <dd>{{ draft.scenarioEnabled ? "Включено" : "Выключено" }}</dd>
+          <dd>{{ draft.scenarioEnabled ? 'Включено' : 'Выключено' }}</dd>
         </div>
         <div>
           <dt>Для Retenive</dt>
-          <dd>{{ draft.aiEnabled ? "Включено" : "Выключено" }}</dd>
+          <dd>{{ draft.aiEnabled ? 'Включено' : 'Выключено' }}</dd>
         </div>
         <div v-if="draft.aiEnabled">
           <dt>Когда Retenive может выбрать действие</dt>
@@ -427,11 +383,7 @@ function confirmArchive() {
         <div>
           <dt>Дополнительные настройки</dt>
           <dd>
-            {{
-              Object.keys(draft.configuration).length
-                ? "Заполнена"
-                : "Не требуется"
-            }}
+            {{ Object.keys(draft.configuration).length ? 'Заполнена' : 'Не требуется' }}
           </dd>
         </div>
         <div>
@@ -455,8 +407,7 @@ function confirmArchive() {
         </div>
       </dl>
       <Message v-if="draft.aiEnabled" severity="info" :closable="false"
-        >После сохранения Retenive автоматически обновит опубликованные настройки
-        действия.</Message
+        >После сохранения Retenive автоматически обновит опубликованные настройки действия.</Message
       >
     </div>
     <template #footer
@@ -478,8 +429,8 @@ function confirmArchive() {
     :style="{ width: 'min(520px, 94vw)' }"
   >
     <p>
-      Действие нельзя будет архивировать, пока оно используется в активном
-      сценарии или выполняется по текущему запросу пользователя.
+      Действие нельзя будет архивировать, пока оно используется в активном сценарии или выполняется
+      по текущему запросу пользователя.
     </p>
     <template #footer
       ><Button
@@ -515,8 +466,7 @@ function confirmArchive() {
   padding: 12px;
   color: var(--status-info-text, var(--text-primary));
   background: var(--status-info-soft, var(--surface-subtle));
-  border: 1px solid
-    color-mix(in srgb, var(--text-link) 20%, var(--border-default));
+  border: 1px solid color-mix(in srgb, var(--text-link) 20%, var(--border-default));
   border-radius: 10px;
 }
 .setup-notice > i {
@@ -619,11 +569,7 @@ dd {
   border-radius: 10px;
 }
 .surface-control.ai {
-  border-color: color-mix(
-    in srgb,
-    var(--action-primary) 32%,
-    var(--border-default)
-  );
+  border-color: color-mix(in srgb, var(--action-primary) 32%, var(--border-default));
 }
 .surface-control.unsupported {
   opacity: 0.65;
@@ -675,11 +621,7 @@ dd {
   gap: 7px;
 }
 .preview-section {
-  background: color-mix(
-    in srgb,
-    var(--action-primary) 4%,
-    var(--surface-raised)
-  );
+  background: color-mix(in srgb, var(--action-primary) 4%, var(--surface-raised));
 }
 .editor-actions {
   display: flex;

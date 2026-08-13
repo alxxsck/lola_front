@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import Skeleton from "primevue/skeleton";
-import type { AiOperationSummaryResponseDto } from "@/shared/api/generated/models";
+import Skeleton from 'primevue/skeleton';
+import type { AiOperationSummaryResponseDto } from '@/shared/api/generated/models';
 import {
   aiOperationCostLabel,
   aiOperationStatusPresentation,
-} from "../model/project-ai-operation-presentation";
+} from '../model/project-ai-operation-presentation';
 
 defineProps<{
   summary: AiOperationSummaryResponseDto | null;
@@ -13,9 +13,9 @@ defineProps<{
 }>();
 
 function statusLabel(key: string): string {
-  if (["STARTED", "RUNNING", "SUCCEEDED", "FAILED", "CANCELLED"].includes(key))
+  if (['STARTED', 'RUNNING', 'SUCCEEDED', 'FAILED', 'CANCELLED'].includes(key))
     return aiOperationStatusPresentation(
-      key as "STARTED" | "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED",
+      key as 'STARTED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED',
     ).label;
   return key;
 }
@@ -37,12 +37,8 @@ function statusLabel(key: string): string {
       </article>
       <article class="metric">
         <span>Нагрузка на базу данных</span>
-        <strong v-if="canReadCost && summary.dbWorkUnits != null">{{
-          summary.dbWorkUnits
-        }}</strong>
-        <strong v-else class="restricted"
-          ><i class="pi pi-lock" /> Скрыта</strong
-        >
+        <strong v-if="canReadCost && summary.dbWorkUnits != null">{{ summary.dbWorkUnits }}</strong>
+        <strong v-else class="restricted"><i class="pi pi-lock" /> Скрыта</strong>
         <small>условных единиц обработки</small>
       </article>
       <article class="metric">
@@ -50,9 +46,7 @@ function statusLabel(key: string): string {
         <strong v-if="canReadCost && summary.cost">{{
           aiOperationCostLabel(summary.cost.effectiveCost)
         }}</strong>
-        <strong v-else class="restricted"
-          ><i class="pi pi-lock" /> Скрыта</strong
-        >
+        <strong v-else class="restricted"><i class="pi pi-lock" /> Скрыта</strong>
         <small>за выбранный период</small>
       </article>
       <article class="breakdown status-breakdown">
@@ -66,27 +60,15 @@ function statusLabel(key: string): string {
       </article>
       <article class="breakdown admins-breakdown">
         <span class="breakdown-title">По ответственным</span>
-        <div
-          v-if="canReadCost && summary.byResponsibleCmsUser.length"
-          class="breakdown-items"
-        >
-          <span
-            v-for="item in summary.byResponsibleCmsUser.slice(0, 4)"
-            :key="item.cmsUserId"
-          >
+        <div v-if="canReadCost && summary.byResponsibleCmsUser.length" class="breakdown-items">
+          <span v-for="item in summary.byResponsibleCmsUser.slice(0, 4)" :key="item.cmsUserId">
             {{ item.displayName || item.cmsUserId }}
             <strong>{{ item.operations }}</strong>
           </span>
         </div>
-        <small v-else-if="canReadCost"
-          >Нет операций с назначенным ответственным</small
-        >
+        <small v-else-if="canReadCost">Нет операций с назначенным ответственным</small>
         <small v-else>Нет доступа к детализации</small>
-        <small
-          v-if="
-            canReadCost && summary.breakdownLimits.responsibleCmsUsersTruncated
-          "
-        >
+        <small v-if="canReadCost && summary.breakdownLimits.responsibleCmsUsersTruncated">
           Показаны первые
           {{ summary.breakdownLimits.maxHighCardinalityItems }} записей
         </small>

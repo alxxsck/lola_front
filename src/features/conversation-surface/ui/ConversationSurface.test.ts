@@ -1,20 +1,20 @@
-import { flushPromises, mount } from "@vue/test-utils";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import ConversationSurface from "./ConversationSurface.vue";
-import ReplyTranslationPreview from "@/features/conversation-translation/ui/ReplyTranslationPreview.vue";
+import { flushPromises, mount } from '@vue/test-utils';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import ConversationSurface from './ConversationSurface.vue';
+import ReplyTranslationPreview from '@/features/conversation-translation/ui/ReplyTranslationPreview.vue';
 import type {
   ConversationSurfaceComposer,
   ConversationSurfaceMessage,
   ConversationSurfaceTranslation,
-} from "../model/conversation-surface-contract";
-import { runConversationSurfaceBehaviorSuite } from "../testing/conversation-surface-behavior-suite";
+} from '../model/conversation-surface-contract';
+import { runConversationSurfaceBehaviorSuite } from '../testing/conversation-surface-behavior-suite';
 import {
   conversationSurfaceSessionKey,
   writeConversationSurfaceScrollAnchor,
-} from "../model/conversation-surface-session";
+} from '../model/conversation-surface-session';
 
 beforeEach(() => {
-  vi.spyOn(document, "hasFocus").mockReturnValue(true);
+  vi.spyOn(document, 'hasFocus').mockReturnValue(true);
 });
 
 afterEach(() => {
@@ -25,44 +25,44 @@ afterEach(() => {
 
 const messages: ConversationSurfaceMessage[] = [
   {
-    id: "message-2",
+    id: 'message-2',
     ordinal: 2,
-    placement: "OUTBOUND",
-    author: { displayName: "Анна · Support", avatarUrl: null },
-    createdAt: "2026-08-07T09:02:00.000Z",
+    placement: 'OUTBOUND',
+    author: { displayName: 'Анна · Support', avatarUrl: null },
+    createdAt: '2026-08-07T09:02:00.000Z',
     content: {
-      text: "I will check this for you.",
-      status: "COMPLETED",
+      text: 'I will check this for you.',
+      status: 'COMPLETED',
       translation: {
-        direction: "OUTBOUND",
-        status: "COMPLETED",
-        originalText: "Я проверю это для вас.",
-        translatedText: "I will check this for you.",
-        deliveredText: "I will check this for you.",
-        viewText: "Я проверю это для вас.",
-        targetLocale: "en",
+        direction: 'OUTBOUND',
+        status: 'COMPLETED',
+        originalText: 'Я проверю это для вас.',
+        translatedText: 'I will check this for you.',
+        deliveredText: 'I will check this for you.',
+        viewText: 'Я проверю это для вас.',
+        targetLocale: 'en',
         warnings: [],
       },
     },
-    delivery: { label: "Доставлено", tone: "SUCCESS" },
+    delivery: { label: 'Доставлено', tone: 'SUCCESS' },
   },
   {
-    id: "message-1",
+    id: 'message-1',
     ordinal: 1,
-    placement: "INBOUND",
-    author: { displayName: "Пользователь", avatarUrl: null },
-    createdAt: "2026-08-07T09:03:00.000Z",
+    placement: 'INBOUND',
+    author: { displayName: 'Пользователь', avatarUrl: null },
+    createdAt: '2026-08-07T09:03:00.000Z',
     content: {
-      text: "I cannot complete the payment",
-      status: "COMPLETED",
+      text: 'I cannot complete the payment',
+      status: 'COMPLETED',
       translation: {
-        direction: "INBOUND",
-        status: "COMPLETED",
-        originalText: "I cannot complete the payment",
-        translatedText: "Я не могу завершить оплату",
+        direction: 'INBOUND',
+        status: 'COMPLETED',
+        originalText: 'I cannot complete the payment',
+        translatedText: 'Я не могу завершить оплату',
         deliveredText: null,
-        viewText: "Я не могу завершить оплату",
-        targetLocale: "ru",
+        viewText: 'Я не могу завершить оплату',
+        targetLocale: 'ru',
         warnings: [],
       },
     },
@@ -74,77 +74,68 @@ function translation(
 ): ConversationSurfaceTranslation {
   return {
     available: true,
-    mode: "ORIGINAL",
+    mode: 'ORIGINAL',
     changing: false,
-    workingLocaleLabel: "Русский",
+    workingLocaleLabel: 'Русский',
     loading: false,
     progress: null,
     ...overrides,
   };
 }
 
-type PublicComposer = Extract<
-  ConversationSurfaceComposer,
-  { mode: "PUBLIC_REPLY" }
->;
-type NoteComposer = Extract<
-  ConversationSurfaceComposer,
-  { mode: "INTERNAL_NOTE" }
->;
+type PublicComposer = Extract<ConversationSurfaceComposer, { mode: 'PUBLIC_REPLY' }>;
+type NoteComposer = Extract<ConversationSurfaceComposer, { mode: 'INTERNAL_NOTE' }>;
 
-function composer(conversationId = "conversation-1"): PublicComposer {
+function composer(conversationId = 'conversation-1'): PublicComposer {
   const base = {
-    visibility: "ENABLED" as const,
+    visibility: 'ENABLED' as const,
     scope: {
-      projectId: "project-1",
-      actorId: "operator-1",
+      projectId: 'project-1',
+      actorId: 'operator-1',
       conversationId,
     },
-    initialDraft: "",
-    draftRevision: "initial",
+    initialDraft: '',
+    draftRevision: 'initial',
     sending: false,
-    recipientStatus: { label: "Пользователь офлайн", tone: "OFFLINE" as const },
+    recipientStatus: { label: 'Пользователь офлайн', tone: 'OFFLINE' as const },
     actions: {
-      attachment: { visibility: "ENABLED" as const },
-      createTicket: { visibility: "HIDDEN" as const },
-      templates: { visibility: "ENABLED" as const },
+      attachment: { visibility: 'ENABLED' as const },
+      createTicket: { visibility: 'HIDDEN' as const },
+      templates: { visibility: 'ENABLED' as const },
       improveWithAI: {
-        visibility: "DISABLED" as const,
-        reason: "Функция пока недоступна",
+        visibility: 'DISABLED' as const,
+        reason: 'Функция пока недоступна',
       },
-      sendWithoutTranslation: { visibility: "HIDDEN" as const },
+      sendWithoutTranslation: { visibility: 'HIDDEN' as const },
     },
   };
   return {
     ...base,
-    mode: "PUBLIC_REPLY",
-    sendCapability: { kind: "SOURCE" },
+    mode: 'PUBLIC_REPLY',
+    sendCapability: { kind: 'SOURCE' },
     replyPreview: null,
     translationAssist: null,
   };
 }
 
-function noteComposer(
-  conversationId = "conversation-1",
-  caseId = "case-1",
-): NoteComposer {
+function noteComposer(conversationId = 'conversation-1', caseId = 'case-1'): NoteComposer {
   return {
     ...composer(conversationId),
-    mode: "INTERNAL_NOTE",
+    mode: 'INTERNAL_NOTE',
     draftTargetId: caseId,
-    sendCapability: { kind: "SOURCE" },
+    sendCapability: { kind: 'SOURCE' },
     replyPreview: null,
     translationAssist: null,
   };
 }
 
 function mountSurface(
-  props: Partial<InstanceType<typeof ConversationSurface>["$props"]> = {},
+  props: Partial<InstanceType<typeof ConversationSurface>['$props']> = {},
   slots: Record<string, string> = {},
 ) {
   return mount(ConversationSurface, {
     props: {
-      title: "Оплата не проходит",
+      title: 'Оплата не проходит',
       messages,
       history: {
         loading: false,
@@ -159,14 +150,14 @@ function mountSurface(
     global: {
       stubs: {
         Button: {
-          props: ["label", "disabled", "loading"],
-          emits: ["click"],
+          props: ['label', 'disabled', 'loading'],
+          emits: ['click'],
           template:
             '<button type="button" :disabled="disabled" :aria-busy="String(Boolean(loading))" @click="$emit(\'click\')">{{ label }}<slot /></button>',
         },
         Textarea: {
-          props: ["modelValue", "disabled", "placeholder", "ariaLabel"],
-          emits: ["update:modelValue", "keydown"],
+          props: ['modelValue', 'disabled', 'placeholder', 'ariaLabel'],
+          emits: ['update:modelValue', 'keydown'],
           template:
             '<textarea :value="modelValue" :disabled="disabled" :placeholder="placeholder" :aria-label="ariaLabel" @input="$emit(\'update:modelValue\', $event.target.value)" @keydown="$emit(\'keydown\', $event)" />',
         },
@@ -176,49 +167,49 @@ function mountSurface(
 }
 
 runConversationSurfaceBehaviorSuite({
-  name: "canonical component",
+  name: 'canonical component',
   mount: () => mountSurface(),
-  expectedMessageIds: ["message-1", "message-2"],
+  expectedMessageIds: ['message-1', 'message-2'],
   translationAvailable: true,
-  translatedText: "Я не могу завершить оплату",
+  translatedText: 'Я не могу завершить оплату',
   translation: translation(),
   composer: composer(),
-  alternateComposer: composer("conversation-2"),
+  alternateComposer: composer('conversation-2'),
   messagesWithGap: messages.map((message) =>
-    message.id === "message-2" ? { ...message, ordinal: 3 } : message,
+    message.id === 'message-2' ? { ...message, ordinal: 3 } : message,
   ),
 });
 
-describe("ConversationSurface", () => {
-  it("opens server macros with slash only from an empty public draft", async () => {
+describe('ConversationSurface', () => {
+  it('opens server macros with slash only from an empty public draft', async () => {
     const wrapper = mountSurface();
     const textarea = wrapper.get('textarea[aria-label="Ответ пользователю"]');
 
-    await textarea.trigger("keydown", { key: "/" });
+    await textarea.trigger('keydown', { key: '/' });
 
-    expect(wrapper.emitted("composer-action")).toEqual([["TEMPLATES"]]);
+    expect(wrapper.emitted('composer-action')).toEqual([['TEMPLATES']]);
   });
 
-  it("allows an attachment-only send and keeps file actions keyboard reachable", async () => {
+  it('allows an attachment-only send and keeps file actions keyboard reachable', async () => {
     const wrapper = mountSurface({
       composer: {
         ...composer(),
         attachments: {
-          draftKey: "draft-1",
-          accept: "image/png,application/pdf",
+          draftKey: 'draft-1',
+          accept: 'image/png,application/pdf',
           loading: false,
           busy: false,
-          error: "",
+          error: '',
           canDownload: true,
           maxFiles: 10,
           items: [
             {
-              localId: "local-1",
-              id: "attachment-1",
-              filename: "payment-proof.png",
-              contentType: "image/png",
+              localId: 'local-1',
+              id: 'attachment-1',
+              filename: 'payment-proof.png',
+              contentType: 'image/png',
               sizeBytes: 2048,
-              state: "READY",
+              state: 'READY',
               canAttach: true,
               failureCode: null,
               canRetry: false,
@@ -228,40 +219,38 @@ describe("ConversationSurface", () => {
       },
     });
 
-    const download = wrapper.get(
-      'button[aria-label="Скачать payment-proof.png"]',
-    );
-    expect(download.attributes("tabindex")).not.toBe("-1");
-    await download.trigger("click");
-    await wrapper.get("form").trigger("submit");
+    const download = wrapper.get('button[aria-label="Скачать payment-proof.png"]');
+    expect(download.attributes('tabindex')).not.toBe('-1');
+    await download.trigger('click');
+    await wrapper.get('form').trigger('submit');
 
-    expect(wrapper.emitted("download-attachment")).toEqual([
-      [{ attachmentId: "attachment-1", visibility: "PUBLIC_REPLY" }],
+    expect(wrapper.emitted('download-attachment')).toEqual([
+      [{ attachmentId: 'attachment-1', visibility: 'PUBLIC_REPLY' }],
     ]);
-    expect(wrapper.emitted("send")).toEqual([
+    expect(wrapper.emitted('send')).toEqual([
       [
         expect.objectContaining({
-          text: "",
-          attachmentIds: ["attachment-1"],
-          attachmentDraftKey: "draft-1",
+          text: '',
+          attachmentIds: ['attachment-1'],
+          attachmentDraftKey: 'draft-1',
         }),
       ],
     ]);
   });
 
-  it("keeps a published attachment in public scope while the note composer is active", async () => {
+  it('keeps a published attachment in public scope while the note composer is active', async () => {
     const wrapper = mountSurface({
       composer: noteComposer(),
       canDownloadPublicAttachments: true,
       messages: messages.map((message) =>
-        message.id === "message-1"
+        message.id === 'message-1'
           ? {
               ...message,
               attachments: [
                 {
-                  id: "published-file",
-                  filename: "receipt.pdf",
-                  contentType: "application/pdf",
+                  id: 'published-file',
+                  filename: 'receipt.pdf',
+                  contentType: 'application/pdf',
                   sizeBytes: 4096,
                 },
               ],
@@ -271,40 +260,38 @@ describe("ConversationSurface", () => {
     });
 
     await wrapper
-      .get(
-        '[data-message-id="message-1"] .conversation-surface__message-attachments button',
-      )
-      .trigger("click");
+      .get('[data-message-id="message-1"] .conversation-surface__message-attachments button')
+      .trigger('click');
 
-    expect(wrapper.emitted("download-attachment")).toEqual([
-      [{ attachmentId: "published-file", visibility: "PUBLIC_REPLY" }],
+    expect(wrapper.emitted('download-attachment')).toEqual([
+      [{ attachmentId: 'published-file', visibility: 'PUBLIC_REPLY' }],
     ]);
   });
 
-  it("freezes attachment actions while a durable send outcome is unresolved", async () => {
+  it('freezes attachment actions while a durable send outcome is unresolved', async () => {
     const wrapper = mountSurface({
       composer: {
         ...composer(),
         outcome: {
-          state: "CHECKING_OUTCOME",
-          label: "Проверяем результат",
+          state: 'CHECKING_OUTCOME',
+          label: 'Проверяем результат',
         },
         attachments: {
-          draftKey: "draft-1",
-          accept: "image/png",
+          draftKey: 'draft-1',
+          accept: 'image/png',
           loading: false,
           busy: false,
-          error: "",
+          error: '',
           canDownload: true,
           maxFiles: 10,
           items: [
             {
-              localId: "local-1",
-              id: "attachment-1",
-              filename: "proof.png",
-              contentType: "image/png",
+              localId: 'local-1',
+              id: 'attachment-1',
+              filename: 'proof.png',
+              contentType: 'image/png',
               sizeBytes: 100,
-              state: "READY",
+              state: 'READY',
               canAttach: true,
               failureCode: null,
               canRetry: false,
@@ -316,45 +303,44 @@ describe("ConversationSurface", () => {
 
     const remove = wrapper.get('button[aria-label="Убрать proof.png"]');
     const download = wrapper.get('button[aria-label="Скачать proof.png"]');
-    expect(remove.attributes("disabled")).toBeDefined();
-    expect(download.attributes("disabled")).toBeDefined();
-    await remove.trigger("click");
-    await download.trigger("click");
+    expect(remove.attributes('disabled')).toBeDefined();
+    expect(download.attributes('disabled')).toBeDefined();
+    await remove.trigger('click');
+    await download.trigger('click');
 
-    expect(wrapper.emitted("remove-attachment")).toBeUndefined();
-    expect(wrapper.emitted("download-attachment")).toBeUndefined();
+    expect(wrapper.emitted('remove-attachment')).toBeUndefined();
+    expect(wrapper.emitted('download-attachment')).toBeUndefined();
   });
 
-  it("keeps a server-authorized delivery retry beside the failed outbound message", async () => {
-    const failedMessages: ConversationSurfaceMessage[] = messages.map(
-      (message) =>
-        message.id === "message-2"
-          ? {
-              ...message,
-              delivery: {
-                label: "Ошибка доставки",
-                tone: "DANGER",
-                action: {
-                  label: "Повторить",
-                  busy: false,
-                  disabled: false,
-                },
-                detail: "Сообщение точно не доставлено.",
+  it('keeps a server-authorized delivery retry beside the failed outbound message', async () => {
+    const failedMessages: ConversationSurfaceMessage[] = messages.map((message) =>
+      message.id === 'message-2'
+        ? {
+            ...message,
+            delivery: {
+              label: 'Ошибка доставки',
+              tone: 'DANGER',
+              action: {
+                label: 'Повторить',
+                busy: false,
+                disabled: false,
               },
-            }
-          : message,
+              detail: 'Сообщение точно не доставлено.',
+            },
+          }
+        : message,
     );
     const wrapper = mountSurface({ messages: failedMessages });
 
     const message = wrapper.get('[data-message-id="message-2"]');
-    expect(message.get('[role="status"]').text()).toContain("Ошибка доставки");
-    expect(message.text()).toContain("Сообщение точно не доставлено.");
-    await message.get('[data-action="retry-delivery"]').trigger("click");
+    expect(message.get('[role="status"]').text()).toContain('Ошибка доставки');
+    expect(message.text()).toContain('Сообщение точно не доставлено.');
+    await message.get('[data-action="retry-delivery"]').trigger('click');
 
-    expect(wrapper.emitted("retry-delivery")).toEqual([["message-2"]]);
+    expect(wrapper.emitted('retry-delivery')).toEqual([['message-2']]);
   });
 
-  it("marks the first unread boundary and reports only the visibly read high-water", async () => {
+  it('marks the first unread boundary and reports only the visibly read high-water', async () => {
     vi.useFakeTimers();
     const wrapper = mountSurface({
       history: {
@@ -365,13 +351,11 @@ describe("ConversationSurface", () => {
       },
     });
     const divider = wrapper.get('[data-first-unread-ordinal="2"]');
-    expect(divider.text()).toContain("Новые сообщения");
-    expect(
-      divider.element.nextElementSibling?.getAttribute("data-message-id"),
-    ).toBe("message-2");
+    expect(divider.text()).toContain('Новые сообщения');
+    expect(divider.element.nextElementSibling?.getAttribute('data-message-id')).toBe('message-2');
 
     const log = wrapper.get('[role="log"]');
-    vi.spyOn(log.element, "getBoundingClientRect").mockReturnValue({
+    vi.spyOn(log.element, 'getBoundingClientRect').mockReturnValue({
       top: 0,
       bottom: 240,
       height: 240,
@@ -382,8 +366,8 @@ describe("ConversationSurface", () => {
       y: 0,
       toJSON: () => ({}),
     });
-    const rendered = wrapper.findAll<HTMLElement>("[data-message-id]");
-    vi.spyOn(rendered[0]!.element, "getBoundingClientRect").mockReturnValue({
+    const rendered = wrapper.findAll<HTMLElement>('[data-message-id]');
+    vi.spyOn(rendered[0]!.element, 'getBoundingClientRect').mockReturnValue({
       top: -80,
       bottom: -10,
       height: 70,
@@ -394,7 +378,7 @@ describe("ConversationSurface", () => {
       y: -80,
       toJSON: () => ({}),
     });
-    vi.spyOn(rendered[1]!.element, "getBoundingClientRect").mockReturnValue({
+    vi.spyOn(rendered[1]!.element, 'getBoundingClientRect').mockReturnValue({
       top: 40,
       bottom: 120,
       height: 80,
@@ -406,12 +390,12 @@ describe("ConversationSurface", () => {
       toJSON: () => ({}),
     });
 
-    await log.trigger("scroll");
+    await log.trigger('scroll');
     await vi.advanceTimersByTimeAsync(75);
-    expect(wrapper.emitted("visible-high-water")?.at(-1)).toEqual([2]);
+    expect(wrapper.emitted('visible-high-water')?.at(-1)).toEqual([2]);
   });
 
-  it("does not report observed messages until the document is visible and focused", async () => {
+  it('does not report observed messages until the document is visible and focused', async () => {
     vi.useFakeTimers();
     let callback: IntersectionObserverCallback | undefined;
     class MockIntersectionObserver {
@@ -425,10 +409,10 @@ describe("ConversationSurface", () => {
         return [];
       }
       readonly root = null;
-      readonly rootMargin = "0px";
+      readonly rootMargin = '0px';
       readonly thresholds = [0];
     }
-    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+    vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
     vi.mocked(document.hasFocus).mockReturnValue(false);
     const wrapper = mountSurface({
       history: {
@@ -441,7 +425,7 @@ describe("ConversationSurface", () => {
     await flushPromises();
     const observed = wrapper.get('[data-message-ordinal="2"]').element;
     const log = wrapper.get('[role="log"]');
-    vi.spyOn(log.element, "getBoundingClientRect").mockReturnValue({
+    vi.spyOn(log.element, 'getBoundingClientRect').mockReturnValue({
       top: 0,
       bottom: 120,
       height: 120,
@@ -452,7 +436,7 @@ describe("ConversationSurface", () => {
       y: 0,
       toJSON: () => ({}),
     });
-    vi.spyOn(observed, "getBoundingClientRect").mockReturnValue({
+    vi.spyOn(observed, 'getBoundingClientRect').mockReturnValue({
       top: 0,
       bottom: 2000,
       height: 2000,
@@ -475,34 +459,35 @@ describe("ConversationSurface", () => {
       {} as IntersectionObserver,
     );
     await vi.advanceTimersByTimeAsync(75);
-    expect(wrapper.emitted("visible-high-water")).toBeUndefined();
+    expect(wrapper.emitted('visible-high-water')).toBeUndefined();
 
     vi.mocked(document.hasFocus).mockReturnValue(true);
-    window.dispatchEvent(new Event("focus"));
+    window.dispatchEvent(new Event('focus'));
     await vi.advanceTimersByTimeAsync(75);
-    expect(wrapper.emitted("visible-high-water")?.at(-1)).toEqual([2]);
+    expect(wrapper.emitted('visible-high-water')?.at(-1)).toEqual([2]);
   });
 
-  it("ignores a queued visibility report after the document environment is torn down", async () => {
+  it('ignores a queued visibility report after the document environment is torn down', async () => {
     vi.useFakeTimers();
     const wrapper = mountSurface();
     await flushPromises();
 
-    await wrapper.get('[role="log"]').trigger("scroll");
-    vi.stubGlobal("document", undefined);
+    await wrapper.get('[role="log"]').trigger('scroll');
+    vi.stubGlobal('document', undefined);
 
     await vi.advanceTimersByTimeAsync(75);
-    expect(wrapper.emitted("visible-high-water")).toBeUndefined();
+    expect(wrapper.emitted('visible-high-water')).toBeUndefined();
   });
 
-  it("prefers the authoritative first unread over a saved latest anchor", async () => {
+  it('prefers the authoritative first unread over a saved latest anchor', async () => {
     const activeComposer = composer();
-    writeConversationSurfaceScrollAnchor(
-      conversationSurfaceSessionKey(activeComposer.scope),
-      { messageId: "message-2", offset: 0, atLatest: true },
-    );
+    writeConversationSurfaceScrollAnchor(conversationSurfaceSessionKey(activeComposer.scope), {
+      messageId: 'message-2',
+      offset: 0,
+      atLatest: true,
+    });
     const scrollTo = vi.fn();
-    Object.defineProperty(HTMLElement.prototype, "scrollTo", {
+    Object.defineProperty(HTMLElement.prototype, 'scrollTo', {
       configurable: true,
       value: scrollTo,
     });
@@ -520,11 +505,11 @@ describe("ConversationSurface", () => {
 
       expect(scrollTo).not.toHaveBeenCalled();
     } finally {
-      Reflect.deleteProperty(HTMLElement.prototype, "scrollTo");
+      Reflect.deleteProperty(HTMLElement.prototype, 'scrollTo');
     }
   });
 
-  it("loads the signed newer page without treating the current window as latest", async () => {
+  it('loads the signed newer page without treating the current window as latest', async () => {
     const wrapper = mountSurface({
       history: {
         loading: false,
@@ -536,218 +521,199 @@ describe("ConversationSurface", () => {
       },
     });
 
-    await wrapper.get('[data-action="load-newer"]').trigger("click");
+    await wrapper.get('[data-action="load-newer"]').trigger('click');
 
-    expect(wrapper.emitted("load-newer")).toHaveLength(1);
+    expect(wrapper.emitted('load-newer')).toHaveLength(1);
   });
 
-  it("preserves the compact Users composer visual contract", () => {
+  it('preserves the compact Users composer visual contract', () => {
     const wrapper = mountSurface();
-    const labels = wrapper.findAll("button").map((button) => button.text());
+    const labels = wrapper.findAll('button').map((button) => button.text());
 
-    expect(
-      wrapper.find(".conversation-surface__composer-header").exists(),
-    ).toBe(false);
-    expect(wrapper.text()).toContain("Ваш текст · Русский");
-    expect(wrapper.text()).toContain(
-      "Enter — отправить · Shift+Enter — перенос строки",
-    );
-    expect(labels).toEqual(
-      expect.arrayContaining(["Действие", "Шаблоны", "Улучшить с AI"]),
-    );
-    expect(labels.filter((label) => label.includes("Отправить"))).toEqual([
-      "Отправить",
-    ]);
+    expect(wrapper.find('.conversation-surface__composer-header').exists()).toBe(false);
+    expect(wrapper.text()).toContain('Ваш текст · Русский');
+    expect(wrapper.text()).toContain('Enter — отправить · Shift+Enter — перенос строки');
+    expect(labels).toEqual(expect.arrayContaining(['Действие', 'Шаблоны', 'Улучшить с AI']));
+    expect(labels.filter((label) => label.includes('Отправить'))).toEqual(['Отправить']);
   });
 
-  it("keeps Templates available as the recovery action while sending is blocked", async () => {
+  it('keeps Templates available as the recovery action while sending is blocked', async () => {
     const wrapper = mountSurface({
       composer: {
         ...composer(),
         sendCapability: {
-          kind: "BLOCKED",
-          reason: "Выберите актуальный macro перед отправкой.",
+          kind: 'BLOCKED',
+          reason: 'Выберите актуальный macro перед отправкой.',
         },
       } as PublicComposer,
     });
-    const templates = wrapper
-      .findAll("button")
-      .find((button) => button.text() === "Шаблоны")!;
+    const templates = wrapper.findAll('button').find((button) => button.text() === 'Шаблоны')!;
 
-    expect(templates.attributes("disabled")).toBeUndefined();
-    await templates.trigger("click");
-    expect(wrapper.emitted("composer-action")?.[0]).toEqual(["TEMPLATES"]);
+    expect(templates.attributes('disabled')).toBeUndefined();
+    await templates.trigger('click');
+    expect(wrapper.emitted('composer-action')?.[0]).toEqual(['TEMPLATES']);
   });
 
-  it("keeps an unknown send outcome inside the compact composer and checks without resending", async () => {
+  it('keeps an unknown send outcome inside the compact composer and checks without resending', async () => {
     const wrapper = mountSurface({
       composer: {
         ...composer(),
         outcome: {
-          state: "CHECKING_OUTCOME",
-          label: "Результат пока неизвестен. Сообщение не отправляется заново.",
-          action: { kind: "CHECK", label: "Проверить результат" },
+          state: 'CHECKING_OUTCOME',
+          label: 'Результат пока неизвестен. Сообщение не отправляется заново.',
+          action: { kind: 'CHECK', label: 'Проверить результат' },
         },
       } as PublicComposer,
     });
 
-    expect(wrapper.get(".conversation-composer__outcome").text()).toContain(
-      "Результат пока неизвестен",
+    expect(wrapper.get('.conversation-composer__outcome').text()).toContain(
+      'Результат пока неизвестен',
     );
-    expect(wrapper.get("textarea").attributes("disabled")).toBeDefined();
+    expect(wrapper.get('textarea').attributes('disabled')).toBeDefined();
     await wrapper
-      .findAll("button")
-      .find((button) => button.text() === "Проверить результат")!
-      .trigger("click");
-    expect(wrapper.emitted("check-send-outcome")).toHaveLength(1);
-    expect(wrapper.emitted("send")).toBeUndefined();
+      .findAll('button')
+      .find((button) => button.text() === 'Проверить результат')!
+      .trigger('click');
+    expect(wrapper.emitted('check-send-outcome')).toHaveLength(1);
+    expect(wrapper.emitted('send')).toBeUndefined();
   });
 
-  it("offers the original stable attempt only after outcome lookup returns not found", async () => {
+  it('offers the original stable attempt only after outcome lookup returns not found', async () => {
     const wrapper = mountSurface({
       composer: {
         ...composer(),
-        initialDraft: "Повторить этот ответ",
+        initialDraft: 'Повторить этот ответ',
         outcome: {
-          state: "RETRYABLE",
-          label: "Отправка не найдена. Черновик сохранён.",
+          state: 'RETRYABLE',
+          label: 'Отправка не найдена. Черновик сохранён.',
         },
       } as PublicComposer,
     });
 
     const retry = wrapper
-      .findAll("button")
-      .find((button) => button.text() === "Повторить отправку");
+      .findAll('button')
+      .find((button) => button.text() === 'Повторить отправку');
     expect(retry).toBeDefined();
-    await wrapper.get(".conversation-composer").trigger("submit");
-    expect(wrapper.emitted("send")).toHaveLength(1);
+    await wrapper.get('.conversation-composer').trigger('submit');
+    expect(wrapper.emitted('send')).toHaveLength(1);
   });
 
-  it("lets the operator discard a blocked key without losing the draft", async () => {
+  it('lets the operator discard a blocked key without losing the draft', async () => {
     const wrapper = mountSurface({
       composer: {
         ...composer(),
-        initialDraft: "Исправить и отправить новым ключом",
+        initialDraft: 'Исправить и отправить новым ключом',
         outcome: {
-          state: "BLOCKED",
-          label: "Отправка заблокирована. Черновик сохранён.",
-          action: { kind: "DISCARD", label: "Начать новую попытку" },
+          state: 'BLOCKED',
+          label: 'Отправка заблокирована. Черновик сохранён.',
+          action: { kind: 'DISCARD', label: 'Начать новую попытку' },
         },
       } as PublicComposer,
     });
 
-    expect(wrapper.get("textarea").attributes("disabled")).toBeDefined();
+    expect(wrapper.get('textarea').attributes('disabled')).toBeDefined();
     await wrapper
-      .findAll("button")
-      .find((button) => button.text() === "Начать новую попытку")!
-      .trigger("click");
-    expect(wrapper.emitted("discard-send-attempt")).toHaveLength(1);
-    expect(wrapper.emitted("send")).toBeUndefined();
+      .findAll('button')
+      .find((button) => button.text() === 'Начать новую попытку')!
+      .trigger('click');
+    expect(wrapper.emitted('discard-send-attempt')).toHaveLength(1);
+    expect(wrapper.emitted('send')).toBeUndefined();
   });
 
-  it("renders one canonical log ordered by ordinal with author, time and textual delivery", () => {
+  it('renders one canonical log ordered by ordinal with author, time and textual delivery', () => {
     const wrapper = mountSurface();
-    const rendered = wrapper.findAll("[data-message-id]");
+    const rendered = wrapper.findAll('[data-message-id]');
 
-    expect(rendered.map((item) => item.attributes("data-message-id"))).toEqual([
-      "message-1",
-      "message-2",
+    expect(rendered.map((item) => item.attributes('data-message-id'))).toEqual([
+      'message-1',
+      'message-2',
     ]);
-    expect(rendered[0]?.text()).toContain("Пользователь");
-    expect(rendered[1]?.text()).toContain("Анна · Support");
-    expect(rendered[1]?.text()).toContain("Доставлено");
-    expect(wrapper.get('[role="log"]').attributes("aria-live")).toBe("polite");
+    expect(rendered[0]?.text()).toContain('Пользователь');
+    expect(rendered[1]?.text()).toContain('Анна · Support');
+    expect(rendered[1]?.text()).toContain('Доставлено');
+    expect(wrapper.get('[role="log"]').attributes('aria-live')).toBe('polite');
   });
 
-  it("renders transport emoji shortcodes as native emoji in the canonical chat log", () => {
+  it('renders transport emoji shortcodes as native emoji in the canonical chat log', () => {
     const wrapper = mountSurface({
       messages: [
         {
           ...messages[1]!,
           content: {
-            text: ":+1::skin-tone-3:",
-            status: "COMPLETED",
+            text: ':+1::skin-tone-3:',
+            status: 'COMPLETED',
           },
         },
       ],
     });
     const rendered = wrapper.get('[data-message-id="message-1"]');
 
-    expect(rendered.text()).toContain("👍🏼");
-    expect(rendered.text()).not.toContain(":skin-tone-3:");
+    expect(rendered.text()).toContain('👍🏼');
+    expect(rendered.text()).not.toContain(':skin-tone-3:');
   });
 
-  it("requests translation mode without committing it before the adapter succeeds", async () => {
+  it('requests translation mode without committing it before the adapter succeeds', async () => {
     const wrapper = mountSurface();
-    const buttons = wrapper.findAll(
-      '[aria-label="Режим отображения сообщений"] button',
-    );
+    const buttons = wrapper.findAll('[aria-label="Режим отображения сообщений"] button');
 
-    expect(buttons.map((button) => button.text())).toEqual([
-      "Оригинал",
-      "Перевод · Русский",
-    ]);
-    expect(wrapper.text()).toContain("I cannot complete the payment");
+    expect(buttons.map((button) => button.text())).toEqual(['Оригинал', 'Перевод · Русский']);
+    expect(wrapper.text()).toContain('I cannot complete the payment');
 
-    await buttons[1]!.trigger("click");
-    expect(wrapper.text()).toContain("I cannot complete the payment");
-    expect(wrapper.emitted("change-translation-mode")?.at(-1)).toEqual([
-      "TRANSLATED",
-    ]);
+    await buttons[1]!.trigger('click');
+    expect(wrapper.text()).toContain('I cannot complete the payment');
+    expect(wrapper.emitted('change-translation-mode')?.at(-1)).toEqual(['TRANSLATED']);
 
     await wrapper.setProps({
       translation: translation({ changing: true }),
     });
-    expect(wrapper.text()).toContain("I cannot complete the payment");
+    expect(wrapper.text()).toContain('I cannot complete the payment');
 
     await wrapper.setProps({
-      translation: translation({ mode: "TRANSLATED" }),
+      translation: translation({ mode: 'TRANSLATED' }),
     });
-    expect(wrapper.text()).toContain("Я не могу завершить оплату");
+    expect(wrapper.text()).toContain('Я не могу завершить оплату');
   });
 
-  it("accepts a conversation-scoped translation mode from the canonical adapter scope", async () => {
+  it('accepts a conversation-scoped translation mode from the canonical adapter scope', async () => {
     const wrapper = mountSurface({
-      translation: translation({ mode: "TRANSLATED" }),
+      translation: translation({ mode: 'TRANSLATED' }),
     });
-    expect(wrapper.text()).toContain("Я не могу завершить оплату");
+    expect(wrapper.text()).toContain('Я не могу завершить оплату');
 
     await wrapper.setProps({
-      composer: composer("conversation-2"),
-      translation: translation({ mode: "ORIGINAL" }),
+      composer: composer('conversation-2'),
+      translation: translation({ mode: 'ORIGINAL' }),
     });
-    expect(wrapper.text()).toContain("I cannot complete the payment");
+    expect(wrapper.text()).toContain('I cannot complete the payment');
   });
 
-  it("shows bulk translation progress without reordering the log", () => {
+  it('shows bulk translation progress without reordering the log', () => {
     const wrapper = mountSurface({
       translation: translation({
-        mode: "TRANSLATED",
+        mode: 'TRANSLATED',
         progress: { completed: 3, total: 8, cancellable: true },
       }),
     });
 
-    expect(wrapper.get('[role="status"]').text()).toContain("3 из 8");
+    expect(wrapper.get('[role="status"]').text()).toContain('3 из 8');
     expect(
-      wrapper
-        .findAll("[data-message-id]")
-        .map((item) => item.attributes("data-message-id")),
-    ).toEqual(["message-1", "message-2"]);
+      wrapper.findAll('[data-message-id]').map((item) => item.attributes('data-message-id')),
+    ).toEqual(['message-1', 'message-2']);
   });
 
-  it("keeps the reply translation preview inside the shared composer behavior", async () => {
+  it('keeps the reply translation preview inside the shared composer behavior', async () => {
     const wrapper = mountSurface({
       composer: {
         ...composer(),
-        sendCapability: { kind: "TRANSLATED_PREVIEW" },
+        sendCapability: { kind: 'TRANSLATED_PREVIEW' },
         replyPreview: {
           draft: {
-            status: "READY",
-            targetLocale: "en",
-            translatedText: "I will check the payment status.",
+            status: 'READY',
+            targetLocale: 'en',
+            translatedText: 'I will check the payment status.',
             warnings: [],
           },
-          targetLocale: "en",
+          targetLocale: 'en',
           busy: false,
           stale: false,
           disabled: false,
@@ -755,137 +721,121 @@ describe("ConversationSurface", () => {
       },
     });
 
-    expect(
-      wrapper.get('[aria-label="Предпросмотр перевода ответа"]').text(),
-    ).toContain("Уйдёт пользователю · EN");
-    expect(wrapper.get(".conversation-composer").classes()).toContain(
-      "is-translated",
+    expect(wrapper.get('[aria-label="Предпросмотр перевода ответа"]').text()).toContain(
+      'Уйдёт пользователю · EN',
     );
+    expect(wrapper.get('.conversation-composer').classes()).toContain('is-translated');
     expect(
       wrapper
-        .findAll("button")
+        .findAll('button')
         .map((button) => button.text())
-        .filter((label) => label.includes("Отправить")),
-    ).toEqual(["Отправить перевод"]);
+        .filter((label) => label.includes('Отправить')),
+    ).toEqual(['Отправить перевод']);
     await wrapper
       .get('[aria-label="Предпросмотр перевода ответа"] button:last-of-type')
-      .trigger("click");
-    expect(wrapper.emitted("send-reply-translation")?.[0]?.[0]).toMatchObject({
-      scopeKey: "project-1:operator-1:conversation-1:PUBLIC_REPLY",
-      mode: "PUBLIC_REPLY",
-      text: "I will check the payment status.",
+      .trigger('click');
+    expect(wrapper.emitted('send-reply-translation')?.[0]?.[0]).toMatchObject({
+      scopeKey: 'project-1:operator-1:conversation-1:PUBLIC_REPLY',
+      mode: 'PUBLIC_REPLY',
+      text: 'I will check the payment status.',
     });
   });
 
   it.each([
     {
-      name: "stale",
+      name: 'stale',
       preview: {
         draft: {
-          status: "READY" as const,
-          targetLocale: "en",
-          translatedText: "Ready but stale",
+          status: 'READY' as const,
+          targetLocale: 'en',
+          translatedText: 'Ready but stale',
           warnings: [],
         },
-        targetLocale: "en",
+        targetLocale: 'en',
         busy: false,
         stale: true,
         disabled: false,
       },
     },
     {
-      name: "failed",
+      name: 'failed',
       preview: {
         draft: {
-          status: "FAILED" as const,
-          targetLocale: "en",
+          status: 'FAILED' as const,
+          targetLocale: 'en',
           translatedText: null,
           warnings: [],
         },
-        targetLocale: "en",
+        targetLocale: 'en',
         busy: false,
         stale: false,
         disabled: false,
       },
     },
-  ])(
-    "fails closed when the reply translation is $name",
-    async ({ preview }) => {
-      const wrapper = mountSurface({
-        composer: {
-          ...composer(),
-          sendCapability: { kind: "TRANSLATED_PREVIEW" },
-          initialDraft: "Нельзя отправить оригинал",
-          replyPreview: preview,
-        },
-      });
+  ])('fails closed when the reply translation is $name', async ({ preview }) => {
+    const wrapper = mountSurface({
+      composer: {
+        ...composer(),
+        sendCapability: { kind: 'TRANSLATED_PREVIEW' },
+        initialDraft: 'Нельзя отправить оригинал',
+        replyPreview: preview,
+      },
+    });
 
-      await wrapper.get("textarea").trigger("keydown", { key: "Enter" });
-      wrapper
-        .getComponent(ReplyTranslationPreview)
-        .vm.$emit("send", "Programmatic bypass");
-      expect(wrapper.emitted("send")).toBeUndefined();
-      expect(wrapper.emitted("send-reply-translation")).toBeUndefined();
-      expect(wrapper.text()).not.toContain("Отправить пользователю");
-      const translationSend = wrapper
-        .findAll("button")
-        .find((button) => button.text().includes("Отправить перевод"));
-      if (translationSend)
-        expect(translationSend.attributes("disabled")).toBeDefined();
-    },
-  );
+    await wrapper.get('textarea').trigger('keydown', { key: 'Enter' });
+    wrapper.getComponent(ReplyTranslationPreview).vm.$emit('send', 'Programmatic bypass');
+    expect(wrapper.emitted('send')).toBeUndefined();
+    expect(wrapper.emitted('send-reply-translation')).toBeUndefined();
+    expect(wrapper.text()).not.toContain('Отправить пользователю');
+    const translationSend = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Отправить перевод'));
+    if (translationSend) expect(translationSend.attributes('disabled')).toBeDefined();
+  });
 
-  it("preserves scoped drafts across conversations and public/note modes", async () => {
+  it('preserves scoped drafts across conversations and public/note modes', async () => {
     const wrapper = mountSurface();
     const textarea = wrapper.get('textarea[aria-label="Ответ пользователю"]');
-    await textarea.setValue("Черновик ответа");
+    await textarea.setValue('Черновик ответа');
 
     await wrapper.setProps({
-      composer: composer("conversation-2"),
+      composer: composer('conversation-2'),
     });
-    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
-      "",
-    );
-    await wrapper.get("textarea").setValue("Другой диалог");
+    expect((wrapper.get('textarea').element as HTMLTextAreaElement).value).toBe('');
+    await wrapper.get('textarea').setValue('Другой диалог');
 
     await wrapper.setProps({
-      composer: noteComposer("conversation-1"),
+      composer: noteComposer('conversation-1'),
     });
-    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
-      "",
-    );
-    await wrapper.get("textarea").setValue("Заметка только для команды");
+    expect((wrapper.get('textarea').element as HTMLTextAreaElement).value).toBe('');
+    await wrapper.get('textarea').setValue('Заметка только для команды');
 
-    await wrapper.setProps({ composer: composer("conversation-1") });
-    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
-      "Черновик ответа",
-    );
+    await wrapper.setProps({ composer: composer('conversation-1') });
+    expect((wrapper.get('textarea').element as HTMLTextAreaElement).value).toBe('Черновик ответа');
   });
 
-  it("isolates private drafts by Case even when the Conversation is shared", async () => {
+  it('isolates private drafts by Case even when the Conversation is shared', async () => {
     const wrapper = mountSurface({
-      composer: noteComposer("conversation-1", "case-1"),
+      composer: noteComposer('conversation-1', 'case-1'),
     });
-    await wrapper.get("textarea").setValue("Контекст только Case 1");
+    await wrapper.get('textarea').setValue('Контекст только Case 1');
 
     await wrapper.setProps({
-      composer: noteComposer("conversation-1", "case-2"),
+      composer: noteComposer('conversation-1', 'case-2'),
     });
-    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
-      "",
-    );
+    expect((wrapper.get('textarea').element as HTMLTextAreaElement).value).toBe('');
 
     await wrapper.setProps({
-      composer: noteComposer("conversation-1", "case-1"),
+      composer: noteComposer('conversation-1', 'case-1'),
     });
-    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
-      "Контекст только Case 1",
+    expect((wrapper.get('textarea').element as HTMLTextAreaElement).value).toBe(
+      'Контекст только Case 1',
     );
   });
 
-  it("purges every cached private draft when sensitive authority is revoked", async () => {
+  it('purges every cached private draft when sensitive authority is revoked', async () => {
     const wrapper = mountSurface({ composer: noteComposer() });
-    await wrapper.get("textarea").setValue("Нельзя пережить revoke");
+    await wrapper.get('textarea').setValue('Нельзя пережить revoke');
 
     await wrapper.setProps({
       composer: {
@@ -900,14 +850,12 @@ describe("ConversationSurface", () => {
       },
     });
 
-    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
-      "",
-    );
+    expect((wrapper.get('textarea').element as HTMLTextAreaElement).value).toBe('');
   });
 
-  it("purges the exact public draft populated from protected Knowledge", async () => {
+  it('purges the exact public draft populated from protected Knowledge', async () => {
     const wrapper = mountSurface();
-    await wrapper.get("textarea").setValue("Текст из закрытого материала");
+    await wrapper.get('textarea').setValue('Текст из закрытого материала');
 
     await wrapper.setProps({
       composer: {
@@ -915,141 +863,127 @@ describe("ConversationSurface", () => {
         publicDraftPurgeRevision: 1,
       },
     });
-    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
-      "",
-    );
+    expect((wrapper.get('textarea').element as HTMLTextAreaElement).value).toBe('');
 
-    await wrapper.setProps({ composer: composer("conversation-2") });
+    await wrapper.setProps({ composer: composer('conversation-2') });
     await wrapper.setProps({
       composer: {
         ...composer(),
         publicDraftPurgeRevision: 1,
       },
     });
-    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
-      "",
-    );
+    expect((wrapper.get('textarea').element as HTMLTextAreaElement).value).toBe('');
   });
 
-  it("makes public and private composer states explicit without duplicating the Surface", async () => {
+  it('makes public and private composer states explicit without duplicating the Surface', async () => {
     const publicComposer = {
       ...composer(),
       modeSwitch: {
-        publicReply: { visibility: "ENABLED" as const },
-        internalNote: { visibility: "ENABLED" as const },
+        publicReply: { visibility: 'ENABLED' as const },
+        internalNote: { visibility: 'ENABLED' as const },
       },
     };
     const wrapper = mountSurface({ composer: publicComposer });
 
-    await wrapper
-      .get('[aria-label="Вид сообщения"] button:nth-child(2)')
-      .trigger("click");
-    expect(wrapper.emitted("change-composer-mode")?.at(-1)).toEqual([
-      "INTERNAL_NOTE",
-    ]);
+    await wrapper.get('[aria-label="Вид сообщения"] button:nth-child(2)').trigger('click');
+    expect(wrapper.emitted('change-composer-mode')?.at(-1)).toEqual(['INTERNAL_NOTE']);
 
     await wrapper.setProps({
       composer: { ...noteComposer(), modeSwitch: publicComposer.modeSwitch },
       internalNotes: {
         loading: false,
-        error: "",
+        error: '',
         totalVisible: 1,
         hasMore: false,
         items: [
           {
-            id: "note-1",
-            body: "Проверить платёж до ответа",
-            lifecycle: "ACTIVE",
-            creatorName: "Алина",
-            updatedAt: "2026-08-07T10:00:00.000Z",
+            id: 'note-1',
+            body: 'Проверить платёж до ответа',
+            lifecycle: 'ACTIVE',
+            creatorName: 'Алина',
+            updatedAt: '2026-08-07T10:00:00.000Z',
           },
         ],
       },
     });
 
-    expect(wrapper.text()).toContain("Видно только команде");
-    expect(wrapper.text()).toContain("Закрытая лента");
-    expect(wrapper.text()).toContain("Проверить платёж до ответа");
-    expect(
-      wrapper.find('textarea[aria-label="Внутренняя заметка"]').exists(),
-    ).toBe(true);
-    expect(wrapper.text()).toContain("Добавить заметку");
+    expect(wrapper.text()).toContain('Видно только команде');
+    expect(wrapper.text()).toContain('Закрытая лента');
+    expect(wrapper.text()).toContain('Проверить платёж до ответа');
+    expect(wrapper.find('textarea[aria-label="Внутренняя заметка"]').exists()).toBe(true);
+    expect(wrapper.text()).toContain('Добавить заметку');
   });
 
-  it("synchronizes an externally applied template without changing the draft scope", async () => {
+  it('synchronizes an externally applied template without changing the draft scope', async () => {
     const wrapper = mountSurface();
-    await wrapper.get("textarea").setValue("Черновик оператора");
+    await wrapper.get('textarea').setValue('Черновик оператора');
 
     await wrapper.setProps({
       composer: {
         ...composer(),
-        initialDraft: "Шаблон ответа пользователю",
+        initialDraft: 'Шаблон ответа пользователю',
       },
     });
 
-    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
-      "Шаблон ответа пользователю",
+    expect((wrapper.get('textarea').element as HTMLTextAreaElement).value).toBe(
+      'Шаблон ответа пользователю',
     );
   });
 
-  it("sends on exact Enter or Ctrl/Cmd+Enter but ignores IME, Shift and Alt", async () => {
+  it('sends on exact Enter or Ctrl/Cmd+Enter but ignores IME, Shift and Alt', async () => {
     const wrapper = mountSurface();
-    const textarea = wrapper.get("textarea");
-    await textarea.setValue("Готовый ответ");
+    const textarea = wrapper.get('textarea');
+    await textarea.setValue('Готовый ответ');
 
-    await textarea.trigger("keydown", { key: "Enter", isComposing: true });
-    await textarea.trigger("keydown", { key: "Enter", shiftKey: true });
-    await textarea.trigger("keydown", { key: "Enter", altKey: true });
-    expect(wrapper.emitted("send")).toBeUndefined();
+    await textarea.trigger('keydown', { key: 'Enter', isComposing: true });
+    await textarea.trigger('keydown', { key: 'Enter', shiftKey: true });
+    await textarea.trigger('keydown', { key: 'Enter', altKey: true });
+    expect(wrapper.emitted('send')).toBeUndefined();
 
-    await textarea.trigger("keydown", { key: "Enter" });
-    await textarea.trigger("keydown", { key: "Enter", ctrlKey: true });
-    expect(wrapper.emitted("send")).toHaveLength(2);
-    expect(wrapper.emitted("send")?.[0]?.[0]).toMatchObject({
-      text: "Готовый ответ",
-      mode: "PUBLIC_REPLY",
+    await textarea.trigger('keydown', { key: 'Enter' });
+    await textarea.trigger('keydown', { key: 'Enter', ctrlKey: true });
+    expect(wrapper.emitted('send')).toHaveLength(2);
+    expect(wrapper.emitted('send')?.[0]?.[0]).toMatchObject({
+      text: 'Готовый ответ',
+      mode: 'PUBLIC_REPLY',
     });
-    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
-      "Готовый ответ",
-    );
+    expect((wrapper.get('textarea').element as HTMLTextAreaElement).value).toBe('Готовый ответ');
 
     await wrapper.setProps({
       composer: {
         ...composer(),
-        initialDraft: "",
-        draftRevision: "accepted-message-1",
+        initialDraft: '',
+        draftRevision: 'accepted-message-1',
       },
     });
-    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
-      "",
-    );
+    expect((wrapper.get('textarea').element as HTMLTextAreaElement).value).toBe('');
 
     await wrapper.setProps({
       composer: {
         ...composer(),
-        initialDraft: "Восстановлено после 409",
-        draftRevision: "conflict-recovery-2",
+        initialDraft: 'Восстановлено после 409',
+        draftRevision: 'conflict-recovery-2',
       },
     });
-    expect((wrapper.get("textarea").element as HTMLTextAreaElement).value).toBe(
-      "Восстановлено после 409",
+    expect((wrapper.get('textarea').element as HTMLTextAreaElement).value).toBe(
+      'Восстановлено после 409',
     );
   });
 
-  it("keeps colliding messages visible and asks the adapter to reconcile gaps and conflicts", async () => {
+  it('keeps colliding messages visible and asks the adapter to reconcile gaps and conflicts', async () => {
     const wrapper = mountSurface({
       messages: [
         messages[1]!,
         {
           ...messages[1]!,
           ordinal: 3,
-          revision: "conflicting-revision",
-          author: { displayName: "Конфликтующий автор", avatarUrl: null },
-          content: { ...messages[1]!.content, text: "Conflicting payload" },
+          revision: 'conflicting-revision',
+          author: { displayName: 'Конфликтующий автор', avatarUrl: null },
+          content: { ...messages[1]!.content, text: 'Conflicting payload' },
         },
         {
           ...messages[0]!,
-          id: "message-collision",
+          id: 'message-collision',
           ordinal: 1,
         },
         {
@@ -1061,27 +995,25 @@ describe("ConversationSurface", () => {
     await flushPromises();
 
     expect(
-      wrapper
-        .findAll("[data-message-id]")
-        .map((item) => item.attributes("data-message-id")),
-    ).toEqual(["message-1", "message-collision", "message-2"]);
-    expect(wrapper.emitted("reconcile-required")?.[0]?.[0]).toEqual(
+      wrapper.findAll('[data-message-id]').map((item) => item.attributes('data-message-id')),
+    ).toEqual(['message-1', 'message-collision', 'message-2']);
+    expect(wrapper.emitted('reconcile-required')?.[0]?.[0]).toEqual(
       expect.arrayContaining([
-        { kind: "MESSAGE_ID_CONFLICT", messageId: "message-1" },
+        { kind: 'MESSAGE_ID_CONFLICT', messageId: 'message-1' },
         {
-          kind: "ORDINAL_COLLISION",
+          kind: 'ORDINAL_COLLISION',
           ordinal: 1,
-          messageIds: ["message-1", "message-collision"],
+          messageIds: ['message-1', 'message-collision'],
         },
-        { kind: "ORDINAL_GAP", afterOrdinal: 1, beforeOrdinal: 4 },
+        { kind: 'ORDINAL_GAP', afterOrdinal: 1, beforeOrdinal: 4 },
       ]),
     );
-    expect(wrapper.text()).toContain("Пользователь");
-    expect(wrapper.text()).not.toContain("Конфликтующий автор");
-    expect(wrapper.text()).not.toContain("Conflicting payload");
+    expect(wrapper.text()).toContain('Пользователь');
+    expect(wrapper.text()).not.toContain('Конфликтующий автор');
+    expect(wrapper.text()).not.toContain('Conflicting payload');
   });
 
-  it("preserves the visual anchor after an older page is prepended", async () => {
+  it('preserves the visual anchor after an older page is prepended', async () => {
     const wrapper = mountSurface();
     const log = wrapper.get('[role="log"]').element as HTMLElement;
     Object.defineProperties(log, {
@@ -1090,8 +1022,8 @@ describe("ConversationSurface", () => {
     });
     log.scrollTop = 80;
 
-    await wrapper.get('[data-action="load-older"]').trigger("click");
-    Object.defineProperty(log, "scrollHeight", {
+    await wrapper.get('[data-action="load-older"]').trigger('click');
+    Object.defineProperty(log, 'scrollHeight', {
       configurable: true,
       get: vi.fn(() => 840),
     });
@@ -1099,9 +1031,9 @@ describe("ConversationSurface", () => {
       messages: [
         {
           ...messages[1]!,
-          id: "message-0",
+          id: 'message-0',
           ordinal: 0,
-          content: { ...messages[1]!.content, text: "Earlier" },
+          content: { ...messages[1]!.content, text: 'Earlier' },
         },
         ...messages,
       ],
@@ -1110,10 +1042,10 @@ describe("ConversationSurface", () => {
     await flushPromises();
 
     expect(log.scrollTop).toBe(320);
-    expect(wrapper.emitted("load-older")).toHaveLength(1);
+    expect(wrapper.emitted('load-older')).toHaveLength(1);
   });
 
-  it("positions an asynchronously loaded conversation at the latest message", async () => {
+  it('positions an asynchronously loaded conversation at the latest message', async () => {
     const wrapper = mountSurface({
       messages: [],
       history: { loading: true, loadingOlder: false, hasOlder: false },
@@ -1132,10 +1064,10 @@ describe("ConversationSurface", () => {
     });
     await flushPromises();
 
-    expect(scrollTo).toHaveBeenCalledWith({ top: 960, behavior: "auto" });
+    expect(scrollTo).toHaveBeenCalledWith({ top: 960, behavior: 'auto' });
   });
 
-  it("opens asynchronously loaded history at first unread instead of latest", async () => {
+  it('opens asynchronously loaded history at first unread instead of latest', async () => {
     const wrapper = mountSurface({
       messages: [],
       history: {
@@ -1164,7 +1096,7 @@ describe("ConversationSurface", () => {
       },
     });
     const unread = wrapper.get('[data-message-ordinal="2"]').element;
-    vi.spyOn(log, "getBoundingClientRect").mockReturnValue({
+    vi.spyOn(log, 'getBoundingClientRect').mockReturnValue({
       top: 0,
       bottom: 300,
       height: 300,
@@ -1175,7 +1107,7 @@ describe("ConversationSurface", () => {
       y: 0,
       toJSON: () => ({}),
     });
-    vi.spyOn(unread, "getBoundingClientRect").mockReturnValue({
+    vi.spyOn(unread, 'getBoundingClientRect').mockReturnValue({
       top: 180,
       bottom: 260,
       height: 80,
@@ -1189,10 +1121,10 @@ describe("ConversationSurface", () => {
     await flushPromises();
 
     expect(log.scrollTop).toBe(164);
-    expect(scrollTo).not.toHaveBeenCalledWith({ top: 960, behavior: "auto" });
+    expect(scrollTo).not.toHaveBeenCalledWith({ top: 960, behavior: 'auto' });
   });
 
-  it("shows a new-message pill without moving an operator who is reading history", async () => {
+  it('shows a new-message pill without moving an operator who is reading history', async () => {
     const wrapper = mountSurface();
     const log = wrapper.get('[role="log"]').element as HTMLElement;
     const scrollTo = vi.fn();
@@ -1210,9 +1142,9 @@ describe("ConversationSurface", () => {
         ...messages,
         {
           ...messages[0]!,
-          id: "message-3",
+          id: 'message-3',
           ordinal: 3,
-          content: { ...messages[0]!.content, text: "A new answer" },
+          content: { ...messages[0]!.content, text: 'A new answer' },
         },
       ],
     });
@@ -1220,41 +1152,37 @@ describe("ConversationSurface", () => {
 
     expect(log.scrollTop).toBe(120);
     expect(scrollTo).not.toHaveBeenCalled();
-    expect(wrapper.get(".conversation-surface__new-messages").text()).toContain(
-      "1 новое сообщение",
+    expect(wrapper.get('.conversation-surface__new-messages').text()).toContain(
+      '1 новое сообщение',
     );
   });
 
-  it("does not expose renderer or composer replacement slots", () => {
+  it('does not expose renderer or composer replacement slots', () => {
     const wrapper = mountSurface(
-      { title: "Диалог" },
+      { title: 'Диалог' },
       {
         message: '<div data-testid="foreign-renderer">foreign</div>',
         composer: '<div data-testid="foreign-composer">foreign</div>',
       },
     );
 
-    expect(wrapper.find('[data-testid="foreign-renderer"]').exists()).toBe(
-      false,
-    );
-    expect(wrapper.find('[data-testid="foreign-composer"]').exists()).toBe(
-      false,
-    );
+    expect(wrapper.find('[data-testid="foreign-renderer"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="foreign-composer"]').exists()).toBe(false);
   });
 
-  it("does not mount the composer action when its typed capability is hidden", () => {
+  it('does not mount the composer action when its typed capability is hidden', () => {
     const wrapper = mountSurface({
       composer: {
         ...composer(),
-        visibility: "HIDDEN",
+        visibility: 'HIDDEN',
         sendCapability: {
-          kind: "BLOCKED",
-          reason: "Ответ недоступен для вашей роли.",
+          kind: 'BLOCKED',
+          reason: 'Ответ недоступен для вашей роли.',
         },
       },
     });
 
-    expect(wrapper.find("textarea").exists()).toBe(false);
-    expect(wrapper.text()).toContain("Ответ недоступен для вашей роли.");
+    expect(wrapper.find('textarea').exists()).toBe(false);
+    expect(wrapper.text()).toContain('Ответ недоступен для вашей роли.');
   });
 });

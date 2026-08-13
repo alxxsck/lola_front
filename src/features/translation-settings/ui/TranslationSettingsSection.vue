@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from "vue";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import ToggleSwitch from "primevue/toggleswitch";
-import { translationSettingsApi } from "@/features/translation-settings/api/translation-settings.api";
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import ToggleSwitch from 'primevue/toggleswitch';
+import { translationSettingsApi } from '@/features/translation-settings/api/translation-settings.api';
 import type {
   ProjectTranslationGlossaryEntryDto,
   ProjectTranslationSettingsResponseDto,
-} from "@/shared/api/generated/models";
-import { isMockMode } from "@/shared/config/data-mode";
-import { localeDisplayName } from "@/shared/lib/locale";
-import ProjectSettingsSectionHeader from "@/shared/ui/ProjectSettingsSectionHeader.vue";
+} from '@/shared/api/generated/models';
+import { isMockMode } from '@/shared/config/data-mode';
+import { localeDisplayName } from '@/shared/lib/locale';
+import ProjectSettingsSectionHeader from '@/shared/ui/ProjectSettingsSectionHeader.vue';
 
 const props = defineProps<{
   projectId: string;
@@ -27,62 +27,58 @@ const emit = defineEmits<{
 const expanded = ref(false);
 const loading = ref(true);
 const saving = ref(false);
-const error = ref("");
+const error = ref('');
 const current = ref<ProjectTranslationSettingsResponseDto | null>(null);
 const form = reactive({
   enabled: false,
-  workingLocale: "ru",
-  formality: "AUTO" as "AUTO" | "FORMAL" | "INFORMAL",
-  outgoingTone: "PRESERVE" as
-    "PRESERVE" | "FRIENDLY" | "NEUTRAL" | "PROFESSIONAL",
+  workingLocale: 'ru',
+  formality: 'AUTO' as 'AUTO' | 'FORMAL' | 'INFORMAL',
+  outgoingTone: 'PRESERVE' as 'PRESERVE' | 'FRIENDLY' | 'NEUTRAL' | 'PROFESSIONAL',
   glossary: [] as ProjectTranslationGlossaryEntryDto[],
 });
-const baseline = ref("");
+const baseline = ref('');
 const formSnapshot = computed(() => JSON.stringify(form));
-const dirty = computed(
-  () => Boolean(baseline.value) && baseline.value !== formSnapshot.value,
-);
+const dirty = computed(() => Boolean(baseline.value) && baseline.value !== formSnapshot.value);
 const deploymentUnavailable = computed(
-  () => current.value?.availability.reason === "DEPLOYMENT_DISABLED",
+  () => current.value?.availability.reason === 'DEPLOYMENT_DISABLED',
 );
 const glossaryValid = computed(() =>
   form.glossary.every(
     (entry) =>
-      Boolean(entry.source.trim()) &&
-      (entry.behavior === "KEEP" || Boolean(entry.target?.trim())),
+      Boolean(entry.source.trim()) && (entry.behavior === 'KEEP' || Boolean(entry.target?.trim())),
   ),
 );
 const toneOptions = [
-  { label: "Сохранять исходный тон", value: "PRESERVE" },
-  { label: "Дружелюбный", value: "FRIENDLY" },
-  { label: "Нейтральный", value: "NEUTRAL" },
-  { label: "Профессиональный", value: "PROFESSIONAL" },
+  { label: 'Сохранять исходный тон', value: 'PRESERVE' },
+  { label: 'Дружелюбный', value: 'FRIENDLY' },
+  { label: 'Нейтральный', value: 'NEUTRAL' },
+  { label: 'Профессиональный', value: 'PROFESSIONAL' },
 ];
 const formalityOptions = [
-  { label: "Определять автоматически", value: "AUTO" },
-  { label: "Формально", value: "FORMAL" },
-  { label: "Неформально", value: "INFORMAL" },
+  { label: 'Определять автоматически', value: 'AUTO' },
+  { label: 'Формально', value: 'FORMAL' },
+  { label: 'Неформально', value: 'INFORMAL' },
 ];
 
 async function load(): Promise<void> {
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const response: ProjectTranslationSettingsResponseDto = isMockMode
       ? {
           availability: { available: true, reason: null },
-          configRevision: "demo-translation-settings",
+          configRevision: 'demo-translation-settings',
           projectVersion: 1,
-          supportedLocales: ["ru", "de", "en", "es", "fr"],
+          supportedLocales: ['ru', 'de', 'en', 'es', 'fr'],
           settings: {
             enabled: true,
-            formality: "AUTO",
+            formality: 'AUTO',
             glossary: [],
-            inboundMode: "ON_DEMAND",
-            outboundMode: "PREVIEW_REQUIRED",
-            outgoingTone: "PROFESSIONAL",
+            inboundMode: 'ON_DEMAND',
+            outboundMode: 'PREVIEW_REQUIRED',
+            outgoingTone: 'PROFESSIONAL',
             version: 1,
-            workingLocale: "ru",
+            workingLocale: 'ru',
           },
         }
       : await translationSettingsApi.project.get(props.projectId);
@@ -96,17 +92,16 @@ async function load(): Promise<void> {
     });
     baseline.value = formSnapshot.value;
   } catch {
-    error.value = "Не удалось загрузить настройки переводов";
+    error.value = 'Не удалось загрузить настройки переводов';
   } finally {
     loading.value = false;
   }
 }
 
 async function save(): Promise<void> {
-  if (!current.value || saving.value || !props.editable || !glossaryValid.value)
-    return;
+  if (!current.value || saving.value || !props.editable || !glossaryValid.value) return;
   saving.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const response = isMockMode
       ? {
@@ -120,10 +115,10 @@ async function save(): Promise<void> {
       : await translationSettingsApi.project.update(props.projectId, {
           ...form,
           expectedProjectVersion: current.value.projectVersion,
-          inboundMode: "ON_DEMAND",
-          outboundMode: "PREVIEW_REQUIRED",
+          inboundMode: 'ON_DEMAND',
+          outboundMode: 'PREVIEW_REQUIRED',
           glossary: form.glossary.map((entry) =>
-            entry.behavior === "KEEP"
+            entry.behavior === 'KEEP'
               ? { behavior: entry.behavior, source: entry.source.trim() }
               : {
                   behavior: entry.behavior,
@@ -135,16 +130,16 @@ async function save(): Promise<void> {
         });
     current.value = response;
     baseline.value = formSnapshot.value;
-    emit("changed", response.projectVersion);
+    emit('changed', response.projectVersion);
   } catch {
-    error.value = "Не удалось сохранить настройки переводов";
+    error.value = 'Не удалось сохранить настройки переводов';
   } finally {
     saving.value = false;
   }
 }
 
 function addGlossaryEntry(): void {
-  form.glossary.push({ behavior: "TRANSLATE_AS", source: "", target: "" });
+  form.glossary.push({ behavior: 'TRANSLATE_AS', source: '', target: '' });
 }
 
 function removeGlossaryEntry(index: number): void {
@@ -154,9 +149,7 @@ function removeGlossaryEntry(index: number): void {
 function reloadDiscardingChanges(): void {
   if (
     dirty.value &&
-    !window.confirm(
-      "Несохранённые настройки переводов будут сброшены. Продолжить?",
-    )
+    !window.confirm('Несохранённые настройки переводов будут сброшены. Продолжить?')
   ) {
     return;
   }
@@ -164,7 +157,7 @@ function reloadDiscardingChanges(): void {
 }
 
 onMounted(load);
-watch(dirty, (value) => emit("dirtyChange", value), { immediate: true });
+watch(dirty, (value) => emit('dirtyChange', value), { immediate: true });
 watch(
   () => props.projectVersion,
   (projectVersion) => {
@@ -185,22 +178,12 @@ watch(
       tone="accent"
       content-id="translation-settings"
     />
-    <div
-      id="translation-settings"
-      v-show="expanded"
-      class="translation-settings"
-    >
+    <div id="translation-settings" v-show="expanded" class="translation-settings">
       <Skeleton v-if="loading" height="180px" />
       <Message v-else-if="error && !current" severity="error" :closable="false">
         <div class="translation-error">
           <span>{{ error }}</span>
-          <Button
-            label="Повторить"
-            icon="pi pi-refresh"
-            size="small"
-            text
-            @click="load"
-          />
+          <Button label="Повторить" icon="pi pi-refresh" size="small" text @click="load" />
         </div>
       </Message>
       <template v-else-if="current">
@@ -216,11 +199,7 @@ watch(
             />
           </div>
         </Message>
-        <Message
-          v-if="deploymentUnavailable"
-          severity="warn"
-          :closable="false"
-        >
+        <Message v-if="deploymentUnavailable" severity="warn" :closable="false">
           Переводы временно недоступны. Повторите попытку позже.
         </Message>
         <div class="translation-toggle">
@@ -272,8 +251,7 @@ watch(
             <div>
               <strong>Глоссарий проекта</strong>
               <span
-                >Термины, бренды и обязательные варианты перевода для сценариев
-                и поддержки.</span
+                >Термины, бренды и обязательные варианты перевода для сценариев и поддержки.</span
               >
             </div>
             <Button
@@ -285,11 +263,7 @@ watch(
               @click="addGlossaryEntry"
             />
           </header>
-          <div
-            v-for="(entry, index) in form.glossary"
-            :key="index"
-            class="glossary-row"
-          >
+          <div v-for="(entry, index) in form.glossary" :key="index" class="glossary-row">
             <InputText
               v-model="entry.source"
               class="glossary-source"
@@ -331,25 +305,20 @@ watch(
               @click="removeGlossaryEntry(index)"
             />
           </div>
-          <span v-if="!form.glossary.length" class="glossary-empty">
-            Глоссарий пока пуст.
-          </span>
+          <span v-if="!form.glossary.length" class="glossary-empty"> Глоссарий пока пуст. </span>
         </section>
         <div class="translation-policy">
           <span
-            ><i class="pi pi-download" /><strong>Входящие</strong> — перевод по
-            запросу оператора</span
+            ><i class="pi pi-download" /><strong>Входящие</strong> — перевод по запросу
+            оператора</span
           >
           <span
-            ><i class="pi pi-upload" /><strong>Исходящие</strong> — только после
-            проверки перед отправкой</span
+            ><i class="pi pi-upload" /><strong>Исходящие</strong> — только после проверки перед
+            отправкой</span
           >
         </div>
         <footer class="translation-footer">
-          <span
-            >Глоссарий проекта применяется сервером и сохраняется в revision
-            настроек.</span
-          >
+          <span>Глоссарий проекта применяется сервером и сохраняется в revision настроек.</span>
           <Button
             data-testid="save-translation-settings"
             label="Сохранить переводы"

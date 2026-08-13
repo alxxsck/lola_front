@@ -1,5 +1,5 @@
-import { mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { mount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({
   route: { params: {}, query: {} },
@@ -19,7 +19,7 @@ const state = vi.hoisted(() => ({
       unresolvedCount: 2,
       cancelledCount: 2,
     },
-    filters: { preset: "ACTIVE", sort: "ATTENTION_FIRST" },
+    filters: { preset: 'ACTIVE', sort: 'ATTENTION_FIRST' },
     nextCursor: null,
     loading: false,
     loadingMore: false,
@@ -27,7 +27,7 @@ const state = vi.hoisted(() => ({
     mutating: false,
     error: null,
     detailError: null,
-    realtimeState: "CONNECTED",
+    realtimeState: 'CONNECTED',
     activateProject: vi.fn(),
     setFilters: vi.fn(),
     reconcile: vi.fn(),
@@ -56,47 +56,47 @@ const repository = vi.hoisted(() => ({
   list: vi.fn(),
 }));
 
-vi.mock("vue-router", () => ({
+vi.mock('vue-router', () => ({
   useRoute: () => state.route,
   useRouter: () => state.router,
 }));
-vi.mock("@/features/auth/auth.store", async () => {
-  const { reactive } = await import("vue");
+vi.mock('@/features/auth/auth.store', async () => {
+  const { reactive } = await import('vue');
   authState.runtime = reactive<AuthRuntime>({
-    user: { id: "cms-1" },
+    user: { id: 'cms-1' },
     project: {
-      id: "project-1",
+      id: 'project-1',
       effectivePermissionCodes: [
-        "project.cases.read",
-        "project.cases.manage",
-        "project.cases.assign",
-        "project.cases.settings.manage",
+        'project.cases.read',
+        'project.cases.manage',
+        'project.cases.assign',
+        'project.cases.settings.manage',
       ],
     },
   });
   return { useAuthStore: () => authState.runtime };
 });
-vi.mock("@/features/end-user-cases/model/end-user-cases.store", () => ({
+vi.mock('@/features/end-user-cases/model/end-user-cases.store', () => ({
   useEndUserCasesStore: () => state.store,
 }));
-vi.mock("@/features/end-user-cases/api/end-user-cases-repository", () => ({
+vi.mock('@/features/end-user-cases/api/end-user-cases-repository', () => ({
   endUserCasesRepository: repository,
 }));
 
-import EndUserCasesPage from "./EndUserCasesPage.vue";
+import EndUserCasesPage from './EndUserCasesPage.vue';
 
-describe("EndUserCasesPage", () => {
+describe('EndUserCasesPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     state.route.params = {};
     state.route.query = {};
     authState.runtime!.project = {
-      id: "project-1",
+      id: 'project-1',
       effectivePermissionCodes: [
-        "project.cases.read",
-        "project.cases.manage",
-        "project.cases.assign",
-        "project.cases.settings.manage",
+        'project.cases.read',
+        'project.cases.manage',
+        'project.cases.assign',
+        'project.cases.settings.manage',
       ],
     };
     (state.store as { selected: unknown }).selected = null;
@@ -104,24 +104,24 @@ describe("EndUserCasesPage", () => {
     state.store.items = [];
     state.store.error = null;
     state.store.loading = false;
-    Object.defineProperty(window, "innerWidth", {
+    Object.defineProperty(window, 'innerWidth', {
       configurable: true,
       value: 1200,
     });
   });
 
-  it("shows backend summary and settings only to authorized CMS users", async () => {
+  it('shows backend summary and settings only to authorized CMS users', async () => {
     const wrapper = mount(EndUserCasesPage, {
       global: {
         stubs: {
           Button: {
-            props: ["label"],
-            template: "<button>{{ label }}</button>",
+            props: ['label'],
+            template: '<button>{{ label }}</button>',
           },
           Dialog: true,
           Drawer: true,
           InputText: true,
-          Message: { template: "<div><slot /></div>" },
+          Message: { template: '<div><slot /></div>' },
           Select: true,
           Skeleton: true,
           Textarea: true,
@@ -133,22 +133,20 @@ describe("EndUserCasesPage", () => {
         },
       },
     });
-    await vi.waitFor(() =>
-      expect(state.store.activateProject).toHaveBeenCalledWith("project-1"),
-    );
-    expect(wrapper.text()).toContain("Обращения пользователей");
-    expect(wrapper.text()).toContain("Всего");
-    expect(wrapper.text()).toContain("Решены");
-    expect(wrapper.text()).toContain("Требуют внимания");
-    expect(wrapper.text()).toContain("Настройки");
+    await vi.waitFor(() => expect(state.store.activateProject).toHaveBeenCalledWith('project-1'));
+    expect(wrapper.text()).toContain('Обращения пользователей');
+    expect(wrapper.text()).toContain('Всего');
+    expect(wrapper.text()).toContain('Решены');
+    expect(wrapper.text()).toContain('Требуют внимания');
+    expect(wrapper.text()).toContain('Настройки');
   });
 
-  it("keeps header actions enabled and renders them as tertiary buttons", () => {
+  it('keeps header actions enabled and renders them as tertiary buttons', () => {
     const wrapper = mount(EndUserCasesPage, {
       global: {
         stubs: {
           Button: {
-            props: ["label", "text", "outlined", "disabled"],
+            props: ['label', 'text', 'outlined', 'disabled'],
             template:
               '<button :data-label="label" :data-text="text" :data-outlined="outlined" :disabled="disabled">{{ label }}</button>',
           },
@@ -164,20 +162,18 @@ describe("EndUserCasesPage", () => {
       },
     });
 
-    for (const label of ["Настройки", "Обновить"]) {
+    for (const label of ['Настройки', 'Обновить']) {
       const action = wrapper.get(`[data-label="${label}"]`);
-      expect(action.attributes("data-text")).toBe("");
-      expect(action.attributes("data-outlined")).not.toBe("true");
-      expect(action.attributes("disabled")).toBeUndefined();
+      expect(action.attributes('data-text')).toBe('');
+      expect(action.attributes('data-outlined')).not.toBe('true');
+      expect(action.attributes('disabled')).toBeUndefined();
     }
   });
 
-  it("passes the dedicated escalation permission and opens its isolated workflow", async () => {
-    authState.runtime!.project!.effectivePermissionCodes.push(
-      "project.cases.escalate",
-    );
+  it('passes the dedicated escalation permission and opens its isolated workflow', async () => {
+    authState.runtime!.project!.effectivePermissionCodes.push('project.cases.escalate');
     (state.store as { selected: unknown }).selected = {
-      case: { id: "case-1", version: 1, summary: "Нужна помощь" },
+      case: { id: 'case-1', version: 1, summary: 'Нужна помощь' },
       escalations: { items: [] },
     };
     const wrapper = mount(EndUserCasesPage, {
@@ -186,19 +182,19 @@ describe("EndUserCasesPage", () => {
           Button: true,
           Drawer: true,
           Dialog: {
-            props: ["visible", "header"],
+            props: ['visible', 'header'],
             template:
               '<section v-if="visible"><strong>{{ header }}</strong><slot /><slot name="footer" /></section>',
           },
-          Message: { template: "<div><slot /></div>" },
+          Message: { template: '<div><slot /></div>' },
           Select: true,
           Skeleton: true,
           Textarea: true,
           EndUserCaseFilters: true,
           EndUserCaseCard: true,
           EndUserCaseDetail: {
-            props: ["canEscalate", "currentCmsUserId"],
-            emits: ["request-escalation-action"],
+            props: ['canEscalate', 'currentCmsUserId'],
+            emits: ['request-escalation-action'],
             template:
               '<button data-test="escalate" :data-allowed="canEscalate" :data-user="currentCmsUserId" @click="$emit(\'request-escalation-action\', \'REQUEST\')">escalate</button>',
           },
@@ -208,20 +204,20 @@ describe("EndUserCasesPage", () => {
     });
 
     const action = wrapper.get('[data-test="escalate"]');
-    expect(action.attributes("data-allowed")).toBe("true");
-    expect(action.attributes("data-user")).toBe("cms-1");
-    await action.trigger("click");
-    expect(wrapper.text()).toContain("Позвать специалиста");
+    expect(action.attributes('data-allowed')).toBe('true');
+    expect(action.attributes('data-user')).toBe('cms-1');
+    await action.trigger('click');
+    expect(wrapper.text()).toContain('Позвать специалиста');
   });
 
-  it("forwards detail assignment actions to the isolated dialogs workflow", async () => {
+  it('forwards detail assignment actions to the isolated dialogs workflow', async () => {
     (state.store as { selected: unknown }).selected = {
-      case: { id: "case-1", assignee: null },
+      case: { id: 'case-1', assignee: null },
     };
     repository.assignees.mockResolvedValue({
       items: [
-        { id: "cms-1", displayName: "Текущий администратор" },
-        { id: "cms-2", displayName: "Анна" },
+        { id: 'cms-1', displayName: 'Текущий администратор' },
+        { id: 'cms-2', displayName: 'Анна' },
       ],
     });
     state.store.assign.mockResolvedValue(true);
@@ -229,36 +225,36 @@ describe("EndUserCasesPage", () => {
       global: {
         stubs: {
           Button: {
-            props: ["label"],
-            emits: ["click"],
-            template: "<button @click=\"$emit('click')\">{{ label }}</button>",
+            props: ['label'],
+            emits: ['click'],
+            template: '<button @click="$emit(\'click\')">{{ label }}</button>',
           },
           Drawer: true,
           Dialog: {
-            props: ["visible", "header"],
+            props: ['visible', 'header'],
             template:
               '<section v-if="visible" :data-header="header"><slot /><slot name="footer" /></section>',
           },
           InputText: true,
-          Message: { template: "<div><slot /></div>" },
+          Message: { template: '<div><slot /></div>' },
           MultiSelect: true,
           Select: {
-            props: ["modelValue", "options", "optionLabel", "optionValue"],
-            emits: ["update:modelValue"],
+            props: ['modelValue', 'options', 'optionLabel', 'optionValue'],
+            emits: ['update:modelValue'],
             template:
               '<select :value="modelValue" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="item in options" :key="item.id" :value="item.id">{{ item.displayName }}</option></select>',
           },
           Skeleton: true,
           Textarea: {
-            props: ["modelValue"],
-            emits: ["update:modelValue"],
+            props: ['modelValue'],
+            emits: ['update:modelValue'],
             template:
               '<textarea :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
           },
           EndUserCaseFilters: true,
           EndUserCaseCard: true,
           EndUserCaseDetail: {
-            emits: ["request-assignment"],
+            emits: ['request-assignment'],
             template:
               '<button data-test="request-assignment" @click="$emit(\'request-assignment\')">Назначить</button>',
           },
@@ -267,29 +263,24 @@ describe("EndUserCasesPage", () => {
       },
     });
 
-    await wrapper.get('[data-test="request-assignment"]').trigger("click");
-    await vi.waitFor(() =>
-      expect(repository.assignees).toHaveBeenCalledWith("project-1"),
-    );
-    expect(wrapper.text()).toContain("Анна");
-    await wrapper.get("select").setValue("cms-2");
-    await wrapper.get("textarea").setValue("Передача профильному специалисту");
+    await wrapper.get('[data-test="request-assignment"]').trigger('click');
+    await vi.waitFor(() => expect(repository.assignees).toHaveBeenCalledWith('project-1'));
+    expect(wrapper.text()).toContain('Анна');
+    await wrapper.get('select').setValue('cms-2');
+    await wrapper.get('textarea').setValue('Передача профильному специалисту');
     await wrapper
-      .findAll("button")
-      .find((button) => button.text() === "Сохранить")!
-      .trigger("click");
-    expect(state.store.assign).toHaveBeenCalledWith(
-      "cms-2",
-      "Передача профильному специалисту",
-    );
+      .findAll('button')
+      .find((button) => button.text() === 'Сохранить')!
+      .trigger('click');
+    expect(state.store.assign).toHaveBeenCalledWith('cms-2', 'Передача профильному специалисту');
   });
 
-  it("normalizes a deep-link query and loads the selected Case", async () => {
-    state.route.params = { caseId: "case-7" };
+  it('normalizes a deep-link query and loads the selected Case', async () => {
+    state.route.params = { caseId: 'case-7' };
     state.route.query = {
-      view: "WAITING",
-      priority: ["CRITICAL", "invalid"],
-      channel: "VOICE",
+      view: 'WAITING',
+      priority: ['CRITICAL', 'invalid'],
+      channel: 'VOICE',
     };
     mount(EndUserCasesPage, {
       global: {
@@ -308,21 +299,21 @@ describe("EndUserCasesPage", () => {
     });
     await vi.waitFor(() =>
       expect(state.store.setFilters).toHaveBeenCalledWith({
-        preset: "WAITING",
-        sort: "ATTENTION_FIRST",
-        priority: ["CRITICAL"],
-        channel: ["VOICE"],
+        preset: 'WAITING',
+        sort: 'ATTENTION_FIRST',
+        priority: ['CRITICAL'],
+        channel: ['VOICE'],
       }),
     );
-    expect(state.store.open).toHaveBeenCalledWith("case-7");
+    expect(state.store.open).toHaveBeenCalledWith('case-7');
   });
 
-  it("syncs filters and list selection into shareable routes", async () => {
+  it('syncs filters and list selection into shareable routes', async () => {
     (state.store as { items: unknown[] }).items = [
       {
-        id: "case-1",
-        projectSequence: "1",
-        title: "Deposit",
+        id: 'case-1',
+        projectSequence: '1',
+        title: 'Deposit',
       },
     ];
     const wrapper = mount(EndUserCasesPage, {
@@ -333,14 +324,13 @@ describe("EndUserCasesPage", () => {
           Message: true,
           Skeleton: true,
           EndUserCaseFilters: {
-            emits: ["update:modelValue"],
+            emits: ['update:modelValue'],
             template:
               "<button data-test=\"filters\" @click=\"$emit('update:modelValue', { preset: 'ALL', sort: 'PRIORITY', groupCode: 'PAYMENT' })\">filters</button>",
           },
           EndUserCaseCard: {
-            emits: ["select"],
-            template:
-              '<button data-test="case" @click="$emit(\'select\')">case</button>',
+            emits: ['select'],
+            template: '<button data-test="case" @click="$emit(\'select\')">case</button>',
           },
           EndUserCaseDetail: true,
           EndUserCaseDialogs: true,
@@ -348,42 +338,40 @@ describe("EndUserCasesPage", () => {
         },
       },
     });
-    await wrapper.get('[data-test="filters"]').trigger("click");
+    await wrapper.get('[data-test="filters"]').trigger('click');
     expect(state.router.replace).toHaveBeenCalledWith({
-      query: { view: "ALL", sort: "PRIORITY", group: "PAYMENT" },
+      query: { view: 'ALL', sort: 'PRIORITY', group: 'PAYMENT' },
     });
     expect(state.store.setFilters).toHaveBeenCalledWith({
-      preset: "ALL",
-      sort: "PRIORITY",
-      groupCode: "PAYMENT",
+      preset: 'ALL',
+      sort: 'PRIORITY',
+      groupCode: 'PAYMENT',
     });
 
-    await wrapper.get('[data-test="case"]').trigger("click");
+    await wrapper.get('[data-test="case"]').trigger('click');
     expect(state.router.push).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: "end-user-case-detail",
-        params: { caseId: "case-1" },
+        name: 'end-user-case-detail',
+        params: { caseId: 'case-1' },
       }),
     );
-    expect(state.store.open).toHaveBeenCalledWith("case-1");
+    expect(state.store.open).toHaveBeenCalledWith('case-1');
   });
 
-  it("uses the full-screen detail on tablet and mobile widths", async () => {
-    authState.runtime!.project!.effectivePermissionCodes.push(
-      "project.cases.escalate",
-    );
-    Object.defineProperty(window, "innerWidth", {
+  it('uses the full-screen detail on tablet and mobile widths', async () => {
+    authState.runtime!.project!.effectivePermissionCodes.push('project.cases.escalate');
+    Object.defineProperty(window, 'innerWidth', {
       configurable: true,
       value: 1024,
     });
-    (state.store as { selectedId: string | null }).selectedId = "case-1";
+    (state.store as { selectedId: string | null }).selectedId = 'case-1';
     const wrapper = mount(EndUserCasesPage, {
       global: {
         stubs: {
           Button: true,
           Drawer: {
-            props: ["visible"],
-            emits: ["update:visible"],
+            props: ['visible'],
+            emits: ['update:visible'],
             template:
               '<div v-if="visible"><button data-test="close-drawer" @click="$emit(\'update:visible\', false)">close</button><slot /></div>',
           },
@@ -392,8 +380,8 @@ describe("EndUserCasesPage", () => {
           EndUserCaseFilters: true,
           EndUserCaseCard: true,
           EndUserCaseDetail: {
-            props: ["canEscalate", "currentCmsUserId"],
-            emits: ["request-escalation-action"],
+            props: ['canEscalate', 'currentCmsUserId'],
+            emits: ['request-escalation-action'],
             template:
               '<button data-test="mobile-escalation" :data-allowed="canEscalate" :data-user="currentCmsUserId" @click="$emit(\'request-escalation-action\', \'REQUEST\')">escalate</button>',
           },
@@ -402,27 +390,27 @@ describe("EndUserCasesPage", () => {
         },
       },
     });
-    window.dispatchEvent(new Event("resize"));
+    window.dispatchEvent(new Event('resize'));
     await wrapper.vm.$nextTick();
     const escalationAction = wrapper.get('[data-test="mobile-escalation"]');
-    expect(escalationAction.attributes("data-allowed")).toBe("true");
-    expect(escalationAction.attributes("data-user")).toBe("cms-1");
-    await wrapper.get('[data-test="close-drawer"]').trigger("click");
+    expect(escalationAction.attributes('data-allowed')).toBe('true');
+    expect(escalationAction.attributes('data-user')).toBe('cms-1');
+    await wrapper.get('[data-test="close-drawer"]').trigger('click');
     expect(state.store.close).toHaveBeenCalled();
     expect(state.router.push).toHaveBeenCalledWith({
-      name: "end-user-cases",
+      name: 'end-user-cases',
       query: {},
     });
   });
 
-  it("deactivates cached data on read revoke and refetches after permission returns", async () => {
-    state.route.params = { caseId: "case-1" };
+  it('deactivates cached data on read revoke and refetches after permission returns', async () => {
+    state.route.params = { caseId: 'case-1' };
     const wrapper = mount(EndUserCasesPage, {
       global: {
         stubs: {
           Button: true,
           Drawer: true,
-          Message: { template: "<div><slot /></div>" },
+          Message: { template: '<div><slot /></div>' },
           Skeleton: true,
           EndUserCaseFilters: true,
           EndUserCaseCard: true,
@@ -438,34 +426,28 @@ describe("EndUserCasesPage", () => {
         },
       },
     });
-    await vi.waitFor(() =>
-      expect(state.store.activateProject).toHaveBeenCalledWith("project-1"),
-    );
+    await vi.waitFor(() => expect(state.store.activateProject).toHaveBeenCalledWith('project-1'));
     expect(wrapper.find('[data-test="case-detail"]').exists()).toBe(true);
     state.store.activateProject.mockClear();
     state.store.open.mockClear();
 
     const permissions = authState.runtime!.project!.effectivePermissionCodes;
-    permissions.splice(permissions.indexOf("project.cases.read"), 1);
+    permissions.splice(permissions.indexOf('project.cases.read'), 1);
     await vi.waitFor(() => expect(state.store.deactivate).toHaveBeenCalled());
 
     expect(wrapper.find('[data-test="case-detail"]').exists()).toBe(false);
     expect(wrapper.find('[data-test="case-dialogs"]').exists()).toBe(false);
-    expect(wrapper.find('[data-test="escalation-dialogs"]').exists()).toBe(
-      false,
-    );
+    expect(wrapper.find('[data-test="escalation-dialogs"]').exists()).toBe(false);
 
-    permissions.push("project.cases.read");
-    await vi.waitFor(() =>
-      expect(state.store.activateProject).toHaveBeenCalledWith("project-1"),
-    );
-    expect(state.store.open).toHaveBeenCalledWith("case-1");
+    permissions.push('project.cases.read');
+    await vi.waitFor(() => expect(state.store.activateProject).toHaveBeenCalledWith('project-1'));
+    expect(state.store.open).toHaveBeenCalledWith('case-1');
     expect(wrapper.find('[data-test="case-detail"]').exists()).toBe(true);
   });
 
-  it("renders the standard forbidden state without loading project data", async () => {
+  it('renders the standard forbidden state without loading project data', async () => {
     authState.runtime!.project = {
-      id: "project-1",
+      id: 'project-1',
       effectivePermissionCodes: [],
     };
     const wrapper = mount(EndUserCasesPage, {
@@ -473,7 +455,7 @@ describe("EndUserCasesPage", () => {
         stubs: {
           Button: true,
           Drawer: true,
-          Message: { template: "<div><slot /></div>" },
+          Message: { template: '<div><slot /></div>' },
           Skeleton: true,
           EndUserCaseFilters: true,
           EndUserCaseCard: true,
@@ -484,7 +466,7 @@ describe("EndUserCasesPage", () => {
       },
     });
     await wrapper.vm.$nextTick();
-    expect(wrapper.text()).toContain("требуется разрешение проекта");
+    expect(wrapper.text()).toContain('требуется разрешение проекта');
     expect(state.store.activateProject).not.toHaveBeenCalled();
   });
 });

@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from 'vue';
 import type {
   SupportInboxItem,
   SupportInboxMode,
-} from "@/features/support-workspace/api/support-workspace-source";
-import type { SupportInboxFailure } from "@/features/support-inbox/model/use-support-inbox";
+} from '@/features/support-workspace/api/support-workspace-source';
+import type { SupportInboxFailure } from '@/features/support-inbox/model/use-support-inbox';
 import type {
   SupportSearchFreshness,
   SupportSearchResult,
-} from "@/features/support-search/api/support-search-source";
-import type { SupportSearchRouteState } from "@/features/support-search/model/support-search-route";
-import type { SupportSearchFailure } from "@/features/support-search/model/use-support-search";
-import SupportInboxSkeletonRows from "@/features/support-inbox/ui/SupportInboxSkeletonRows.vue";
-import SupportSearchToolbar from "@/features/support-search/ui/SupportSearchToolbar.vue";
+} from '@/features/support-search/api/support-search-source';
+import type { SupportSearchRouteState } from '@/features/support-search/model/support-search-route';
+import type { SupportSearchFailure } from '@/features/support-search/model/use-support-search';
+import SupportInboxSkeletonRows from '@/features/support-inbox/ui/SupportInboxSkeletonRows.vue';
+import SupportSearchToolbar from '@/features/support-search/ui/SupportSearchToolbar.vue';
 import type {
   SavedSupportViewResponseDto,
   SupportViewPresetResponseDto,
-} from "@/shared/api/generated/models";
-import type { SupportViewSelection } from "@/features/support-views/api/support-views-source";
-import SupportViewsRail from "@/features/support-views/ui/SupportViewsRail.vue";
-import { formatDate, relativeTime } from "@/shared/lib/format";
-import { slaSignalCompactLabel } from "@/features/support-case-operations/model/support-case-operations";
+} from '@/shared/api/generated/models';
+import type { SupportViewSelection } from '@/features/support-views/api/support-views-source';
+import SupportViewsRail from '@/features/support-views/ui/SupportViewsRail.vue';
+import { formatDate, relativeTime } from '@/shared/lib/format';
+import { slaSignalCompactLabel } from '@/features/support-case-operations/model/support-case-operations';
 
 const props = defineProps<{
   mode: SupportInboxMode;
@@ -65,13 +65,11 @@ const emit = defineEmits<{
     value: {
       name: string;
       code: string;
-      scope: "PERSONAL" | "TEAM" | "PROJECT";
+      scope: 'PERSONAL' | 'TEAM' | 'PROJECT';
       teamId: string;
     },
   ];
-  replaceView: [
-    value: { view: SavedSupportViewResponseDto; displayName: string },
-  ];
+  replaceView: [value: { view: SavedSupportViewResponseDto; displayName: string }];
   publishView: [view: SavedSupportViewResponseDto];
   archiveView: [view: SavedSupportViewResponseDto];
   defaultView: [selection: SupportViewSelection];
@@ -80,20 +78,18 @@ const emit = defineEmits<{
 
 const searchToolsExpanded = ref(false);
 const searchToolsPanel = ref<HTMLElement | null>(null);
-const searchToolsPanelId = "support-inbox-search-tools";
+const searchToolsPanelId = 'support-inbox-search-tools';
 const inboxSkeletonRowCount = 14;
 const lastLoadedCount = ref(props.items.length);
 const loadedCount = computed(() =>
-  props.loading && !props.items.length
-    ? lastLoadedCount.value
-    : props.items.length,
+  props.loading && !props.items.length ? lastLoadedCount.value : props.items.length,
 );
 const displayedViewSelection = computed<SupportViewSelection | null>(() => {
   if (props.viewSelection) return props.viewSelection;
   if (props.searchActive || props.viewSystem.length) return null;
   return {
-    kind: "SYSTEM",
-    code: props.mode === "CASES" ? "ALL_CASES" : "ALL_CONVERSATIONS",
+    kind: 'SYSTEM',
+    code: props.mode === 'CASES' ? 'ALL_CASES' : 'ALL_CONVERSATIONS',
   };
 });
 const displayedViewActive = computed(
@@ -107,39 +103,38 @@ watch(
   },
 );
 const systemViewNames: Record<string, string> = {
-  MY_ACTIVE: "Мои обращения",
-  MY_TEAM_UNASSIGNED: "Неназначенные команды",
-  ALL_CASES: "Все обращения",
-  ALL_CONVERSATIONS: "Все диалоги",
+  MY_ACTIVE: 'Мои обращения',
+  MY_TEAM_UNASSIGNED: 'Неназначенные команды',
+  ALL_CASES: 'Все обращения',
+  ALL_CONVERSATIONS: 'Все диалоги',
 };
 const searchScopeNames = {
-  CASES: "Обращения",
-  CONVERSATIONS: "Диалоги",
-  MESSAGES: "Сообщения",
-  END_USERS: "Пользователи",
+  CASES: 'Обращения',
+  CONVERSATIONS: 'Диалоги',
+  MESSAGES: 'Сообщения',
+  END_USERS: 'Пользователи',
 } as const;
 
 const activeFilterCount = computed(() =>
   Object.values(props.searchState.filters).reduce((total, value) => {
     if (Array.isArray(value)) return total + value.length;
-    return value == null || value === "" ? total : total + 1;
+    return value == null || value === '' ? total : total + 1;
   }, 0),
 );
 
 const searchToolsTitle = computed(() => {
-  if (displayedViewSelection.value?.kind === "SYSTEM")
-    return systemViewNames[displayedViewSelection.value.code] ?? "Представление";
-  if (displayedViewSelection.value?.kind === "SAVED") {
+  if (displayedViewSelection.value?.kind === 'SYSTEM')
+    return systemViewNames[displayedViewSelection.value.code] ?? 'Представление';
+  if (displayedViewSelection.value?.kind === 'SAVED') {
     const selectedId = displayedViewSelection.value.id;
     return (
-      props.viewSaved.find((item) => item.id === selectedId)?.draft
-        .displayName ?? "Сохранённое представление"
+      props.viewSaved.find((item) => item.id === selectedId)?.draft.displayName ??
+      'Сохранённое представление'
     );
   }
-  if (props.searchState.phrase.trim())
-    return `Поиск: ${props.searchState.phrase.trim()}`;
-  if (props.searchActive) return "Настроенный поиск";
-  return "Поиск и представления";
+  if (props.searchState.phrase.trim()) return `Поиск: ${props.searchState.phrase.trim()}`;
+  if (props.searchActive) return 'Настроенный поиск';
+  return 'Поиск и представления';
 });
 
 function filterCountLabel(count: number): string {
@@ -152,16 +147,14 @@ function filterCountLabel(count: number): string {
 }
 
 const searchToolsDescription = computed(() => {
-  if (displayedViewSelection.value?.kind === "SYSTEM")
-    return "Системное представление";
-  if (displayedViewSelection.value?.kind === "SAVED")
-    return "Сохранённое представление";
+  if (displayedViewSelection.value?.kind === 'SYSTEM') return 'Системное представление';
+  if (displayedViewSelection.value?.kind === 'SAVED') return 'Сохранённое представление';
   if (props.searchActive) {
     const count = activeFilterCount.value;
-    const filters = count ? ` · ${filterCountLabel(count)}` : "";
+    const filters = count ? ` · ${filterCountLabel(count)}` : '';
     return `${searchScopeNames[props.searchState.scope]}${filters}`;
   }
-  return "Найти чат или настроить очередь";
+  return 'Найти чат или настроить очередь';
 });
 
 function toggleSearchTools(): void {
@@ -170,22 +163,22 @@ function toggleSearchTools(): void {
 
 function handleSelectView(selection: SupportViewSelection): void {
   searchToolsExpanded.value = false;
-  emit("selectView", selection);
+  emit('selectView', selection);
 }
 
 function handleSubmitSearch(state: SupportSearchRouteState): void {
   searchToolsExpanded.value = false;
-  emit("submitSearch", state);
+  emit('submitSearch', state);
 }
 
 function handleCloseSearch(): void {
   searchToolsExpanded.value = false;
-  emit("closeSearch");
+  emit('closeSearch');
 }
 
 function handleCustomSearch(): void {
   searchToolsExpanded.value = true;
-  emit("customSearch");
+  emit('customSearch');
 }
 
 function openSearchTools(options: { focusSearch?: boolean } = {}): void {
@@ -193,7 +186,7 @@ function openSearchTools(options: { focusSearch?: boolean } = {}): void {
   if (!options.focusSearch) return;
   void nextTick(() => {
     searchToolsPanel.value
-      ?.querySelector<HTMLInputElement>("[data-support-search-input]")
+      ?.querySelector<HTMLInputElement>('[data-support-search-input]')
       ?.focus({ preventScroll: true });
   });
 }
@@ -207,21 +200,21 @@ watch(
 
 defineExpose({ openSearchTools });
 
-function searchKind(value: SupportSearchResult["kind"]): string {
+function searchKind(value: SupportSearchResult['kind']): string {
   return {
-    CASE: "Обращение",
-    CONVERSATION: "Диалог",
-    MESSAGE: "Сообщение",
-    END_USER: "Пользователь",
+    CASE: 'Обращение',
+    CONVERSATION: 'Диалог',
+    MESSAGE: 'Сообщение',
+    END_USER: 'Пользователь',
   }[value];
 }
 
-function matchReason(value?: SupportSearchResult["matchProvenance"]): string {
-  return value === "TRANSLATION"
-    ? "Совпадение в переводе"
-    : value === "ORIGINAL"
-      ? "Совпадение в оригинале"
-      : "Точное совпадение";
+function matchReason(value?: SupportSearchResult['matchProvenance']): string {
+  return value === 'TRANSLATION'
+    ? 'Совпадение в переводе'
+    : value === 'ORIGINAL'
+      ? 'Совпадение в оригинале'
+      : 'Точное совпадение';
 }
 
 function itemKey(item: SupportInboxItem): string {
@@ -235,31 +228,28 @@ function searchSelectionKey(item: SupportSearchResult): string {
 function caseStatus(value: string): string {
   return (
     {
-      OPEN: "Открыто",
-      IN_PROGRESS: "В работе",
-      WAITING_END_USER: "Ждём пользователя",
-      WAITING_SYSTEM: "Ждём систему",
-      WAITING_ADMIN: "Нужен оператор",
-      RESOLVED: "Решено",
-      UNRESOLVED: "Не решено",
-      CANCELLED: "Отменено",
-    }[value] ?? "Состояние не распознано"
+      OPEN: 'Открыто',
+      IN_PROGRESS: 'В работе',
+      WAITING_END_USER: 'Ждём пользователя',
+      WAITING_SYSTEM: 'Ждём систему',
+      WAITING_ADMIN: 'Нужен оператор',
+      RESOLVED: 'Решено',
+      UNRESOLVED: 'Не решено',
+      CANCELLED: 'Отменено',
+    }[value] ?? 'Состояние не распознано'
   );
 }
 
-const casePriorityPresentation: Record<
-  string,
-  { label: string; emphasized: boolean }
-> = {
-  LOW: { label: "Низкий", emphasized: false },
-  NORMAL: { label: "Обычный", emphasized: false },
-  HIGH: { label: "Высокий", emphasized: true },
-  URGENT: { label: "Срочный", emphasized: true },
-  CRITICAL: { label: "Критический", emphasized: true },
+const casePriorityPresentation: Record<string, { label: string; emphasized: boolean }> = {
+  LOW: { label: 'Низкий', emphasized: false },
+  NORMAL: { label: 'Обычный', emphasized: false },
+  HIGH: { label: 'Высокий', emphasized: true },
+  URGENT: { label: 'Срочный', emphasized: true },
+  CRITICAL: { label: 'Критический', emphasized: true },
 };
 
 function casePriority(value: string): string {
-  return casePriorityPresentation[value]?.label ?? "Приоритет не распознан";
+  return casePriorityPresentation[value]?.label ?? 'Приоритет не распознан';
 }
 
 function isPriorityEmphasized(value: string): boolean {
@@ -267,7 +257,7 @@ function isPriorityEmphasized(value: string): boolean {
 }
 
 const shadowSlaExplanation =
-  "Теневой прогноз помогает оценить риск. Прогноз не является договорным сроком и не управляет действиями оператора.";
+  'Теневой прогноз помогает оценить риск. Прогноз не является договорным сроком и не управляет действиями оператора.';
 
 function initials(value: string): string {
   return value
@@ -275,7 +265,7 @@ function initials(value: string): string {
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
-    .join("");
+    .join('');
 }
 
 function inboxTime(value: string): string {
@@ -283,50 +273,42 @@ function inboxTime(value: string): string {
   if (relative.length <= 13) return relative;
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return relative;
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "short",
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: 'numeric',
+    month: 'short',
   }).format(parsed);
 }
 
-function caseAccessibleLabel(
-  item: Extract<SupportInboxItem, { kind: "CASE" }>,
-): string {
+function caseAccessibleLabel(item: Extract<SupportInboxItem, { kind: 'CASE' }>): string {
   return [
     `Обращение ${item.projectSequence}`,
     item.title,
     caseStatus(item.status),
     casePriority(item.priority),
     item.groupCode,
-    item.attentionRequired ? "требуется реакция" : "",
-    item.slaSignal?.state === "AVAILABLE"
-      ? slaSignalCompactLabel(item.slaSignal)
-      : "",
+    item.attentionRequired ? 'требуется реакция' : '',
+    item.slaSignal?.state === 'AVAILABLE' ? slaSignalCompactLabel(item.slaSignal) : '',
   ]
     .filter(Boolean)
-    .join(". ");
+    .join('. ');
 }
 
-function caseTooltip(
-  item: Extract<SupportInboxItem, { kind: "CASE" }>,
-): string {
+function caseTooltip(item: Extract<SupportInboxItem, { kind: 'CASE' }>): string {
   return [
     item.title,
     item.groupCode,
     formatDate(item.lastActivityAt),
-    item.slaSignal?.state === "AVAILABLE" ? shadowSlaExplanation : "",
+    item.slaSignal?.state === 'AVAILABLE' ? shadowSlaExplanation : '',
   ]
     .filter(Boolean)
-    .join(" · ");
+    .join(' · ');
 }
 
 function slaDescriptionId(caseId: string): string {
   return `case-sla-description-${caseId}`;
 }
 
-function unreadLabel(
-  item: Extract<SupportInboxItem, { kind: "CONVERSATION" }>,
-): string {
+function unreadLabel(item: Extract<SupportInboxItem, { kind: 'CONVERSATION' }>): string {
   const total = item.readState.unreadMessageCount;
   const customer = item.readState.unreadCustomerMessageCount;
   return `${total} непрочитанных сообщения, ${customer} от пользователя`;
@@ -343,11 +325,7 @@ function unreadLabel(
       <span class="keyboard-hint" aria-hidden="true">J / K</span>
     </header>
 
-    <section
-      v-if="canSearch"
-      class="inbox-tools"
-      aria-label="Поиск и представления"
-    >
+    <section v-if="canSearch" class="inbox-tools" aria-label="Поиск и представления">
       <button
         type="button"
         class="inbox-tools__trigger"
@@ -428,8 +406,8 @@ function unreadLabel(
             <i class="pi pi-clock" aria-hidden="true" />
             <span>
               {{
-                searchFreshness.state === "BUILDING"
-                  ? "Индекс обновляется"
+                searchFreshness.state === 'BUILDING'
+                  ? 'Индекс обновляется'
                   : `Индекс отстаёт на ${searchFreshness.lagSeconds} сек.`
               }}
             </span>
@@ -440,49 +418,28 @@ function unreadLabel(
             :mode="mode"
             :count="inboxSkeletonRowCount"
           />
-          <div
-            v-else-if="searchFailure === 'FORBIDDEN'"
-            class="inbox-state"
-            role="alert"
-          >
-            <i class="pi pi-lock" aria-hidden="true" /><strong
-              >Поиск больше недоступен</strong
-            >
+          <div v-else-if="searchFailure === 'FORBIDDEN'" class="inbox-state" role="alert">
+            <i class="pi pi-lock" aria-hidden="true" /><strong>Поиск больше недоступен</strong>
             <p>Права обновлены; скрытые результаты удалены.</p>
           </div>
-          <div
-            v-else-if="searchFailure === 'VALIDATION'"
-            class="inbox-state"
-            role="alert"
-          >
+          <div v-else-if="searchFailure === 'VALIDATION'" class="inbox-state" role="alert">
             <i class="pi pi-info-circle" aria-hidden="true" /><strong
               >Не удалось применить запрос</strong
             >
             <p>{{ searchError }}</p>
           </div>
-          <div
-            v-else-if="searchError && !searchItems.length"
-            class="inbox-state"
-            role="alert"
-          >
+          <div v-else-if="searchError && !searchItems.length" class="inbox-state" role="alert">
             <i class="pi pi-exclamation-circle" aria-hidden="true" /><strong
               >Поиск временно недоступен</strong
             >
             <p>{{ searchError }}</p>
           </div>
-          <div
-            v-else-if="!searchItems.length && searchFreshness"
-            class="inbox-state"
-          >
-            <i class="pi pi-search" aria-hidden="true" /><strong
-              >Ничего не найдено</strong
-            >
+          <div v-else-if="!searchItems.length && searchFreshness" class="inbox-state">
+            <i class="pi pi-search" aria-hidden="true" /><strong>Ничего не найдено</strong>
             <p>Измените запрос или снимите часть фильтров.</p>
           </div>
           <div v-else-if="!searchItems.length" class="inbox-state">
-            <i class="pi pi-search" aria-hidden="true" /><strong
-              >Введите запрос</strong
-            >
+            <i class="pi pi-search" aria-hidden="true" /><strong>Введите запрос</strong>
             <p>Минимум два символа или выберите фильтр обращений.</p>
           </div>
           <div v-else class="search-result-list">
@@ -495,9 +452,7 @@ function unreadLabel(
                 selected: selectedKey === searchSelectionKey(item),
               }"
               :data-selection-key="searchSelectionKey(item)"
-              :aria-current="
-                selectedKey === searchSelectionKey(item) ? 'true' : undefined
-              "
+              :aria-current="selectedKey === searchSelectionKey(item) ? 'true' : undefined"
               @click="emit('selectSearch', item)"
             >
               <span class="search-result-icon"
@@ -521,18 +476,14 @@ function unreadLabel(
                     }}<template v-if="item.locale">
                       · {{ item.locale.toUpperCase() }}</template
                     ></span
-                  ><time :datetime="item.activityAt">{{
-                    inboxTime(item.activityAt)
-                  }}</time></span
+                  ><time :datetime="item.activityAt">{{ inboxTime(item.activityAt) }}</time></span
                 >
                 <span class="search-result-snippet">{{ item.snippet }}</span>
               </span>
             </button>
             <div v-if="searchError" class="pagination-error" role="alert">
               <span>{{ searchError }}</span
-              ><button type="button" @click="emit('submitSearch', searchState)">
-                Повторить
-              </button>
+              ><button type="button" @click="emit('submitSearch', searchState)">Повторить</button>
             </div>
             <button
               v-if="searchHasMore"
@@ -542,7 +493,7 @@ function unreadLabel(
               @click="emit('loadMoreSearch')"
             >
               <i class="pi pi-chevron-down" aria-hidden="true" />
-              {{ searchLoading ? "Загружаем…" : "Показать ещё" }}
+              {{ searchLoading ? 'Загружаем…' : 'Показать ещё' }}
             </button>
           </div>
         </div>
@@ -562,35 +513,19 @@ function unreadLabel(
         >
           <i class="pi pi-lock" aria-hidden="true" />
           <strong>Входящие больше недоступны</strong>
-          <p>
-            Права доступа обновлены. Скрытые данные удалены из рабочего места.
-          </p>
+          <p>Права доступа обновлены. Скрытые данные удалены из рабочего места.</p>
         </div>
 
-        <div
-          v-else-if="!items.length && error"
-          key="error"
-          class="inbox-state"
-          role="alert"
-        >
+        <div v-else-if="!items.length && error" key="error" class="inbox-state" role="alert">
           <i class="pi pi-exclamation-circle" aria-hidden="true" />
           <strong>Не удалось загрузить входящие</strong>
           <p>{{ error }}</p>
           <button type="button" @click="emit('retry')">Повторить</button>
         </div>
 
-        <div
-          v-else-if="!items.length"
-          :key="`empty-${mode}`"
-          class="inbox-state"
-        >
-          <i
-            :class="mode === 'CASES' ? 'pi pi-briefcase' : 'pi pi-comments'"
-            aria-hidden="true"
-          />
-          <strong>{{
-            mode === "CASES" ? "Обращений пока нет" : "Чатов пока нет"
-          }}</strong>
+        <div v-else-if="!items.length" :key="`empty-${mode}`" class="inbox-state">
+          <i :class="mode === 'CASES' ? 'pi pi-briefcase' : 'pi pi-comments'" aria-hidden="true" />
+          <strong>{{ mode === 'CASES' ? 'Обращений пока нет' : 'Чатов пока нет' }}</strong>
           <p>Новые элементы появятся здесь автоматически.</p>
         </div>
 
@@ -606,13 +541,10 @@ function unreadLabel(
               selected: selectedKey === itemKey(item),
               'conversation-row': item.kind === 'CONVERSATION',
               'case-row': item.kind === 'CASE',
-              'case-row--with-sla':
-                item.kind === 'CASE' && item.slaSignal?.state === 'AVAILABLE',
+              'case-row--with-sla': item.kind === 'CASE' && item.slaSignal?.state === 'AVAILABLE',
             }"
             :aria-current="selectedKey === itemKey(item) ? 'true' : undefined"
-            :aria-label="
-              item.kind === 'CASE' ? caseAccessibleLabel(item) : undefined
-            "
+            :aria-label="item.kind === 'CASE' ? caseAccessibleLabel(item) : undefined"
             :aria-describedby="
               item.kind === 'CASE' && item.slaSignal?.state === 'AVAILABLE'
                 ? slaDescriptionId(item.id)
@@ -658,17 +590,14 @@ function unreadLabel(
                 >
                   {{
                     inboxTime(
-                      item.kind === "CASE"
+                      item.kind === 'CASE'
                         ? item.lastActivityAt
                         : (item.lastMessageAt ?? item.updatedAt),
                     )
                   }}
                 </time>
                 <span
-                  v-if="
-                    item.kind === 'CONVERSATION' &&
-                    item.readState.unreadMessageCount
-                  "
+                  v-if="item.kind === 'CONVERSATION' && item.readState.unreadMessageCount"
                   class="unread-count"
                   :data-unread-conversation="item.id"
                   :aria-label="unreadLabel(item)"
@@ -678,27 +607,22 @@ function unreadLabel(
               </span>
               <template v-if="item.kind === 'CASE'">
                 <span class="inbox-row__meta case-row__metadata">
-                  <span class="case-row__status">{{
-                    caseStatus(item.status)
-                  }}</span>
+                  <span class="case-row__status">{{ caseStatus(item.status) }}</span>
                   <span class="case-row__separator" aria-hidden="true">·</span>
                   <span
                     :class="[
                       'case-row__priority',
                       {
-                        'case-row__priority--emphasis': isPriorityEmphasized(
+                        'case-row__priority--emphasis': isPriorityEmphasized(item.priority),
+                        [`priority-${item.priority.toLowerCase()}`]: isPriorityEmphasized(
                           item.priority,
                         ),
-                        [`priority-${item.priority.toLowerCase()}`]:
-                          isPriorityEmphasized(item.priority),
                       },
                     ]"
                     >{{ casePriority(item.priority) }}</span
                   >
                   <span class="case-row__separator" aria-hidden="true">·</span>
-                  <span class="case-row__topic" :title="item.groupCode">{{
-                    item.groupCode
-                  }}</span>
+                  <span class="case-row__topic" :title="item.groupCode">{{ item.groupCode }}</span>
                 </span>
                 <span
                   v-if="item.slaSignal?.state === 'AVAILABLE'"
@@ -717,9 +641,7 @@ function unreadLabel(
                 </span>
               </template>
               <span v-else class="inbox-row__meta">
-                <span class="state-chip">{{
-                  item.status === "OPEN" ? "Открыт" : "Закрыт"
-                }}</span>
+                <span class="state-chip">{{ item.status === 'OPEN' ? 'Открыт' : 'Закрыт' }}</span>
                 <span>{{ item.messageCount }} сообщ.</span>
               </span>
             </span>
@@ -737,7 +659,7 @@ function unreadLabel(
             @click="emit('loadMore')"
           >
             <i class="pi pi-chevron-down" aria-hidden="true" />
-            {{ loading ? "Загружаем…" : "Показать ещё" }}
+            {{ loading ? 'Загружаем…' : 'Показать ещё' }}
           </button>
         </div>
       </Transition>
@@ -876,7 +798,7 @@ function unreadLabel(
   line-height: 1;
   transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.inbox-tools__trigger[aria-expanded="true"] .inbox-tools__chevron {
+.inbox-tools__trigger[aria-expanded='true'] .inbox-tools__chevron {
   transform: rotate(180deg);
 }
 .inbox-tools__panel {
@@ -969,7 +891,7 @@ function unreadLabel(
   transition: background-color 140ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .search-result-row::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 6px auto 6px 0;
   width: 2px;
@@ -1056,7 +978,7 @@ function unreadLabel(
     color 140ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .inbox-row::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 6px auto 6px 0;
   width: 2px;

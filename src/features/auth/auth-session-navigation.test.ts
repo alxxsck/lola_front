@@ -1,9 +1,6 @@
-import { createMemoryHistory, createRouter } from "vue-router";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  installAuthSessionNavigation,
-  notifyAuthSessionEnded,
-} from "./auth-session-navigation";
+import { createMemoryHistory, createRouter } from 'vue-router';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { installAuthSessionNavigation, notifyAuthSessionEnded } from './auth-session-navigation';
 
 const cleanups: Array<() => void> = [];
 
@@ -16,14 +13,14 @@ async function routerAt(path: string) {
     history: createMemoryHistory(),
     routes: [
       {
-        path: "/login",
-        name: "login",
-        component: { template: "<div>Login</div>" },
+        path: '/login',
+        name: 'login',
+        component: { template: '<div>Login</div>' },
       },
       {
-        path: "/protected",
-        name: "protected",
-        component: { template: "<div>Protected</div>" },
+        path: '/protected',
+        name: 'protected',
+        component: { template: '<div>Protected</div>' },
       },
     ],
   });
@@ -33,28 +30,22 @@ async function routerAt(path: string) {
   return router;
 }
 
-describe("authentication session navigation", () => {
-  it("leaves protected content immediately after logout", async () => {
-    const router = await routerAt("/protected");
+describe('authentication session navigation', () => {
+  it('leaves protected content immediately after logout', async () => {
+    const router = await routerAt('/protected');
 
-    notifyAuthSessionEnded("LOGOUT");
-    await vi.waitFor(() =>
-      expect(router.currentRoute.value.name).toBe("login"),
-    );
+    notifyAuthSessionEnded('LOGOUT');
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login'));
 
     expect(router.currentRoute.value.query).toEqual({});
   });
 
-  it("keeps the interrupted route after an expired session", async () => {
-    const router = await routerAt("/protected?tab=queues");
+  it('keeps the interrupted route after an expired session', async () => {
+    const router = await routerAt('/protected?tab=queues');
 
-    notifyAuthSessionEnded("SESSION_EXPIRED");
-    await vi.waitFor(() =>
-      expect(router.currentRoute.value.name).toBe("login"),
-    );
+    notifyAuthSessionEnded('SESSION_EXPIRED');
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login'));
 
-    expect(router.currentRoute.value.query.redirect).toBe(
-      "/protected?tab=queues",
-    );
+    expect(router.currentRoute.value.query.redirect).toBe('/protected?tab=queues');
   });
 });

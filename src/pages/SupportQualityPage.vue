@@ -488,11 +488,7 @@ onBeforeUnmount(() => controller?.abort());
 
 <style scoped>
 .quality-page {
-  --quality-secondary-text: color-mix(
-    in srgb,
-    var(--p-text-color) 88%,
-    var(--p-text-muted-color)
-  );
+  --quality-secondary-text: color-mix(in srgb, var(--p-text-color) 88%, var(--p-text-muted-color));
   box-sizing: border-box;
   width: 100%;
   min-width: 0;

@@ -1,9 +1,9 @@
-import { flushPromises, shallowMount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ProjectAction } from "@/features/project-actions/model/project-action";
-import ProjectActionCard from "@/features/project-actions/ui/ProjectActionCard.vue";
-import ProjectActionEditor from "@/features/project-actions/ui/ProjectActionEditor.vue";
-import ActionsPage from "./ActionsPage.vue";
+import { flushPromises, shallowMount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ProjectAction } from '@/features/project-actions/model/project-action';
+import ProjectActionCard from '@/features/project-actions/ui/ProjectActionCard.vue';
+import ProjectActionEditor from '@/features/project-actions/ui/ProjectActionEditor.vue';
+import ActionsPage from './ActionsPage.vue';
 
 const mocks = vi.hoisted(() => ({
   ensureLoaded: vi.fn(),
@@ -16,66 +16,66 @@ const mocks = vi.hoisted(() => ({
 }));
 
 const action = {
-  id: "action-1",
-  projectId: "project-1",
-  actionTypeId: "type-1",
-  actionTypeRevisionId: "revision-1",
-  code: "OPEN_PAGE",
+  id: 'action-1',
+  projectId: 'project-1',
+  actionTypeId: 'type-1',
+  actionTypeRevisionId: 'revision-1',
+  code: 'OPEN_PAGE',
   nameOverride: null,
   descriptionOverride: null,
   scenarioEnabled: false,
   aiEnabled: true,
-  aiUsageDescription: "Use when the user explicitly asks to open bonuses.",
+  aiUsageDescription: 'Use when the user explicitly asks to open bonuses.',
   configuration: {},
-  lifecycle: "ACTIVE",
-  createdAt: "now",
-  updatedAt: "now",
-  actionType: { key: "OPEN_PAGE", origin: "SYSTEM", ownerProjectId: null },
+  lifecycle: 'ACTIVE',
+  createdAt: 'now',
+  updatedAt: 'now',
+  actionType: { key: 'OPEN_PAGE', origin: 'SYSTEM', ownerProjectId: null },
   actionTypeRevision: {
-    id: "revision-1",
+    id: 'revision-1',
     version: 1,
-    name: "Открыть страницу",
-    description: "Открывает зарегистрированную страницу.",
-    executorAdapter: "FRONTEND_COMMAND",
+    name: 'Открыть страницу',
+    description: 'Открывает зарегистрированную страницу.',
+    executorAdapter: 'FRONTEND_COMMAND',
     inputSchema: {},
     resultSchema: {},
     projectConfigSchema: {
-      type: "object",
+      type: 'object',
       properties: {},
       required: [],
       additionalProperties: false,
     },
     uiSchema: { fields: [] },
-    supportedSurfaces: ["SCENARIO", "AI"],
-    risk: "UI_EFFECT",
-    confirmationPolicy: "NEVER",
+    supportedSurfaces: ['SCENARIO', 'AI'],
+    risk: 'UI_EFFECT',
+    confirmationPolicy: 'NEVER',
     multipleInstances: false,
   },
 } satisfies ProjectAction;
 
 const store = {
   catalogByProject: {
-    "project-1": [
+    'project-1': [
       {
-        id: "type-1",
-        key: "OPEN_PAGE",
-        origin: "SYSTEM",
+        id: 'type-1',
+        key: 'OPEN_PAGE',
+        origin: 'SYSTEM',
         ownerProjectId: null,
-        activeRevisionId: "revision-1",
+        activeRevisionId: 'revision-1',
         activeRevision: action.actionTypeRevision,
       },
     ],
   },
-  actionsByProject: { "project-1": [action] },
+  actionsByProject: { 'project-1': [action] },
   loadingByProject: {},
   errorsByProject: {},
-  previewByAction: { "action-1": { tool: null, issues: [] } },
+  previewByAction: { 'action-1': { tool: null, issues: [] } },
   previewErrorsByAction: {},
   previewLoadingByAction: {},
   mutationErrorsByAction: {},
   mutatingByAction: {},
-  catalogForProject: () => store.catalogByProject["project-1"],
-  actionsForProject: () => store.actionsByProject["project-1"],
+  catalogForProject: () => store.catalogByProject['project-1'],
+  actionsForProject: () => store.actionsByProject['project-1'],
   ensureLoaded: mocks.ensureLoaded,
   refresh: mocks.refresh,
   loadPreview: mocks.loadPreview,
@@ -83,29 +83,29 @@ const store = {
   archive: mocks.archive,
 };
 
-vi.mock("@/features/auth/auth.store", () => ({
+vi.mock('@/features/auth/auth.store', () => ({
   useAuthStore: () => ({
     project: {
-      id: "project-1",
+      id: 'project-1',
       effectivePermissionCodes: [
-        "project.actions.read",
-        "project.actions.manage",
-        "project.actions.manage_ai_exposure",
+        'project.actions.read',
+        'project.actions.manage',
+        'project.actions.manage_ai_exposure',
       ],
     },
   }),
 }));
-vi.mock("@/features/project-actions/model/project-actions.store", () => ({
+vi.mock('@/features/project-actions/model/project-actions.store', () => ({
   useProjectActionsStore: () => store,
 }));
-vi.mock("@/shared/api/repository", () => ({
+vi.mock('@/shared/api/repository', () => ({
   repository: { getElements: mocks.getElements },
 }));
-vi.mock("primevue/usetoast", () => ({
+vi.mock('primevue/usetoast', () => ({
   useToast: () => ({ add: mocks.toast }),
 }));
 
-describe("ActionsPage", () => {
+describe('ActionsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.ensureLoaded.mockResolvedValue(undefined);
@@ -114,12 +114,12 @@ describe("ActionsPage", () => {
     mocks.getElements.mockResolvedValue([]);
   });
 
-  it("loads Project Actions and reconciles an OWNER edit through the domain store", async () => {
+  it('loads Project Actions and reconciles an OWNER edit through the domain store', async () => {
     const wrapper = shallowMount(ActionsPage, {
       global: {
         stubs: {
           Dialog: {
-            props: ["visible"],
+            props: ['visible'],
             template: '<div v-if="visible"><slot /></div>',
           },
         },
@@ -127,71 +127,55 @@ describe("ActionsPage", () => {
     });
     await flushPromises();
 
-    expect(mocks.ensureLoaded).toHaveBeenCalledWith("project-1");
+    expect(mocks.ensureLoaded).toHaveBeenCalledWith('project-1');
     const card = wrapper.getComponent(ProjectActionCard);
-    card.vm.$emit("select", action);
+    card.vm.$emit('select', action);
     await flushPromises();
-    expect(mocks.loadPreview).toHaveBeenCalledWith(
-      "project-1",
-      "action-1",
-      false,
-    );
+    expect(mocks.loadPreview).toHaveBeenCalledWith('project-1', 'action-1', false);
 
     const editor = wrapper.getComponent(ProjectActionEditor);
-    editor.vm.$emit("save", { scenarioEnabled: false, aiEnabled: true });
+    editor.vm.$emit('save', { scenarioEnabled: false, aiEnabled: true });
     await flushPromises();
 
-    expect(mocks.configure).toHaveBeenCalledWith("project-1", "action-1", {
+    expect(mocks.configure).toHaveBeenCalledWith('project-1', 'action-1', {
       scenarioEnabled: false,
       aiEnabled: true,
     });
-    expect(mocks.loadPreview).toHaveBeenLastCalledWith(
-      "project-1",
-      "action-1",
-      true,
-    );
+    expect(mocks.loadPreview).toHaveBeenLastCalledWith('project-1', 'action-1', true);
   });
 
-  it("loads authoritative previews for the AI-only overview", async () => {
+  it('loads authoritative previews for the AI-only overview', async () => {
     const wrapper = shallowMount(ActionsPage, {
       global: { stubs: { Dialog: true, AiCapabilityPreview: true } },
     });
     await flushPromises();
     const aiTab = wrapper
-      .findAll(".view-tabs button")
-      .find((button) => button.text().includes("Возможности помощника"))!;
+      .findAll('.view-tabs button')
+      .find((button) => button.text().includes('Возможности помощника'))!;
 
-    await aiTab.trigger("click");
+    await aiTab.trigger('click');
     await flushPromises();
 
-    expect(mocks.loadPreview).toHaveBeenCalledWith(
-      "project-1",
-      "action-1",
-      false,
-    );
-    expect(wrapper.find(".ai-capability-list").exists()).toBe(true);
-    expect(wrapper.text()).not.toContain("AI capabilities");
-    expect(wrapper.text()).not.toContain("Default-deny");
+    expect(mocks.loadPreview).toHaveBeenCalledWith('project-1', 'action-1', false);
+    expect(wrapper.find('.ai-capability-list').exists()).toBe(true);
+    expect(wrapper.text()).not.toContain('AI capabilities');
+    expect(wrapper.text()).not.toContain('Default-deny');
 
     mocks.loadPreview.mockClear();
-    await wrapper.find('button-stub[label="Обновить"]').trigger("click");
+    await wrapper.find('button-stub[label="Обновить"]').trigger('click');
     await flushPromises();
-    expect(mocks.loadPreview).toHaveBeenCalledWith(
-      "project-1",
-      "action-1",
-      true,
-    );
+    expect(mocks.loadPreview).toHaveBeenCalledWith('project-1', 'action-1', true);
   });
 
-  it("exposes a failed interface catalog load and retries it", async () => {
+  it('exposes a failed interface catalog load and retries it', async () => {
     mocks.getElements
-      .mockRejectedValueOnce(new Error("catalog unavailable"))
+      .mockRejectedValueOnce(new Error('catalog unavailable'))
       .mockResolvedValueOnce([]);
     const wrapper = shallowMount(ActionsPage, {
       global: {
         stubs: {
           Dialog: {
-            props: ["visible"],
+            props: ['visible'],
             template: '<div v-if="visible"><slot /></div>',
           },
         },
@@ -200,16 +184,14 @@ describe("ActionsPage", () => {
     await flushPromises();
 
     const card = wrapper.getComponent(ProjectActionCard);
-    card.vm.$emit("select", action);
+    card.vm.$emit('select', action);
     await flushPromises();
     const editor = wrapper.getComponent(ProjectActionEditor);
-    expect(editor.props("elementsError")).toBe(
-      "Не удалось загрузить каталог интерфейса.",
-    );
+    expect(editor.props('elementsError')).toBe('Не удалось загрузить каталог интерфейса.');
 
-    editor.vm.$emit("retryElements");
+    editor.vm.$emit('retryElements');
     await flushPromises();
     expect(mocks.getElements).toHaveBeenCalledTimes(2);
-    expect(editor.props("elementsError")).toBeNull();
+    expect(editor.props('elementsError')).toBeNull();
   });
 });

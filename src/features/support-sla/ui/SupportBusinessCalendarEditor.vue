@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import Button from "primevue/button";
-import DatePicker from "primevue/datepicker";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
+import Button from 'primevue/button';
+import DatePicker from 'primevue/datepicker';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
 import {
   createSupportSlaLocalId,
   type SupportSlaConfigurationForm,
   type SupportSlaExceptionForm,
   type SupportSlaFormIssue,
   type SupportSlaTimeIntervalForm,
-} from "../model/support-sla-configuration-form";
+} from '../model/support-sla-configuration-form';
 
 defineProps<{
   readonly: boolean;
@@ -18,20 +18,20 @@ defineProps<{
 const form = defineModel<SupportSlaConfigurationForm>({ required: true });
 
 const weekdayLabels = [
-  "Понедельник",
-  "Вторник",
-  "Среда",
-  "Четверг",
-  "Пятница",
-  "Суббота",
-  "Воскресенье",
+  'Понедельник',
+  'Вторник',
+  'Среда',
+  'Четверг',
+  'Пятница',
+  'Суббота',
+  'Воскресенье',
 ];
 
 function newInterval(): SupportSlaTimeIntervalForm {
   return {
-    id: createSupportSlaLocalId("interval"),
-    start: "09:00",
-    end: "18:00",
+    id: createSupportSlaLocalId('interval'),
+    start: '09:00',
+    end: '18:00',
   };
 }
 
@@ -45,8 +45,8 @@ function removeWeekdayInterval(dayIndex: number, intervalIndex: number): void {
 
 function addException(): void {
   form.value.exceptions.push({
-    id: createSupportSlaLocalId("exception"),
-    localDate: "",
+    id: createSupportSlaLocalId('exception'),
+    localDate: '',
     intervals: [],
   });
 }
@@ -62,17 +62,16 @@ function dateValue(value: string): Date | null {
 function updateDate(exception: SupportSlaExceptionForm, value: unknown): void {
   const candidate = Array.isArray(value) ? value[0] : value;
   if (!(candidate instanceof Date)) {
-    exception.localDate = "";
+    exception.localDate = '';
     return;
   }
   const date = candidate;
   exception.localDate = [
     date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0"),
-  ].join("-");
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
 }
-
 </script>
 
 <template>
@@ -102,17 +101,16 @@ function updateDate(exception: SupportSlaExceptionForm, value: unknown): void {
       :key="`${issue.code}-${issue.path}`"
       severity="error"
       :closable="false"
-    >{{ issue.message }}</Message>
+      >{{ issue.message }}</Message
+    >
 
     <div class="weekday-list">
-      <article
-        v-for="(day, dayIndex) in form.weekly"
-        :key="day.isoWeekday"
-        class="weekday-row"
-      >
+      <article v-for="(day, dayIndex) in form.weekly" :key="day.isoWeekday" class="weekday-row">
         <div class="weekday-row__label">
           <strong>{{ weekdayLabels[dayIndex] }}</strong>
-          <small>{{ day.intervals.length ? `${day.intervals.length} интервал(а)` : "Выходной" }}</small>
+          <small>{{
+            day.intervals.length ? `${day.intervals.length} интервал(а)` : 'Выходной'
+          }}</small>
         </div>
         <div class="interval-list">
           <div
@@ -157,7 +155,8 @@ function updateDate(exception: SupportSlaExceptionForm, value: unknown): void {
       :key="`${issue.code}-${issue.path}`"
       severity="error"
       :closable="false"
-    >{{ issue.message }}</Message>
+      >{{ issue.message }}</Message
+    >
 
     <section class="calendar-exceptions" aria-labelledby="calendar-exceptions-title">
       <header>
@@ -199,9 +198,19 @@ function updateDate(exception: SupportSlaExceptionForm, value: unknown): void {
             :key="interval.id"
             class="interval-row"
           >
-            <input v-model="interval.start" type="time" :disabled="readonly" aria-label="Начало исключения" />
+            <input
+              v-model="interval.start"
+              type="time"
+              :disabled="readonly"
+              aria-label="Начало исключения"
+            />
             <i class="pi pi-arrow-right" aria-hidden="true" />
-            <input v-model="interval.end" type="time" :disabled="readonly" aria-label="Конец исключения" />
+            <input
+              v-model="interval.end"
+              type="time"
+              :disabled="readonly"
+              aria-label="Конец исключения"
+            />
             <Button
               v-if="!readonly"
               type="button"
@@ -239,7 +248,8 @@ function updateDate(exception: SupportSlaExceptionForm, value: unknown): void {
       :key="`${issue.code}-${issue.path}`"
       severity="error"
       :closable="false"
-    >{{ issue.message }}</Message>
+      >{{ issue.message }}</Message
+    >
   </section>
 </template>
 
@@ -261,24 +271,47 @@ function updateDate(exception: SupportSlaExceptionForm, value: unknown): void {
 }
 .section-kicker {
   color: var(--text-tertiary);
-  font-size: .7rem;
+  font-size: 0.7rem;
   font-weight: 800;
-  letter-spacing: .09em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
-.sla-editor-panel h2 { margin-top: 4px; font-size: 1.1rem; }
-.sla-editor-panel h3 { margin: 0; font-size: .94rem; letter-spacing: -.01em; }
-.sla-editor-panel p { margin: 5px 0 0; color: var(--text-secondary); font-size: .78rem; }
+.sla-editor-panel h2 {
+  margin-top: 4px;
+  font-size: 1.1rem;
+}
+.sla-editor-panel h3 {
+  margin: 0;
+  font-size: 0.94rem;
+  letter-spacing: -0.01em;
+}
+.sla-editor-panel p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
 .sla-editor-panel__counter {
   color: var(--text-secondary);
-  font-size: .72rem;
+  font-size: 0.72rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-.sla-field { display: grid; gap: 7px; }
-.sla-field > span { font-size: .8rem; font-weight: 700; }
-.sla-field small { color: var(--text-tertiary); font-size: .7rem; line-height: 1.45; }
-.sla-timezone-field { max-width: 460px; }
+.sla-field {
+  display: grid;
+  gap: 7px;
+}
+.sla-field > span {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.sla-field small {
+  color: var(--text-tertiary);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+.sla-timezone-field {
+  max-width: 460px;
+}
 .weekday-list {
   overflow: hidden;
   border: 1px solid var(--line);
@@ -286,26 +319,46 @@ function updateDate(exception: SupportSlaExceptionForm, value: unknown): void {
 }
 .weekday-row {
   display: grid;
-  grid-template-columns: minmax(130px, .55fr) minmax(0, 1.45fr);
+  grid-template-columns: minmax(130px, 0.55fr) minmax(0, 1.45fr);
   gap: 12px;
   min-height: 60px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--line);
 }
-.weekday-row:last-child { border-bottom: 0; }
-.weekday-row__label { padding-top: 7px; }
+.weekday-row:last-child {
+  border-bottom: 0;
+}
+.weekday-row__label {
+  padding-top: 7px;
+}
 .weekday-row__label strong,
-.weekday-row__label small { display: block; }
-.weekday-row__label strong { font-size: .8rem; }
-.weekday-row__label small { margin-top: 3px; color: var(--text-tertiary); font-size: .68rem; }
-.interval-list { display: grid; gap: 6px; min-width: 0; }
+.weekday-row__label small {
+  display: block;
+}
+.weekday-row__label strong {
+  font-size: 0.8rem;
+}
+.weekday-row__label small {
+  margin-top: 3px;
+  color: var(--text-tertiary);
+  font-size: 0.68rem;
+}
+.interval-list {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
 .interval-row {
   display: grid;
   grid-template-columns: minmax(102px, 1fr) 16px minmax(102px, 1fr) 40px;
   align-items: center;
   gap: 6px;
 }
-.interval-row > i { color: var(--text-tertiary); font-size: .66rem; text-align: center; }
+.interval-row > i {
+  color: var(--text-tertiary);
+  font-size: 0.66rem;
+  text-align: center;
+}
 .interval-row input {
   width: 100%;
   min-height: 40px;
@@ -315,7 +368,11 @@ function updateDate(exception: SupportSlaExceptionForm, value: unknown): void {
   border: 1px solid var(--input-border);
   border-radius: 10px;
 }
-.calendar-exceptions { display: grid; gap: 12px; padding-top: 4px; }
+.calendar-exceptions {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+}
 .calendar-exceptions__empty {
   padding: 14px;
   background: var(--surface-subtle);
@@ -323,7 +380,7 @@ function updateDate(exception: SupportSlaExceptionForm, value: unknown): void {
 }
 .exception-row {
   display: grid;
-  grid-template-columns: minmax(180px, .7fr) minmax(0, 1.3fr) 40px;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1.3fr) 40px;
   align-items: start;
   gap: 10px;
   padding: 12px;
@@ -340,16 +397,34 @@ function updateDate(exception: SupportSlaExceptionForm, value: unknown): void {
   white-space: nowrap;
 }
 @media (max-width: 720px) {
-  .sla-editor-panel { padding: 16px; }
-  .weekday-row { grid-template-columns: 1fr; gap: 4px; }
-  .weekday-row__label { padding-top: 0; }
-  .exception-row { grid-template-columns: 1fr 40px; }
-  .exception-row > .interval-list { grid-column: 1 / -1; grid-row: 2; }
+  .sla-editor-panel {
+    padding: 16px;
+  }
+  .weekday-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .weekday-row__label {
+    padding-top: 0;
+  }
+  .exception-row {
+    grid-template-columns: 1fr 40px;
+  }
+  .exception-row > .interval-list {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
 }
 @media (max-width: 480px) {
-  .interval-row { grid-template-columns: 1fr 16px 1fr 40px; }
+  .interval-row {
+    grid-template-columns: 1fr 16px 1fr 40px;
+  }
   .sla-editor-panel__header,
-  .calendar-exceptions > header { flex-direction: column; }
-  .calendar-exceptions > header :deep(.p-button) { width: 100%; }
+  .calendar-exceptions > header {
+    flex-direction: column;
+  }
+  .calendar-exceptions > header :deep(.p-button) {
+    width: 100%;
+  }
 }
 </style>

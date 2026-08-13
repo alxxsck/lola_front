@@ -1,6 +1,5 @@
-export type AIReviewCostLevel = "LOW" | "MEDIUM" | "HIGH";
-export type AIReviewRunStatus =
-  "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED" | "OUTCOME_UNKNOWN";
+export type AIReviewCostLevel = 'LOW' | 'MEDIUM' | 'HIGH';
+export type AIReviewRunStatus = 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'OUTCOME_UNKNOWN';
 
 export interface AIReviewSettings {
   projectVersion: number;

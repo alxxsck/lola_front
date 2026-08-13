@@ -1,12 +1,12 @@
-import { ref } from "vue";
-import { ApiError } from "@/shared/api/http/api-error";
+import { ref } from 'vue';
+import { ApiError } from '@/shared/api/http/api-error';
 import type {
   SupportLeadActivityPage,
   SupportLeadCapacityRiskPage,
   SupportLeadDrilldownSource,
   SupportLeadInvestigation,
   SupportLeadReadiness,
-} from "@/features/support-control/api/support-lead-source";
+} from '@/features/support-control/api/support-lead-source';
 
 export interface SupportLeadControlContext {
   projectId(): string | undefined;
@@ -34,9 +34,9 @@ export function createSupportLeadControlController(
   const loadingCapacity = ref(false);
   const loadingInvestigation = ref(false);
   const loadingActivity = ref(false);
-  const error = ref("");
-  const investigationError = ref("");
-  const activityError = ref("");
+  const error = ref('');
+  const investigationError = ref('');
+  const activityError = ref('');
   let projectGeneration = 0;
   let selectionGeneration = 0;
   let activityAuthorityGeneration = 0;
@@ -62,8 +62,8 @@ export function createSupportLeadControlController(
     activity.value = null;
     loadingInvestigation.value = false;
     loadingActivity.value = false;
-    investigationError.value = "";
-    activityError.value = "";
+    investigationError.value = '';
+    activityError.value = '';
     activityAuthorityGeneration += 1;
   }
 
@@ -74,7 +74,7 @@ export function createSupportLeadControlController(
     activityPaginationAbort = null;
     activity.value = null;
     loadingActivity.value = false;
-    activityError.value = "";
+    activityError.value = '';
   }
 
   function reset(): void {
@@ -85,15 +85,13 @@ export function createSupportLeadControlController(
     capacity.value = null;
     loadingReadiness.value = false;
     loadingCapacity.value = false;
-    error.value = "";
+    error.value = '';
     resetSelection();
   }
 
   function currentProject(projectId: string, generation: number): boolean {
     return (
-      generation === projectGeneration &&
-      context.canRead() &&
-      context.projectId() === projectId
+      generation === projectGeneration && context.canRead() && context.projectId() === projectId
     );
   }
 
@@ -105,7 +103,7 @@ export function createSupportLeadControlController(
     const generation = ++projectGeneration;
     const abort = new AbortController();
     projectAbort = abort;
-    error.value = "";
+    error.value = '';
     if (!projectId || !context.canRead()) return;
     loadingReadiness.value = true;
     try {
@@ -114,14 +112,11 @@ export function createSupportLeadControlController(
       readiness.value = nextReadiness;
       loadingReadiness.value = false;
       if (
-        !["READY", "STALE"].includes(nextReadiness.readinessState) ||
-        nextReadiness.capabilities.capacityRisks !== "AVAILABLE"
+        !['READY', 'STALE'].includes(nextReadiness.readinessState) ||
+        nextReadiness.capabilities.capacityRisks !== 'AVAILABLE'
       ) {
         capacity.value = null;
-        if (
-          caseToRestore &&
-          nextReadiness.capabilities.investigation !== "UNAVAILABLE"
-        )
+        if (caseToRestore && nextReadiness.capabilities.investigation !== 'UNAVAILABLE')
           await selectCase(caseToRestore);
         return;
       }
@@ -129,7 +124,7 @@ export function createSupportLeadControlController(
       const nextCapacity = await source.readCapacityRisks(projectId, undefined, abort.signal);
       if (!currentProject(projectId, generation)) return;
       capacity.value = nextCapacity;
-      if (caseToRestore && nextReadiness.capabilities.investigation !== "UNAVAILABLE")
+      if (caseToRestore && nextReadiness.capabilities.investigation !== 'UNAVAILABLE')
         await selectCase(caseToRestore);
     } catch (cause) {
       if (!currentProject(projectId, generation)) return;
@@ -141,7 +136,7 @@ export function createSupportLeadControlController(
       readiness.value = null;
       capacity.value = null;
       resetSelection();
-      error.value = "Панель руководителя временно недоступна. Повторите загрузку.";
+      error.value = 'Панель руководителя временно недоступна. Повторите загрузку.';
     } finally {
       if (generation === projectGeneration) {
         loadingReadiness.value = false;
@@ -167,14 +162,14 @@ export function createSupportLeadControlController(
     selectedCaseId.value = caseId;
     investigation.value = null;
     activity.value = null;
-    investigationError.value = "";
-    activityError.value = "";
+    investigationError.value = '';
+    activityError.value = '';
     const investigationCapability = readiness.value?.capabilities.investigation;
     if (
       !projectId ||
       !context.canRead() ||
       !investigationCapability ||
-      investigationCapability === "UNAVAILABLE"
+      investigationCapability === 'UNAVAILABLE'
     )
       return;
     loadingInvestigation.value = true;
@@ -185,13 +180,13 @@ export function createSupportLeadControlController(
       context.canRead() &&
       selectedCaseId.value === caseId;
     const investigationRequest = source.readInvestigation(
-        projectId,
-        caseId,
-        undefined,
-        abort.signal,
-      );
+      projectId,
+      caseId,
+      undefined,
+      abort.signal,
+    );
     const activityRequest =
-      context.canReadActivity() && readiness.value?.capabilities.activity === "AVAILABLE"
+      context.canReadActivity() && readiness.value?.capabilities.activity === 'AVAILABLE'
         ? source.readActivity(projectId, caseId, undefined, abort.signal)
         : Promise.resolve(null);
     const [investigationResult, activityResult] = await Promise.allSettled([
@@ -199,7 +194,7 @@ export function createSupportLeadControlController(
       activityRequest,
     ]);
     if (!sameScope()) return;
-    if (investigationResult.status === "rejected") {
+    if (investigationResult.status === 'rejected') {
       const cause = investigationResult.reason;
       if (!sameScope()) return;
       if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
@@ -207,18 +202,18 @@ export function createSupportLeadControlController(
         await context.onForbidden?.();
         return;
       }
-      investigationError.value = "Не удалось собрать историю причин по обращению.";
+      investigationError.value = 'Не удалось собрать историю причин по обращению.';
     } else {
       investigation.value = investigationResult.value;
     }
     if (activityGeneration !== activityAuthorityGeneration || !context.canReadActivity()) {
       activity.value = null;
-    } else if (activityResult.status === "rejected") {
+    } else if (activityResult.status === 'rejected') {
       const cause = activityResult.reason;
       activity.value = null;
       if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404))
         await context.onActivityForbidden?.();
-      else activityError.value = "Не удалось загрузить защищённые действия.";
+      else activityError.value = 'Не удалось загрузить защищённые действия.';
     } else activity.value = activityResult.value;
     if (generation === selectionGeneration) {
       loadingInvestigation.value = false;
@@ -237,11 +232,7 @@ export function createSupportLeadControlController(
     projectAbort = abort;
     loadingCapacity.value = true;
     try {
-      const page = await source.readCapacityRisks(
-        projectId,
-        { cursor, limit: 50 },
-        abort.signal,
-      );
+      const page = await source.readCapacityRisks(projectId, { cursor, limit: 50 }, abort.signal);
       if (!currentProject(projectId, generation) || !capacity.value) return;
       const ids = new Set(capacity.value.items.map((item) => item.riskId));
       capacity.value = {
@@ -255,7 +246,7 @@ export function createSupportLeadControlController(
         await context.onForbidden?.();
         return;
       }
-      error.value = "Не удалось загрузить следующую страницу рисков нагрузки.";
+      error.value = 'Не удалось загрузить следующую страницу рисков нагрузки.';
     } finally {
       if (generation === projectGeneration) {
         loadingCapacity.value = false;
@@ -311,12 +302,9 @@ export function createSupportLeadControlController(
         await context.onForbidden?.();
         return;
       }
-      investigationError.value = "Не удалось загрузить более ранние причины.";
+      investigationError.value = 'Не удалось загрузить более ранние причины.';
     } finally {
-      if (
-        selection === selectionGeneration &&
-        generation === investigationPaginationGeneration
-      ) {
+      if (selection === selectionGeneration && generation === investigationPaginationGeneration) {
         loadingInvestigation.value = false;
         investigationPaginationAbort = null;
       }
@@ -371,7 +359,7 @@ export function createSupportLeadControlController(
       if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         activity.value = null;
         await context.onActivityForbidden?.();
-      } else activityError.value = "Не удалось загрузить следующую страницу действий.";
+      } else activityError.value = 'Не удалось загрузить следующую страницу действий.';
     } finally {
       if (
         selection === selectionGeneration &&

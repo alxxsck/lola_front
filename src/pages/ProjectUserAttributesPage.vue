@@ -1,36 +1,36 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { onBeforeRouteLeave, useRouter } from "vue-router";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import InputNumber from "primevue/inputnumber";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import { useToast } from "primevue/usetoast";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { DocumentationCallout } from "@/features/documentation/ui";
-import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
-import type { AttributePublicationFormCommand } from "@/features/end-user-attributes/model/publication-domain";
-import AttributePublicationHistory from "@/features/end-user-attributes/ui/AttributePublicationHistory.vue";
-import ContractRevisionHistory from "@/features/end-user-attributes/ui/ContractRevisionHistory.vue";
-import PublishAttributeChangesDialog from "@/features/end-user-attributes/ui/PublishAttributeChangesDialog.vue";
-import CodeBlock from "@/shared/ui/CodeBlock.vue";
+import { computed, onMounted, ref } from 'vue';
+import { onBeforeRouteLeave, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import InputNumber from 'primevue/inputnumber';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import { useToast } from 'primevue/usetoast';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { DocumentationCallout } from '@/features/documentation/ui';
+import { attributeContractRepository } from '@/features/end-user-attributes/api/attribute-contract-repository';
+import type { AttributePublicationFormCommand } from '@/features/end-user-attributes/model/publication-domain';
+import AttributePublicationHistory from '@/features/end-user-attributes/ui/AttributePublicationHistory.vue';
+import ContractRevisionHistory from '@/features/end-user-attributes/ui/ContractRevisionHistory.vue';
+import PublishAttributeChangesDialog from '@/features/end-user-attributes/ui/PublishAttributeChangesDialog.vue';
+import CodeBlock from '@/shared/ui/CodeBlock.vue';
 import {
   createContractField,
   validateContractDocument,
-} from "@/features/end-user-attributes/model/contract-domain";
-import { type ContractIssuePresentation } from "@/features/end-user-attributes/model/contract-issue-presentation";
-import { useContractIssuePresentation } from "@/features/end-user-attributes/model/use-contract-issue-presentation";
+} from '@/features/end-user-attributes/model/contract-domain';
+import { type ContractIssuePresentation } from '@/features/end-user-attributes/model/contract-issue-presentation';
+import { useContractIssuePresentation } from '@/features/end-user-attributes/model/use-contract-issue-presentation';
 import {
   readDemoContractDraft,
   writeDemoContractDraft,
-} from "@/features/end-user-attributes/model/demo-draft-storage";
-import { repository } from "@/shared/api/repository";
-import { ApiError } from "@/shared/api/http/api-error";
-import { formatProfileContractMarkdown } from "@/shared/lib/data-contract-markdown";
+} from '@/features/end-user-attributes/model/demo-draft-storage';
+import { repository } from '@/shared/api/repository';
+import { ApiError } from '@/shared/api/http/api-error';
+import { formatProfileContractMarkdown } from '@/shared/lib/data-contract-markdown';
 import type {
   AttributeContractDraftResponseDto,
   AttributeContractDraftFieldDto,
@@ -42,7 +42,7 @@ import type {
   AttributePublicationResponseDto,
   AttributePublicationSummaryResponseDto,
   ProfileHealthResponseDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 const auth = useAuthStore();
 const toast = useToast();
@@ -52,11 +52,11 @@ const loaded = ref(false);
 const saving = ref(false);
 const validating = ref(false);
 const publishing = ref(false);
-const error = ref("");
+const error = ref('');
 const workspace = ref<AttributeContractWorkspaceResponseDto | null>(null);
 const draftConflict = ref<{
   serverDraft: AttributeContractDraftResponseDto;
-  localDocument: AttributeContractDraftResponseDto["document"];
+  localDocument: AttributeContractDraftResponseDto['document'];
 } | null>(null);
 const validation = ref<AttributeContractValidationResponseDto | null>(null);
 const health = ref<ProfileHealthResponseDto | null>(null);
@@ -64,7 +64,7 @@ const publications = ref<AttributePublicationSummaryResponseDto[]>([]);
 const revisions = ref<AttributeContractRevisionSummaryResponseDto[]>([]);
 const selectedPublication = ref<AttributePublicationResponseDto | null>(null);
 const selectedRevision = ref<AttributeContractRevisionResponseDto | null>(null);
-const historyTab = ref<"publications" | "contracts">("publications");
+const historyTab = ref<'publications' | 'contracts'>('publications');
 const historyDetailLoading = ref(false);
 const publishingVisible = ref(false);
 const historyVisible = ref(false);
@@ -73,61 +73,51 @@ const aiContextVisible = ref(false);
 const impactLoading = ref(false);
 const impact = ref<AttributeDefinitionImpactResponseDto | null>(null);
 const impactField = ref<AttributeContractDraftFieldDto | null>(null);
-const healthWindow = ref<"24h" | "7d" | "30d">("7d");
-const aiFormat = ref<"STRUCTURED_JSON" | "COMPACT_TEXT">("STRUCTURED_JSON");
+const healthWindow = ref<'24h' | '7d' | '30d'>('7d');
+const aiFormat = ref<'STRUCTURED_JSON' | 'COMPACT_TEXT'>('STRUCTURED_JSON');
 const aiBudget = ref(2000);
-const savedDraftSnapshot = ref("");
+const savedDraftSnapshot = ref('');
 
 const canManage = computed(() =>
   hasProjectPermission(
     auth.project?.effectivePermissionCodes ?? [],
-    "project.profile_contract.write",
+    'project.profile_contract.write',
   ),
 );
 const canManageAiContext = computed(() =>
   hasProjectPermission(
     auth.project?.effectivePermissionCodes ?? [],
-    "project.profile_contract.publish",
+    'project.profile_contract.publish',
   ),
 );
 const canPublishContract = computed(() =>
   hasProjectPermission(
     auth.project?.effectivePermissionCodes ?? [],
-    "project.profile_contract.publish",
+    'project.profile_contract.publish',
   ),
 );
 const fields = computed(() => workspace.value?.draft.document.fields ?? []);
 const orderedFields = computed(() =>
-  [...fields.value].sort(
-    (a, b) => a.position - b.position || a.key.localeCompare(b.key),
-  ),
+  [...fields.value].sort((a, b) => a.position - b.position || a.key.localeCompare(b.key)),
 );
 const profileContractFields = computed(() =>
-  fields.value.filter((field) => field.lifecycle !== "ARCHIVED"),
+  fields.value.filter((field) => field.lifecycle !== 'ARCHIVED'),
 );
 const localIssues = computed(() =>
-  workspace.value
-    ? validateContractDocument(workspace.value.draft.document)
-    : [],
+  workspace.value ? validateContractDocument(workspace.value.draft.document) : [],
 );
-const issueInputs = computed(() => [
-  ...localIssues.value,
-  ...(validation.value?.issues ?? []),
-]);
+const issueInputs = computed(() => [...localIssues.value, ...(validation.value?.issues ?? [])]);
 const { errors, warnings } = useContractIssuePresentation(issueInputs, fields);
 const dirty = computed(() =>
   workspace.value
     ? contractDocumentSignature(workspace.value.draft.document) !==
-      contractDocumentSignature(
-        workspace.value.currentPublication?.document ?? { fields: [] },
-      )
+      contractDocumentSignature(workspace.value.currentPublication?.document ?? { fields: [] })
     : false,
 );
 const hasUnsavedDraftEdits = computed(
   () =>
     Boolean(workspace.value) &&
-    JSON.stringify(workspace.value?.draft.document) !==
-      savedDraftSnapshot.value,
+    JSON.stringify(workspace.value?.draft.document) !== savedDraftSnapshot.value,
 );
 const publishReady = computed(
   () =>
@@ -141,26 +131,26 @@ const publishReady = computed(
 );
 const publishedAiFields = computed(() =>
   (workspace.value?.currentPublication?.document.fields ?? []).filter(
-    (field) => field.lifecycle !== "ARCHIVED" && field.policies.aiRead,
+    (field) => field.lifecycle !== 'ARCHIVED' && field.policies.aiRead,
   ),
 );
 const syntheticAiPreview = computed(() => {
   const valueFor = (type: string) =>
-    type === "BOOLEAN"
+    type === 'BOOLEAN'
       ? true
-      : type === "INTEGER"
+      : type === 'INTEGER'
         ? 42
-        : type === "DECIMAL"
-          ? "42.50"
-          : type === "DATE"
-            ? "2026-07-19"
-            : type === "DATETIME"
-              ? "2026-07-19T08:30:00Z"
-              : type === "COUNTRY_CODE"
-                ? "ES"
-                : type === "CURRENCY_CODE"
-                  ? "EUR"
-                  : "synthetic-value";
+        : type === 'DECIMAL'
+          ? '42.50'
+          : type === 'DATE'
+            ? '2026-07-19'
+            : type === 'DATETIME'
+              ? '2026-07-19T08:30:00Z'
+              : type === 'COUNTRY_CODE'
+                ? 'ES'
+                : type === 'CURRENCY_CODE'
+                  ? 'EUR'
+                  : 'synthetic-value';
   const projection = Object.fromEntries(
     publishedAiFields.value.map((field) => [
       field.key,
@@ -168,139 +158,128 @@ const syntheticAiPreview = computed(() => {
         value: valueFor(field.valueType),
         untrusted: true,
         classification: field.classification,
-        purpose: field.purpose ?? "not declared",
+        purpose: field.purpose ?? 'not declared',
       },
     ]),
   );
-  return aiFormat.value === "STRUCTURED_JSON"
+  return aiFormat.value === 'STRUCTURED_JSON'
     ? JSON.stringify(projection, null, 2).slice(0, aiBudget.value)
     : publishedAiFields.value
         .map((field) => `${field.label}: ${String(valueFor(field.valueType))}`)
-        .join(" · ")
+        .join(' · ')
         .slice(0, aiBudget.value);
 });
 
 const valueTypes = [
-  { value: "STRING", label: "Текст" },
-  { value: "BOOLEAN", label: "Да или нет" },
-  { value: "INTEGER", label: "Целое число" },
-  { value: "DECIMAL", label: "Десятичное число" },
-  { value: "DATETIME", label: "Дата и время" },
-  { value: "DATE", label: "Дата" },
-  { value: "COUNTRY_CODE", label: "Страна" },
-  { value: "CURRENCY_CODE", label: "Валюта" },
+  { value: 'STRING', label: 'Текст' },
+  { value: 'BOOLEAN', label: 'Да или нет' },
+  { value: 'INTEGER', label: 'Целое число' },
+  { value: 'DECIMAL', label: 'Десятичное число' },
+  { value: 'DATETIME', label: 'Дата и время' },
+  { value: 'DATE', label: 'Дата' },
+  { value: 'COUNTRY_CODE', label: 'Страна' },
+  { value: 'CURRENCY_CODE', label: 'Валюта' },
 ];
 const lifecycleOptions = [
-  { value: "ACTIVE", label: "Активно" },
-  { value: "DEPRECATED", label: "Выводится из использования" },
+  { value: 'ACTIVE', label: 'Активно' },
+  { value: 'DEPRECATED', label: 'Выводится из использования' },
 ];
 const requirementOptions = [
-  { value: "OPTIONAL", label: "Можно не передавать" },
+  { value: 'OPTIONAL', label: 'Можно не передавать' },
   {
-    value: "REQUIRED_WARN",
-    label: "Желательно — предупреждать, если поля нет",
+    value: 'REQUIRED_WARN',
+    label: 'Желательно — предупреждать, если поля нет',
   },
   {
-    value: "REQUIRED_ENFORCED",
-    label: "Обязательно — отклонять профиль без поля",
+    value: 'REQUIRED_ENFORCED',
+    label: 'Обязательно — отклонять профиль без поля',
   },
 ];
 const classificationOptions = [
-  { value: "INTERNAL", label: "Служебные данные" },
-  { value: "PERSONAL", label: "Персональные данные" },
-  { value: "SENSITIVE", label: "Чувствительные данные" },
+  { value: 'INTERNAL', label: 'Служебные данные' },
+  { value: 'PERSONAL', label: 'Персональные данные' },
+  { value: 'SENSITIVE', label: 'Чувствительные данные' },
 ];
 const indexOptions = [
-  { value: "NONE", label: "Не использовать для поиска" },
-  { value: "EXACT", label: "Искать по точному значению" },
-  { value: "RANGE_SORT", label: "Фильтровать и сортировать" },
+  { value: 'NONE', label: 'Не использовать для поиска' },
+  { value: 'EXACT', label: 'Искать по точному значению' },
+  { value: 'RANGE_SORT', label: 'Фильтровать и сортировать' },
 ];
 const healthWindowOptions = [
-  { value: "24h", label: "24 часа" },
-  { value: "7d", label: "7 дней" },
-  { value: "30d", label: "30 дней" },
+  { value: '24h', label: '24 часа' },
+  { value: '7d', label: '7 дней' },
+  { value: '30d', label: '30 дней' },
 ];
 
 onMounted(load);
 onBeforeRouteLeave(() =>
   !hasUnsavedDraftEdits.value
     ? true
-    : window.confirm(
-        "Покинуть страницу и потерять несохранённые изменения полей профиля?",
-      ),
+    : window.confirm('Покинуть страницу и потерять несохранённые изменения полей профиля?'),
 );
 
-function toDraftField(
-  field: Record<string, unknown>,
-): AttributeContractDraftFieldDto {
+function toDraftField(field: Record<string, unknown>): AttributeContractDraftFieldDto {
   return {
-    definitionId: String(field.definitionId ?? field.id ?? ""),
-    key: String(field.key ?? ""),
-    label: String(field.label ?? ""),
+    definitionId: String(field.definitionId ?? field.id ?? ''),
+    key: String(field.key ?? ''),
+    label: String(field.label ?? ''),
     description: (field.description as string | null | undefined) ?? null,
     purpose: (field.purpose as string | null | undefined) ?? null,
-    valueType: field.valueType as AttributeContractDraftFieldDto["valueType"],
-    lifecycle: field.lifecycle as AttributeContractDraftFieldDto["lifecycle"],
-    classification:
-      field.classification as AttributeContractDraftFieldDto["classification"],
-    requirement:
-      field.requirement as AttributeContractDraftFieldDto["requirement"],
+    valueType: field.valueType as AttributeContractDraftFieldDto['valueType'],
+    lifecycle: field.lifecycle as AttributeContractDraftFieldDto['lifecycle'],
+    classification: field.classification as AttributeContractDraftFieldDto['classification'],
+    requirement: field.requirement as AttributeContractDraftFieldDto['requirement'],
     position: Number(field.position ?? 0),
-    constraints:
-      (field.constraints as AttributeContractDraftFieldDto["constraints"]) ??
-      {},
-    policies: field.policies as AttributeContractDraftFieldDto["policies"],
-    replacementDefinitionId:
-      (field.replacementDefinitionId as string | null | undefined) ?? null,
+    constraints: (field.constraints as AttributeContractDraftFieldDto['constraints']) ?? {},
+    policies: field.policies as AttributeContractDraftFieldDto['policies'],
+    replacementDefinitionId: (field.replacementDefinitionId as string | null | undefined) ?? null,
     sunsetAt: (field.sunsetAt as string | null | undefined) ?? null,
-    semanticRole:
-      (field.semanticRole as AttributeContractDraftFieldDto["semanticRole"]) ??
-      null,
+    semanticRole: (field.semanticRole as AttributeContractDraftFieldDto['semanticRole']) ?? null,
   };
 }
 
 function demoWorkspace(): AttributeContractWorkspaceResponseDto {
-  const projectId = auth.project?.id ?? "demo";
+  const projectId = auth.project?.id ?? 'demo';
   const base: AttributeContractDraftFieldDto = {
     ...createContractField(10),
-    classification: "INTERNAL",
+    classification: 'INTERNAL',
   };
   const demoFields: AttributeContractDraftFieldDto[] = [
     {
       ...base,
-      definitionId: "attr-name",
-      key: "displayName",
-      label: "Отображаемое имя",
-      purpose: "Показывать имя пользователя в интерфейсе и сообщениях",
-      semanticRole: "DISPLAY_NAME",
+      definitionId: 'attr-name',
+      key: 'displayName',
+      label: 'Отображаемое имя',
+      purpose: 'Показывать имя пользователя в интерфейсе и сообщениях',
+      semanticRole: 'DISPLAY_NAME',
       policies: { ...base.policies, clientRead: true, templateRead: true },
     },
     {
       ...base,
-      definitionId: "attr-tier",
-      key: "loyaltyTier",
-      label: "Уровень лояльности",
-      purpose: "Собирать сегменты и подставлять уровень в сообщения",
-      constraints: { allowedValues: ["basic", "silver", "gold"] },
+      definitionId: 'attr-tier',
+      key: 'loyaltyTier',
+      label: 'Уровень лояльности',
+      purpose: 'Собирать сегменты и подставлять уровень в сообщения',
+      constraints: { allowedValues: ['basic', 'silver', 'gold'] },
       policies: {
         ...base.policies,
         audienceRead: true,
         templateRead: true,
-        indexPolicy: "EXACT",
+        indexPolicy: 'EXACT',
       },
       position: 20,
     },
     {
       ...base,
-      definitionId: "attr-balance",
-      key: "accountBalance",
-      label: "Баланс",
-      valueType: "DECIMAL",
-      classification: "SENSITIVE",
-      purpose: "Персонализация ответа о балансе",
+      definitionId: 'attr-balance',
+      key: 'accountBalance',
+      label: 'Баланс',
+      valueType: 'DECIMAL',
+      classification: 'SENSITIVE',
+      purpose: 'Персонализация ответа о балансе',
       policies: {
         ...base.policies,
-        cmsRead: { mode: "VISIBLE", access: "RESTRICTED" },
+        cmsRead: { mode: 'VISIBLE', access: 'RESTRICTED' },
         aiRead: true,
       },
       position: 30,
@@ -308,7 +287,7 @@ function demoWorkspace(): AttributeContractWorkspaceResponseDto {
   ];
   const publishedFields = demoFields.map((field) => ({
     ...field,
-    classification: field.classification ?? "INTERNAL",
+    classification: field.classification ?? 'INTERNAL',
     definitionRevisionId: `${field.definitionId}-revision`,
     definitionRevisionNumber: 1,
   }));
@@ -317,7 +296,7 @@ function demoWorkspace(): AttributeContractWorkspaceResponseDto {
   };
   const changes = {
     contractChanged: false,
-    contractCompatibility: "UNCHANGED" as const,
+    contractCompatibility: 'UNCHANGED' as const,
     lifecycleChanged: false,
     metadataChanged: false,
     policyChanged: false,
@@ -336,33 +315,33 @@ function demoWorkspace(): AttributeContractWorkspaceResponseDto {
   const publishedAt = new Date().toISOString();
   return {
     currentPublication: {
-      id: "demo-publication",
+      id: 'demo-publication',
       projectId,
       sequence: 4,
-      canonicalHash: "demo-publication",
-      validationHash: "demo",
-      contractRevisionId: "demo-revision",
+      canonicalHash: 'demo-publication',
+      validationHash: 'demo',
+      contractRevisionId: 'demo-revision',
       contractVersion: 3,
       changes,
       compatibilityReport,
       publishedById: null,
-      publishedActorType: "SYSTEM",
-      publishedActorId: "demo",
-      publishReason: "Демонстрационная публикация",
+      publishedActorType: 'SYSTEM',
+      publishedActorId: 'demo',
+      publishReason: 'Демонстрационная публикация',
       publishedAt,
       document: publishedDocument,
     },
     currentContractRevision: {
-      id: "demo-revision",
+      id: 'demo-revision',
       projectId,
       version: 3,
-      canonicalHash: "demo",
-      validationHash: "demo",
+      canonicalHash: 'demo',
+      validationHash: 'demo',
       acceptances: [],
       compatibilityReport,
       schema: {
-        $schema: "https://json-schema.org/draft/2020-12/schema",
-        type: "object",
+        $schema: 'https://json-schema.org/draft/2020-12/schema',
+        type: 'object',
         additionalProperties: false,
         properties: {},
         required: [],
@@ -370,26 +349,26 @@ function demoWorkspace(): AttributeContractWorkspaceResponseDto {
       fields: publishedFields,
       publishedAt,
       publishedById: null,
-      publishReason: "Демонстрационная версия",
+      publishReason: 'Демонстрационная версия',
     },
     changes,
     draft: {
       projectId,
       draftVersion: 3,
-      basePublicationId: "demo-publication",
+      basePublicationId: 'demo-publication',
       updatedById: null,
       document: readDemoContractDraft(projectId, publishedDocument),
     },
     validation: {
       valid: true,
       draftVersion: 3,
-      validationHash: "demo",
+      validationHash: 'demo',
       issues: [],
       artifact: {
         fields: [],
         schema: {
-          $schema: "https://json-schema.org/draft/2020-12/schema",
-          type: "object",
+          $schema: 'https://json-schema.org/draft/2020-12/schema',
+          type: 'object',
           additionalProperties: false,
           properties: {},
           required: [],
@@ -405,9 +384,9 @@ async function load() {
   if (!projectId) return;
   loading.value = true;
   loaded.value = false;
-  error.value = "";
+  error.value = '';
   try {
-    if (repository.mode === "mock") {
+    if (repository.mode === 'mock') {
       workspace.value = demoWorkspace();
       validation.value = workspace.value.validation;
       const publication = workspace.value.currentPublication;
@@ -420,9 +399,7 @@ async function load() {
             },
           ]
         : [];
-      revisions.value = revision
-        ? [{ ...revision, fieldCount: revision.fields.length }]
-        : [];
+      revisions.value = revision ? [{ ...revision, fieldCount: revision.fields.length }] : [];
       health.value = {
         since: new Date(Date.now() - 7 * 86400000).toISOString(),
         coverage: 0.84,
@@ -451,15 +428,14 @@ async function load() {
         },
       };
     } else {
-      const [nextWorkspace, nextHealth, publicationHistory, contractHistory] =
-        await Promise.all([
-          attributeContractRepository.workspace(projectId),
-          attributeContractRepository.health(projectId, {
-            window: healthWindow.value,
-          }),
-          attributeContractRepository.publications(projectId, { limit: 25 }),
-          attributeContractRepository.revisions(projectId, { limit: 25 }),
-        ]);
+      const [nextWorkspace, nextHealth, publicationHistory, contractHistory] = await Promise.all([
+        attributeContractRepository.workspace(projectId),
+        attributeContractRepository.health(projectId, {
+          window: healthWindow.value,
+        }),
+        attributeContractRepository.publications(projectId, { limit: 25 }),
+        attributeContractRepository.revisions(projectId, { limit: 25 }),
+      ]);
       workspace.value = nextWorkspace;
       validation.value = nextWorkspace.validation;
       health.value = nextHealth;
@@ -470,9 +446,7 @@ async function load() {
     loaded.value = true;
   } catch (cause) {
     error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить настройки полей профиля";
+      cause instanceof Error ? cause.message : 'Не удалось загрузить настройки полей профиля';
   } finally {
     loading.value = false;
   }
@@ -480,7 +454,7 @@ async function load() {
 
 async function loadHealth() {
   const projectId = auth.project?.id;
-  if (!projectId || repository.mode === "mock") return;
+  if (!projectId || repository.mode === 'mock') return;
   try {
     health.value = await attributeContractRepository.health(projectId, {
       window: healthWindow.value,
@@ -489,12 +463,12 @@ async function loadHealth() {
     error.value =
       cause instanceof Error
         ? cause.message
-        : "Не удалось обновить показатели профилей пользователей";
+        : 'Не удалось обновить показатели профилей пользователей';
   }
 }
 
 function openCreate() {
-  void router.push("/profile-fields/new");
+  void router.push('/profile-fields/new');
 }
 
 function openEdit(field: AttributeContractDraftFieldDto) {
@@ -503,9 +477,7 @@ function openEdit(field: AttributeContractDraftFieldDto) {
 
 function removeDraftField(field: AttributeContractDraftFieldDto) {
   if (!workspace.value || isPublishedField(field)) return;
-  workspace.value.draft.document.fields = fields.value.filter(
-    (item) => item !== field,
-  );
+  workspace.value.draft.document.fields = fields.value.filter((item) => item !== field);
   validation.value = null;
 }
 
@@ -513,25 +485,22 @@ async function saveDraft() {
   const projectId = auth.project?.id;
   if (!projectId || !workspace.value || !canManage.value) return;
   saving.value = true;
-  error.value = "";
+  error.value = '';
   try {
-    if (repository.mode === "mock") {
+    if (repository.mode === 'mock') {
       writeDemoContractDraft(projectId, workspace.value.draft.document);
       workspace.value.draft.draftVersion += 1;
     } else
-      workspace.value.draft = await attributeContractRepository.saveDraft(
-        projectId,
-        {
-          expectedDraftVersion: workspace.value.draft.draftVersion,
-          document: workspace.value.draft.document,
-        },
-      );
+      workspace.value.draft = await attributeContractRepository.saveDraft(projectId, {
+        expectedDraftVersion: workspace.value.draft.draftVersion,
+        document: workspace.value.draft.document,
+      });
     savedDraftSnapshot.value = JSON.stringify(workspace.value.draft.document);
     validation.value = null;
     toast.add({
-      severity: "success",
-      summary: "Черновик сохранён",
-      detail: "Изменения сохранены и готовы к проверке.",
+      severity: 'success',
+      summary: 'Черновик сохранён',
+      detail: 'Изменения сохранены и готовы к проверке.',
       life: 2500,
     });
   } catch (cause) {
@@ -544,16 +513,16 @@ async function saveDraft() {
           localDocument,
         };
         error.value =
-          "Другой администратор уже изменил черновик. Скопируйте свою версию и вручную сравните изменения.";
+          'Другой администратор уже изменил черновик. Скопируйте свою версию и вручную сравните изменения.';
       } catch {
         error.value =
-          "Конфликт черновика. Локальные изменения сохранены в браузере; попробуйте загрузить серверную версию позже.";
+          'Конфликт черновика. Локальные изменения сохранены в браузере; попробуйте загрузить серверную версию позже.';
       }
     } else
       error.value =
         cause instanceof Error
           ? cause.message
-          : "Не удалось сохранить черновик. Возможно, его уже изменил другой администратор.";
+          : 'Не удалось сохранить черновик. Возможно, его уже изменил другой администратор.';
   } finally {
     saving.value = false;
   }
@@ -565,17 +534,15 @@ function acceptServerDraft() {
   savedDraftSnapshot.value = JSON.stringify(workspace.value.draft.document);
   validation.value = null;
   draftConflict.value = null;
-  error.value = "";
+  error.value = '';
 }
 
 async function copyLocalConflict() {
   if (!draftConflict.value) return;
-  await navigator.clipboard.writeText(
-    JSON.stringify(draftConflict.value.localDocument, null, 2),
-  );
+  await navigator.clipboard.writeText(JSON.stringify(draftConflict.value.localDocument, null, 2));
   toast.add({
-    severity: "success",
-    summary: "Локальный JSON скопирован",
+    severity: 'success',
+    summary: 'Локальный JSON скопирован',
     life: 2000,
   });
 }
@@ -593,18 +560,18 @@ async function copyProfileContract() {
       }),
     );
     toast.add({
-      severity: "success",
-      summary: "Поля профиля скопированы",
+      severity: 'success',
+      summary: 'Поля профиля скопированы',
       detail: copiesDraft
-        ? "Таблица помечена как черновик: ключи, типы и обязательность готовы для сверки."
+        ? 'Таблица помечена как черновик: ключи, типы и обязательность готовы для сверки.'
         : `Версия ${revision.version}: ключи, типы и обязательность готовы для передачи команде.`,
       life: 2600,
     });
   } catch {
     toast.add({
-      severity: "error",
-      summary: "Не удалось скопировать контракт",
-      detail: "Разрешите доступ к буферу обмена и повторите попытку.",
+      severity: 'error',
+      summary: 'Не удалось скопировать контракт',
+      detail: 'Разрешите доступ к буферу обмена и повторите попытку.',
       life: 3200,
     });
   }
@@ -614,16 +581,14 @@ async function validateDraft() {
   const projectId = auth.project?.id;
   if (!projectId || !workspace.value) return;
   if (hasUnsavedDraftEdits.value) {
-    error.value =
-      "Сначала сохраните изменения черновика, затем запустите проверку.";
+    error.value = 'Сначала сохраните изменения черновика, затем запустите проверку.';
     return;
   }
-  if (localIssues.value.some((issue) => issue.severity === "error")) return;
+  if (localIssues.value.some((issue) => issue.severity === 'error')) return;
   validating.value = true;
-  error.value = "";
+  error.value = '';
   try {
-    if (repository.mode === "mock")
-      validation.value = demoWorkspace().validation;
+    if (repository.mode === 'mock') validation.value = demoWorkspace().validation;
     else
       validation.value = await attributeContractRepository.validate(
         projectId,
@@ -631,14 +596,13 @@ async function validateDraft() {
       );
     if (validation.value.valid)
       toast.add({
-        severity: "success",
-        summary: "Ошибок не найдено",
-        detail: "Черновик можно опубликовать.",
+        severity: 'success',
+        summary: 'Ошибок не найдено',
+        detail: 'Черновик можно опубликовать.',
         life: 3000,
       });
   } catch (cause) {
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось проверить контракт";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось проверить контракт';
   } finally {
     validating.value = false;
   }
@@ -646,31 +610,24 @@ async function validateDraft() {
 
 async function publish(command: AttributePublicationFormCommand) {
   const projectId = auth.project?.id;
-  if (
-    !projectId ||
-    !workspace.value ||
-    !validation.value ||
-    !publishReady.value
-  )
-    return;
+  if (!projectId || !workspace.value || !validation.value || !publishReady.value) return;
   publishing.value = true;
-  error.value = "";
+  error.value = '';
   try {
-    if (repository.mode === "mock") {
+    if (repository.mode === 'mock') {
       publishingVisible.value = false;
       toast.add({
-        severity: "success",
-        summary: "Изменения опубликованы",
+        severity: 'success',
+        summary: 'Изменения опубликованы',
         detail: workspace.value.changes.contractChanged
-          ? "Созданы новая публикация и новая версия контракта."
-          : "Создана новая публикация. Версия контракта не изменилась.",
+          ? 'Созданы новая публикация и новая версия контракта.'
+          : 'Создана новая публикация. Версия контракта не изменилась.',
         life: 3500,
       });
       return;
     }
     const result = await attributeContractRepository.publish(projectId, {
-      expectedCurrentPublicationId:
-        workspace.value.currentPublication?.id ?? null,
+      expectedCurrentPublicationId: workspace.value.currentPublication?.id ?? null,
       expectedDraftVersion: workspace.value.draft.draftVersion,
       validationHash: validation.value.validationHash,
       ...command,
@@ -678,7 +635,7 @@ async function publish(command: AttributePublicationFormCommand) {
     publishingVisible.value = false;
     await load();
     toast.add({
-      severity: "success",
+      severity: 'success',
       summary: `Публикация #${result.publication.sequence} создана`,
       detail: result.changes.contractChanged
         ? `Создан контракт v${result.contractRevision.version}. Команде продукта нужно обновить известную версию.`
@@ -686,8 +643,7 @@ async function publish(command: AttributePublicationFormCommand) {
       life: 3500,
     });
   } catch (cause) {
-    error.value =
-      cause instanceof Error ? cause.message : "Сервер отклонил публикацию";
+    error.value = cause instanceof Error ? cause.message : 'Сервер отклонил публикацию';
   } finally {
     publishing.value = false;
   }
@@ -699,17 +655,11 @@ async function selectPublication(publicationId: string) {
   historyDetailLoading.value = true;
   try {
     selectedPublication.value =
-      repository.mode === "mock"
+      repository.mode === 'mock'
         ? (workspace.value?.currentPublication ?? null)
-        : await attributeContractRepository.publication(
-            projectId,
-            publicationId,
-          );
+        : await attributeContractRepository.publication(projectId, publicationId);
   } catch (cause) {
-    error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить публикацию";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить публикацию';
   } finally {
     historyDetailLoading.value = false;
   }
@@ -721,12 +671,11 @@ async function selectRevision(revisionId: string) {
   historyDetailLoading.value = true;
   try {
     selectedRevision.value =
-      repository.mode === "mock"
+      repository.mode === 'mock'
         ? (workspace.value?.currentContractRevision ?? null)
         : await attributeContractRepository.revision(projectId, revisionId);
   } catch (cause) {
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось загрузить контракт";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить контракт';
   } finally {
     historyDetailLoading.value = false;
   }
@@ -735,24 +684,19 @@ async function selectRevision(revisionId: string) {
 function typeHint(type: string) {
   return (
     {
-      STRING:
-        "Подходит для имён, статусов и других коротких текстовых значений.",
-      BOOLEAN: "Выберите для признака с двумя значениями: да или нет.",
-      INTEGER: "Целое число без дробной части, например количество заказов.",
-      DECIMAL:
-        "Точное число с дробной частью. Подходит для денег, балансов и рейтингов.",
-      DATE: "Календарная дата без времени, например дата рождения.",
-      DATETIME: "Точная дата и время события с часовым поясом.",
-      COUNTRY_CODE: "Страна в двухбуквенном формате, например ES или RU.",
-      CURRENCY_CODE: "Валюта в трёхбуквенном формате, например EUR или RUB.",
-    }[type] ?? "Выберите формат данных, которые будет передавать ваш продукт."
+      STRING: 'Подходит для имён, статусов и других коротких текстовых значений.',
+      BOOLEAN: 'Выберите для признака с двумя значениями: да или нет.',
+      INTEGER: 'Целое число без дробной части, например количество заказов.',
+      DECIMAL: 'Точное число с дробной частью. Подходит для денег, балансов и рейтингов.',
+      DATE: 'Календарная дата без времени, например дата рождения.',
+      DATETIME: 'Точная дата и время события с часовым поясом.',
+      COUNTRY_CODE: 'Страна в двухбуквенном формате, например ES или RU.',
+      CURRENCY_CODE: 'Валюта в трёхбуквенном формате, например EUR или RUB.',
+    }[type] ?? 'Выберите формат данных, которые будет передавать ваш продукт.'
   );
 }
 
-function optionLabel(
-  options: ReadonlyArray<{ value: string; label: string }>,
-  value: string,
-) {
+function optionLabel(options: ReadonlyArray<{ value: string; label: string }>, value: string) {
   return options.find((option) => option.value === value)?.label ?? value;
 }
 
@@ -761,9 +705,7 @@ function valueTypeLabel(value: string) {
 }
 
 function lifecycleLabel(value: string) {
-  return value === "ARCHIVED"
-    ? "В архиве"
-    : optionLabel(lifecycleOptions, value);
+  return value === 'ARCHIVED' ? 'В архиве' : optionLabel(lifecycleOptions, value);
 }
 
 function requirementLabel(value: string) {
@@ -771,7 +713,7 @@ function requirementLabel(value: string) {
 }
 
 function classificationLabel(value: string | undefined) {
-  return value ? optionLabel(classificationOptions, value) : "Служебные данные";
+  return value ? optionLabel(classificationOptions, value) : 'Служебные данные';
 }
 
 function indexPolicyLabel(value: string) {
@@ -780,7 +722,7 @@ function indexPolicyLabel(value: string) {
 
 function canonicalize(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonicalize);
-  if (value === null || typeof value !== "object") return value;
+  if (value === null || typeof value !== 'object') return value;
   return Object.fromEntries(
     Object.entries(value as Record<string, unknown>)
       .filter(([, item]) => item !== undefined)
@@ -793,16 +735,14 @@ function canonicalSignature(value: unknown) {
   return JSON.stringify(canonicalize(value));
 }
 
-function contractDocumentSignature(
-  document: AttributeContractDraftResponseDto["document"],
-) {
+function contractDocumentSignature(document: AttributeContractDraftResponseDto['document']) {
   return canonicalSignature({
     fields: [...document.fields]
       .sort(
         (left, right) =>
           left.position - right.position ||
           left.key.localeCompare(right.key) ||
-          (left.definitionId ?? "").localeCompare(right.definitionId ?? ""),
+          (left.definitionId ?? '').localeCompare(right.definitionId ?? ''),
       )
       .map(comparableContractField),
   });
@@ -834,14 +774,11 @@ function contractFieldSignature(field: AttributeContractDraftFieldDto) {
 
 function fieldPublicationState(field: AttributeContractDraftFieldDto) {
   const published = publishedFieldFor(field);
-  if (!published) return "draft" as const;
-  const publishedDraft = toDraftField(
-    published as unknown as Record<string, unknown>,
-  );
-  return contractFieldSignature(field) ===
-    contractFieldSignature(publishedDraft)
-    ? ("published" as const)
-    : ("changed" as const);
+  if (!published) return 'draft' as const;
+  const publishedDraft = toDraftField(published as unknown as Record<string, unknown>);
+  return contractFieldSignature(field) === contractFieldSignature(publishedDraft)
+    ? ('published' as const)
+    : ('changed' as const);
 }
 
 function publishedFieldFor(field: AttributeContractDraftFieldDto) {
@@ -859,8 +796,7 @@ function healthWindowLabel(value: string) {
 }
 
 function fixIssue(issue: ContractIssuePresentation) {
-  if (issue.fieldIdentity)
-    void router.push(`/profile-fields/${issue.fieldIdentity}`);
+  if (issue.fieldIdentity) void router.push(`/profile-fields/${issue.fieldIdentity}`);
 }
 
 async function openImpact(field: AttributeContractDraftFieldDto) {
@@ -872,7 +808,7 @@ async function openImpact(field: AttributeContractDraftFieldDto) {
   impact.value = null;
   try {
     impact.value =
-      repository.mode === "mock"
+      repository.mode === 'mock'
         ? {
             canArchive: true,
             definition: {
@@ -882,23 +818,17 @@ async function openImpact(field: AttributeContractDraftFieldDto) {
             },
             dependencies: [],
           }
-        : await attributeContractRepository.impact(
-            projectId,
-            field.definitionId,
-          );
+        : await attributeContractRepository.impact(projectId, field.definitionId);
   } catch (cause) {
     error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось проверить, где используется поле";
+      cause instanceof Error ? cause.message : 'Не удалось проверить, где используется поле';
   } finally {
     impactLoading.value = false;
   }
 }
 
 function archiveImpactedField() {
-  if (!workspace.value || !impact.value?.canArchive || !impactField.value)
-    return;
+  if (!workspace.value || !impact.value?.canArchive || !impactField.value) return;
   if (
     !window.confirm(
       `Архивировать «${impactField.value.label}» в следующей версии? Поле исчезнет из новых профилей, но сохранится в уже записанной истории.`,
@@ -911,14 +841,14 @@ function archiveImpactedField() {
   if (index < 0) return;
   workspace.value.draft.document.fields[index] = {
     ...workspace.value.draft.document.fields[index]!,
-    lifecycle: "ARCHIVED",
+    lifecycle: 'ARCHIVED',
   };
   validation.value = null;
   impactVisible.value = false;
   toast.add({
-    severity: "warn",
-    summary: "Архивирование добавлено в черновик",
-    detail: "Сохраните, проверьте и опубликуйте новую версию.",
+    severity: 'warn',
+    summary: 'Архивирование добавлено в черновик',
+    detail: 'Сохраните, проверьте и опубликуйте новую версию.',
     life: 3500,
   });
 }
@@ -931,8 +861,8 @@ function archiveImpactedField() {
         <div class="eyebrow">Данные пользователей</div>
         <h1>Поля профиля пользователей</h1>
         <p class="subtitle">
-          Задайте, какие данные о пользователе Retenive получает от вашего
-          продукта и где их можно использовать.
+          Задайте, какие данные о пользователе Retenive получает от вашего продукта и где их можно
+          использовать.
         </p>
       </div>
       <div class="header-actions">
@@ -991,8 +921,8 @@ function archiveImpactedField() {
     </nav>
 
     <Message v-if="!canManage" severity="info" :closable="false"
-      >Вы можете просматривать поля. Для изменения и публикации нужны
-      соответствующие разрешения проекта.</Message
+      >Вы можете просматривать поля. Для изменения и публикации нужны соответствующие разрешения
+      проекта.</Message
     >
     <Message v-if="error" severity="error" :closable="false"
       ><div class="message-row">
@@ -1004,8 +934,8 @@ function archiveImpactedField() {
         <div>
           <strong>Нужна ручная сверка черновиков</strong>
           <span
-            >Другой администратор сохранил более новый черновик. Сравните его со
-            своими изменениями перед продолжением.</span
+            >Другой администратор сохранил более новый черновик. Сравните его со своими изменениями
+            перед продолжением.</span
           >
         </div>
         <Button
@@ -1023,12 +953,7 @@ function archiveImpactedField() {
       </div>
     </Message>
     <div v-if="loading" class="loading-grid">
-      <Skeleton
-        v-for="item in 5"
-        :key="item"
-        height="120px"
-        border-radius="18px"
-      />
+      <Skeleton v-for="item in 5" :key="item" height="120px" border-radius="18px" />
     </div>
 
     <template v-else-if="loaded && workspace">
@@ -1037,32 +962,23 @@ function archiveImpactedField() {
           <span class="setup-icon"><i class="pi pi-list-check" /></span>
           <div>
             <strong>Как настроить профиль пользователя</strong>
-            <p>
-              Добавьте поля, опубликуйте изменения и передайте тестовый профиль.
-            </p>
+            <p>Добавьте поля, опубликуйте изменения и передайте тестовый профиль.</p>
           </div>
         </div>
         <ol>
           <li :class="{ done: fields.length > 0 }">
             <span>1</span>
-            <div>
-              <strong>Добавьте поля</strong
-              ><small>Что хранить о пользователе</small>
-            </div>
+            <div><strong>Добавьте поля</strong><small>Что хранить о пользователе</small></div>
           </li>
           <li :class="{ done: Boolean(workspace.currentPublication) }">
             <span>2</span>
             <div>
-              <strong>Опубликуйте структуру</strong
-              ><small>Чтобы она начала действовать</small>
+              <strong>Опубликуйте структуру</strong><small>Чтобы она начала действовать</small>
             </div>
           </li>
           <li :class="{ done: Boolean(health?.lastSuccessfulSnapshotAt) }">
             <span>3</span>
-            <div>
-              <strong>Передайте профиль</strong
-              ><small>И проверьте результат</small>
-            </div>
+            <div><strong>Передайте профиль</strong><small>И проверьте результат</small></div>
           </li>
         </ol>
       </section>
@@ -1073,12 +989,12 @@ function archiveImpactedField() {
           ><strong>{{
             workspace.currentPublication
               ? `Публикация #${workspace.currentPublication.sequence}`
-              : "Ещё не опубликовано"
+              : 'Ещё не опубликовано'
           }}</strong
           ><small>{{
             workspace.currentPublication
               ? `Настройки Retenive · контракт v${workspace.currentPublication.contractVersion}`
-              : "Сначала добавьте хотя бы одно поле"
+              : 'Сначала добавьте хотя бы одно поле'
           }}</small>
         </article>
         <article class="metric card">
@@ -1086,42 +1002,38 @@ function archiveImpactedField() {
           ><strong>{{
             workspace.currentContractRevision
               ? `Контракт v${workspace.currentContractRevision.version}`
-              : "Ещё не создан"
+              : 'Ещё не создан'
           }}</strong
-          ><small
-            >Версия меняется только вместе с producer-visible структурой.</small
-          >
+          ><small>Версия меняется только вместе с producer-visible структурой.</small>
         </article>
         <article class="metric card">
           <span>Текущий черновик</span
           ><strong>{{
             hasUnsavedDraftEdits
-              ? "Есть несохранённые изменения"
+              ? 'Есть несохранённые изменения'
               : dirty
-                ? "Есть неопубликованные изменения"
-                : "Все изменения опубликованы"
+                ? 'Есть неопубликованные изменения'
+                : 'Все изменения опубликованы'
           }}</strong
           ><small>{{
             hasUnsavedDraftEdits
-              ? "Сохраните изменения, чтобы проверить и опубликовать их."
+              ? 'Сохраните изменения, чтобы проверить и опубликовать их.'
               : dirty
                 ? workspace.currentPublication
                   ? `Сохранённый черновик отличается от публикации #${workspace.currentPublication.sequence}.`
-                  : "Сохранённый черновик ещё не опубликован."
+                  : 'Сохранённый черновик ещё не опубликован.'
                 : workspace.currentPublication
                   ? `Совпадает с публикацией #${workspace.currentPublication.sequence}.`
-                  : "Изменений для публикации нет."
+                  : 'Изменений для публикации нет.'
           }}</small>
         </article>
         <article class="metric card">
           <span>Профили с данными</span
-          ><strong>{{
-            health ? `${Math.round(health.coverage * 100)}%` : "—"
-          }}</strong
+          ><strong>{{ health ? `${Math.round(health.coverage * 100)}%` : '—' }}</strong
           ><small>{{
             health
               ? `${health.usersWithSnapshot} из ${health.totalUsers} · ${healthWindowLabel(healthWindow)}`
-              : "Статистика пока недоступна"
+              : 'Статистика пока недоступна'
           }}</small>
         </article>
       </section>
@@ -1131,8 +1043,8 @@ function archiveImpactedField() {
           <strong>Поля профиля</strong
           ><span>{{
             fields.length
-              ? `${fields.length} ${fields.length === 1 ? "поле" : "полей"} в черновике`
-              : "Добавьте первое поле, например имя, город или уровень лояльности"
+              ? `${fields.length} ${fields.length === 1 ? 'поле' : 'полей'} в черновике`
+              : 'Добавьте первое поле, например имя, город или уровень лояльности'
           }}</span>
         </div>
         <Button
@@ -1150,10 +1062,7 @@ function archiveImpactedField() {
           <div>
             <span>После настройки</span>
             <h2>Статистика после публикации</h2>
-            <p>
-              Здесь видно, приходят ли профили и насколько хорошо заполняются
-              поля.
-            </p>
+            <p>Здесь видно, приходят ли профили и насколько хорошо заполняются поля.</p>
           </div>
         </header>
         <section v-if="health" id="quality" class="health-evidence card">
@@ -1161,10 +1070,7 @@ function archiveImpactedField() {
             <span class="health-icon"><i class="pi pi-chart-bar" /></span>
             <div>
               <h2>Качество поступающих данных</h2>
-              <p>
-                Показывает, получает ли Retenive профили и какие проблемы
-                встречаются.
-              </p>
+              <p>Показывает, получает ли Retenive профили и какие проблемы встречаются.</p>
             </div>
             <Select
               v-model="healthWindow"
@@ -1177,13 +1083,11 @@ function archiveImpactedField() {
           </header>
           <div class="fact-grid">
             <div>
-              <span>Получено обновлений</span
-              ><strong>{{ health.requestCount }}</strong
+              <span>Получено обновлений</span><strong>{{ health.requestCount }}</strong
               ><small>За выбранный период</small>
             </div>
             <div>
-              <span>Сессии с профилем</span
-              ><strong>{{ health.sessionRequestsWithSnapshot }}</strong
+              <span>Сессии с профилем</span><strong>{{ health.sessionRequestsWithSnapshot }}</strong
               ><small>Данные были доступны</small>
             </div>
             <div>
@@ -1192,18 +1096,15 @@ function archiveImpactedField() {
               ><small>Нужно проверить передачу</small>
             </div>
             <div>
-              <span>Конфликты повторов</span
-              ><strong>{{ health.idempotencyConflicts }}</strong
+              <span>Конфликты повторов</span><strong>{{ health.idempotencyConflicts }}</strong
               ><small>Одинаковые запросы</small>
             </div>
             <div>
               <span>Последнее обновление</span
               ><strong>{{
                 health.lastSuccessfulSnapshotAt
-                  ? new Date(health.lastSuccessfulSnapshotAt).toLocaleString(
-                      "ru-RU",
-                    )
-                  : "Ещё не было"
+                  ? new Date(health.lastSuccessfulSnapshotAt).toLocaleString('ru-RU')
+                  : 'Ещё не было'
               }}</strong
               ><small>Успешно принято Retenive</small>
             </div>
@@ -1220,15 +1121,11 @@ function archiveImpactedField() {
             </div>
             <div>
               <span>От 1 до 7 дней</span
-              ><strong>{{
-                health.profileAgeDistribution.from24HoursTo7Days
-              }}</strong>
+              ><strong>{{ health.profileAgeDistribution.from24HoursTo7Days }}</strong>
             </div>
             <div>
               <span>От 7 до 30 дней</span
-              ><strong>{{
-                health.profileAgeDistribution.from7To30Days
-              }}</strong>
+              ><strong>{{ health.profileAgeDistribution.from7To30Days }}</strong>
             </div>
             <div>
               <span>Старше 30 дней</span
@@ -1238,20 +1135,14 @@ function archiveImpactedField() {
           <section v-if="health.fieldCoverage.length">
             <h3>Заполненность полей</h3>
             <div class="policy-list">
-              <span
-                v-for="field in health.fieldCoverage"
-                :key="field.definitionId"
+              <span v-for="field in health.fieldCoverage" :key="field.definitionId"
                 >{{ field.key }} · {{ Math.round(field.coverage * 100) }}%</span
               >
             </div>
           </section>
-          <Message
-            v-if="health.oldContractIntegrations.length"
-            severity="warn"
-            :closable="false"
-            >{{ health.oldContractIntegrations.length }} подключений всё ещё
-            используют старую версию полей. Обновите их перед
-            публикацией.</Message
+          <Message v-if="health.oldContractIntegrations.length" severity="warn" :closable="false"
+            >{{ health.oldContractIntegrations.length }} подключений всё ещё используют старую
+            версию полей. Обновите их перед публикацией.</Message
           >
           <details class="raw-health">
             <summary>Посмотреть исходные данные для разработчика</summary>
@@ -1269,15 +1160,8 @@ function archiveImpactedField() {
         </section>
       </Teleport>
 
-      <Message
-        v-if="errors.length"
-        class="validation-notice"
-        severity="error"
-        :closable="false"
-      >
-        <span class="notice-title"
-          >Публикация недоступна: исправьте ошибки</span
-        >
+      <Message v-if="errors.length" class="validation-notice" severity="error" :closable="false">
+        <span class="notice-title">Публикация недоступна: исправьте ошибки</span>
         <ul>
           <li v-for="issue in errors" :key="issue.key">
             <span class="notice-copy">
@@ -1300,12 +1184,7 @@ function archiveImpactedField() {
           </li>
         </ul>
       </Message>
-      <Message
-        v-if="warnings.length"
-        class="validation-notice"
-        severity="warn"
-        :closable="false"
-      >
+      <Message v-if="warnings.length" class="validation-notice" severity="warn" :closable="false">
         <span class="notice-title">Что проверить перед публикацией</span>
         <ul>
           <li v-for="issue in warnings" :key="issue.key">
@@ -1344,8 +1223,7 @@ function archiveImpactedField() {
                   ? 'pi pi-check-square'
                   : field.valueType.includes('DATE')
                     ? 'pi pi-calendar'
-                    : field.valueType === 'DECIMAL' ||
-                        field.valueType === 'INTEGER'
+                    : field.valueType === 'DECIMAL' || field.valueType === 'INTEGER'
                       ? 'pi pi-hashtag'
                       : 'pi pi-align-left'
               "
@@ -1353,12 +1231,9 @@ function archiveImpactedField() {
           </div>
           <div class="field-main">
             <div class="field-title">
-              <h2>{{ field.label || "Без названия" }}</h2>
-              <code>{{ field.key || "new_key" }}</code
-              ><Tag
-                :value="valueTypeLabel(field.valueType)"
-                severity="secondary"
-              /><Tag
+              <h2>{{ field.label || 'Без названия' }}</h2>
+              <code>{{ field.key || 'new_key' }}</code
+              ><Tag :value="valueTypeLabel(field.valueType)" severity="secondary" /><Tag
                 :value="
                   fieldPublicationState(field) === 'draft'
                     ? 'В черновике'
@@ -1389,8 +1264,7 @@ function archiveImpactedField() {
               <span v-if="field.requirement !== 'OPTIONAL'">{{
                 requirementLabel(field.requirement)
               }}</span
-              ><span v-if="field.policies.cmsRead.mode === 'VISIBLE'"
-                >Карточка пользователя</span
+              ><span v-if="field.policies.cmsRead.mode === 'VISIBLE'">Карточка пользователя</span
               ><span v-if="field.policies.audienceRead">Сегменты</span
               ><span v-if="field.policies.templateRead">Шаблоны</span
               ><span v-if="field.policies.aiRead">Функции с ИИ</span
@@ -1434,8 +1308,8 @@ function archiveImpactedField() {
       <div v-else class="empty card">
         <i class="pi pi-id-card" /><strong>Добавьте первое поле профиля</strong>
         <p>
-          Например, имя, город или уровень программы лояльности. Затем
-          опубликуйте структуру и передайте тестовый профиль.
+          Например, имя, город или уровень программы лояльности. Затем опубликуйте структуру и
+          передайте тестовый профиль.
         </p>
         <Button v-if="canManage" label="Добавить поле" @click="openCreate" />
         <RouterLink to="/profile-fields/integration" class="empty-help"
@@ -1449,9 +1323,7 @@ function archiveImpactedField() {
             <span class="tool-icon"><i class="pi pi-send" /></span>
             <span
               ><strong>Передача данных</strong
-              ><small
-                >Пошагово подключите сервер и отправьте тестовый профиль.</small
-              ></span
+              ><small>Пошагово подключите сервер и отправьте тестовый профиль.</small></span
             >
             <i class="pi pi-arrow-right" />
           </RouterLink>
@@ -1464,10 +1336,7 @@ function archiveImpactedField() {
             <span class="tool-icon ai"><i class="pi pi-sparkles" /></span>
             <span
               ><strong>Данные для ИИ</strong
-              ><small
-                >Проверьте, какие опубликованные поля доступны функциям с
-                ИИ.</small
-              ></span
+              ><small>Проверьте, какие опубликованные поля доступны функциям с ИИ.</small></span
             >
             <i class="pi pi-arrow-right" />
           </button>
@@ -1478,21 +1347,21 @@ function archiveImpactedField() {
         <div>
           <strong>{{
             !dirty
-              ? "Все изменения опубликованы"
+              ? 'Все изменения опубликованы'
               : errors.length
-                ? "Исправьте ошибки, чтобы опубликовать"
+                ? 'Исправьте ошибки, чтобы опубликовать'
                 : validation?.valid && !hasUnsavedDraftEdits
-                  ? "Черновик проверен — можно публиковать"
+                  ? 'Черновик проверен — можно публиковать'
                   : hasUnsavedDraftEdits
-                    ? "Сохраните изменения, чтобы продолжить"
-                    : "Проверьте черновик перед публикацией"
+                    ? 'Сохраните изменения, чтобы продолжить'
+                    : 'Проверьте черновик перед публикацией'
           }}</strong
           ><small>{{
             dirty
               ? validation?.changes.contractChanged
-                ? "Публикация создаст новую версию интеграционного контракта."
-                : "Настройки Retenive изменятся без новой версии контракта."
-              : "Текущая публикация уже используется Retenive."
+                ? 'Публикация создаст новую версию интеграционного контракта.'
+                : 'Настройки Retenive изменятся без новой версии контракта.'
+              : 'Текущая публикация уже используется Retenive.'
           }}</small>
         </div>
         <Button
@@ -1547,9 +1416,8 @@ function archiveImpactedField() {
     >
       <div class="guide">
         <Message severity="warn" :closable="false"
-          >В примере используются вымышленные значения. Данные профиля всегда
-          считаются пользовательскими данными, а не инструкциями для
-          ИИ.</Message
+          >В примере используются вымышленные значения. Данные профиля всегда считаются
+          пользовательскими данными, а не инструкциями для ИИ.</Message
         >
         <div class="form-grid">
           <label
@@ -1568,20 +1436,15 @@ function archiveImpactedField() {
           /></label>
         </div>
         <p>
-          Здесь показаны только опубликованные поля, для которых разрешено
-          использование функциями с ИИ. Изменение доступа начнёт действовать
-          после проверки и публикации.
+          Здесь показаны только опубликованные поля, для которых разрешено использование функциями с
+          ИИ. Изменение доступа начнёт действовать после проверки и публикации.
         </p>
         <div v-if="publishedAiFields.length" class="policy-list">
-          <span
-            v-for="field in publishedAiFields"
-            :key="field.definitionId ?? field.key"
+          <span v-for="field in publishedAiFields" :key="field.definitionId ?? field.key"
             >{{ field.label }} · {{ field.classification }}</span
           >
         </div>
-        <div v-else class="empty">
-          В опубликованной версии нет полей, доступных функциям с ИИ.
-        </div>
+        <div v-else class="empty">В опубликованной версии нет полей, доступных функциям с ИИ.</div>
         <CodeBlock
           title="Пример данных для ИИ"
           :language="aiFormat === 'STRUCTURED_JSON' ? 'JSON' : 'Текст'"
@@ -1657,15 +1520,11 @@ function archiveImpactedField() {
         <Skeleton height="100px" />
       </div>
       <template v-else-if="impact"
-        ><Message
-          :severity="impact.canArchive ? 'info' : 'warn'"
-          :closable="false"
-          >{{
-            impact.canArchive
-              ? "Поле можно архивировать после проверки связанных разделов."
-              : "Архивирование заблокировано активными зависимостями."
-          }}</Message
-        >
+        ><Message :severity="impact.canArchive ? 'info' : 'warn'" :closable="false">{{
+          impact.canArchive
+            ? 'Поле можно архивировать после проверки связанных разделов.'
+            : 'Архивирование заблокировано активными зависимостями.'
+        }}</Message>
         <div v-if="impact.dependencies.length" class="impact-list">
           <article
             v-for="dependency in impact.dependencies"
@@ -1683,14 +1542,13 @@ function archiveImpactedField() {
           <div>
             <strong>Связанных разделов нет</strong>
             <p>
-              Поле не используется в активных сегментах, шаблонах или других
-              настройках Retenive.
+              Поле не используется в активных сегментах, шаблонах или других настройках Retenive.
             </p>
           </div>
         </div>
         <Message severity="warn" :closable="false"
-          >Архивирование не удаляет старые данные. Поле перестанет появляться в
-          новых профилях после публикации изменений.</Message
+          >Архивирование не удаляет старые данные. Поле перестанет появляться в новых профилях после
+          публикации изменений.</Message
         ><Button
           v-if="canManage && impactField?.lifecycle !== 'ARCHIVED'"
           label="Добавить архивирование в черновик"
@@ -1739,7 +1597,7 @@ function archiveImpactedField() {
   background: transparent;
   cursor: pointer;
 }
-.history-tabs button[aria-selected="true"] {
+.history-tabs button[aria-selected='true'] {
   color: var(--p-primary-contrast-color);
   background: var(--p-primary-color);
 }
@@ -2159,11 +2017,7 @@ function archiveImpactedField() {
     box-shadow 0.16s ease;
 }
 .field-card:hover {
-  border-color: color-mix(
-    in srgb,
-    var(--status-accent) 26%,
-    var(--border-default)
-  );
+  border-color: color-mix(in srgb, var(--status-accent) 26%, var(--border-default));
   box-shadow: var(--shadow-raised);
 }
 .field-card.deprecated {

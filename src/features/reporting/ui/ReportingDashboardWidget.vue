@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import Button from "primevue/button";
-import type { ReportingRunCoordinator } from "../model/reporting-run-coordinator";
-import type {
-  DashboardWidget,
-  ReportingQueryResult,
-} from "../model/reporting-types";
-import { reportingRepository } from "../api/reporting-repository";
-import ReportingChartRenderer from "./ReportingChartRenderer.vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import type { ReportingRunCoordinator } from '../model/reporting-run-coordinator';
+import type { DashboardWidget, ReportingQueryResult } from '../model/reporting-types';
+import { reportingRepository } from '../api/reporting-repository';
+import ReportingChartRenderer from './ReportingChartRenderer.vue';
 
 const props = defineProps<{
   projectId: string;
@@ -24,7 +21,7 @@ const props = defineProps<{
 const root = ref<HTMLElement | null>(null);
 const result = ref<ReportingQueryResult | null>(null);
 const loading = ref(false);
-const error = ref("");
+const error = ref('');
 const visible = ref(!props.deferred);
 let observer: IntersectionObserver | null = null;
 
@@ -39,22 +36,16 @@ const activation = computed(() => ({
 async function load(): Promise<void> {
   if (!visible.value) return;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const outcome = await props.coordinator.schedule(
-      (signal) =>
-        reportingRepository.runDashboardWidget(
-          props.projectId,
-          activation.value,
-          signal,
-        ),
+      (signal) => reportingRepository.runDashboardWidget(props.projectId, activation.value, signal),
       `${props.dashboardRevisionId}:${props.widget.queryRevisionId}:${props.periodDays}`,
     );
-    if (outcome.status === "committed") result.value = outcome.value;
+    if (outcome.status === 'committed') result.value = outcome.value;
   } catch (cause) {
-    if (!(cause instanceof DOMException && cause.name === "AbortError")) {
-      error.value =
-        cause instanceof Error ? cause.message : "Виджет не загрузился";
+    if (!(cause instanceof DOMException && cause.name === 'AbortError')) {
+      error.value = cause instanceof Error ? cause.message : 'Виджет не загрузился';
     }
   } finally {
     loading.value = false;
@@ -67,7 +58,7 @@ watch(
 );
 
 onMounted(() => {
-  if (!props.deferred || typeof IntersectionObserver === "undefined") {
+  if (!props.deferred || typeof IntersectionObserver === 'undefined') {
     visible.value = true;
     void load();
     return;
@@ -80,7 +71,7 @@ onMounted(() => {
       observer = null;
       void load();
     },
-    { rootMargin: "240px" },
+    { rootMargin: '240px' },
   );
   if (root.value) observer.observe(root.value);
 });

@@ -5,33 +5,33 @@ import type {
   EventQueryPolicyStateResponseDto,
   PreviewEventQueryDto,
   StartCaseVerificationDto,
-} from "@/shared/api/generated/models";
-import type { EventQueryRepository } from "./event-query-repository";
+} from '@/shared/api/generated/models';
+import type { EventQueryRepository } from './event-query-repository';
 
-const policyRevisionId = "event-query-policy-demo-1";
+const policyRevisionId = 'event-query-policy-demo-1';
 const safeFields = [
   {
-    path: "amount",
-    semanticType: "MONEY" as const,
-    sensitivity: "PUBLIC_TO_END_USER" as const,
-    operations: ["PROJECT", "SUM"] as const,
-    currencyPath: "currency",
+    path: 'amount',
+    semanticType: 'MONEY' as const,
+    sensitivity: 'PUBLIC_TO_END_USER' as const,
+    operations: ['PROJECT', 'SUM'] as const,
+    currencyPath: 'currency',
   },
   {
-    path: "currency",
-    semanticType: "CURRENCY" as const,
-    sensitivity: "PUBLIC_TO_END_USER" as const,
-    operations: ["PROJECT", "GROUP_BY"] as const,
+    path: 'currency',
+    semanticType: 'CURRENCY' as const,
+    sensitivity: 'PUBLIC_TO_END_USER' as const,
+    operations: ['PROJECT', 'GROUP_BY'] as const,
   },
 ];
 const queryableEvents: EventQueryPolicyItemDto[] = [
-  ["registration_completed", "Подтверждает завершение регистрации"],
-  ["deposit_failed", "Показывает неуспешную попытку пополнения"],
-  ["email_confirmation_required", "Показывает необходимость подтвердить почту"],
+  ['registration_completed', 'Подтверждает завершение регистрации'],
+  ['deposit_failed', 'Показывает неуспешную попытку пополнения'],
+  ['email_confirmation_required', 'Показывает необходимость подтвердить почту'],
 ].map(([stableCode, descriptionForAI]) => ({
   stableCode: stableCode!,
   descriptionForAI: descriptionForAI!,
-  allowedModes: ["SUMMARY", "AGGREGATE", "LATEST"],
+  allowedModes: ['SUMMARY', 'AGGREGATE', 'LATEST'],
   maxInteractiveLookbackHours: 744,
   maxVerificationLookbackHours: 2160,
   safeFields: safeFields.map((field) => ({
@@ -72,13 +72,8 @@ function configuration(item: EventQueryPolicyItemDto) {
   });
 }
 
-function itemState(
-  definitionKeyId: string,
-): EventQueryPolicyItemStateResponseDto {
-  const fallbackIndex = Math.max(
-    Number(definitionKeyId.replace("demo-event-", "")) - 1,
-    0,
-  );
+function itemState(definitionKeyId: string): EventQueryPolicyItemStateResponseDto {
+  const fallbackIndex = Math.max(Number(definitionKeyId.replace('demo-event-', '')) - 1, 0);
   const fallbackItem = queryableEvents[fallbackIndex] ?? queryableEvents[0]!;
   const settings = itemSettings.get(definitionKeyId) ?? {
     enabled: true,
@@ -97,13 +92,10 @@ function itemState(
     diagnostics: [],
     effective: {
       internalAi: masterEnabled && settings.enabled,
-      endUserConversation:
-        masterEnabled &&
-        settings.enabled &&
-        settings.endUserConversationEnabled,
+      endUserConversation: masterEnabled && settings.enabled && settings.endUserConversationEnabled,
     },
     eventCode: settings.item.stableCode,
-    lifecycle: "ACTIVE",
+    lifecycle: 'ACTIVE',
     lifecycleRestrictions: {
       canApply: true,
       canEnable: true,
@@ -125,13 +117,13 @@ function result(eventCode: string) {
   return {
     complete: true,
     excludedCount: 0,
-    limitations: ["Demo mode: результат сформирован из безопасных fixtures."],
+    limitations: ['Demo mode: результат сформирован из безопасных fixtures.'],
     matchedCount: 1,
     serializedBytes: 96,
     estimatedAddedInputTokens: 24,
     policyRevisionId,
     provenance: {
-      source: "EVENT_LOG" as const,
+      source: 'EVENT_LOG' as const,
       policyRevisionId,
       snapshotReceivedAt: now,
     },
@@ -140,7 +132,7 @@ function result(eventCode: string) {
       to: now,
     },
     snapshotReceivedAt: now,
-    status: "COMPLETED" as const,
+    status: 'COMPLETED' as const,
     summaries: [
       {
         eventCode,
@@ -158,12 +150,12 @@ function verificationEstimate(input: EstimateCaseVerificationDto) {
   return {
     complete: true,
     estimatedAddedInputTokens: 24,
-    evaluation: "VERIFIED_RESOLVED" as const,
+    evaluation: 'VERIFIED_RESOLVED' as const,
     policyRevisionId,
     predicate: structuredClone(input.predicate),
     queries: [query],
     results: {
-      [query.key]: result(query.query.eventCodes[0] ?? "event"),
+      [query.key]: result(query.query.eventCodes[0] ?? 'event'),
     },
     snapshotReceivedAt: new Date().toISOString(),
   };
@@ -174,11 +166,11 @@ function verificationRun(input: StartCaseVerificationDto, runId: string) {
   return {
     ...estimate,
     caseChanged: true,
-    caseStatus: "RESOLVED",
+    caseStatus: 'RESOLVED',
     caseVersion: 2,
     id: runId,
     planId: `plan-${runId}`,
-    status: "COMPLETED" as const,
+    status: 'COMPLETED' as const,
   };
 }
 
@@ -196,13 +188,13 @@ export const mockEventQueryRepository: EventQueryRepository = {
   },
 
   async listItems(_projectId, params) {
-    const query = params.query?.toLocaleLowerCase("ru-RU");
+    const query = params.query?.toLocaleLowerCase('ru-RU');
     const items = queryableEvents
       .filter(
         (item) =>
           !query ||
-          item.stableCode.toLocaleLowerCase("ru-RU").includes(query) ||
-          item.descriptionForAI.toLocaleLowerCase("ru-RU").includes(query),
+          item.stableCode.toLocaleLowerCase('ru-RU').includes(query) ||
+          item.descriptionForAI.toLocaleLowerCase('ru-RU').includes(query),
       )
       .map((item) => {
         const sourceIndex = queryableEvents.findIndex(
@@ -211,14 +203,14 @@ export const mockEventQueryRepository: EventQueryRepository = {
         const definitionKeyId = `demo-event-${sourceIndex + 1}`;
         const current = itemState(definitionKeyId);
         const queryable =
-          params.audience === "END_USER_CONVERSATION"
+          params.audience === 'END_USER_CONVERSATION'
             ? current.effective.endUserConversation
             : current.effective.internalAi;
         return {
           definitionKeyId,
           eventCode: current.eventCode,
           eventName: item.descriptionForAI,
-          lifecycle: "ACTIVE" as const,
+          lifecycle: 'ACTIVE' as const,
           configuration: current.configured.configuration,
           effective: current.effective,
           queryable,
@@ -254,33 +246,30 @@ export const mockEventQueryRepository: EventQueryRepository = {
         maxVerificationLookbackHours: input.maxVerificationLookbackHours,
       },
     });
-    itemTokenVersions.set(
-      definitionKeyId,
-      (itemTokenVersions.get(definitionKeyId) ?? 1) + 1,
-    );
+    itemTokenVersions.set(definitionKeyId, (itemTokenVersions.get(definitionKeyId) ?? 1) + 1);
     return itemState(definitionKeyId);
   },
 
   async preview(_projectId: string, input: PreviewEventQueryDto) {
-    return result(input.query.eventCodes[0] ?? "event");
+    return result(input.query.eventCodes[0] ?? 'event');
   },
 
   async listRequests(_projectId, params) {
     return {
       items: [
         {
-          id: "demo-event-query-request-1",
+          id: 'demo-event-query-request-1',
           createdAt: params.to,
-          endUserId: params.endUserId ?? "00000000-0000-4000-8000-000000000001",
-          origin: "INTERACTIVE_TEXT",
-          audience: "END_USER_CONVERSATION",
-          mode: "SUMMARY",
+          endUserId: params.endUserId ?? '00000000-0000-4000-8000-000000000001',
+          origin: 'INTERACTIVE_TEXT',
+          audience: 'END_USER_CONVERSATION',
+          mode: 'SUMMARY',
           eventCodes: [queryableEvents[0]!.stableCode],
-          queryShape: { mode: "SUMMARY", eventCodeCount: 1 },
+          queryShape: { mode: 'SUMMARY', eventCodeCount: 1 },
           policyRevisionId: policyRevisionId as never,
           range: { from: params.from, to: params.to },
           snapshotReceivedAt: params.to,
-          status: "COMPLETED",
+          status: 'COMPLETED',
           rejectionCode: null,
           scannedRows: 1,
           returnedRows: 1,
@@ -300,7 +289,7 @@ export const mockEventQueryRepository: EventQueryRepository = {
             totalTokens: 840,
             inputTokens: 710,
             outputTokens: 130,
-            estimatedCostUsd: "0.0042" as never,
+            estimatedCostUsd: '0.0042' as never,
             billedCostUsd: null,
           },
         },
@@ -328,13 +317,9 @@ export const mockEventQueryRepository: EventQueryRepository = {
     return structuredClone(run);
   },
 
-  async getCaseVerification(
-    _projectId: string,
-    _caseId: string,
-    runId: string,
-  ) {
+  async getCaseVerification(_projectId: string, _caseId: string, runId: string) {
     const run = runs.get(runId);
-    if (!run) throw new Error("Demo verification run not found");
+    if (!run) throw new Error('Demo verification run not found');
     return structuredClone(run);
   },
 };

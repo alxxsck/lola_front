@@ -1,21 +1,19 @@
 import type {
   AttributeContractDraftFieldDto,
   AttributeContractIssueResponseDto,
-} from "@/shared/api/generated/models";
-import type { ContractDraftIssue } from "./contract-domain";
+} from '@/shared/api/generated/models';
+import type { ContractDraftIssue } from './contract-domain';
 
-export type ContractIssueInput =
-  | ContractDraftIssue
-  | AttributeContractIssueResponseDto;
+export type ContractIssueInput = ContractDraftIssue | AttributeContractIssueResponseDto;
 
 export interface ContractIssuePresentation {
   key: string;
   code: string;
-  severity: "error" | "warning";
+  severity: 'error' | 'warning';
   title: string;
   detail: string;
   fieldIdentity?: string;
-  actionLabel?: "Исправить поле" | "Проверить поле";
+  actionLabel?: 'Исправить поле' | 'Проверить поле';
 }
 
 type IssueCopy = {
@@ -29,84 +27,75 @@ const issueCopy: Record<string, CopyBuilder> = {
   PURPOSE_REQUIRED: (field) => ({
     title: `Укажите назначение поля «${field}».`,
     detail:
-      "Откройте поле и заполните «Для чего нужно это поле?». Это обязательно для персональных, чувствительных и доступных другим разделам данных.",
+      'Откройте поле и заполните «Для чего нужно это поле?». Это обязательно для персональных, чувствительных и доступных другим разделам данных.',
   }),
   ATTRIBUTE_REQUIREMENT_CHANGED: (field) => ({
     title: `Изменилась обязательность поля «${field}».`,
     detail:
-      "Проверьте, сможет ли продукт передавать поле в новом режиме, затем повторите проверку.",
+      'Проверьте, сможет ли продукт передавать поле в новом режиме, затем повторите проверку.',
   }),
   ATTRIBUTE_REQUIRED_WARN_ADDED: (field) => ({
     title: `Поле стало желательным: «${field}».`,
     detail:
-      "Профиль будет принят без значения, но Retenive покажет предупреждение. Убедитесь, что продукт начнёт передавать поле.",
+      'Профиль будет принят без значения, но Retenive покажет предупреждение. Убедитесь, что продукт начнёт передавать поле.',
   }),
   ATTRIBUTE_REQUIRED_ENFORCED_ADDED: (field) => ({
     title: `Поле стало обязательным: «${field}».`,
     detail:
-      "Профили без значения будут отклоняться. Сначала обновите передачу данных, затем публикуйте изменения.",
+      'Профили без значения будут отклоняться. Сначала обновите передачу данных, затем публикуйте изменения.',
   }),
   ATTRIBUTE_EXPOSURE_BROADENED: (field) => ({
     title: `Поле стало доступно в новых разделах: «${field}».`,
     detail:
-      "Проверьте, каким разделам действительно нужны эти данные и соответствует ли им категория поля.",
+      'Проверьте, каким разделам действительно нужны эти данные и соответствует ли им категория поля.',
   }),
   ATTRIBUTE_CONSTRAINTS_CHANGED: (field) => ({
     title: `Изменились допустимые значения поля «${field}».`,
-    detail:
-      "Проверьте, что уже передаваемые данные соответствуют новым ограничениям.",
+    detail: 'Проверьте, что уже передаваемые данные соответствуют новым ограничениям.',
   }),
   ATTRIBUTE_LIFECYCLE_CHANGED: (field) => ({
     title: `Изменился статус поля «${field}».`,
-    detail:
-      "Проверьте связанные настройки и убедитесь, что поле больше нигде не требуется.",
+    detail: 'Проверьте связанные настройки и убедитесь, что поле больше нигде не требуется.',
   }),
   INVALID_KEY: (field) => ({
     title: `Исправьте ключ поля «${field}».`,
     detail:
-      "Ключ должен начинаться со строчной латинской буквы и содержать только буквы, цифры или знак подчёркивания.",
+      'Ключ должен начинаться со строчной латинской буквы и содержать только буквы, цифры или знак подчёркивания.',
   }),
   LABEL_REQUIRED: () => ({
-    title: "Укажите название поля.",
-    detail: "Откройте поле и заполните «Название поля».",
+    title: 'Укажите название поля.',
+    detail: 'Откройте поле и заполните «Название поля».',
   }),
   DUPLICATE_KEY: (field) => ({
     title: `Ключ поля «${field}» уже используется.`,
-    detail: "Откройте поле и задайте уникальный ключ.",
+    detail: 'Откройте поле и задайте уникальный ключ.',
   }),
   SENSITIVE_CLIENT_READ: (field) => ({
     title: `Чувствительное поле «${field}» доступно во фронтенде.`,
     detail:
-      "Отключите передачу во фронтенд или отдельно проверьте, что доступ к этим данным безопасен.",
+      'Отключите передачу во фронтенд или отдельно проверьте, что доступ к этим данным безопасен.',
   }),
   DEPRECATION_PLAN_REQUIRED: (field) => ({
     title: `Для поля «${field}» не задан план отключения.`,
-    detail: "Укажите поле-замену или дату завершения использования.",
+    detail: 'Укажите поле-замену или дату завершения использования.',
   }),
 };
 
 function canonicalCode(code: string) {
-  return code === "ATTRIBUTE_PURPOSE_REQUIRED" ? "PURPOSE_REQUIRED" : code;
+  return code === 'ATTRIBUTE_PURPOSE_REQUIRED' ? 'PURPOSE_REQUIRED' : code;
 }
 
-function issueSeverity(issue: ContractIssueInput): "error" | "warning" {
-  return issue.severity === "ERROR" || issue.severity === "error"
-    ? "error"
-    : "warning";
+function issueSeverity(issue: ContractIssueInput): 'error' | 'warning' {
+  return issue.severity === 'ERROR' || issue.severity === 'error' ? 'error' : 'warning';
 }
 
 function issuePath(issue: ContractIssueInput) {
-  return "path" in issue ? issue.path : issue.field;
+  return 'path' in issue ? issue.path : issue.field;
 }
 
-function fieldForIssue(
-  issue: ContractIssueInput,
-  fields: AttributeContractDraftFieldDto[],
-) {
-  if ("definitionId" in issue && issue.definitionId) {
-    const byId = fields.find(
-      (field) => field.definitionId === issue.definitionId,
-    );
+function fieldForIssue(issue: ContractIssueInput, fields: AttributeContractDraftFieldDto[]) {
+  if ('definitionId' in issue && issue.definitionId) {
+    const byId = fields.find((field) => field.definitionId === issue.definitionId);
     if (byId) return byId;
   }
 
@@ -115,8 +104,7 @@ function fieldForIssue(
   if (index !== undefined) return fields[Number(index)];
   if (!path) return undefined;
   return fields.find(
-    (field) =>
-      field.definitionId === path || field.key === path || field.label === path,
+    (field) => field.definitionId === path || field.key === path || field.label === path,
   );
 }
 
@@ -124,7 +112,7 @@ function fallbackCopy(fieldName: string | undefined, code: string): IssueCopy {
   return {
     title: fieldName
       ? `Проверьте настройки поля «${fieldName}».`
-      : "Проверка структуры полей не пройдена.",
+      : 'Проверка структуры полей не пройдена.',
     detail: fieldName
       ? `Откройте поле, проверьте обязательные настройки и повторите проверку. Код: ${code}.`
       : `Повторите проверку. Если ошибка останется, передайте поддержке код ${code}.`,
@@ -141,20 +129,17 @@ export function presentContractIssues(
   >();
 
   for (const issue of issues) {
-    const fromBackend = "compatibility" in issue;
+    const fromBackend = 'compatibility' in issue;
     const code = canonicalCode(issue.code);
     const field = fieldForIssue(issue, fields);
-    const backendDefinitionId =
-      "definitionId" in issue ? issue.definitionId : undefined;
-    const fieldName =
-      field?.label || field?.key || backendDefinitionId || issuePath(issue);
-    const fieldIdentity =
-      field?.definitionId || field?.key || backendDefinitionId;
+    const backendDefinitionId = 'definitionId' in issue ? issue.definitionId : undefined;
+    const fieldName = field?.label || field?.key || backendDefinitionId || issuePath(issue);
+    const fieldIdentity = field?.definitionId || field?.key || backendDefinitionId;
     const severity = issueSeverity(issue);
-    const key = `${code}:${fieldIdentity || issuePath(issue) || "contract"}`;
-    const baseCopy = issueCopy[code]?.(fieldName || "Без названия") ??
-      fallbackCopy(fieldName, issue.code);
-    const backendMessage = fromBackend ? issue.message.trim() : "";
+    const key = `${code}:${fieldIdentity || issuePath(issue) || 'contract'}`;
+    const baseCopy =
+      issueCopy[code]?.(fieldName || 'Без названия') ?? fallbackCopy(fieldName, issue.code);
+    const backendMessage = fromBackend ? issue.message.trim() : '';
     const copy = {
       ...baseCopy,
       detail: backendMessage || baseCopy.detail,
@@ -167,8 +152,7 @@ export function presentContractIssues(
       ...(fieldIdentity
         ? {
             fieldIdentity,
-            actionLabel:
-              severity === "error" ? "Исправить поле" : "Проверить поле",
+            actionLabel: severity === 'error' ? 'Исправить поле' : 'Проверить поле',
           }
         : {}),
     };
@@ -176,11 +160,9 @@ export function presentContractIssues(
     const existing = result.get(key);
     const shouldReplace =
       !existing ||
-      (existing.presentation.severity === "warning" &&
-        (severity === "error" || fromBackend || !existing.fromBackend)) ||
-      (existing.presentation.severity === severity &&
-        fromBackend &&
-        !existing.fromBackend);
+      (existing.presentation.severity === 'warning' &&
+        (severity === 'error' || fromBackend || !existing.fromBackend)) ||
+      (existing.presentation.severity === severity && fromBackend && !existing.fromBackend);
     if (shouldReplace) result.set(key, { presentation, fromBackend });
   }
 

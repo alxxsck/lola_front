@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import Message from "primevue/message";
-import Tag from "primevue/tag";
+import { ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Message from 'primevue/message';
+import Tag from 'primevue/tag';
 import {
   eventCatalogRepository,
   type EventCatalogDefinition,
   type EventDefinitionRevision,
-} from "@/shared/api/repository/event-catalog";
+} from '@/shared/api/repository/event-catalog';
 
 const props = defineProps<{
   projectId: string;
@@ -19,7 +19,7 @@ const props = defineProps<{
 const visible = ref(false);
 const loading = ref(false);
 const loadingMore = ref(false);
-const error = ref("");
+const error = ref('');
 const revisions = ref<EventDefinitionRevision[]>([]);
 const nextCursor = ref<string | null>(null);
 const detail = ref<EventDefinitionRevision | null>(null);
@@ -28,12 +28,7 @@ let pageRequestId = 0;
 let detailRequestId = 0;
 
 watch(
-  () =>
-    [
-      props.projectId,
-      props.event.definitionKeyId,
-      props.initialRevisionId,
-    ] as const,
+  () => [props.projectId, props.event.definitionKeyId, props.initialRevisionId] as const,
   async ([, , revisionId]) => {
     reset();
     if (revisionId) await openLinkedRevision(revisionId);
@@ -48,7 +43,7 @@ function reset() {
   visible.value = false;
   loading.value = false;
   loadingMore.value = false;
-  error.value = "";
+  error.value = '';
   revisions.value = [];
   nextCursor.value = null;
   detail.value = null;
@@ -69,32 +64,18 @@ async function openLinkedRevision(revisionId: string) {
   const definitionKeyId = props.event.definitionKeyId;
   const requestGeneration = generation;
   const requestId = ++detailRequestId;
-  error.value = "";
+  error.value = '';
   try {
-    const loaded = await eventCatalogRepository.getRevision(
-      projectId,
-      definitionKeyId,
-      revisionId,
-    );
-    if (
-      !isCurrent(projectId, definitionKeyId, requestGeneration) ||
-      requestId !== detailRequestId
-    )
+    const loaded = await eventCatalogRepository.getRevision(projectId, definitionKeyId, revisionId);
+    if (!isCurrent(projectId, definitionKeyId, requestGeneration) || requestId !== detailRequestId)
       return;
     detail.value = loaded;
   } catch (cause) {
-    if (
-      isCurrent(projectId, definitionKeyId, requestGeneration) &&
-      requestId === detailRequestId
-    ) {
-      error.value =
-        cause instanceof Error ? cause.message : "Не удалось загрузить версию";
+    if (isCurrent(projectId, definitionKeyId, requestGeneration) && requestId === detailRequestId) {
+      error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить версию';
     }
   } finally {
-    if (
-      isCurrent(projectId, definitionKeyId, requestGeneration) &&
-      requestId === detailRequestId
-    )
+    if (isCurrent(projectId, definitionKeyId, requestGeneration) && requestId === detailRequestId)
       loading.value = false;
   }
 }
@@ -106,38 +87,22 @@ async function loadPage(cursor?: string) {
   const requestId = ++pageRequestId;
   if (cursor) loadingMore.value = true;
   else loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
-    const page = await eventCatalogRepository.listRevisions(
-      projectId,
-      definitionKeyId,
-      {
-        limit: 25,
-        ...(cursor ? { cursor } : {}),
-      },
-    );
-    if (
-      !isCurrent(projectId, definitionKeyId, requestGeneration) ||
-      requestId !== pageRequestId
-    )
+    const page = await eventCatalogRepository.listRevisions(projectId, definitionKeyId, {
+      limit: 25,
+      ...(cursor ? { cursor } : {}),
+    });
+    if (!isCurrent(projectId, definitionKeyId, requestGeneration) || requestId !== pageRequestId)
       return;
     revisions.value.push(...page.items);
     nextCursor.value = page.nextCursor;
   } catch (cause) {
-    if (
-      !isCurrent(projectId, definitionKeyId, requestGeneration) ||
-      requestId !== pageRequestId
-    )
+    if (!isCurrent(projectId, definitionKeyId, requestGeneration) || requestId !== pageRequestId)
       return;
-    error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить историю версий";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить историю версий';
   } finally {
-    if (
-      isCurrent(projectId, definitionKeyId, requestGeneration) &&
-      requestId === pageRequestId
-    ) {
+    if (isCurrent(projectId, definitionKeyId, requestGeneration) && requestId === pageRequestId) {
       loading.value = false;
       loadingMore.value = false;
     }
@@ -149,35 +114,24 @@ async function openDetail(revision: EventDefinitionRevision) {
   const definitionKeyId = props.event.definitionKeyId;
   const requestGeneration = generation;
   const requestId = ++detailRequestId;
-  error.value = "";
+  error.value = '';
   try {
     const loaded = await eventCatalogRepository.getRevision(
       projectId,
       definitionKeyId,
       revision.id,
     );
-    if (
-      !isCurrent(projectId, definitionKeyId, requestGeneration) ||
-      requestId !== detailRequestId
-    )
+    if (!isCurrent(projectId, definitionKeyId, requestGeneration) || requestId !== detailRequestId)
       return;
     detail.value = loaded;
   } catch (cause) {
-    if (
-      !isCurrent(projectId, definitionKeyId, requestGeneration) ||
-      requestId !== detailRequestId
-    )
+    if (!isCurrent(projectId, definitionKeyId, requestGeneration) || requestId !== detailRequestId)
       return;
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось загрузить версию";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить версию';
   }
 }
 
-function isCurrent(
-  projectId: string,
-  definitionKeyId: string,
-  requestGeneration: number,
-) {
+function isCurrent(projectId: string, definitionKeyId: string, requestGeneration: number) {
   return (
     requestGeneration === generation &&
     props.projectId === projectId &&
@@ -185,22 +139,16 @@ function isCurrent(
   );
 }
 
-function compatibilitySeverity(
-  value: EventDefinitionRevision["compatibility"],
-) {
-  return value === "CURRENT"
-    ? "success"
-    : value === "PINNED"
-      ? "warn"
-      : "secondary";
+function compatibilitySeverity(value: EventDefinitionRevision['compatibility']) {
+  return value === 'CURRENT' ? 'success' : value === 'PINNED' ? 'warn' : 'secondary';
 }
 
-function compatibilityLabel(value: EventDefinitionRevision["compatibility"]) {
-  return value === "CURRENT"
-    ? "Текущая"
-    : value === "PINNED"
-      ? "Используется публикациями"
-      : "Заменена";
+function compatibilityLabel(value: EventDefinitionRevision['compatibility']) {
+  return value === 'CURRENT'
+    ? 'Текущая'
+    : value === 'PINNED'
+      ? 'Используется публикациями'
+      : 'Заменена';
 }
 </script>
 
@@ -221,12 +169,9 @@ function compatibilityLabel(value: EventDefinitionRevision["compatibility"]) {
   >
     <div class="event-history-meta">
       <span>Постоянный ключ</span><code>{{ event.definitionKeyId }}</code>
-      <span>Текущая версия</span
-      ><code>{{ event.currentSchema.revisionId }}</code>
+      <span>Текущая версия</span><code>{{ event.currentSchema.revisionId }}</code>
     </div>
-    <Message v-if="error" severity="error" :closable="false">{{
-      error
-    }}</Message>
+    <Message v-if="error" severity="error" :closable="false">{{ error }}</Message>
     <p v-if="loading">Загружаем историю…</p>
     <div v-else class="event-revisions">
       <button
@@ -242,12 +187,8 @@ function compatibilityLabel(value: EventDefinitionRevision["compatibility"]) {
           :value="compatibilityLabel(revision.compatibility)"
           :severity="compatibilitySeverity(revision.compatibility)"
         />
-        <span
-          >{{ revision.pinnedScenarioRevisionCount }} публикации сценариев</span
-        >
-        <small>{{
-          new Date(revision.publishedAt).toLocaleString("ru-RU")
-        }}</small>
+        <span>{{ revision.pinnedScenarioRevisionCount }} публикации сценариев</span>
+        <small>{{ new Date(revision.publishedAt).toLocaleString('ru-RU') }}</small>
       </button>
     </div>
     <Button
@@ -269,8 +210,7 @@ function compatibilityLabel(value: EventDefinitionRevision["compatibility"]) {
       </header>
       <p>
         Эту схему фиксируют
-        {{ detail.pinnedScenarioRevisionCount }} опубликованных ревизий
-        сценариев.
+        {{ detail.pinnedScenarioRevisionCount }} опубликованных ревизий сценариев.
       </p>
       <pre>{{ JSON.stringify(detail.payloadSchema, null, 2) }}</pre>
     </section>

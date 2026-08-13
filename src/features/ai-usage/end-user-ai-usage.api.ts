@@ -1,42 +1,37 @@
-import { endUserAiUsageReport } from "@/shared/api/generated/retenive-backend";
-import { isMockMode } from "@/shared/config/data-mode";
-import { parseDecimalString } from "@/shared/lib/decimal-money";
+import { endUserAiUsageReport } from '@/shared/api/generated/retenive-backend';
+import { isMockMode } from '@/shared/config/data-mode';
+import { parseDecimalString } from '@/shared/lib/decimal-money';
 import {
   buildDemoTextToSpeechPricingContext,
   parseAiUsageEventQueryBreakdown,
   parseTextToSpeechPricing,
-} from "./ai-usage.api";
-import { AI_USAGE_CATEGORIES, type AiUsageRangeKey } from "./ai-usage.model";
+} from './ai-usage.api';
+import { AI_USAGE_CATEGORIES, type AiUsageRangeKey } from './ai-usage.model';
 import type {
   EndUserAiUsageCategory,
   EndUserAiUsageCategoryRow,
   EndUserAiUsageReport,
   EndUserAiUsageSummary,
   EndUserAiUsageTotals,
-} from "./end-user-ai-usage.model";
+} from './end-user-ai-usage.model';
 
 const categories = new Set<EndUserAiUsageCategory>(AI_USAGE_CATEGORIES);
-const windows = new Set<AiUsageRangeKey>(["today", "7d", "30d", "all"]);
+const windows = new Set<AiUsageRangeKey>(['today', '7d', '30d', 'all']);
 
 function record(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === "object" && !Array.isArray(value)
+  return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : undefined;
 }
 
 function integer(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0
-    ? value
-    : undefined;
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
 }
 
 function measurementDecimal(value: unknown): number | undefined {
-  if (
-    typeof value === "string" &&
-    (value.length > 64 || !/^\d+(?:\.\d+)?$/.test(value))
-  )
+  if (typeof value === 'string' && (value.length > 64 || !/^\d+(?:\.\d+)?$/.test(value)))
     return undefined;
-  if (typeof value !== "string" && typeof value !== "number") return undefined;
+  if (typeof value !== 'string' && typeof value !== 'number') return undefined;
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 }
@@ -82,9 +77,9 @@ function parseCategory(value: unknown): EndUserAiUsageCategoryRow | undefined {
   if (
     !source ||
     !summary ||
-    typeof source.category !== "string" ||
+    typeof source.category !== 'string' ||
     !categories.has(source.category as EndUserAiUsageCategory) ||
-    source.currency !== "usd"
+    source.currency !== 'usd'
   )
     return undefined;
   return {
@@ -105,12 +100,12 @@ export function parseEndUserAiUsageReport(
     !source ||
     source.projectId !== projectId ||
     source.endUserId !== endUserId ||
-    typeof source.window !== "string" ||
+    typeof source.window !== 'string' ||
     !windows.has(source.window as AiUsageRangeKey) ||
     !range ||
-    (range.from !== null && typeof range.from !== "string") ||
-    typeof range.to !== "string" ||
-    typeof range.timezone !== "string" ||
+    (range.from !== null && typeof range.from !== 'string') ||
+    typeof range.to !== 'string' ||
+    typeof range.timezone !== 'string' ||
     !Array.isArray(source.categories) ||
     source.categories.length > categories.size
   )
@@ -120,15 +115,8 @@ export function parseEndUserAiUsageReport(
   const providers = record(source.providers);
   const xai = record(providers?.xai);
   const eventQuery = parseAiUsageEventQueryBreakdown(xai?.eventQuery);
-  const textToSpeechPricing = parseTextToSpeechPricing(
-    source.textToSpeechPricing,
-  );
-  if (
-    !totals ||
-    !eventQuery ||
-    parsedCategories.some((item) => !item) ||
-    !textToSpeechPricing
-  )
+  const textToSpeechPricing = parseTextToSpeechPricing(source.textToSpeechPricing);
+  if (!totals || !eventQuery || parsedCategories.some((item) => !item) || !textToSpeechPricing)
     return undefined;
   return {
     projectId,
@@ -151,9 +139,7 @@ export function buildEndUserAiUsageDemoReport(
   endUserId: string,
   window: AiUsageRangeKey,
 ): EndUserAiUsageReport {
-  const summary = (
-    values: Partial<EndUserAiUsageSummary>,
-  ): EndUserAiUsageSummary => ({
+  const summary = (values: Partial<EndUserAiUsageSummary>): EndUserAiUsageSummary => ({
     records: 0,
     totalTokens: 0,
     inputTokens: 0,
@@ -161,57 +147,57 @@ export function buildEndUserAiUsageDemoReport(
     inputCharacters: 0,
     providerBilledUnits: 0,
     durationSeconds: 0,
-    providerReportedCost: "0",
-    estimatedFallbackCost: "0",
-    effectiveCost: "0",
+    providerReportedCost: '0',
+    estimatedFallbackCost: '0',
+    effectiveCost: '0',
     ...values,
   });
   const categories: EndUserAiUsageCategoryRow[] = [
     {
-      category: "CHAT",
-      currency: "usd",
+      category: 'CHAT',
+      currency: 'usd',
       ...summary({
         records: 18,
         totalTokens: 34_200,
         inputTokens: 27_500,
         outputTokens: 6_700,
-        providerReportedCost: "0.14",
-        effectiveCost: "0.14",
+        providerReportedCost: '0.14',
+        effectiveCost: '0.14',
       }),
     },
     {
-      category: "VOICE",
-      currency: "usd",
+      category: 'VOICE',
+      currency: 'usd',
       ...summary({
         records: 7,
         totalTokens: 8_100,
         inputTokens: 5_900,
         outputTokens: 2_200,
-        estimatedFallbackCost: "0.06",
-        effectiveCost: "0.06",
+        estimatedFallbackCost: '0.06',
+        effectiveCost: '0.06',
         durationSeconds: 146,
       }),
     },
     {
-      category: "SPEECH",
-      currency: "usd",
+      category: 'SPEECH',
+      currency: 'usd',
       ...summary({
         records: 4,
         inputCharacters: 1_980,
-        estimatedFallbackCost: "0.0297",
-        effectiveCost: "0.0297",
+        estimatedFallbackCost: '0.0297',
+        effectiveCost: '0.0297',
       }),
     },
     {
-      category: "AI_REVIEW",
-      currency: "usd",
+      category: 'AI_REVIEW',
+      currency: 'usd',
       ...summary({
         records: 1,
         totalTokens: 2_400,
         inputTokens: 1_900,
         outputTokens: 500,
-        providerReportedCost: "0.02",
-        effectiveCost: "0.02",
+        providerReportedCost: '0.02',
+        effectiveCost: '0.02',
       }),
     },
   ];
@@ -220,9 +206,9 @@ export function buildEndUserAiUsageDemoReport(
     endUserId,
     window,
     range: {
-      from: window === "all" ? null : "2026-07-18T22:00:00.000Z",
-      to: "2026-07-24T18:00:00.000Z",
-      timezone: "Europe/Madrid",
+      from: window === 'all' ? null : '2026-07-18T22:00:00.000Z',
+      to: '2026-07-24T18:00:00.000Z',
+      timezone: 'Europe/Madrid',
     },
     totals: {
       ...summary({
@@ -232,9 +218,9 @@ export function buildEndUserAiUsageDemoReport(
         outputTokens: 9_400,
         inputCharacters: 1_980,
         durationSeconds: 146,
-        providerReportedCost: "0.16",
-        estimatedFallbackCost: "0.0897",
-        effectiveCost: "0.2497",
+        providerReportedCost: '0.16',
+        estimatedFallbackCost: '0.0897',
+        effectiveCost: '0.2497',
       }),
       providerReportedCostRecords: 19,
       estimatedRecords: 11,
@@ -252,7 +238,7 @@ export function buildEndUserAiUsageDemoReport(
         inputTokens: 60_000,
         outputTokens: 14_546,
         totalTokens: 74_546,
-        billedCostUsd: "0.0295008",
+        billedCostUsd: '0.0295008',
         estimatedCostUsd: null,
       },
     },
@@ -266,8 +252,7 @@ export async function fetchEndUserAiUsageReport(
   window: AiUsageRangeKey,
   signal?: AbortSignal,
 ): Promise<EndUserAiUsageReport> {
-  if (isMockMode)
-    return buildEndUserAiUsageDemoReport(projectId, endUserId, window);
+  if (isMockMode) return buildEndUserAiUsageDemoReport(projectId, endUserId, window);
   const response: unknown = await endUserAiUsageReport(
     projectId,
     endUserId,
@@ -275,9 +260,6 @@ export async function fetchEndUserAiUsageReport(
     { signal },
   );
   const parsed = parseEndUserAiUsageReport(response, projectId, endUserId);
-  if (!parsed)
-    throw new Error(
-      "Сервер вернул некорректные данные потребления пользователя",
-    );
+  if (!parsed) throw new Error('Сервер вернул некорректные данные потребления пользователя');
   return parsed;
 }

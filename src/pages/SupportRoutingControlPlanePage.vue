@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { computed, reactive, ref, toRaw, watch } from "vue";
-import { onBeforeRouteLeave } from "vue-router";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import Drawer from "primevue/drawer";
-import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import MultiSelect from "primevue/multiselect";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import Textarea from "primevue/textarea";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
+import { computed, reactive, ref, toRaw, watch } from 'vue';
+import { onBeforeRouteLeave } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Drawer from 'primevue/drawer';
+import InputNumber from 'primevue/inputnumber';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import MultiSelect from 'primevue/multiselect';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import Textarea from 'primevue/textarea';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
 import {
   emptyPolicyDraft,
   emptyQueueDraft,
@@ -31,49 +31,43 @@ import {
   type RoutingQueue,
   type RoutingSection,
   type WorkforceConfiguration,
-} from "@/features/support-routing-control-plane/model/routing-control-plane";
-import { useRoutingControlPlane } from "@/features/support-routing-control-plane/model/use-routing-control-plane";
-import QueuePredicateEditor from "@/features/support-routing-control-plane/ui/QueuePredicateEditor.vue";
-import FormFieldLabel from "@/shared/ui/FormFieldLabel.vue";
+} from '@/features/support-routing-control-plane/model/routing-control-plane';
+import { useRoutingControlPlane } from '@/features/support-routing-control-plane/model/use-routing-control-plane';
+import QueuePredicateEditor from '@/features/support-routing-control-plane/ui/QueuePredicateEditor.vue';
+import FormFieldLabel from '@/shared/ui/FormFieldLabel.vue';
 
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
-const permissions = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
-const permissionRevision = computed(() =>
-  [...permissions.value].sort().join(","),
-);
+const permissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
+const permissionRevision = computed(() => [...permissions.value].sort().join(','));
 const canReadRouting = computed(
   () =>
-    hasProjectPermission(permissions.value, "project.support.routing.read") ||
-    hasProjectPermission(permissions.value, "project.support.routing.manage"),
+    hasProjectPermission(permissions.value, 'project.support.routing.read') ||
+    hasProjectPermission(permissions.value, 'project.support.routing.manage'),
 );
 const canReadTeams = computed(
   () =>
-    hasProjectPermission(permissions.value, "project.support.teams.read") ||
-    hasProjectPermission(permissions.value, "project.support.teams.manage"),
+    hasProjectPermission(permissions.value, 'project.support.teams.read') ||
+    hasProjectPermission(permissions.value, 'project.support.teams.manage'),
 );
 const canReadQueues = computed(
   () =>
-    hasProjectPermission(permissions.value, "project.support.queues.read") ||
-    hasProjectPermission(permissions.value, "project.support.queues.manage"),
+    hasProjectPermission(permissions.value, 'project.support.queues.read') ||
+    hasProjectPermission(permissions.value, 'project.support.queues.manage'),
 );
 const canReadAvailability = computed(() =>
-  hasProjectPermission(permissions.value, "project.support.availability.read"),
+  hasProjectPermission(permissions.value, 'project.support.availability.read'),
 );
-const canRead = computed(
-  () => canReadRouting.value || canReadTeams.value || canReadQueues.value,
-);
+const canRead = computed(() => canReadRouting.value || canReadTeams.value || canReadQueues.value);
 const canManageRouting = computed(() =>
-  hasProjectPermission(permissions.value, "project.support.routing.manage"),
+  hasProjectPermission(permissions.value, 'project.support.routing.manage'),
 );
 const canManageTeams = computed(() =>
-  hasProjectPermission(permissions.value, "project.support.teams.manage"),
+  hasProjectPermission(permissions.value, 'project.support.teams.manage'),
 );
 const canManageQueues = computed(() =>
-  hasProjectPermission(permissions.value, "project.support.queues.manage"),
+  hasProjectPermission(permissions.value, 'project.support.queues.manage'),
 );
 
 const controller = useRoutingControlPlane({
@@ -97,102 +91,101 @@ const sections: Array<{
   icon: string;
 }> = [
   {
-    id: "overview",
-    label: "Готовность",
-    route: "/support/settings/routing",
-    icon: "pi pi-sitemap",
+    id: 'overview',
+    label: 'Готовность',
+    route: '/support/settings/routing',
+    icon: 'pi pi-sitemap',
   },
   {
-    id: "identities",
-    label: "Команды и навыки",
-    route: "/support/settings/teams-skills",
-    icon: "pi pi-tags",
+    id: 'identities',
+    label: 'Команды и навыки',
+    route: '/support/settings/teams-skills',
+    icon: 'pi pi-tags',
   },
   {
-    id: "workforce",
-    label: "Рабочая сила",
-    route: "/support/settings/workforce",
-    icon: "pi pi-users",
+    id: 'workforce',
+    label: 'Рабочая сила',
+    route: '/support/settings/workforce',
+    icon: 'pi pi-users',
   },
   {
-    id: "queues",
-    label: "Очереди",
-    route: "/support/settings/queues",
-    icon: "pi pi-inbox",
+    id: 'queues',
+    label: 'Очереди',
+    route: '/support/settings/queues',
+    icon: 'pi pi-inbox',
   },
   {
-    id: "policies",
-    label: "Правила назначения",
-    route: "/support/settings/routing/policies",
-    icon: "pi pi-sliders-h",
+    id: 'policies',
+    label: 'Правила назначения',
+    route: '/support/settings/routing/policies',
+    icon: 'pi pi-sliders-h',
   },
   {
-    id: "decisions",
-    label: "Решения",
-    route: "/support/settings/routing/decisions",
-    icon: "pi pi-search",
+    id: 'decisions',
+    label: 'Решения',
+    route: '/support/settings/routing/decisions',
+    icon: 'pi pi-search',
   },
 ];
 const visibleSections = computed(() =>
   sections.filter((item) =>
-    item.id === "identities" || item.id === "workforce"
+    item.id === 'identities' || item.id === 'workforce'
       ? canReadTeams.value
-      : item.id === "queues"
+      : item.id === 'queues'
         ? canReadQueues.value
         : canReadRouting.value,
   ),
 );
 const section = computed<RoutingSection>(() => {
-  const name = String(route.name ?? "");
-  if (name.includes("teams-skills")) return "identities";
-  if (name.includes("workforce")) return "workforce";
-  if (name.includes("queues")) return "queues";
-  if (name.includes("policies")) return "policies";
-  if (name.includes("decisions")) return "decisions";
-  return "overview";
+  const name = String(route.name ?? '');
+  if (name.includes('teams-skills')) return 'identities';
+  if (name.includes('workforce')) return 'workforce';
+  if (name.includes('queues')) return 'queues';
+  if (name.includes('policies')) return 'policies';
+  if (name.includes('decisions')) return 'decisions';
+  return 'overview';
 });
 
-const selectedQueueId = ref("");
-const selectedPolicyId = ref("");
-const identityDialog = ref<"TEAM" | "SKILL" | null>(null);
+const selectedQueueId = ref('');
+const selectedPolicyId = ref('');
+const identityDialog = ref<'TEAM' | 'SKILL' | null>(null);
 const identityEdit = ref<{
-  kind: "TEAM" | "SKILL";
+  kind: 'TEAM' | 'SKILL';
   id: string;
   version: number;
   name: string;
-  action: "RENAME" | "ARCHIVE";
+  action: 'RENAME' | 'ARCHIVE';
 } | null>(null);
 const activationDialog = ref(false);
-const revisionDialog = ref<"QUEUE" | "POLICY" | "WORKFORCE" | null>(null);
-const createResourceDialog = ref<"QUEUE" | null>(null);
-const policyDialogMode = ref<"CREATE" | "EDIT" | null>(null);
+const revisionDialog = ref<'QUEUE' | 'POLICY' | 'WORKFORCE' | null>(null);
+const createResourceDialog = ref<'QUEUE' | null>(null);
+const policyDialogMode = ref<'CREATE' | 'EDIT' | null>(null);
 const policyDialogError = ref<string | null>(null);
-const activationMode = ref<"OFFER" | "AUTO_ASSIGN">("OFFER");
-const activationReason = ref("ROUTING_CONFIGURATION_APPROVED");
-const queuePreview =
-  ref<Awaited<ReturnType<typeof controller.previewQueue>>>(null);
+const activationMode = ref<'OFFER' | 'AUTO_ASSIGN'>('OFFER');
+const activationReason = ref('ROUTING_CONFIGURATION_APPROVED');
+const queuePreview = ref<Awaited<ReturnType<typeof controller.previewQueue>>>(null);
 const identityForm = reactive({
-  code: "",
-  name: "",
-  kind: "GENERAL" as "GENERAL" | "SAFETY" | "CHANNEL",
+  code: '',
+  name: '',
+  kind: 'GENERAL' as 'GENERAL' | 'SAFETY' | 'CHANNEL',
 });
-const resourceForm = reactive({ code: "", name: "" });
+const resourceForm = reactive({ code: '', name: '' });
 const queueDraft = ref<QueueDraft>(emptyQueueDraft());
 const policyDraft = ref<PolicyDraft>(emptyPolicyDraft());
-const newPolicyCode = ref("");
+const newPolicyCode = ref('');
 const newPolicyDraft = ref<PolicyDraft>(emptyPolicyDraft());
 const workforceDraft = ref<WorkforceConfiguration>({
   teams: [],
   operators: [],
 });
-const workforceSearch = ref("");
-const decisionSearch = ref("");
+const workforceSearch = ref('');
+const decisionSearch = ref('');
 const bindingPriority = ref(10);
-const queueBaseline = ref("");
-const policyBaseline = ref("");
-const workforceBaseline = ref("");
-const queueEditorId = ref("");
-const policyEditorId = ref("");
+const queueBaseline = ref('');
+const policyBaseline = ref('');
+const workforceBaseline = ref('');
+const queueEditorId = ref('');
+const policyEditorId = ref('');
 
 function plain<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -200,29 +193,19 @@ function plain<T>(value: T): T {
 
 const snapshot = computed(() => controller.snapshot.value);
 const selectedQueue = computed(
-  () =>
-    snapshot.value?.queues.find((item) => item.id === selectedQueueId.value) ??
-    null,
+  () => snapshot.value?.queues.find((item) => item.id === selectedQueueId.value) ?? null,
 );
 const selectedPolicy = computed(
-  () =>
-    snapshot.value?.policies.find(
-      (item) => item.id === selectedPolicyId.value,
-    ) ?? null,
+  () => snapshot.value?.policies.find((item) => item.id === selectedPolicyId.value) ?? null,
 );
 const readiness = computed(
   () =>
-    snapshot.value?.readiness.find(
-      (item) => item.queueId === selectedQueueId.value,
-    ) ??
+    snapshot.value?.readiness.find((item) => item.queueId === selectedQueueId.value) ??
     snapshot.value?.readiness[0] ??
     null,
 );
 const selectedSlot = computed(
-  () =>
-    snapshot.value?.slots.find(
-      (item) => item.queueId === selectedQueueId.value,
-    ) ?? null,
+  () => snapshot.value?.slots.find((item) => item.queueId === selectedQueueId.value) ?? null,
 );
 const selectedQueuePresentation = computed(() =>
   selectedQueue.value
@@ -233,63 +216,59 @@ const selectedQueuePresentation = computed(() =>
     : null,
 );
 const firstReadinessIssue = computed(
-  () =>
-    readiness.value?.checks.find((check) => check.status !== "PASS") ?? null,
+  () => readiness.value?.checks.find((check) => check.status !== 'PASS') ?? null,
 );
 const passedReadinessChecks = computed(
-  () =>
-    readiness.value?.checks.filter((check) => check.status === "PASS").length ??
-    0,
+  () => readiness.value?.checks.filter((check) => check.status === 'PASS').length ?? 0,
 );
 const filteredOperators = computed(() => {
-  const query = workforceSearch.value.trim().toLocaleLowerCase("ru");
+  const query = workforceSearch.value.trim().toLocaleLowerCase('ru');
   return (
     snapshot.value?.operators.filter(
-      (item) => !query || item.name.toLocaleLowerCase("ru").includes(query),
+      (item) => !query || item.name.toLocaleLowerCase('ru').includes(query),
     ) ?? []
   );
 });
 const filteredDecisions = computed(() => {
-  const query = decisionSearch.value.trim().toLocaleLowerCase("ru");
+  const query = decisionSearch.value.trim().toLocaleLowerCase('ru');
   return controller.decisions.value.filter(
     (item) =>
       !query ||
-      item.caseId.toLocaleLowerCase("ru").includes(query) ||
-      decisionOutcome(item.outcome).toLocaleLowerCase("ru").includes(query),
+      item.caseId.toLocaleLowerCase('ru').includes(query) ||
+      decisionOutcome(item.outcome).toLocaleLowerCase('ru').includes(query),
   );
 });
 const teamOptions = computed(
   () =>
     snapshot.value?.teams
-      .filter((item) => item.lifecycle === "ACTIVE")
+      .filter((item) => item.lifecycle === 'ACTIVE')
       .map((item) => ({ label: item.name, value: item.id })) ?? [],
 );
 const policyOptions = computed(
   () =>
     snapshot.value?.policies
-      .filter((item) => item.lifecycle === "ACTIVE" && item.published)
-      .map((item) => ({ label: routingPolicyLabel(item), value: item.id })) ??
-    [],
+      .filter((item) => item.lifecycle === 'ACTIVE' && item.published)
+      .map((item) => ({ label: routingPolicyLabel(item), value: item.id })) ?? [],
 );
 const activationModeOptions = computed(() =>
   [
-    { label: "Предложение оператору", value: "OFFER" as const },
-    { label: "Автоматическое назначение", value: "AUTO_ASSIGN" as const },
+    { label: 'Предложение оператору', value: 'OFFER' as const },
+    { label: 'Автоматическое назначение', value: 'AUTO_ASSIGN' as const },
   ].filter((item) => readiness.value?.allowedTargetModes.includes(item.value)),
 );
 function queuePredicateValid(predicate: QueuePredicate): boolean {
-  if (predicate.kind === "AND" || predicate.kind === "OR") {
+  if (predicate.kind === 'AND' || predicate.kind === 'OR') {
     return (
       predicate.children.length >= 1 &&
       predicate.children.length <= 16 &&
       predicate.children.every(queuePredicateValid)
     );
   }
-  if (predicate.kind === "NOT") return queuePredicateValid(predicate.child);
-  if (predicate.kind === "ENUM_IN" || predicate.kind === "ID_IN") {
+  if (predicate.kind === 'NOT') return queuePredicateValid(predicate.child);
+  if (predicate.kind === 'ENUM_IN' || predicate.kind === 'ID_IN') {
     return predicate.values.length >= 1 && predicate.values.length <= 50;
   }
-  if (predicate.kind === "TIME_RANGE") {
+  if (predicate.kind === 'TIME_RANGE') {
     if (!predicate.from && !predicate.to) return false;
     const from = predicate.from ? Date.parse(predicate.from) : null;
     const to = predicate.to ? Date.parse(predicate.to) : null;
@@ -299,87 +278,79 @@ function queuePredicateValid(predicate: QueuePredicate): boolean {
       (from === null || to === null || from <= to)
     );
   }
-  if (predicate.kind === "RELATIVE_WINDOW")
-    return (
-      Number.isInteger(predicate.days) &&
-      predicate.days >= 1 &&
-      predicate.days <= 366
-    );
+  if (predicate.kind === 'RELATIVE_WINDOW')
+    return Number.isInteger(predicate.days) && predicate.days >= 1 && predicate.days <= 366;
   return true;
 }
 const queueValid = computed(
   () =>
     queueDraft.value.displayName.trim().length >= 2 &&
-    (queueDraft.value.routing.mode === "MANUAL" ||
+    (queueDraft.value.routing.mode === 'MANUAL' ||
       queueDraft.value.routing.primaryTeamIds.length > 0) &&
     queuePredicateValid(queueDraft.value.filter.predicate),
 );
 const policyFormDraft = computed(() =>
-  policyDialogMode.value === "CREATE"
-    ? newPolicyDraft.value
-    : policyDraft.value,
+  policyDialogMode.value === 'CREATE' ? newPolicyDraft.value : policyDraft.value,
 );
 const policyFormValid = computed(() => policyDraftValid(policyFormDraft.value));
 const policyCodeError = computed(() =>
-  policyDialogMode.value === "CREATE"
-    ? routingResourceCodeError(newPolicyCode.value)
-    : null,
+  policyDialogMode.value === 'CREATE' ? routingResourceCodeError(newPolicyCode.value) : null,
 );
 const skillOptions = computed(
   () =>
     snapshot.value?.skills
-      .filter((item) => item.lifecycle === "ACTIVE")
+      .filter((item) => item.lifecycle === 'ACTIVE')
       .map((item) => ({ label: item.name, value: item.id })) ?? [],
 );
 
 const operatorWeightFields = [
   {
-    key: "skill",
-    label: "Подходящие дополнительные навыки",
-    help: "За каждый совпавший дополнительный навык оператор получает больше баллов.",
+    key: 'skill',
+    label: 'Подходящие дополнительные навыки',
+    help: 'За каждый совпавший дополнительный навык оператор получает больше баллов.',
   },
   {
-    key: "language",
-    label: "Подходящий дополнительный язык",
-    help: "Повышает оценку оператора, если он владеет одним из дополнительных языков.",
+    key: 'language',
+    label: 'Подходящий дополнительный язык',
+    help: 'Повышает оценку оператора, если он владеет одним из дополнительных языков.',
   },
   {
-    key: "load",
-    label: "Свободная ёмкость",
-    help: "Чем больше значение, тем сильнее система предпочитает менее занятого оператора.",
+    key: 'load',
+    label: 'Свободная ёмкость',
+    help: 'Чем больше значение, тем сильнее система предпочитает менее занятого оператора.',
   },
   {
-    key: "continuity",
-    label: "Продолжение диалога",
-    help: "Повышает оценку оператора, который уже работал с этим обращением.",
+    key: 'continuity',
+    label: 'Продолжение диалога',
+    help: 'Повышает оценку оператора, который уже работал с этим обращением.',
   },
   {
-    key: "idle",
-    label: "Время без нового назначения",
-    help: "Повышает оценку оператора, который дольше других не получал новых обращений.",
+    key: 'idle',
+    label: 'Время без нового назначения',
+    help: 'Повышает оценку оператора, который дольше других не получал новых обращений.',
   },
 ] as const;
 
 const queueWeightFields = [
   {
-    key: "sla",
-    label: "Риск нарушения срока",
-    help: "Поднимает обращения, у которых скоро истечёт или уже истёк срок ответа.",
+    key: 'sla',
+    label: 'Риск нарушения срока',
+    help: 'Поднимает обращения, у которых скоро истечёт или уже истёк срок ответа.',
   },
   {
-    key: "priority",
-    label: "Приоритет обращения",
-    help: "Учитывает установленный в обращении приоритет: чем он выше, тем раньше назначение.",
+    key: 'priority',
+    label: 'Приоритет обращения',
+    help: 'Учитывает установленный в обращении приоритет: чем он выше, тем раньше назначение.',
   },
   {
-    key: "escalation",
-    label: "Передано руководителю",
-    help: "Поднимает обращения, которым уже потребовалось вмешательство руководителя.",
+    key: 'escalation',
+    label: 'Передано руководителю',
+    help: 'Поднимает обращения, которым уже потребовалось вмешательство руководителя.',
   },
   {
-    key: "age",
-    label: "Время ожидания",
-    help: "Поднимает обращения, которые дольше остаются без оператора.",
+    key: 'age',
+    label: 'Время ожидания',
+    help: 'Поднимает обращения, которые дольше остаются без оператора.',
   },
 ] as const;
 
@@ -399,12 +370,8 @@ function policyDraftValid(value: PolicyDraft): boolean {
     value.timeouts.offerSeconds <= 600 &&
     value.timeouts.reservationSeconds >= 5 &&
     value.timeouts.reservationSeconds <= 600 &&
-    Object.values(value.weights).every(
-      (weight) => weight >= 0 && weight <= 10_000,
-    ) &&
-    Object.values(value.queueWeights).every(
-      (weight) => weight >= 0 && weight <= 10_000,
-    )
+    Object.values(value.weights).every((weight) => weight >= 0 && weight <= 10_000) &&
+    Object.values(value.queueWeights).every((weight) => weight >= 0 && weight <= 10_000)
   );
 }
 
@@ -412,23 +379,21 @@ watch(
   snapshot,
   (value) => {
     if (!value) {
-      selectedQueueId.value = "";
-      selectedPolicyId.value = "";
+      selectedQueueId.value = '';
+      selectedPolicyId.value = '';
       queuePreview.value = null;
-      queueEditorId.value = "";
-      policyEditorId.value = "";
+      queueEditorId.value = '';
+      policyEditorId.value = '';
       queueDraft.value = emptyQueueDraft();
       policyDraft.value = emptyPolicyDraft();
       workforceDraft.value = { teams: [], operators: [] };
-      queueBaseline.value = "";
-      policyBaseline.value = "";
-      workforceBaseline.value = "";
+      queueBaseline.value = '';
+      policyBaseline.value = '';
+      workforceBaseline.value = '';
       return;
     }
-    if (!selectedQueueId.value)
-      selectedQueueId.value = value.queues[0]?.id ?? "";
-    if (!selectedPolicyId.value)
-      selectedPolicyId.value = value.policies[0]?.id ?? "";
+    if (!selectedQueueId.value) selectedQueueId.value = value.queues[0]?.id ?? '';
+    if (!selectedPolicyId.value) selectedPolicyId.value = value.policies[0]?.id ?? '';
     const workforceDirty =
       Boolean(workforceBaseline.value) &&
       workforceBaseline.value !== JSON.stringify(toRaw(workforceDraft.value));
@@ -477,9 +442,7 @@ watch(
       if (!dirty) {
         policyEditorId.value = value.id;
         policyDraft.value = structuredClone(
-          value.draft?.configuration ??
-            value.published?.configuration ??
-            emptyPolicyDraft(),
+          value.draft?.configuration ?? value.published?.configuration ?? emptyPolicyDraft(),
         );
         policyBaseline.value = JSON.stringify(toRaw(policyDraft.value));
       }
@@ -497,7 +460,7 @@ watch(
 watch(
   () => queueDraft.value.routing.mode,
   (mode) => {
-    if (mode === "MANUAL") {
+    if (mode === 'MANUAL') {
       queueDraft.value.routing.primaryTeamIds = [];
       queueDraft.value.routing.fallbackTeamIds = [];
     }
@@ -506,35 +469,31 @@ watch(
 watch(
   [section, selectedQueueId, () => selectedQueue.value?.detailLoaded],
   ([nextSection, id, detailLoaded]) => {
-    if (nextSection === "queues" && id && !detailLoaded)
-      void controller.hydrateQueue(id);
+    if (nextSection === 'queues' && id && !detailLoaded) void controller.hydrateQueue(id);
   },
   { immediate: true },
 );
 watch(
   [section, selectedPolicyId, () => selectedPolicy.value?.detailLoaded],
   ([nextSection, id, detailLoaded]) => {
-    if (nextSection === "policies" && id && !detailLoaded)
-      void controller.hydratePolicy(id);
+    if (nextSection === 'policies' && id && !detailLoaded) void controller.hydratePolicy(id);
   },
   { immediate: true },
 );
 
 const hasLocalChanges = computed(
   () =>
-    (section.value === "queues" &&
+    (section.value === 'queues' &&
       queueBaseline.value !== JSON.stringify(toRaw(queueDraft.value))) ||
-    (section.value === "policies" &&
+    (section.value === 'policies' &&
       policyBaseline.value !== JSON.stringify(toRaw(policyDraft.value))) ||
-    (section.value === "workforce" &&
+    (section.value === 'workforce' &&
       workforceBaseline.value !== JSON.stringify(toRaw(workforceDraft.value))),
 );
 onBeforeRouteLeave(
   () =>
     !hasLocalChanges.value ||
-    window.confirm(
-      "Есть несохранённые изменения. Покинуть раздел без сохранения?",
-    ),
+    window.confirm('Есть несохранённые изменения. Покинуть раздел без сохранения?'),
 );
 
 function queueLabel(queue: RoutingQueue): string {
@@ -543,113 +502,102 @@ function queueLabel(queue: RoutingQueue): string {
 function teamName(id: string | null): string {
   return (
     snapshot.value?.teams.find((item) => item.id === id)?.name ??
-    (id ? "Неизвестная команда" : "Не выбрана")
+    (id ? 'Неизвестная команда' : 'Не выбрана')
   );
 }
 function operatorName(id: string | null): string {
   return (
     snapshot.value?.operators.find((item) => item.id === id)?.name ??
-    (id ? "Недоступный оператор" : "Не назначен")
+    (id ? 'Недоступный оператор' : 'Не назначен')
   );
 }
 function queueName(id: string | null): string {
   const queue = snapshot.value?.queues.find((item) => item.id === id);
-  return queue
-    ? routingQueueLabel(queue)
-    : id
-      ? "Неизвестная очередь"
-      : "Без очереди";
+  return queue ? routingQueueLabel(queue) : id ? 'Неизвестная очередь' : 'Без очереди';
 }
 function modeLabel(mode: string): string {
   return labelUnknown(mode, {
-    MANUAL: "Ручное распределение",
-    OFFER: "Предложение оператору",
-    AUTO_ASSIGN: "Автоматическое назначение",
-    DISABLED: "Выключено",
+    MANUAL: 'Ручное распределение',
+    OFFER: 'Предложение оператору',
+    AUTO_ASSIGN: 'Автоматическое назначение',
+    DISABLED: 'Выключено',
   });
 }
 function decisionOutcome(value: string): string {
   return labelUnknown(value, {
-    SELECTED: "Оператор выбран",
-    NO_ELIGIBLE_OPERATOR: "Нет подходящего оператора",
-    NO_QUEUE: "Очередь не найдена",
-    SKIPPED: "Пропущено",
-    FAILED: "Ошибка расчёта",
+    SELECTED: 'Оператор выбран',
+    NO_ELIGIBLE_OPERATOR: 'Нет подходящего оператора',
+    NO_QUEUE: 'Очередь не найдена',
+    SKIPPED: 'Пропущено',
+    FAILED: 'Ошибка расчёта',
   });
 }
 function checkLabel(code: string): string {
   return labelUnknown(code, {
-    WORKFORCE_PUBLISHED: "Рабочая сила опубликована",
-    QUEUE_PUBLISHED: "Очередь опубликована",
-    POLICY_PUBLISHED: "Правило назначения применено",
-    QUEUE_SLOT_CONFIGURED: "Очередь связана с правилом назначения",
-    CANDIDATE_SET_AVAILABLE: "Есть подходящие операторы",
-    SLOT_MISSING: "Очередь не связана с правилом назначения",
-    QUEUE_NOT_ACTIVE: "Очередь неактивна",
-    QUEUE_NOT_PUBLISHED: "Нет опубликованной очереди",
-    QUEUE_GENERATION_MISSING: "Выборка очереди ещё не построена",
-    QUEUE_GENERATION_BUILDING: "Выборка очереди строится",
-    QUEUE_GENERATION_DEGRADED: "Выборка очереди работает с ограничениями",
-    POLICY_NOT_ACTIVE: "Правило назначения неактивно",
-    POLICY_NOT_PUBLISHED: "Правило назначения ещё не применено",
-    WORKFORCE_NOT_PUBLISHED: "Рабочая сила не опубликована",
-    QUEUE_MODE_INCOMPATIBLE: "Режим очереди несовместим",
-    ALGORITHM_REVISION_UNSUPPORTED: "Версия алгоритма не поддерживается",
-    WORKFORCE_TEAM_REFERENCE_MISSING: "Команда отсутствует в рабочей силе",
-    CANDIDATE_SET_TOO_LARGE: "Слишком много кандидатов",
+    WORKFORCE_PUBLISHED: 'Рабочая сила опубликована',
+    QUEUE_PUBLISHED: 'Очередь опубликована',
+    POLICY_PUBLISHED: 'Правило назначения применено',
+    QUEUE_SLOT_CONFIGURED: 'Очередь связана с правилом назначения',
+    CANDIDATE_SET_AVAILABLE: 'Есть подходящие операторы',
+    SLOT_MISSING: 'Очередь не связана с правилом назначения',
+    QUEUE_NOT_ACTIVE: 'Очередь неактивна',
+    QUEUE_NOT_PUBLISHED: 'Нет опубликованной очереди',
+    QUEUE_GENERATION_MISSING: 'Выборка очереди ещё не построена',
+    QUEUE_GENERATION_BUILDING: 'Выборка очереди строится',
+    QUEUE_GENERATION_DEGRADED: 'Выборка очереди работает с ограничениями',
+    POLICY_NOT_ACTIVE: 'Правило назначения неактивно',
+    POLICY_NOT_PUBLISHED: 'Правило назначения ещё не применено',
+    WORKFORCE_NOT_PUBLISHED: 'Рабочая сила не опубликована',
+    QUEUE_MODE_INCOMPATIBLE: 'Режим очереди несовместим',
+    ALGORITHM_REVISION_UNSUPPORTED: 'Версия алгоритма не поддерживается',
+    WORKFORCE_TEAM_REFERENCE_MISSING: 'Команда отсутствует в рабочей силе',
+    CANDIDATE_SET_TOO_LARGE: 'Слишком много кандидатов',
   });
 }
 function checkDescription(code: string, status: string): string {
-  if (status === "PASS") return "Готово";
+  if (status === 'PASS') return 'Готово';
   return labelUnknown(code, {
-    SLOT_MISSING: "Свяжите очередь с применённым правилом назначения",
-    QUEUE_NOT_ACTIVE: "Верните очередь в активное состояние",
-    QUEUE_NOT_PUBLISHED: "Опубликуйте черновик очереди",
-    QUEUE_GENERATION_MISSING: "Сохраните и опубликуйте условия выборки",
-    QUEUE_GENERATION_BUILDING:
-      "Сервер ещё строит выборку — обновите состояние позже",
-    QUEUE_GENERATION_DEGRADED:
-      "Проверьте условия выборки и диагностику сервера",
-    POLICY_NOT_ACTIVE: "Верните связанное правило назначения в активное состояние",
-    POLICY_NOT_PUBLISHED: "Сохраните и примените правило назначения",
-    WORKFORCE_NOT_PUBLISHED:
-      "Опубликуйте состав команд и доступность операторов",
-    QUEUE_MODE_INCOMPATIBLE: "Согласуйте режим очереди с режимом назначения",
-    ALGORITHM_REVISION_UNSUPPORTED:
-      "Обновите правило назначения до поддерживаемой версии",
-    WORKFORCE_TEAM_REFERENCE_MISSING: "Добавьте команду очереди в рабочую силу",
-    CANDIDATE_SET_TOO_LARGE: "Сузьте выборку операторов в правиле назначения",
+    SLOT_MISSING: 'Свяжите очередь с применённым правилом назначения',
+    QUEUE_NOT_ACTIVE: 'Верните очередь в активное состояние',
+    QUEUE_NOT_PUBLISHED: 'Опубликуйте черновик очереди',
+    QUEUE_GENERATION_MISSING: 'Сохраните и опубликуйте условия выборки',
+    QUEUE_GENERATION_BUILDING: 'Сервер ещё строит выборку — обновите состояние позже',
+    QUEUE_GENERATION_DEGRADED: 'Проверьте условия выборки и диагностику сервера',
+    POLICY_NOT_ACTIVE: 'Верните связанное правило назначения в активное состояние',
+    POLICY_NOT_PUBLISHED: 'Сохраните и примените правило назначения',
+    WORKFORCE_NOT_PUBLISHED: 'Опубликуйте состав команд и доступность операторов',
+    QUEUE_MODE_INCOMPATIBLE: 'Согласуйте режим очереди с режимом назначения',
+    ALGORITHM_REVISION_UNSUPPORTED: 'Обновите правило назначения до поддерживаемой версии',
+    WORKFORCE_TEAM_REFERENCE_MISSING: 'Добавьте команду очереди в рабочую силу',
+    CANDIDATE_SET_TOO_LARGE: 'Сузьте выборку операторов в правиле назначения',
   });
 }
 function checkRoute(code: string): string {
-  if (code.includes("WORKFORCE")) return "/support/settings/workforce";
-  if (code.includes("POLICY") || code.includes("SLOT"))
-    return "/support/settings/routing/policies";
-  return "/support/settings/queues";
+  if (code.includes('WORKFORCE')) return '/support/settings/workforce';
+  if (code.includes('POLICY') || code.includes('SLOT')) return '/support/settings/routing/policies';
+  return '/support/settings/queues';
 }
-function readinessSeverity(
-  value: string,
-): "success" | "warn" | "danger" | "secondary" {
-  return value === "READY" || value === "PASS"
-    ? "success"
-    : value === "DEGRADED"
-      ? "warn"
-      : value === "BLOCKING"
-        ? "danger"
-        : "secondary";
+function readinessSeverity(value: string): 'success' | 'warn' | 'danger' | 'secondary' {
+  return value === 'READY' || value === 'PASS'
+    ? 'success'
+    : value === 'DEGRADED'
+      ? 'warn'
+      : value === 'BLOCKING'
+        ? 'danger'
+        : 'secondary';
 }
 function formatDate(value: string | null | undefined): string {
   return value
-    ? new Intl.DateTimeFormat("ru-RU", {
-        dateStyle: "medium",
-        timeStyle: "short",
+    ? new Intl.DateTimeFormat('ru-RU', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
       }).format(new Date(value))
-    : "—";
+    : '—';
 }
 
 async function createIdentity(): Promise<void> {
   const ok =
-    identityDialog.value === "TEAM"
+    identityDialog.value === 'TEAM'
       ? await controller.createTeam(
           normalizeRoutingResourceCode(identityForm.code),
           identityForm.name.trim(),
@@ -661,61 +609,46 @@ async function createIdentity(): Promise<void> {
         );
   if (ok) {
     identityDialog.value = null;
-    identityForm.code = "";
-    identityForm.name = "";
+    identityForm.code = '';
+    identityForm.name = '';
   }
 }
 async function commitIdentityEdit(): Promise<void> {
   const value = identityEdit.value;
   if (!value) return;
   const ok =
-    value.action === "RENAME"
-      ? await controller.renameIdentity(
-          value.kind,
-          value.id,
-          value.name.trim(),
-          value.version,
-        )
+    value.action === 'RENAME'
+      ? await controller.renameIdentity(value.kind, value.id, value.name.trim(), value.version)
       : await controller.archiveIdentity(
           value.kind,
           value.id,
           value.version,
-          "Справочник больше не используется",
+          'Справочник больше не используется',
         );
   if (ok) identityEdit.value = null;
 }
 async function previewSelectedQueue(): Promise<void> {
   if (selectedQueue.value)
-    queuePreview.value = await controller.previewQueue(
-      selectedQueue.value.id,
-      10,
-    );
+    queuePreview.value = await controller.previewQueue(selectedQueue.value.id, 10);
 }
 async function saveQueue(): Promise<void> {
   if (selectedQueue.value) {
-    const ok = await controller.saveQueue(
-      selectedQueue.value.id,
-      plain(queueDraft.value),
-    );
+    const ok = await controller.saveQueue(selectedQueue.value.id, plain(queueDraft.value));
     if (ok) queueBaseline.value = JSON.stringify(toRaw(queueDraft.value));
   }
 }
 async function publishQueue(): Promise<void> {
-  if (selectedQueue.value)
-    await controller.publishQueue(selectedQueue.value.id);
+  if (selectedQueue.value) await controller.publishQueue(selectedQueue.value.id);
 }
 async function savePolicy(): Promise<void> {
   policyDialogError.value = null;
   if (selectedPolicy.value) {
-    const ok = await controller.savePolicy(
-      selectedPolicy.value.id,
-      plain(policyDraft.value),
-    );
+    const ok = await controller.savePolicy(selectedPolicy.value.id, plain(policyDraft.value));
     if (ok) {
       policyBaseline.value = JSON.stringify(toRaw(policyDraft.value));
     } else {
       policyDialogError.value =
-        controller.error.value ?? "Не удалось сохранить правило назначения.";
+        controller.error.value ?? 'Не удалось сохранить правило назначения.';
       controller.error.value = null;
     }
   }
@@ -729,8 +662,7 @@ async function publishPolicy(): Promise<void> {
   if (!selectedPolicy.value) return;
   const ok = await controller.publishPolicy(selectedPolicy.value.id);
   if (!ok) {
-    policyDialogError.value =
-      controller.error.value ?? "Не удалось применить правило назначения.";
+    policyDialogError.value = controller.error.value ?? 'Не удалось применить правило назначения.';
     controller.error.value = null;
   }
 }
@@ -743,11 +675,7 @@ async function saveAndPublishPolicy(): Promise<void> {
 }
 async function saveBinding(): Promise<void> {
   if (selectedQueue.value && selectedPolicyId.value)
-    await controller.bind(
-      selectedQueue.value.id,
-      selectedPolicyId.value,
-      bindingPriority.value,
-    );
+    await controller.bind(selectedQueue.value.id, selectedPolicyId.value, bindingPriority.value);
 }
 async function confirmActivation(): Promise<void> {
   if (!readiness.value) return;
@@ -770,8 +698,7 @@ function setOperatorTeams(id: string, teamIds: string[]): void {
   for (const team of workforceDraft.value.teams) {
     const included = teamIds.includes(team.teamId);
     if (included && !team.members.includes(id)) team.members.push(id);
-    if (!included)
-      team.members = team.members.filter((memberId) => memberId !== id);
+    if (!included) team.members = team.members.filter((memberId) => memberId !== id);
   }
 }
 function operatorSkillIds(id: string): string[] {
@@ -802,45 +729,36 @@ async function moveSelectedQueue(delta: number): Promise<void> {
 }
 async function deactivate(): Promise<void> {
   if (!readiness.value?.activation) return;
-  await controller.activate(
-    readiness.value.queueId,
-    "DISABLED",
-    "ROUTING_DISABLED_BY_OPERATOR",
-  );
+  await controller.activate(readiness.value.queueId, 'DISABLED', 'ROUTING_DISABLED_BY_OPERATOR');
 }
 function scoreLabel(code: string): string {
   return labelUnknown(code, {
-    skill: "Навыки",
-    language: "Язык",
-    load: "Свободная ёмкость",
-    continuity: "Продолжение диалога",
-    idle: "Время без назначения",
-    total: "Итог",
+    skill: 'Навыки',
+    language: 'Язык',
+    load: 'Свободная ёмкость',
+    continuity: 'Продолжение диалога',
+    idle: 'Время без назначения',
+    total: 'Итог',
   });
 }
 function policyConfiguration(policy: RoutingPolicy): PolicyDraft | null {
   return policy.draft?.configuration ?? policy.published?.configuration ?? null;
 }
 function policyQueueCount(policyId: string): number {
-  return (
-    snapshot.value?.slots.filter((slot) => slot.policyId === policyId).length ??
-    0
-  );
+  return snapshot.value?.slots.filter((slot) => slot.policyId === policyId).length ?? 0;
 }
 function policyStatus(policy: RoutingPolicy): string {
-  if (policy.draft && policy.published)
-    return "Есть изменения, которые ещё не применены";
-  if (policy.draft) return "Пока не применяется";
-  if (policy.published)
-    return `Применяется · версия ${policy.published.revisionNumber}`;
-  return "Пока не настроено";
+  if (policy.draft && policy.published) return 'Есть изменения, которые ещё не применены';
+  if (policy.draft) return 'Пока не применяется';
+  if (policy.published) return `Применяется · версия ${policy.published.revisionNumber}`;
+  return 'Пока не настроено';
 }
 function openPolicyCreate(): void {
-  newPolicyCode.value = "";
+  newPolicyCode.value = '';
   newPolicyDraft.value = emptyPolicyDraft();
   policyDialogError.value = null;
   controller.error.value = null;
-  policyDialogMode.value = "CREATE";
+  policyDialogMode.value = 'CREATE';
 }
 async function openPolicyEditor(policyId: string): Promise<void> {
   selectedPolicyId.value = policyId;
@@ -848,11 +766,11 @@ async function openPolicyEditor(policyId: string): Promise<void> {
   controller.error.value = null;
   const policy = snapshot.value?.policies.find((item) => item.id === policyId);
   if (policy && !policy.detailLoaded) await controller.hydratePolicy(policyId);
-  policyDialogMode.value = "EDIT";
+  policyDialogMode.value = 'EDIT';
 }
 async function openPolicyHistory(policyId: string): Promise<void> {
   selectedPolicyId.value = policyId;
-  await openRevisions("POLICY");
+  await openRevisions('POLICY');
 }
 function closePolicyDialog(): void {
   policyDialogMode.value = null;
@@ -861,42 +779,37 @@ function closePolicyDialog(): void {
 function normalizePolicyCode(): void {
   newPolicyCode.value = normalizeRoutingResourceCode(newPolicyCode.value);
 }
-async function openRevisions(
-  kind: "QUEUE" | "POLICY" | "WORKFORCE",
-): Promise<void> {
+async function openRevisions(kind: 'QUEUE' | 'POLICY' | 'WORKFORCE'): Promise<void> {
   const resourceId =
-    kind === "QUEUE"
+    kind === 'QUEUE'
       ? selectedQueue.value?.id
-      : kind === "POLICY"
+      : kind === 'POLICY'
         ? selectedPolicy.value?.id
         : undefined;
   revisionDialog.value = kind;
   await controller.loadRevisions(kind, resourceId);
   await controller.loadAudit(
-    kind === "QUEUE"
-      ? "SUPPORT_QUEUE"
-      : kind === "POLICY"
-        ? "SUPPORT_ROUTING_POLICY"
-        : "SUPPORT_WORKFORCE",
-    resourceId ?? auth.project?.id ?? "workforce",
+    kind === 'QUEUE'
+      ? 'SUPPORT_QUEUE'
+      : kind === 'POLICY'
+        ? 'SUPPORT_ROUTING_POLICY'
+        : 'SUPPORT_WORKFORCE',
+    resourceId ?? auth.project?.id ?? 'workforce',
   );
 }
 async function createResource(): Promise<void> {
-  const ok = await controller.createQueue(
-    normalizeRoutingResourceCode(resourceForm.code),
-    {
-      ...emptyQueueDraft(resourceForm.name.trim()),
-      routing: {
-        mode: "MANUAL",
-        primaryTeamIds: [],
-        fallbackTeamIds: [],
-      },
+  const ok = await controller.createQueue(normalizeRoutingResourceCode(resourceForm.code), {
+    ...emptyQueueDraft(resourceForm.name.trim()),
+    routing: {
+      mode: 'MANUAL',
+      primaryTeamIds: [],
+      fallbackTeamIds: [],
     },
-  );
+  });
   if (ok) {
     createResourceDialog.value = null;
-    resourceForm.code = "";
-    resourceForm.name = "";
+    resourceForm.code = '';
+    resourceForm.name = '';
   }
 }
 async function createPolicy(): Promise<void> {
@@ -910,30 +823,23 @@ async function createPolicy(): Promise<void> {
   policyDialogError.value = null;
   const ok = await controller.createPolicy(code, plain(newPolicyDraft.value));
   if (!ok) {
-    policyDialogError.value =
-      controller.error.value ?? "Не удалось создать правило назначения.";
+    policyDialogError.value = controller.error.value ?? 'Не удалось создать правило назначения.';
     controller.error.value = null;
     return;
   }
-  const created = snapshot.value?.policies.find(
-    (policy) => policy.code === code,
-  );
+  const created = snapshot.value?.policies.find((policy) => policy.code === code);
   if (created) selectedPolicyId.value = created.id;
   closePolicyDialog();
 }
 async function restoreSelectedRevision(revisionId: string): Promise<void> {
   if (!revisionDialog.value) return;
   const resourceId =
-    revisionDialog.value === "QUEUE"
+    revisionDialog.value === 'QUEUE'
       ? selectedQueue.value?.id
-      : revisionDialog.value === "POLICY"
+      : revisionDialog.value === 'POLICY'
         ? selectedPolicy.value?.id
         : undefined;
-  const ok = await controller.restoreRevision(
-    revisionDialog.value,
-    revisionId,
-    resourceId,
-  );
+  const ok = await controller.restoreRevision(revisionDialog.value, revisionId, resourceId);
   if (ok) revisionDialog.value = null;
 }
 </script>
@@ -944,20 +850,13 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
       <div>
         <span class="routing-eyebrow">Настройки поддержки</span>
         <h1>Маршрутизация обращений</h1>
-        <p>
-          Настройте команды, очереди и правила назначения — от условий до
-          объяснимого решения.
-        </p>
+        <p>Настройте команды, очереди и правила назначения — от условий до объяснимого решения.</p>
       </div>
       <div class="routing-header__actions">
         <Tag
           v-if="snapshot"
           :severity="controller.hasBlockingReadiness.value ? 'warn' : 'success'"
-          :value="
-            controller.hasBlockingReadiness.value
-              ? 'Требует внимания'
-              : 'Готово к работе'
-          "
+          :value="controller.hasBlockingReadiness.value ? 'Требует внимания' : 'Готово к работе'"
           rounded
         />
         <Button
@@ -1012,13 +911,10 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
         severity="warn"
         :closable="false"
       >
-        Сервер вернул только часть состояний готовности. Очереди без состояния
-        помечены как «не загружено»; включение для них недоступно.
+        Сервер вернул только часть состояний готовности. Очереди без состояния помечены как «не
+        загружено»; включение для них недоступно.
       </Message>
-      <section
-        v-if="section === 'overview'"
-        class="routing-workbench routing-workbench--overview"
-      >
+      <section v-if="section === 'overview'" class="routing-workbench routing-workbench--overview">
         <aside class="routing-catalog">
           <div class="panel-heading">
             <div>
@@ -1029,32 +925,28 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
           <div class="catalog-explainer">
             <i class="pi pi-info-circle" aria-hidden="true" />
             <p>
-              Системные очереди создаёт платформа. Они собирают обращения по
-              состоянию и не удаляются как обычные очереди.
+              Системные очереди создаёт платформа. Они собирают обращения по состоянию и не
+              удаляются как обычные очереди.
             </p>
           </div>
           <button
             v-for="queue in snapshot.queues"
             :key="queue.id"
             type="button"
-            :class="[
-              'catalog-row',
-              { 'catalog-row--selected': selectedQueueId === queue.id },
-            ]"
+            :class="['catalog-row', { 'catalog-row--selected': selectedQueueId === queue.id }]"
             @click="selectedQueueId = queue.id"
           >
             <span
               class="status-dot"
               :data-status="
-                snapshot.readiness.find((item) => item.queueId === queue.id)
-                  ?.status ?? 'UNKNOWN'
+                snapshot.readiness.find((item) => item.queueId === queue.id)?.status ?? 'UNKNOWN'
               "
             />
             <span>
               <strong>{{ queueLabel(queue) }}</strong>
               <small>
-                {{ queue.kind === "SYSTEM" ? "Системная" : "Проектная" }} ·
-                {{ queue.published ? "Опубликована" : "Черновик" }}
+                {{ queue.kind === 'SYSTEM' ? 'Системная' : 'Проектная' }} ·
+                {{ queue.published ? 'Опубликована' : 'Черновик' }}
               </small>
             </span>
             <i class="pi pi-angle-right" aria-hidden="true" />
@@ -1091,19 +983,10 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
 
           <div v-if="readiness" class="readiness-layout">
             <section
-              :class="[
-                'next-action-card',
-                { 'next-action-card--ready': !firstReadinessIssue },
-              ]"
+              :class="['next-action-card', { 'next-action-card--ready': !firstReadinessIssue }]"
             >
               <span class="next-action-card__icon">
-                <i
-                  :class="
-                    firstReadinessIssue
-                      ? 'pi pi-arrow-right'
-                      : 'pi pi-check-circle'
-                  "
-                />
+                <i :class="firstReadinessIssue ? 'pi pi-arrow-right' : 'pi pi-check-circle'" />
               </span>
               <div>
                 <span class="routing-eyebrow">Следующий шаг</span>
@@ -1112,20 +995,17 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
                     firstReadinessIssue
                       ? checkLabel(firstReadinessIssue.code)
                       : readiness.activation
-                        ? "Маршрут работает"
-                        : "Можно включать назначение"
+                        ? 'Маршрут работает'
+                        : 'Можно включать назначение'
                   }}
                 </h3>
                 <p>
                   {{
                     firstReadinessIssue
-                      ? checkDescription(
-                          firstReadinessIssue.code,
-                          firstReadinessIssue.status,
-                        )
+                      ? checkDescription(firstReadinessIssue.code, firstReadinessIssue.status)
                       : readiness.activation
                         ? `${modeLabel(readiness.activation.mode)} · ${formatDate(readiness.activation.activatedAt)}`
-                        : "Все обязательные проверки пройдены. Выберите режим и включите распределение."
+                        : 'Все обязательные проверки пройдены. Выберите режим и включите распределение.'
                   }}
                 </p>
               </div>
@@ -1138,25 +1018,15 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
               />
             </section>
 
-            <section
-              class="readiness-checklist"
-              aria-label="Проверки готовности"
-            >
+            <section class="readiness-checklist" aria-label="Проверки готовности">
               <header>
                 <div>
                   <h3>Что уже проверено</h3>
-                  <p>
-                    {{ passedReadinessChecks }} из
-                    {{ readiness.checks.length }} условий готовы
-                  </p>
+                  <p>{{ passedReadinessChecks }} из {{ readiness.checks.length }} условий готовы</p>
                 </div>
               </header>
               <ol>
-                <li
-                  v-for="check in readiness.checks"
-                  :key="check.code"
-                  :data-status="check.status"
-                >
+                <li v-for="check in readiness.checks" :key="check.code" :data-status="check.status">
                   <span class="readiness-check__mark">
                     <i
                       :class="
@@ -1170,32 +1040,26 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
                   </span>
                   <span>
                     <strong>{{ checkLabel(check.code) }}</strong>
-                    <small>{{
-                      checkDescription(check.code, check.status)
-                    }}</small>
+                    <small>{{ checkDescription(check.code, check.status) }}</small>
                   </span>
                   <span class="readiness-check__state">
-                    {{ check.status === "PASS" ? "Готово" : "Нужно действие" }}
+                    {{ check.status === 'PASS' ? 'Готово' : 'Нужно действие' }}
                   </span>
                 </li>
                 <li :data-status="readiness.activation ? 'PASS' : 'PENDING'">
                   <span class="readiness-check__mark">
-                    <i
-                      :class="
-                        readiness.activation ? 'pi pi-check' : 'pi pi-circle'
-                      "
-                    />
+                    <i :class="readiness.activation ? 'pi pi-check' : 'pi pi-circle'" />
                   </span>
                   <span>
                     <strong>Режим назначения</strong>
                     <small>{{
                       readiness.activation
                         ? modeLabel(readiness.activation.mode)
-                        : "Включается после обязательных проверок"
+                        : 'Включается после обязательных проверок'
                     }}</small>
                   </span>
                   <span class="readiness-check__state">
-                    {{ readiness.activation ? "Включён" : "Ожидает" }}
+                    {{ readiness.activation ? 'Включён' : 'Ожидает' }}
                   </span>
                 </li>
               </ol>
@@ -1205,28 +1069,23 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
           <div class="routing-summary-strip">
             <div>
               <span>Подходящих операторов</span
-              ><strong>{{ readiness?.candidateCount ?? "—" }}</strong>
+              ><strong>{{ readiness?.candidateCount ?? '—' }}</strong>
             </div>
             <div>
               <span>Правило назначения</span
               ><strong>{{
                 routingPolicyLabel(
-                  snapshot.policies.find(
-                    (item) => item.id === selectedSlot?.policyId,
-                  ) ?? snapshot.policies[0],
+                  snapshot.policies.find((item) => item.id === selectedSlot?.policyId) ??
+                    snapshot.policies[0],
                 )
               }}</strong>
             </div>
             <div>
-              <span>Приоритет</span
-              ><strong>{{ selectedSlot?.routePriority ?? "Не задан" }}</strong>
+              <span>Приоритет</span><strong>{{ selectedSlot?.routePriority ?? 'Не задан' }}</strong>
             </div>
           </div>
 
-          <div
-            v-if="canManageRouting"
-            class="surface-actions surface-actions--overview"
-          >
+          <div v-if="canManageRouting" class="surface-actions surface-actions--overview">
             <Button
               label="Проверочный запуск"
               icon="pi pi-play"
@@ -1252,11 +1111,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
               @click="activationDialog = true"
             />
           </div>
-          <div
-            v-if="controller.shadowRun.value"
-            class="shadow-result"
-            role="status"
-          >
+          <div v-if="controller.shadowRun.value" class="shadow-result" role="status">
             <i
               :class="
                 controller.shadowRun.value.state === 'QUEUED' ||
@@ -1267,20 +1122,17 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             />
             <div>
               <strong>{{
-                controller.shadowRun.value.state === "QUEUED" ||
-                controller.shadowRun.value.state === "RUNNING"
-                  ? "Проверочный запуск выполняется"
-                  : "Проверочный запуск завершён"
+                controller.shadowRun.value.state === 'QUEUED' ||
+                controller.shadowRun.value.state === 'RUNNING'
+                  ? 'Проверочный запуск выполняется'
+                  : 'Проверочный запуск завершён'
               }}</strong
               ><span
-                >{{ controller.shadowDecisionIds.value.length }} решений связаны
-                с запуском {{ controller.shadowRun.value.id.slice(-8) }}</span
+                >{{ controller.shadowDecisionIds.value.length }} решений связаны с запуском
+                {{ controller.shadowRun.value.id.slice(-8) }}</span
               >
               <button
-                v-for="decisionId in controller.shadowDecisionIds.value.slice(
-                  0,
-                  5,
-                )"
+                v-for="decisionId in controller.shadowDecisionIds.value.slice(0, 5)"
                 :key="decisionId"
                 type="button"
                 class="shadow-decision-link"
@@ -1322,32 +1174,23 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
               Команды <span>{{ snapshot.teams.length }}</span>
             </h3>
             <div class="identity-list">
-              <article
-                v-for="team in snapshot.teams"
-                :key="team.id"
-                class="identity-row"
-              >
+              <article v-for="team in snapshot.teams" :key="team.id" class="identity-row">
                 <span class="identity-icon"><i class="pi pi-users" /></span>
                 <div>
                   <strong>{{ team.name }}</strong
                   ><small
                     >{{ team.code }} ·
                     {{
-                      snapshot.operators.filter((operator) =>
-                        operator.teamIds.includes(team.id),
-                      ).length
+                      snapshot.operators.filter((operator) => operator.teamIds.includes(team.id))
+                        .length
                     }}
                     операторов</small
                   >
                 </div>
                 <div class="identity-actions">
                   <Tag
-                    :severity="
-                      team.lifecycle === 'ACTIVE' ? 'success' : 'secondary'
-                    "
-                    :value="
-                      team.lifecycle === 'ACTIVE' ? 'Работает' : 'В архиве'
-                    "
+                    :severity="team.lifecycle === 'ACTIVE' ? 'success' : 'secondary'"
+                    :value="team.lifecycle === 'ACTIVE' ? 'Работает' : 'В архиве'"
                   /><Button
                     v-if="canManageTeams && team.lifecycle === 'ACTIVE'"
                     icon="pi pi-pencil"
@@ -1396,33 +1239,25 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
               Навыки <span>{{ snapshot.skills.length }}</span>
             </h3>
             <div class="identity-list">
-              <article
-                v-for="skill in snapshot.skills"
-                :key="skill.id"
-                class="identity-row"
-              >
+              <article v-for="skill in snapshot.skills" :key="skill.id" class="identity-row">
                 <span class="identity-icon"><i class="pi pi-sparkles" /></span>
                 <div>
                   <strong>{{ skill.name }}</strong
                   ><small
                     >{{ skill.code }} ·
                     {{
-                      skill.kind === "SAFETY"
-                        ? "Безопасность"
-                        : skill.kind === "CHANNEL"
-                          ? "Канал связи"
-                          : "Общий"
+                      skill.kind === 'SAFETY'
+                        ? 'Безопасность'
+                        : skill.kind === 'CHANNEL'
+                          ? 'Канал связи'
+                          : 'Общий'
                     }}</small
                   >
                 </div>
                 <div class="identity-actions">
                   <Tag
-                    :severity="
-                      skill.lifecycle === 'ACTIVE' ? 'success' : 'secondary'
-                    "
-                    :value="
-                      skill.lifecycle === 'ACTIVE' ? 'Работает' : 'В архиве'
-                    "
+                    :severity="skill.lifecycle === 'ACTIVE' ? 'success' : 'secondary'"
+                    :value="skill.lifecycle === 'ACTIVE' ? 'Работает' : 'В архиве'"
                   /><Button
                     v-if="canManageTeams && skill.lifecycle === 'ACTIVE'"
                     icon="pi pi-pencil"
@@ -1477,11 +1312,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             <p>Настроенная ёмкость и текущая доступность показаны отдельно.</p>
           </div>
           <div v-if="canManageTeams" class="surface-title__actions">
-            <Tag
-              v-if="hasLocalChanges"
-              severity="info"
-              value="Изменения только в браузере"
-            /><Tag
+            <Tag v-if="hasLocalChanges" severity="info" value="Изменения только в браузере" /><Tag
               :severity="snapshot.workforce.draft ? 'warn' : 'success'"
               :value="
                 snapshot.workforce.draft
@@ -1520,27 +1351,20 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
               v-model="workforceSearch"
               placeholder="Найти оператора" /></span
           ><span class="toolbar-note"
-            >{{ filteredOperators.length }} операторов ·
-            {{ snapshot.teams.length }} команды</span
+            >{{ filteredOperators.length }} операторов · {{ snapshot.teams.length }} команды</span
           >
         </div>
         <div class="workforce-table" aria-label="Настройка рабочей силы">
           <div class="workforce-row workforce-row--head">
-            <span>Оператор</span><span>Команды</span><span>Навыки</span
-            ><span>Ёмкость</span><span>Сейчас</span>
+            <span>Оператор</span><span>Команды</span><span>Навыки</span><span>Ёмкость</span
+            ><span>Сейчас</span>
           </div>
-          <div
-            v-for="operator in filteredOperators"
-            :key="operator.id"
-            class="workforce-row"
-          >
+          <div v-for="operator in filteredOperators" :key="operator.id" class="workforce-row">
             <span class="operator-cell"
               ><span class="avatar-dot">{{ operator.name.slice(0, 1) }}</span
               ><span
                 ><strong>{{ operator.name }}</strong
-                ><small>{{
-                  operator.state === "ACTIVE" ? "Активен" : "Неактивен"
-                }}</small></span
+                ><small>{{ operator.state === 'ACTIVE' ? 'Активен' : 'Неактивен' }}</small></span
               ></span
             >
             <span
@@ -1630,22 +1454,19 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             v-for="queue in snapshot.queues"
             :key="queue.id"
             type="button"
-            :class="[
-              'catalog-row',
-              { 'catalog-row--selected': selectedQueueId === queue.id },
-            ]"
+            :class="['catalog-row', { 'catalog-row--selected': selectedQueueId === queue.id }]"
             @click="selectedQueueId = queue.id"
           >
             <span
               ><strong>{{ queue.name }}</strong
               ><small>{{
                 !queue.detailLoaded
-                  ? "Откройте для подробностей"
+                  ? 'Откройте для подробностей'
                   : queue.draft
-                    ? "Есть черновик"
+                    ? 'Есть черновик'
                     : queue.published
                       ? `Версия ${queue.published.revisionNumber}`
-                      : "Не опубликована"
+                      : 'Не опубликована'
               }}</small></span
             ><Tag
               :severity="
@@ -1690,11 +1511,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
                 severity="secondary"
                 outlined
                 @click="previewSelectedQueue"
-              /><Button
-                label="Сохранить"
-                :disabled="!queueValid"
-                @click="saveQueue"
-              /><Button
+              /><Button label="Сохранить" :disabled="!queueValid" @click="saveQueue" /><Button
                 label="Опубликовать"
                 icon="pi pi-send"
                 :disabled="!canManageQueues || !selectedQueue.draft"
@@ -1705,9 +1522,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
           <div class="form-grid">
             <label class="field field--wide"
               ><span>Название</span
-              ><InputText
-                v-model="queueDraft.displayName"
-                :disabled="!canManageQueues" /></label
+              ><InputText v-model="queueDraft.displayName" :disabled="!canManageQueues" /></label
             ><label class="field field--wide"
               ><span>Описание</span
               ><Textarea
@@ -1777,18 +1592,14 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             /></label>
           </div>
           <Message v-if="!queueValid" severity="warn" :closable="false">
-            Заполните название, команды и все условия очереди допустимыми
-            значениями.
+            Заполните название, команды и все условия очереди допустимыми значениями.
           </Message>
           <div
             v-if="queueDraft.routing.fallbackTeamIds.length"
             class="fallback-order"
             aria-label="Порядок резервных команд"
           >
-            <span
-              v-for="(teamId, index) in queueDraft.routing.fallbackTeamIds"
-              :key="teamId"
-            >
+            <span v-for="(teamId, index) in queueDraft.routing.fallbackTeamIds" :key="teamId">
               <strong>{{ teamName(teamId) }}</strong>
               <Button
                 icon="pi pi-arrow-up"
@@ -1802,9 +1613,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
                 icon="pi pi-arrow-down"
                 text
                 rounded
-                :disabled="
-                  index === queueDraft.routing.fallbackTeamIds.length - 1
-                "
+                :disabled="index === queueDraft.routing.fallbackTeamIds.length - 1"
                 aria-label="Опустить резервную команду"
                 @click="moveFallback(index, 1)"
               />
@@ -1898,26 +1707,23 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
               обращений.</strong
             >
             Пример:
-            {{ queuePreview.caseIds.join(", ") || "нет обращений" }}. Проверено
+            {{ queuePreview.caseIds.join(', ') || 'нет обращений' }}. Проверено
             {{ formatDate(queuePreview.evaluatedAt) }}.<span
               v-if="queuePreview.diagnostics.length"
               class="preview-diagnostics"
-              >{{ queuePreview.diagnostics.join(" · ") }}</span
+              >{{ queuePreview.diagnostics.join(' · ') }}</span
             ></Message
           >
         </div>
-        <div
-          v-else-if="selectedQueue && !selectedQueue.detailLoaded"
-          class="routing-surface"
-        >
+        <div v-else-if="selectedQueue && !selectedQueue.detailLoaded" class="routing-surface">
           <Skeleton height="18rem" />
         </div>
         <div v-else-if="selectedQueue" class="routing-surface">
           <span class="routing-eyebrow">Опубликованная очередь</span>
           <h2>{{ selectedQueue.name }}</h2>
           <Message severity="info" :closable="false"
-            >Черновик и команды изменения скрыты: доступен только просмотр
-            опубликованного состояния.</Message
+            >Черновик и команды изменения скрыты: доступен только просмотр опубликованного
+            состояния.</Message
           >
           <dl v-if="selectedQueue.published" class="readonly-summary">
             <div>
@@ -1930,23 +1736,20 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             </div>
             <div>
               <dt>Описание</dt>
-              <dd>{{ selectedQueue.description || "Нет описания" }}</dd>
+              <dd>{{ selectedQueue.description || 'Нет описания' }}</dd>
             </div>
           </dl>
         </div>
       </section>
 
-      <section
-        v-else-if="section === 'policies'"
-        class="policy-catalog-surface"
-      >
+      <section v-else-if="section === 'policies'" class="policy-catalog-surface">
         <header class="policy-catalog-header">
           <div>
             <span class="routing-eyebrow">Автоматическое распределение</span>
             <h2>Правила назначения операторов</h2>
             <p>
-              Правило определяет, кто может получить обращение, кого система
-              выберет первым и что произойдёт, если назначение не состоялось.
+              Правило определяет, кто может получить обращение, кого система выберет первым и что
+              произойдёт, если назначение не состоялось.
             </p>
           </div>
           <Button
@@ -1957,10 +1760,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
           />
         </header>
 
-        <ol
-          class="assignment-flow"
-          aria-label="Как работает правило назначения"
-        >
+        <ol class="assignment-flow" aria-label="Как работает правило назначения">
           <li>
             <span>1</span><strong>Отбирает подходящих</strong
             ><small>по навыкам, языкам и занятости</small>
@@ -1976,15 +1776,9 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
         </ol>
 
         <div v-if="snapshot.policies.length" class="policy-card-list">
-          <article
-            v-for="policy in snapshot.policies"
-            :key="policy.id"
-            class="policy-card"
-          >
+          <article v-for="policy in snapshot.policies" :key="policy.id" class="policy-card">
             <div class="policy-card__identity">
-              <span class="policy-card__icon"
-                ><i class="pi pi-directions"
-              /></span>
+              <span class="policy-card__icon"><i class="pi pi-directions" /></span>
               <div>
                 <h3>{{ routingPolicyLabel(policy) }}</h3>
                 <code>{{ policy.code }}</code>
@@ -1993,9 +1787,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             <div class="policy-card__status">
               <span
                 class="status-dot"
-                :data-status="
-                  policy.draft ? 'DEGRADED' : policy.published ? 'READY' : 'UNKNOWN'
-                "
+                :data-status="policy.draft ? 'DEGRADED' : policy.published ? 'READY' : 'UNKNOWN'"
               />
               <span>{{ policyStatus(policy) }}</span>
             </div>
@@ -2006,9 +1798,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
               </div>
               <div>
                 <dt>Предел занятости</dt>
-                <dd>
-                  {{ policyConfiguration(policy)?.hardUtilizationPercent }}%
-                </dd>
+                <dd>{{ policyConfiguration(policy)?.hardUtilizationPercent }}%</dd>
               </div>
               <div>
                 <dt>Попыток назначения</dt>
@@ -2036,10 +1826,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
         <div v-else class="policy-empty">
           <span><i class="pi pi-directions" /></span>
           <h3>Правил назначения пока нет</h3>
-          <p>
-            Создайте первое правило, чтобы система могла выбирать оператора для
-            очереди.
-          </p>
+          <p>Создайте первое правило, чтобы система могла выбирать оператора для очереди.</p>
           <Button
             v-if="canManageRouting"
             label="Создать правило"
@@ -2054,10 +1841,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
           <div>
             <span class="routing-eyebrow">Объяснение решения</span>
             <h2>Решения маршрутизации</h2>
-            <p>
-              Результат, кандидаты и закреплённые версии из серверного
-              доказательства.
-            </p>
+            <p>Результат, кандидаты и закреплённые версии из серверного доказательства.</p>
           </div>
         </div>
         <div class="toolbar">
@@ -2065,15 +1849,12 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             ><i class="pi pi-search" /><InputText
               v-model="decisionSearch"
               placeholder="Номер обращения или результат" /></span
-          ><span class="toolbar-note"
-            >{{ filteredDecisions.length }} решений</span
-          >
+          ><span class="toolbar-note">{{ filteredDecisions.length }} решений</span>
         </div>
         <div class="decision-table" aria-label="Решения маршрутизации">
           <div class="decision-row decision-row--head">
-            <span>Время</span><span>Обращение</span><span>Результат</span
-            ><span>Очередь</span><span>Команда и оператор</span
-            ><span>Кандидаты</span><span>Расчёт</span>
+            <span>Время</span><span>Обращение</span><span>Результат</span><span>Очередь</span
+            ><span>Команда и оператор</span><span>Кандидаты</span><span>Расчёт</span>
           </div>
           <button
             v-for="decision in filteredDecisions"
@@ -2091,17 +1872,13 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             ><span>{{ queueName(decision.queueId) }}</span
             ><span
               >{{ teamName(decision.selectedTeamId)
-              }}<small>{{
-                operatorName(decision.selectedOperatorId)
-              }}</small></span
+              }}<small>{{ operatorName(decision.selectedOperatorId) }}</small></span
             ><span
               >{{ decision.candidateCount }}
               <small v-if="decision.excludedCount"
                 >· исключено {{ decision.excludedCount }}</small
               ></span
-            ><span
-              >{{ decision.latencyMs }} мс <i class="pi pi-angle-right"
-            /></span>
+            ><span>{{ decision.latencyMs }} мс <i class="pi pi-angle-right" /></span>
           </button>
         </div>
         <Button
@@ -2124,14 +1901,10 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
       <div class="dialog-form">
         <label class="field"
           ><span>Код</span
-          ><InputText
-            v-model="identityForm.code"
-            placeholder="priority-support" /></label
+          ><InputText v-model="identityForm.code" placeholder="priority-support" /></label
         ><label class="field"
           ><span>Название</span
-          ><InputText
-            v-model="identityForm.name"
-            placeholder="Приоритетная поддержка" /></label
+          ><InputText v-model="identityForm.name" placeholder="Приоритетная поддержка" /></label
         ><label v-if="identityDialog === 'SKILL'" class="field"
           ><span>Тип навыка</span
           ><Select
@@ -2146,16 +1919,9 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
         /></label>
       </div>
       <template #footer
-        ><Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="identityDialog = null" /><Button
+        ><Button label="Отмена" severity="secondary" text @click="identityDialog = null" /><Button
           label="Создать"
-          :disabled="
-            identityForm.code.trim().length < 2 ||
-            identityForm.name.trim().length < 2
-          "
+          :disabled="identityForm.code.trim().length < 2 || identityForm.name.trim().length < 2"
           :loading="controller.saving.value"
           @click="createIdentity"
       /></template>
@@ -2174,14 +1940,12 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
       @update:visible="!$event && closePolicyDialog()"
     >
       <div class="policy-dialog-intro">
-        <span class="policy-dialog-intro__icon"
-          ><i class="pi pi-directions"
-        /></span>
+        <span class="policy-dialog-intro__icon"><i class="pi pi-directions" /></span>
         <div>
           <strong>Как система назначает оператора</strong>
           <p>
-            Сначала она исключает неподходящих операторов, затем сравнивает
-            оставшихся и при необходимости повторяет попытку.
+            Сначала она исключает неподходящих операторов, затем сравнивает оставшихся и при
+            необходимости повторяет попытку.
           </p>
         </div>
       </div>
@@ -2193,25 +1957,20 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
       <form
         v-else
         class="policy-dialog-form"
-        @submit.prevent="
-          policyDialogMode === 'CREATE' ? createPolicy() : savePolicy()
-        "
+        @submit.prevent="policyDialogMode === 'CREATE' ? createPolicy() : savePolicy()"
       >
         <Message v-if="policyDialogError" severity="error" :closable="false">
           {{ policyDialogError }}
         </Message>
 
-        <section
-          v-if="policyDialogMode === 'CREATE'"
-          class="policy-form-section"
-        >
+        <section v-if="policyDialogMode === 'CREATE'" class="policy-form-section">
           <div class="policy-form-section__number">1</div>
           <div class="policy-form-section__content">
             <header>
               <h3>Назовите правило для системы</h3>
               <p>
-                Идентификатор нужен для связи с очередями и журнала изменений.
-                После создания изменить его нельзя.
+                Идентификатор нужен для связи с очередями и журнала изменений. После создания
+                изменить его нельзя.
               </p>
             </header>
             <label class="field field--wide">
@@ -2226,30 +1985,24 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
                 :invalid="Boolean(policyCodeError && newPolicyCode.trim())"
                 @blur="normalizePolicyCode"
               />
-              <small
-                v-if="policyCodeError && newPolicyCode.trim()"
-                class="field-error"
-              >
+              <small v-if="policyCodeError && newPolicyCode.trim()" class="field-error">
                 {{ policyCodeError }}
               </small>
-              <small v-else
-                >Нижнее подчёркивание автоматически заменится на дефис.</small
-              >
+              <small v-else>Нижнее подчёркивание автоматически заменится на дефис.</small>
             </label>
           </div>
         </section>
 
         <section class="policy-form-section">
           <div class="policy-form-section__number">
-            {{ policyDialogMode === "CREATE" ? 2 : 1 }}
+            {{ policyDialogMode === 'CREATE' ? 2 : 1 }}
           </div>
           <div class="policy-form-section__content">
             <header>
               <h3>Кто может получить обращение</h3>
               <p>
-                Обязательные условия исключают оператора из выбора.
-                Дополнительные условия только помогают выбрать лучшего из
-                подходящих.
+                Обязательные условия исключают оператора из выбора. Дополнительные условия только
+                помогают выбрать лучшего из подходящих.
               </p>
             </header>
             <div class="form-grid">
@@ -2348,23 +2101,18 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
 
         <section class="policy-form-section">
           <div class="policy-form-section__number">
-            {{ policyDialogMode === "CREATE" ? 3 : 2 }}
+            {{ policyDialogMode === 'CREATE' ? 3 : 2 }}
           </div>
           <div class="policy-form-section__content">
             <header>
               <h3>Какое обращение назначать первым</h3>
               <p>
-                Чем больше число, тем сильнее признак поднимает обращение в
-                очереди. Значения сравниваются между собой; их сумма не обязана
-                равняться 100.
+                Чем больше число, тем сильнее признак поднимает обращение в очереди. Значения
+                сравниваются между собой; их сумма не обязана равняться 100.
               </p>
             </header>
             <div class="scoring-list">
-              <label
-                v-for="field in queueWeightFields"
-                :key="field.key"
-                class="score-field"
-              >
+              <label v-for="field in queueWeightFields" :key="field.key" class="score-field">
                 <span>
                   <FormFieldLabel :text="field.label" :help="field.help" />
                   <small>{{ field.help }}</small>
@@ -2382,23 +2130,18 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
 
         <section class="policy-form-section">
           <div class="policy-form-section__number">
-            {{ policyDialogMode === "CREATE" ? 4 : 3 }}
+            {{ policyDialogMode === 'CREATE' ? 4 : 3 }}
           </div>
           <div class="policy-form-section__content">
             <header>
               <h3>Как выбрать оператора</h3>
               <p>
-                Система начисляет баллы всем подходящим операторам. Чем больше
-                число, тем сильнее соответствующий признак влияет на итоговый
-                выбор.
+                Система начисляет баллы всем подходящим операторам. Чем больше число, тем сильнее
+                соответствующий признак влияет на итоговый выбор.
               </p>
             </header>
             <div class="scoring-list">
-              <label
-                v-for="field in operatorWeightFields"
-                :key="field.key"
-                class="score-field"
-              >
+              <label v-for="field in operatorWeightFields" :key="field.key" class="score-field">
                 <span>
                   <FormFieldLabel :text="field.label" :help="field.help" />
                   <small>{{ field.help }}</small>
@@ -2416,14 +2159,14 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
 
         <section class="policy-form-section">
           <div class="policy-form-section__number">
-            {{ policyDialogMode === "CREATE" ? 5 : 4 }}
+            {{ policyDialogMode === 'CREATE' ? 5 : 4 }}
           </div>
           <div class="policy-form-section__content">
             <header>
               <h3>Если назначение не состоялось</h3>
               <p>
-                Здесь задаётся время на ответ и поведение после отказа,
-                истечения времени или другого неудачного назначения.
+                Здесь задаётся время на ответ и поведение после отказа, истечения времени или
+                другого неудачного назначения.
               </p>
             </header>
             <div class="form-grid form-grid--three">
@@ -2497,19 +2240,13 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
         </section>
 
         <Message v-if="!policyFormValid" severity="error" :closable="false">
-          Проверьте числовые значения: одно или несколько полей выходят за
-          допустимый диапазон.
+          Проверьте числовые значения: одно или несколько полей выходят за допустимый диапазон.
         </Message>
       </form>
 
       <template #footer>
         <div class="policy-dialog-footer">
-          <Button
-            label="Закрыть"
-            severity="secondary"
-            text
-            @click="closePolicyDialog"
-          />
+          <Button label="Закрыть" severity="secondary" text @click="closePolicyDialog" />
           <template v-if="policyDialogMode === 'CREATE'">
             <Button
               label="Создать правило"
@@ -2519,9 +2256,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
               @click="createPolicy"
             />
           </template>
-          <template
-            v-else-if="canManageRouting && selectedPolicy?.detailLoaded"
-          >
+          <template v-else-if="canManageRouting && selectedPolicy?.detailLoaded">
             <Button
               label="Сохранить"
               severity="secondary"
@@ -2552,17 +2287,13 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
       <div class="dialog-form">
         <label class="field"
           ><span>Код</span
-          ><InputText
-            v-model="resourceForm.code"
-            placeholder="urgent-support" /></label
+          ><InputText v-model="resourceForm.code" placeholder="urgent-support" /></label
         ><label class="field"
           ><span>Название</span
-          ><InputText
-            v-model="resourceForm.name"
-            placeholder="Срочные обращения" /></label
+          ><InputText v-model="resourceForm.name" placeholder="Срочные обращения" /></label
         ><Message severity="info" :closable="false"
-          >Будет создан отдельный серверный черновик. Публикация выполняется
-          следующим действием.</Message
+          >Будет создан отдельный серверный черновик. Публикация выполняется следующим
+          действием.</Message
         >
       </div>
       <template #footer
@@ -2572,10 +2303,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
           text
           @click="createResourceDialog = null" /><Button
           label="Создать черновик"
-          :disabled="
-            resourceForm.code.trim().length < 2 ||
-            resourceForm.name.trim().length < 2
-          "
+          :disabled="resourceForm.code.trim().length < 2 || resourceForm.name.trim().length < 2"
           :loading="controller.saving.value"
           @click="createResource"
       /></template>
@@ -2584,36 +2312,21 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
     <Dialog
       :visible="Boolean(identityEdit)"
       modal
-      :header="
-        identityEdit?.action === 'ARCHIVE'
-          ? 'Архивировать справочник'
-          : 'Переименовать'
-      "
+      :header="identityEdit?.action === 'ARCHIVE' ? 'Архивировать справочник' : 'Переименовать'"
       :style="{ width: '30rem', maxWidth: 'calc(100vw - 32px)' }"
       @update:visible="!$event && (identityEdit = null)"
     >
       <div v-if="identityEdit" class="dialog-form">
-        <Message
-          v-if="identityEdit.action === 'ARCHIVE'"
-          severity="warn"
-          :closable="false"
-          >Справочник исчезнет из новых настроек, но сохранится в опубликованных
-          версиях и журнале.</Message
+        <Message v-if="identityEdit.action === 'ARCHIVE'" severity="warn" :closable="false"
+          >Справочник исчезнет из новых настроек, но сохранится в опубликованных версиях и
+          журнале.</Message
         ><label v-else class="field"
           ><span>Новое название</span><InputText v-model="identityEdit.name"
         /></label>
       </div>
       <template #footer
-        ><Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="identityEdit = null" /><Button
-          :label="
-            identityEdit?.action === 'ARCHIVE'
-              ? 'Архивировать'
-              : 'Сохранить название'
-          "
+        ><Button label="Отмена" severity="secondary" text @click="identityEdit = null" /><Button
+          :label="identityEdit?.action === 'ARCHIVE' ? 'Архивировать' : 'Сохранить название'"
           :severity="identityEdit?.action === 'ARCHIVE' ? 'danger' : undefined"
           :loading="controller.saving.value"
           @click="commitIdentityEdit"
@@ -2628,10 +2341,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
       @update:visible="!$event && (revisionDialog = null)"
     >
       <div class="revision-dialog">
-        <Message
-          v-if="controller.revisionDiff.value"
-          severity="info"
-          :closable="false"
+        <Message v-if="controller.revisionDiff.value" severity="info" :closable="false"
           ><strong
             >Сравнение версий {{ controller.revisionDiff.value.fromRevision }} →
             {{ controller.revisionDiff.value.toRevision }}</strong
@@ -2646,40 +2356,25 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             <span class="revision-number">{{ revision.revisionNumber }}</span>
             <div>
               <strong>Версия {{ revision.revisionNumber }}</strong
-              ><small
-                >{{ revision.publisherName }} ·
-                {{ formatDate(revision.publishedAt) }}</small
-              >
+              ><small>{{ revision.publisherName }} · {{ formatDate(revision.publishedAt) }}</small>
             </div>
             <Button
               label="Восстановить как черновик"
               severity="secondary"
               outlined
               size="small"
-              :disabled="
-                revision.revisionNumber ===
-                controller.revisions.value[0]?.revisionNumber
-              "
+              :disabled="revision.revisionNumber === controller.revisions.value[0]?.revisionNumber"
               @click="restoreSelectedRevision(revision.id)"
             />
           </article>
         </div>
-        <section
-          v-if="controller.auditEvents.value.length"
-          class="audit-section"
-        >
+        <section v-if="controller.auditEvents.value.length" class="audit-section">
           <h3>Журнал ресурса</h3>
-          <article
-            v-for="event in controller.auditEvents.value"
-            :key="event.id"
-            class="audit-row"
-          >
+          <article v-for="event in controller.auditEvents.value" :key="event.id" class="audit-row">
             <span
               ><strong>{{ event.actorName }}</strong
               ><small>{{ formatDate(event.occurredAt) }}</small></span
-            ><span>{{
-              event.reason ?? event.reasonCode ?? event.eventType
-            }}</span
+            ><span>{{ event.reason ?? event.reasonCode ?? event.eventType }}</span
             ><Tag
               :severity="event.outcome === 'APPLIED' ? 'success' : 'warn'"
               :value="event.outcome === 'APPLIED' ? 'Выполнено' : event.outcome"
@@ -2697,22 +2392,18 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
     >
       <div class="activation-confirm">
         <Message severity="warn" :closable="false"
-          >Режим будет закреплён за применёнными версиями очереди, правила
-          назначения и рабочей силы. Новые версии не заменят их
-          автоматически.</Message
+          >Режим будет закреплён за применёнными версиями очереди, правила назначения и рабочей
+          силы. Новые версии не заменят их автоматически.</Message
         >
         <div class="pin-list">
           <span
-            ><i class="pi pi-inbox" /><strong>{{
-              queueName(readiness?.queueId ?? null)
-            }}</strong
+            ><i class="pi pi-inbox" /><strong>{{ queueName(readiness?.queueId ?? null) }}</strong
             ><small>Очередь</small></span
           ><span
             ><i class="pi pi-sliders-h" /><strong>{{
               routingPolicyLabel(
-                snapshot?.policies.find(
-                  (item) => item.id === selectedSlot?.policyId,
-                ) ?? snapshot?.policies[0],
+                snapshot?.policies.find((item) => item.id === selectedSlot?.policyId) ??
+                  snapshot?.policies[0],
               )
             }}</strong
             ><small>Правило назначения</small></span
@@ -2729,9 +2420,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             :options="activationModeOptions"
             option-label="label"
             option-value="value" /></label
-        ><label class="field"
-          ><span>Причина</span><InputText v-model="activationReason"
-        /></label>
+        ><label class="field"><span>Причина</span><InputText v-model="activationReason" /></label>
       </div>
       <template #footer
         ><Button
@@ -2740,14 +2429,10 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
           text
           @click="activationDialog = false" /><Button
           :label="
-            activationMode === 'AUTO_ASSIGN'
-              ? 'Подтвердить автоназначение'
-              : 'Включить предложения'
+            activationMode === 'AUTO_ASSIGN' ? 'Подтвердить автоназначение' : 'Включить предложения'
           "
           icon="pi pi-bolt"
-          :disabled="
-            !activationModeOptions.some((item) => item.value === activationMode)
-          "
+          :disabled="!activationModeOptions.some((item) => item.value === activationMode)"
           :loading="controller.saving.value"
           @click="confirmActivation"
       /></template>
@@ -2798,11 +2483,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             <div>
               <dt>Оператор</dt>
               <dd>
-                {{
-                  operatorName(
-                    controller.selectedDecision.value.selectedOperatorId,
-                  )
-                }}
+                {{ operatorName(controller.selectedDecision.value.selectedOperatorId) }}
               </dd>
             </div>
           </dl>
@@ -2823,14 +2504,13 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
                   candidate.exclusions
                     .map((value) =>
                       labelUnknown(value, {
-                        CAPACITY_EXHAUSTED: "нет свободной ёмкости",
-                        AVAILABILITY_NOT_ROUTABLE: "оператор недоступен",
+                        CAPACITY_EXHAUSTED: 'нет свободной ёмкости',
+                        AVAILABILITY_NOT_ROUTABLE: 'оператор недоступен',
                       }),
                     )
-                    .join(", ")
+                    .join(', ')
                 }}</small
-              ><small v-else
-                >Итоговая оценка {{ candidate.score.total ?? 0 }}</small
+              ><small v-else>Итоговая оценка {{ candidate.score.total ?? 0 }}</small
               ><span v-if="candidate.eligible" class="score-breakdown"
                 ><span v-for="(score, code) in candidate.score" :key="code"
                   >{{ scoreLabel(String(code)) }} {{ score }}</span
@@ -2840,7 +2520,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
                 {{
                   Object.entries(candidate.factVersions)
                     .map(([key, value]) => `${key} ${value}`)
-                    .join(" · ")
+                    .join(' · ')
                 }}</small
               >
             </div>
@@ -2855,33 +2535,15 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
           <dl>
             <div>
               <dt>Очередь</dt>
-              <dd>
-                …{{
-                  controller.selectedDecision.value.pins.queueRevisionId?.slice(
-                    -8,
-                  )
-                }}
-              </dd>
+              <dd>…{{ controller.selectedDecision.value.pins.queueRevisionId?.slice(-8) }}</dd>
             </div>
             <div>
               <dt>Правило назначения</dt>
-              <dd>
-                …{{
-                  controller.selectedDecision.value.pins.policyRevisionId?.slice(
-                    -8,
-                  )
-                }}
-              </dd>
+              <dd>…{{ controller.selectedDecision.value.pins.policyRevisionId?.slice(-8) }}</dd>
             </div>
             <div>
               <dt>Рабочая сила</dt>
-              <dd>
-                …{{
-                  controller.selectedDecision.value.pins.workforceRevisionId?.slice(
-                    -8,
-                  )
-                }}
-              </dd>
+              <dd>…{{ controller.selectedDecision.value.pins.workforceRevisionId?.slice(-8) }}</dd>
             </div>
           </dl>
         </section>
@@ -2889,13 +2551,12 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
           <h3>Путь расчёта</h3>
           <dl>
             <div
-              v-for="(value, key) in controller.selectedDecision.value
-                .inputManifest"
+              v-for="(value, key) in controller.selectedDecision.value.inputManifest"
               :key="String(key)"
             >
               <dt>{{ String(key) }}</dt>
               <dd>
-                {{ typeof value === "object" ? JSON.stringify(value) : value }}
+                {{ typeof value === 'object' ? JSON.stringify(value) : value }}
               </dd>
             </div>
           </dl>
@@ -2904,13 +2565,12 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
           <h3>Версии исходных данных</h3>
           <dl>
             <div
-              v-for="(value, key) in controller.selectedDecision.value
-                .sourceVector"
+              v-for="(value, key) in controller.selectedDecision.value.sourceVector"
               :key="String(key)"
             >
               <dt>{{ String(key) }}</dt>
               <dd>
-                {{ typeof value === "object" ? JSON.stringify(value) : value }}
+                {{ typeof value === 'object' ? JSON.stringify(value) : value }}
               </dd>
             </div>
           </dl>
@@ -3392,18 +3052,15 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
   height: 8px;
   border-radius: 50%;
   background: var(--status-danger);
-  box-shadow: 0 0 0 3px
-    color-mix(in srgb, var(--status-danger) 14%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-danger) 14%, transparent);
 }
-.status-dot[data-status="READY"] {
+.status-dot[data-status='READY'] {
   background: var(--status-success);
-  box-shadow: 0 0 0 3px
-    color-mix(in srgb, var(--status-success) 14%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-success) 14%, transparent);
 }
-.status-dot[data-status="DEGRADED"] {
+.status-dot[data-status='DEGRADED'] {
   background: var(--status-warning);
-  box-shadow: 0 0 0 3px
-    color-mix(in srgb, var(--status-warning) 14%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-warning) 14%, transparent);
 }
 .surface-title {
   display: flex;
@@ -3456,17 +3113,12 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
   gap: 14px;
   min-height: 100%;
   padding: 18px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-warning) 28%, var(--surface-border));
+  border: 1px solid color-mix(in srgb, var(--status-warning) 28%, var(--surface-border));
   border-radius: 12px;
   background: color-mix(in srgb, var(--status-warning) 7%, var(--surface-card));
 }
 .next-action-card--ready {
-  border-color: color-mix(
-    in srgb,
-    var(--status-success) 28%,
-    var(--surface-border)
-  );
+  border-color: color-mix(in srgb, var(--status-success) 28%, var(--surface-border));
   background: color-mix(in srgb, var(--status-success) 7%, var(--surface-card));
 }
 .next-action-card__icon {
@@ -3534,19 +3186,15 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
   background: var(--surface-subtle);
   font-size: 0.68rem;
 }
-.readiness-checklist li[data-status="PASS"] .readiness-check__mark {
+.readiness-checklist li[data-status='PASS'] .readiness-check__mark {
   color: var(--status-success);
-  background: color-mix(
-    in srgb,
-    var(--status-success) 10%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--status-success) 10%, var(--surface-card));
 }
-.readiness-checklist li[data-status="BLOCKING"] .readiness-check__mark {
+.readiness-checklist li[data-status='BLOCKING'] .readiness-check__mark {
   color: var(--status-danger);
   background: color-mix(in srgb, var(--status-danger) 9%, var(--surface-card));
 }
-.readiness-checklist li[data-status="DEGRADED"] .readiness-check__mark {
+.readiness-checklist li[data-status='DEGRADED'] .readiness-check__mark {
   color: var(--status-warning);
 }
 .readiness-checklist strong,
@@ -3874,8 +3522,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
   align-items: end;
   gap: 12px;
   padding: 16px;
-  border: 1px solid
-    color-mix(in srgb, var(--brand-primary) 22%, var(--surface-border));
+  border: 1px solid color-mix(in srgb, var(--brand-primary) 22%, var(--surface-border));
   border-radius: 11px;
   background: color-mix(in srgb, var(--brand-soft) 42%, var(--surface-card));
 }

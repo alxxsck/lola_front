@@ -1,7 +1,7 @@
-import { flushPromises, mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import AIReviewDialog from "./AIReviewDialog.vue";
-import EventPicker from "@/features/events/EventPicker.vue";
+import { flushPromises, mount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import AIReviewDialog from './AIReviewDialog.vue';
+import EventPicker from '@/features/events/EventPicker.vue';
 
 const mocks = vi.hoisted(() => ({
   settings: vi.fn(),
@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   push: vi.fn(),
 }));
 
-vi.mock("../api/ai-review-repository", () => ({
+vi.mock('../api/ai-review-repository', () => ({
   aiReviewRepository: {
     getSettings: mocks.settings,
     estimate: mocks.estimate,
@@ -21,34 +21,33 @@ vi.mock("../api/ai-review-repository", () => ({
     get: mocks.get,
   },
 }));
-vi.mock("@/features/event-query/api/event-query-repository", () => ({
+vi.mock('@/features/event-query/api/event-query-repository', () => ({
   eventQueryRepository: { listItems: mocks.policy },
 }));
-vi.mock("vue-router", () => ({ useRouter: () => ({ push: mocks.push }) }));
+vi.mock('vue-router', () => ({ useRouter: () => ({ push: mocks.push }) }));
 
 function mountDialog(canOpenAnalysis = true) {
   return mount(AIReviewDialog, {
     props: {
-      projectId: "project-1",
-      endUserId: "user-1",
+      projectId: 'project-1',
+      endUserId: 'user-1',
       visible: true,
       canOpenAnalysis,
-      "onUpdate:visible": () => undefined,
+      'onUpdate:visible': () => undefined,
     },
     global: {
       stubs: {
         Button: {
-          props: ["label", "disabled"],
-          template:
-            '<button :disabled="disabled" @click="$emit(\'click\')">{{ label }}</button>',
+          props: ['label', 'disabled'],
+          template: '<button :disabled="disabled" @click="$emit(\'click\')">{{ label }}</button>',
         },
         Checkbox: true,
         Dialog: {
-          props: ["visible"],
+          props: ['visible'],
           template: '<div v-if="visible"><slot /></div>',
         },
         InputText: true,
-        Message: { template: "<div><slot /></div>" },
+        Message: { template: '<div><slot /></div>' },
         ProgressSpinner: true,
         Textarea: true,
       },
@@ -56,7 +55,7 @@ function mountDialog(canOpenAnalysis = true) {
   });
 }
 
-describe("типизированный AI Review", () => {
+describe('типизированный AI Review', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.settings.mockResolvedValue({
@@ -66,14 +65,14 @@ describe("типизированный AI Review", () => {
       limits: { dailyRunLimit: { min: 1, max: 1000 } },
     });
     mocks.policy.mockResolvedValue({
-      audience: "INTERNAL_AI",
+      audience: 'INTERNAL_AI',
       effectiveOnly: true,
       items: [
         {
-          definitionKeyId: "definition-1",
-          eventCode: "deposit.failed",
-          eventName: "Ошибка депозита",
-          lifecycle: "ACTIVE",
+          definitionKeyId: 'definition-1',
+          eventCode: 'deposit.failed',
+          eventName: 'Ошибка депозита',
+          lifecycle: 'ACTIVE',
           configuration: {},
           effective: { internalAi: true, endUserConversation: false },
           queryable: true,
@@ -85,75 +84,73 @@ describe("типизированный AI Review", () => {
       eventCount: 40,
       redactedBytes: 30000,
       estimatedInputTokens: 10000,
-      costLevel: "HIGH",
+      costLevel: 'HIGH',
       requiresConfirmation: true,
       blocked: false,
-      timezone: "UTC",
+      timezone: 'UTC',
       range: {
-        start: "2026-07-23T00:00:00.000Z",
-        end: "2026-07-24T00:00:00.000Z",
+        start: '2026-07-23T00:00:00.000Z',
+        end: '2026-07-24T00:00:00.000Z',
       },
     });
   });
 
-  it("сначала показывает оценку токенов и требует подтверждение HIGH", async () => {
+  it('сначала показывает оценку токенов и требует подтверждение HIGH', async () => {
     const wrapper = mountDialog();
     await flushPromises();
     const vm = wrapper.vm as unknown as {
       form: { localDate: string; eventCodes: string[]; instruction: string };
       calculateEstimate: () => Promise<void>;
     };
-    vm.form.localDate = "2026-07-23";
-    vm.form.eventCodes = ["deposit.failed"];
+    vm.form.localDate = '2026-07-23';
+    vm.form.eventCodes = ['deposit.failed'];
     await vm.calculateEstimate();
     await flushPromises();
 
-    expect(mocks.estimate).toHaveBeenCalledWith("project-1", {
-      endUserId: "user-1",
-      localDate: "2026-07-23",
-      eventCodes: ["deposit.failed"],
+    expect(mocks.estimate).toHaveBeenCalledWith('project-1', {
+      endUserId: 'user-1',
+      localDate: '2026-07-23',
+      eventCodes: ['deposit.failed'],
     });
-    expect(wrapper.text()).toContain(
-      "Консервативная оценка: 10 000 входных токенов",
-    );
-    expect(wrapper.text()).toContain("Подтверждаю запуск дорогого AI Review");
+    expect(wrapper.text()).toContain('Консервативная оценка: 10 000 входных токенов');
+    expect(wrapper.text()).toContain('Подтверждаю запуск дорогого AI Review');
     const start = wrapper
-      .findAll("button")
-      .find((button) => button.text() === "Запустить AI Review");
-    expect(start?.attributes("disabled")).toBeDefined();
+      .findAll('button')
+      .find((button) => button.text() === 'Запустить AI Review');
+    expect(start?.attributes('disabled')).toBeDefined();
   });
 
-  it("показывает только queryable события, независимо от приёма новых событий", async () => {
+  it('показывает только queryable события, независимо от приёма новых событий', async () => {
     const wrapper = mountDialog();
     await flushPromises();
 
-    expect(mocks.policy).toHaveBeenCalledWith("project-1", {
-      audience: "INTERNAL_AI",
+    expect(mocks.policy).toHaveBeenCalledWith('project-1', {
+      audience: 'INTERNAL_AI',
       effective: true,
       limit: 100,
     });
-    expect(wrapper.getComponent(EventPicker).props("selectedOptions")).toEqual([
+    expect(wrapper.getComponent(EventPicker).props('selectedOptions')).toEqual([
       {
-        value: "deposit.failed",
-        name: "Ошибка депозита",
-        code: "deposit.failed",
+        value: 'deposit.failed',
+        name: 'Ошибка депозита',
+        code: 'deposit.failed',
         description: undefined,
       },
     ]);
   });
 
-  it("ищет события на сервере за пределами первой страницы", async () => {
+  it('ищет события на сервере за пределами первой страницы', async () => {
     const wrapper = mountDialog();
     await flushPromises();
     mocks.policy.mockResolvedValueOnce({
-      audience: "INTERNAL_AI",
+      audience: 'INTERNAL_AI',
       effectiveOnly: true,
       items: [
         {
-          definitionKeyId: "definition-501",
-          eventCode: "withdrawal.completed",
-          eventName: "Вывод завершён",
-          lifecycle: "ACTIVE",
+          definitionKeyId: 'definition-501',
+          eventCode: 'withdrawal.completed',
+          eventName: 'Вывод завершён',
+          lifecycle: 'ACTIVE',
           configuration: {},
           effective: { internalAi: true, endUserConversation: false },
           queryable: true,
@@ -161,40 +158,38 @@ describe("типизированный AI Review", () => {
       ],
       pageInfo: { hasMore: false, nextCursor: null },
     });
-    await wrapper.getComponent(EventPicker).props("load")({
-      query: "withdrawal",
+    await wrapper.getComponent(EventPicker).props('load')({
+      query: 'withdrawal',
       limit: 25,
     });
 
-    expect(mocks.policy).toHaveBeenLastCalledWith("project-1", {
-      audience: "INTERNAL_AI",
+    expect(mocks.policy).toHaveBeenLastCalledWith('project-1', {
+      audience: 'INTERNAL_AI',
       effective: true,
-      query: "withdrawal",
+      query: 'withdrawal',
       limit: 25,
     });
   });
 
-  it("повторяет неоднозначный start с тем же idempotency key", async () => {
+  it('повторяет неоднозначный start с тем же idempotency key', async () => {
     mocks.estimate.mockResolvedValue({
       eventCount: 1,
       redactedBytes: 100,
       estimatedInputTokens: 34,
-      costLevel: "LOW",
+      costLevel: 'LOW',
       requiresConfirmation: false,
       blocked: false,
-      timezone: "UTC",
+      timezone: 'UTC',
       range: {
-        start: "2026-07-23T00:00:00.000Z",
-        end: "2026-07-24T00:00:00.000Z",
+        start: '2026-07-23T00:00:00.000Z',
+        end: '2026-07-24T00:00:00.000Z',
       },
     });
-    mocks.start
-      .mockRejectedValueOnce(new Error("network timeout"))
-      .mockResolvedValueOnce({
-        id: "run-1",
-        status: "FAILED",
-        costLevel: "LOW",
-      });
+    mocks.start.mockRejectedValueOnce(new Error('network timeout')).mockResolvedValueOnce({
+      id: 'run-1',
+      status: 'FAILED',
+      costLevel: 'LOW',
+    });
     const wrapper = mountDialog();
     await flushPromises();
     const vm = wrapper.vm as unknown as {
@@ -202,8 +197,8 @@ describe("типизированный AI Review", () => {
       calculateEstimate: () => Promise<void>;
       start: () => Promise<void>;
     };
-    vm.form.localDate = "2026-07-23";
-    vm.form.eventCodes = ["deposit.failed"];
+    vm.form.localDate = '2026-07-23';
+    vm.form.eventCodes = ['deposit.failed'];
     await vm.calculateEstimate();
     await vm.start();
     await vm.start();
@@ -214,31 +209,31 @@ describe("типизированный AI Review", () => {
     expect(first.idempotencyKey).toBe(second.idempotencyKey);
   });
 
-  it("открывает созданный AI-анализ по точному analysisId", async () => {
+  it('открывает созданный AI-анализ по точному analysisId', async () => {
     mocks.estimate.mockResolvedValueOnce({
       eventCount: 1,
       redactedBytes: 100,
       estimatedInputTokens: 34,
-      costLevel: "LOW",
+      costLevel: 'LOW',
       requiresConfirmation: false,
       blocked: false,
-      timezone: "UTC",
+      timezone: 'UTC',
       range: {
-        start: "2026-07-23T00:00:00.000Z",
-        end: "2026-07-24T00:00:00.000Z",
+        start: '2026-07-23T00:00:00.000Z',
+        end: '2026-07-24T00:00:00.000Z',
       },
     });
     mocks.start.mockResolvedValueOnce({
-      id: "review-run-1",
-      analysisId: "analysis-1",
-      status: "SUCCEEDED",
-      costLevel: "LOW",
+      id: 'review-run-1',
+      analysisId: 'analysis-1',
+      status: 'SUCCEEDED',
+      costLevel: 'LOW',
       eventCount: 1,
       redactedBytes: 100,
       estimatedInputTokens: 34,
       limitations: [],
-      createdAt: "2026-07-23T00:00:00.000Z",
-      completedAt: "2026-07-23T00:00:01.000Z",
+      createdAt: '2026-07-23T00:00:00.000Z',
+      completedAt: '2026-07-23T00:00:01.000Z',
     });
     const wrapper = mountDialog();
     await flushPromises();
@@ -247,48 +242,48 @@ describe("типизированный AI Review", () => {
       calculateEstimate: () => Promise<void>;
       start: () => Promise<void>;
     };
-    vm.form.eventCodes = ["deposit.failed"];
+    vm.form.eventCodes = ['deposit.failed'];
     await vm.calculateEstimate();
     await vm.start();
     await flushPromises();
 
     await wrapper
-      .findAll("button")
-      .find((button) => button.text() === "Открыть AI-анализ")!
-      .trigger("click");
+      .findAll('button')
+      .find((button) => button.text() === 'Открыть AI-анализ')!
+      .trigger('click');
 
     expect(mocks.push).toHaveBeenCalledWith({
-      name: "ai-analysis-detail",
-      params: { analysisId: "analysis-1" },
-      query: { projectId: "project-1" },
+      name: 'ai-analysis-detail',
+      params: { analysisId: 'analysis-1' },
+      query: { projectId: 'project-1' },
     });
   });
 
-  it("не показывает ссылку на анализ без отдельного права чтения", async () => {
+  it('не показывает ссылку на анализ без отдельного права чтения', async () => {
     mocks.estimate.mockResolvedValueOnce({
       eventCount: 1,
       redactedBytes: 100,
       estimatedInputTokens: 34,
-      costLevel: "LOW",
+      costLevel: 'LOW',
       requiresConfirmation: false,
       blocked: false,
-      timezone: "UTC",
+      timezone: 'UTC',
       range: {
-        start: "2026-07-23T00:00:00.000Z",
-        end: "2026-07-24T00:00:00.000Z",
+        start: '2026-07-23T00:00:00.000Z',
+        end: '2026-07-24T00:00:00.000Z',
       },
     });
     mocks.start.mockResolvedValueOnce({
-      id: "review-run-1",
-      analysisId: "analysis-1",
-      status: "SUCCEEDED",
-      costLevel: "LOW",
+      id: 'review-run-1',
+      analysisId: 'analysis-1',
+      status: 'SUCCEEDED',
+      costLevel: 'LOW',
       eventCount: 1,
       redactedBytes: 100,
       estimatedInputTokens: 34,
       limitations: [],
-      createdAt: "2026-07-23T00:00:00.000Z",
-      completedAt: "2026-07-23T00:00:01.000Z",
+      createdAt: '2026-07-23T00:00:00.000Z',
+      completedAt: '2026-07-23T00:00:01.000Z',
     });
     const wrapper = mountDialog(false);
     await flushPromises();
@@ -297,22 +292,22 @@ describe("типизированный AI Review", () => {
       calculateEstimate: () => Promise<void>;
       start: () => Promise<void>;
     };
-    vm.form.eventCodes = ["deposit.failed"];
+    vm.form.eventCodes = ['deposit.failed'];
     await vm.calculateEstimate();
     await vm.start();
     await flushPromises();
 
-    expect(wrapper.text()).not.toContain("Открыть AI-анализ");
+    expect(wrapper.text()).not.toContain('Открыть AI-анализ');
     expect(mocks.push).not.toHaveBeenCalled();
   });
 
-  it("отбрасывает estimate для уже изменённого scope", async () => {
+  it('отбрасывает estimate для уже изменённого scope', async () => {
     let resolveEstimate:
       | ((value: {
           eventCount: number;
           redactedBytes: number;
           estimatedInputTokens: number;
-          costLevel: "LOW";
+          costLevel: 'LOW';
           requiresConfirmation: boolean;
           blocked: boolean;
           timezone: string;
@@ -330,32 +325,32 @@ describe("типизированный AI Review", () => {
       form: { localDate: string; eventCodes: string[]; instruction: string };
       calculateEstimate: () => Promise<void>;
     };
-    vm.form.localDate = "2026-07-23";
-    vm.form.eventCodes = ["deposit.failed"];
+    vm.form.localDate = '2026-07-23';
+    vm.form.eventCodes = ['deposit.failed'];
     const pending = vm.calculateEstimate();
     await vi.waitFor(() => expect(mocks.estimate).toHaveBeenCalledTimes(1));
-    vm.form.instruction = "Другой scope";
+    vm.form.instruction = 'Другой scope';
     await flushPromises();
     resolveEstimate?.({
       eventCount: 9,
       redactedBytes: 900,
       estimatedInputTokens: 1800,
-      costLevel: "LOW",
+      costLevel: 'LOW',
       requiresConfirmation: false,
       blocked: false,
-      timezone: "UTC",
+      timezone: 'UTC',
       range: {
-        start: "2026-07-23T00:00:00.000Z",
-        end: "2026-07-24T00:00:00.000Z",
+        start: '2026-07-23T00:00:00.000Z',
+        end: '2026-07-24T00:00:00.000Z',
       },
     });
     await pending;
     await flushPromises();
 
-    expect(wrapper.text()).not.toContain("9 событий");
+    expect(wrapper.text()).not.toContain('9 событий');
   });
 
-  it("сбрасывает estimate и confirmation при смене пользователя", async () => {
+  it('сбрасывает estimate и confirmation при смене пользователя', async () => {
     const wrapper = mountDialog();
     await flushPromises();
     const vm = wrapper.vm as unknown as {
@@ -363,35 +358,35 @@ describe("типизированный AI Review", () => {
       calculateEstimate: () => Promise<void>;
       confirmedExpensive: boolean;
     };
-    vm.form.localDate = "2026-07-23";
-    vm.form.eventCodes = ["deposit.failed"];
+    vm.form.localDate = '2026-07-23';
+    vm.form.eventCodes = ['deposit.failed'];
     await vm.calculateEstimate();
     vm.confirmedExpensive = true;
-    await wrapper.setProps({ endUserId: "user-2" });
+    await wrapper.setProps({ endUserId: 'user-2' });
     await flushPromises();
 
-    expect(wrapper.text()).not.toContain("40 событий");
+    expect(wrapper.text()).not.toContain('40 событий');
     expect(vm.confirmedExpensive).toBe(false);
   });
 
-  it("не показывает ошибку запоздалого poll после смены пользователя", async () => {
+  it('не показывает ошибку запоздалого poll после смены пользователя', async () => {
     mocks.estimate.mockResolvedValueOnce({
       eventCount: 1,
       redactedBytes: 100,
       estimatedInputTokens: 1600,
-      costLevel: "LOW",
+      costLevel: 'LOW',
       requiresConfirmation: false,
       blocked: false,
-      timezone: "UTC",
+      timezone: 'UTC',
       range: {
-        start: "2026-07-23T00:00:00.000Z",
-        end: "2026-07-24T00:00:00.000Z",
+        start: '2026-07-23T00:00:00.000Z',
+        end: '2026-07-24T00:00:00.000Z',
       },
     });
     mocks.start.mockResolvedValueOnce({
-      id: "run-1",
-      status: "RUNNING",
-      costLevel: "LOW",
+      id: 'run-1',
+      status: 'RUNNING',
+      costLevel: 'LOW',
     });
     let rejectPoll: ((reason: Error) => void) | undefined;
     mocks.get.mockReturnValueOnce(
@@ -407,16 +402,16 @@ describe("типизированный AI Review", () => {
       start: () => Promise<void>;
       poll: () => Promise<void>;
     };
-    vm.form.localDate = "2026-07-23";
-    vm.form.eventCodes = ["deposit.failed"];
+    vm.form.localDate = '2026-07-23';
+    vm.form.eventCodes = ['deposit.failed'];
     await vm.calculateEstimate();
     await vm.start();
     const pending = vm.poll();
-    await wrapper.setProps({ endUserId: "user-2" });
-    rejectPoll?.(new Error("old poll failed"));
+    await wrapper.setProps({ endUserId: 'user-2' });
+    rejectPoll?.(new Error('old poll failed'));
     await pending;
     await flushPromises();
 
-    expect(wrapper.text()).not.toContain("old poll failed");
+    expect(wrapper.text()).not.toContain('old poll failed');
   });
 });

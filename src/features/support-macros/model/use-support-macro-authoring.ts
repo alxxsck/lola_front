@@ -1,6 +1,6 @@
-import { computed, ref } from "vue";
-import { ApiError } from "@/shared/api/http/api-error";
-import type { SupportMacroSource } from "@/features/support-macros/api/support-macros-source";
+import { computed, ref } from 'vue';
+import { ApiError } from '@/shared/api/http/api-error';
+import type { SupportMacroSource } from '@/features/support-macros/api/support-macros-source';
 import type {
   RollbackSupportMacroDtoReasonCode,
   SupportMacroDraftDto,
@@ -8,7 +8,7 @@ import type {
   SupportMacroResponseDto,
   SupportMacroRevisionResponseDto,
   SupportMacroVariableDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 export interface SupportMacroAuthoringContext {
   projectId(): string | undefined;
@@ -22,7 +22,7 @@ export interface SupportMacroAuthoringForm {
   body: string;
   translations: Record<string, string>;
   shortcutsText: string;
-  visibility: "PROJECT" | "TEAMS";
+  visibility: 'PROJECT' | 'TEAMS';
   teamIdsText: string;
   topicCodesText: string;
   variables: SupportMacroVariableDto[];
@@ -30,14 +30,14 @@ export interface SupportMacroAuthoringForm {
 
 function emptyForm(): SupportMacroAuthoringForm {
   return {
-    stableCode: "",
-    title: "",
-    body: "",
-    translations: { ru: "" },
-    shortcutsText: "",
-    visibility: "PROJECT",
-    teamIdsText: "",
-    topicCodesText: "",
+    stableCode: '',
+    title: '',
+    body: '',
+    translations: { ru: '' },
+    shortcutsText: '',
+    visibility: 'PROJECT',
+    teamIdsText: '',
+    topicCodesText: '',
     variables: [],
   };
 }
@@ -59,15 +59,13 @@ function toDraft(form: SupportMacroAuthoringForm): SupportMacroDraftDto {
   );
   return {
     title: form.title.trim(),
-    locale: "ru",
+    locale: 'ru',
     body: form.body,
     translations: { ...translations, ru: form.body },
     shortcuts: lines(form.shortcutsText, 10),
     visibility: {
       mode: form.visibility,
-      ...(form.visibility === "TEAMS"
-        ? { teamIds: lines(form.teamIdsText, 50) }
-        : {}),
+      ...(form.visibility === 'TEAMS' ? { teamIds: lines(form.teamIdsText, 50) } : {}),
       topicCodes: lines(form.topicCodesText, 50),
     },
     variables: form.variables.map((variable) => ({ ...variable })),
@@ -75,25 +73,24 @@ function toDraft(form: SupportMacroAuthoringForm): SupportMacroDraftDto {
 }
 
 function fromMacro(value: SupportMacroResponseDto): SupportMacroAuthoringForm {
-  const configuration =
-    value.draft?.configuration ?? value.publishedRevision?.configuration;
+  const configuration = value.draft?.configuration ?? value.publishedRevision?.configuration;
   return configuration
     ? {
         stableCode: value.stableCode,
         title: configuration.title,
-        body: configuration.locale === "ru" ? configuration.body : "",
+        body: configuration.locale === 'ru' ? configuration.body : '',
         translations: {
           ...((
             configuration as typeof configuration & {
               translations?: Record<string, string>;
             }
           ).translations ?? { [configuration.locale]: configuration.body }),
-          ru: configuration.locale === "ru" ? configuration.body : "",
+          ru: configuration.locale === 'ru' ? configuration.body : '',
         },
-        shortcutsText: configuration.shortcuts.join("\n"),
+        shortcutsText: configuration.shortcuts.join('\n'),
         visibility: configuration.visibility.mode,
-        teamIdsText: configuration.visibility.teamIds.join("\n"),
-        topicCodesText: configuration.visibility.topicCodes.join("\n"),
+        teamIdsText: configuration.visibility.teamIds.join('\n'),
+        topicCodesText: configuration.visibility.topicCodes.join('\n'),
         variables: configuration.variables.map((variable) => ({
           name: variable.name,
           required: variable.required,
@@ -110,7 +107,7 @@ function valid(form: SupportMacroAuthoringForm): boolean {
     form.stableCode.trim().length >= 2 &&
     form.title.trim() &&
     form.body.trim() &&
-    (form.visibility === "PROJECT" || lines(form.teamIdsText, 50).length),
+    (form.visibility === 'PROJECT' || lines(form.teamIdsText, 50).length),
   );
 }
 
@@ -136,9 +133,9 @@ export function createSupportMacroAuthoringController(
   const preview = ref<SupportMacroPreviewResponseDto | null>(null);
   const loading = ref(false);
   const saving = ref(false);
-  const error = ref("");
-  const conflict = ref("");
-  const query = ref("");
+  const error = ref('');
+  const conflict = ref('');
+  const query = ref('');
   const translationStates = ref<Record<string, string>>({});
   let generation = 0;
   let abort: AbortController | null = null;
@@ -146,9 +143,7 @@ export function createSupportMacroAuthoringController(
   let mutationToken: symbol | null = null;
   const commandKeys = new Map<string, string>();
 
-  const canSubmit = computed(
-    () => context.canManage() && valid(form.value) && !saving.value,
-  );
+  const canSubmit = computed(() => context.canManage() && valid(form.value) && !saving.value);
 
   function commandKey(identity: string): string {
     const existing = commandKeys.get(identity);
@@ -167,9 +162,7 @@ export function createSupportMacroAuthoringController(
       (expected.stableCode && value.stableCode !== expected.stableCode) ||
       !value.actionEtag
     )
-      throw new Error(
-        "Support Macro command receipt failed integrity validation",
-      );
+      throw new Error('Support Macro command receipt failed integrity validation');
   }
 
   function reset(): void {
@@ -185,9 +178,9 @@ export function createSupportMacroAuthoringController(
     preview.value = null;
     loading.value = false;
     saving.value = false;
-    error.value = "";
-    conflict.value = "";
-    query.value = "";
+    error.value = '';
+    conflict.value = '';
+    query.value = '';
     translationStates.value = {};
     commandKeys.clear();
     mutationToken = null;
@@ -231,7 +224,7 @@ export function createSupportMacroAuthoringController(
     const requestAbort = new AbortController();
     abort = requestAbort;
     loading.value = true;
-    error.value = "";
+    error.value = '';
     try {
       const page = await source.authoringCatalog(
         projectId,
@@ -246,28 +239,22 @@ export function createSupportMacroAuthoringController(
       items.value = cursor ? [...items.value, ...page.items] : page.items;
       nextCursor.value = page.nextCursor;
       if (selected.value) {
-        const current = page.items.find(
-          (item) => item.id === selected.value?.id,
-        );
+        const current = page.items.find((item) => item.id === selected.value?.id);
         if (current) selected.value = current;
       }
     } catch (cause) {
       if (!isCurrent(projectId, requestGeneration)) return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         await forbidden();
         return;
       }
       if (cause instanceof ApiError && cause.status === 409 && cursor) {
         await load();
         if (context.projectId() === projectId)
-          conflict.value =
-            "Каталог изменился. Список обновлён с первой страницы.";
+          conflict.value = 'Каталог изменился. Список обновлён с первой страницы.';
         return;
       }
-      error.value = "Не удалось загрузить настройки шаблонов.";
+      error.value = 'Не удалось загрузить настройки шаблонов.';
     } finally {
       if (requestGeneration === generation) {
         loading.value = false;
@@ -285,8 +272,8 @@ export function createSupportMacroAuthoringController(
     revisionsNextCursor.value = null;
     form.value = emptyForm();
     preview.value = null;
-    error.value = "";
-    conflict.value = "";
+    error.value = '';
+    conflict.value = '';
     translationStates.value = {};
   }
 
@@ -300,7 +287,7 @@ export function createSupportMacroAuthoringController(
     const requestAbort = new AbortController();
     abort = requestAbort;
     loading.value = true;
-    error.value = "";
+    error.value = '';
     try {
       const [detail, history] = await Promise.all([
         source.readAuthoring(projectId, macro.id, requestAbort.signal),
@@ -312,21 +299,18 @@ export function createSupportMacroAuthoringController(
       revisionsNextCursor.value = history.nextCursor;
       form.value = fromMacro(detail);
       translationStates.value = Object.fromEntries(
-        Object.keys(form.value.translations).map((locale) => [locale, "READY"]),
+        Object.keys(form.value.translations).map((locale) => [locale, 'READY']),
       );
       preview.value = null;
-      error.value = "";
-      conflict.value = "";
+      error.value = '';
+      conflict.value = '';
     } catch (cause) {
       if (!isCurrent(projectId, requestGeneration)) return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         await forbidden();
         return;
       }
-      error.value = "Не удалось открыть шаблон.";
+      error.value = 'Не удалось открыть шаблон.';
     } finally {
       if (requestGeneration === generation) {
         loading.value = false;
@@ -354,10 +338,7 @@ export function createSupportMacroAuthoringController(
       revisionsNextCursor.value = page.nextCursor;
     } catch (cause) {
       if (!isCurrent(projectId, requestGeneration, macroId)) return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         await forbidden();
         return;
       }
@@ -367,21 +348,18 @@ export function createSupportMacroAuthoringController(
           if (!isCurrent(projectId, requestGeneration, macroId)) return;
           revisions.value = page.items;
           revisionsNextCursor.value = page.nextCursor;
-          conflict.value =
-            "История изменилась. Версии обновлены с первой страницы.";
+          conflict.value = 'История изменилась. Версии обновлены с первой страницы.';
         } catch (recoveryCause) {
           if (
             recoveryCause instanceof ApiError &&
             (recoveryCause.status === 403 || recoveryCause.status === 404)
           )
             await forbidden();
-          else
-            error.value =
-              "Не удалось обновить историю. Ваш текст остаётся в форме.";
+          else error.value = 'Не удалось обновить историю. Ваш текст остаётся в форме.';
         }
         return;
       }
-      error.value = "Не удалось загрузить следующую страницу версий.";
+      error.value = 'Не удалось загрузить следующую страницу версий.';
     } finally {
       if (requestGeneration === generation) loading.value = false;
     }
@@ -397,34 +375,25 @@ export function createSupportMacroAuthoringController(
     scopeProjectId = projectId;
     const requestGeneration = generation;
     const macroId = selected.value?.id ?? null;
-    const token = Symbol("macro-preview");
+    const token = Symbol('macro-preview');
     mutationToken = token;
     saving.value = true;
-    error.value = "";
+    error.value = '';
     try {
       const next = await source.preview(projectId, toDraft(form.value));
-      if (
-        !isCurrent(projectId, requestGeneration, macroId) ||
-        mutationToken !== token
-      )
+      if (!isCurrent(projectId, requestGeneration, macroId) || mutationToken !== token)
         return false;
       preview.value = next;
       return true;
     } catch (cause) {
-      if (
-        !isCurrent(projectId, requestGeneration, macroId) ||
-        mutationToken !== token
-      )
+      if (!isCurrent(projectId, requestGeneration, macroId) || mutationToken !== token)
         return false;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         await forbidden();
         return false;
       }
       error.value =
-        "Шаблон не прошёл проверку сервера. Проверьте текст, переводы и область видимости.";
+        'Шаблон не прошёл проверку сервера. Проверьте текст, переводы и область видимости.';
       return false;
     } finally {
       if (mutationToken === token) {
@@ -443,29 +412,18 @@ export function createSupportMacroAuthoringController(
   ): Promise<void> {
     try {
       const next = await source.readAuthoring(projectId, macroId);
-      if (
-        !isCurrent(projectId, requestGeneration, macroId) ||
-        mutationToken !== token
-      )
-        return;
+      if (!isCurrent(projectId, requestGeneration, macroId) || mutationToken !== token) return;
       selected.value = next;
       form.value = local;
       conflict.value =
-        "Шаблон изменился на сервере. Ваш текст сохранён — проверьте новую версию и повторите.";
+        'Шаблон изменился на сервере. Ваш текст сохранён — проверьте новую версию и повторите.';
     } catch (cause) {
-      if (
-        !isCurrent(projectId, requestGeneration, macroId) ||
-        mutationToken !== token
-      )
-        return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (!isCurrent(projectId, requestGeneration, macroId) || mutationToken !== token) return;
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         await forbidden();
         return;
       }
-      error.value = "Не удалось сверить конфликт. Ваш текст остаётся в форме.";
+      error.value = 'Не удалось сверить конфликт. Ваш текст остаётся в форме.';
     }
   }
 
@@ -480,11 +438,11 @@ export function createSupportMacroAuthoringController(
     const local = cloneForm(form.value);
     const current = selected.value;
     const requestGeneration = generation;
-    const token = Symbol("macro-save");
+    const token = Symbol('macro-save');
     mutationToken = token;
     saving.value = true;
-    error.value = "";
-    conflict.value = "";
+    error.value = '';
+    conflict.value = '';
     try {
       const draft = toDraft(local);
       const identity = current
@@ -498,52 +456,28 @@ export function createSupportMacroAuthoringController(
             current.actionEtag,
             commandKey(identity),
           )
-        : await source.create(
-            projectId,
-            local.stableCode.trim(),
-            draft,
-            commandKey(identity),
-          );
-      if (
-        !isCurrent(projectId, requestGeneration, current?.id ?? null) ||
-        mutationToken !== token
-      )
+        : await source.create(projectId, local.stableCode.trim(), draft, commandKey(identity));
+      if (!isCurrent(projectId, requestGeneration, current?.id ?? null) || mutationToken !== token)
         return false;
-      assertIdentity(
-        next,
-        current ? { id: current.id } : { stableCode: local.stableCode.trim() },
-      );
+      assertIdentity(next, current ? { id: current.id } : { stableCode: local.stableCode.trim() });
       commandKeys.delete(identity);
       selected.value = next;
       if (formMatches(local)) form.value = fromMacro(next);
       else
-        conflict.value =
-          "Шаблон сохранён, а новые правки остались в форме. Сохраните их отдельно.";
+        conflict.value = 'Шаблон сохранён, а новые правки остались в форме. Сохраните их отдельно.';
       preview.value = null;
       await load();
       return true;
     } catch (cause) {
-      if (
-        !isCurrent(projectId, requestGeneration, current?.id ?? null) ||
-        mutationToken !== token
-      )
+      if (!isCurrent(projectId, requestGeneration, current?.id ?? null) || mutationToken !== token)
         return false;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         await forbidden();
         return false;
       }
       if (cause instanceof ApiError && cause.status === 409 && current)
-        await refreshConflict(
-          local,
-          projectId,
-          current.id,
-          requestGeneration,
-          token,
-        );
-      else error.value = "Не удалось сохранить черновик шаблона.";
+        await refreshConflict(local, projectId, current.id, requestGeneration, token);
+      else error.value = 'Не удалось сохранить черновик шаблона.';
       return false;
     } finally {
       if (mutationToken === token) {
@@ -553,11 +487,10 @@ export function createSupportMacroAuthoringController(
     }
   }
 
-  async function execute(kind: "PUBLISH" | "ARCHIVE"): Promise<boolean> {
+  async function execute(kind: 'PUBLISH' | 'ARCHIVE'): Promise<boolean> {
     const projectId = context.projectId();
     const current = selected.value;
-    if (!projectId || !current || !context.canManage() || saving.value)
-      return false;
+    if (!projectId || !current || !context.canManage() || saving.value) return false;
     if (scopeProjectId !== projectId) {
       reset();
       return false;
@@ -566,64 +499,37 @@ export function createSupportMacroAuthoringController(
     const token = Symbol(`macro-${kind.toLowerCase()}`);
     mutationToken = token;
     saving.value = true;
-    error.value = "";
+    error.value = '';
     const local = cloneForm(form.value);
     const identity = `${kind}\u001f${current.id}\u001f${current.actionEtag}`;
     try {
       const next =
-        kind === "PUBLISH"
-          ? await source.publish(
-              projectId,
-              current.id,
-              current.actionEtag,
-              commandKey(identity),
-            )
-          : await source.archive(
-              projectId,
-              current.id,
-              current.actionEtag,
-              commandKey(identity),
-            );
-      if (
-        !isCurrent(projectId, requestGeneration, current.id) ||
-        mutationToken !== token
-      )
+        kind === 'PUBLISH'
+          ? await source.publish(projectId, current.id, current.actionEtag, commandKey(identity))
+          : await source.archive(projectId, current.id, current.actionEtag, commandKey(identity));
+      if (!isCurrent(projectId, requestGeneration, current.id) || mutationToken !== token)
         return false;
       assertIdentity(next, { id: current.id });
       commandKeys.delete(identity);
       selected.value = next;
       if (formMatches(local)) form.value = fromMacro(next);
-      else
-        conflict.value =
-          "Статус шаблона обновлён, а новые правки остались в форме.";
+      else conflict.value = 'Статус шаблона обновлён, а новые правки остались в форме.';
       await load();
       return true;
     } catch (cause) {
-      if (
-        !isCurrent(projectId, requestGeneration, current.id) ||
-        mutationToken !== token
-      )
+      if (!isCurrent(projectId, requestGeneration, current.id) || mutationToken !== token)
         return false;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         await forbidden();
         return false;
       }
       if (cause instanceof ApiError && cause.status === 409)
-        await refreshConflict(
-          local,
-          projectId,
-          current.id,
-          requestGeneration,
-          token,
-        );
+        await refreshConflict(local, projectId, current.id, requestGeneration, token);
       else
         error.value =
-          kind === "PUBLISH"
-            ? "Не удалось опубликовать шаблон."
-            : "Не удалось архивировать шаблон.";
+          kind === 'PUBLISH'
+            ? 'Не удалось опубликовать шаблон.'
+            : 'Не удалось архивировать шаблон.';
       return false;
     } finally {
       if (mutationToken === token) {
@@ -639,14 +545,13 @@ export function createSupportMacroAuthoringController(
   ): Promise<boolean> {
     const projectId = context.projectId();
     const current = selected.value;
-    if (!projectId || !current || !context.canManage() || saving.value)
-      return false;
+    if (!projectId || !current || !context.canManage() || saving.value) return false;
     if (scopeProjectId !== projectId) {
       reset();
       return false;
     }
     const requestGeneration = generation;
-    const token = Symbol("macro-rollback");
+    const token = Symbol('macro-rollback');
     mutationToken = token;
     saving.value = true;
     const local = cloneForm(form.value);
@@ -660,50 +565,30 @@ export function createSupportMacroAuthoringController(
         current.actionEtag,
         commandKey(identity),
       );
-      if (
-        !isCurrent(projectId, requestGeneration, current.id) ||
-        mutationToken !== token
-      )
+      if (!isCurrent(projectId, requestGeneration, current.id) || mutationToken !== token)
         return false;
       assertIdentity(next, { id: current.id });
       commandKeys.delete(identity);
       selected.value = next;
       if (formMatches(local)) form.value = fromMacro(next);
-      else
-        conflict.value =
-          "Прежняя версия возвращена, а новые правки остались в форме.";
+      else conflict.value = 'Прежняя версия возвращена, а новые правки остались в форме.';
       const history = await source.revisions(projectId, current.id);
-      if (
-        !isCurrent(projectId, requestGeneration, current.id) ||
-        mutationToken !== token
-      )
+      if (!isCurrent(projectId, requestGeneration, current.id) || mutationToken !== token)
         return false;
       revisions.value = history.items;
       revisionsNextCursor.value = history.nextCursor;
       await load();
       return true;
     } catch (cause) {
-      if (
-        !isCurrent(projectId, requestGeneration, current.id) ||
-        mutationToken !== token
-      )
+      if (!isCurrent(projectId, requestGeneration, current.id) || mutationToken !== token)
         return false;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         await forbidden();
         return false;
       }
       if (cause instanceof ApiError && cause.status === 409)
-        await refreshConflict(
-          local,
-          projectId,
-          current.id,
-          requestGeneration,
-          token,
-        );
-      else error.value = "Не удалось вернуть прежнюю версию шаблона.";
+        await refreshConflict(local, projectId, current.id, requestGeneration, token);
+      else error.value = 'Не удалось вернуть прежнюю версию шаблона.';
       return false;
     } finally {
       if (mutationToken === token) {
@@ -720,9 +605,7 @@ export function createSupportMacroAuthoringController(
     translationStates.value = Object.fromEntries(
       Object.entries(translationStates.value).map(([locale, state]) => [
         locale,
-        locale === "ru" || !form.value.translations[locale]
-          ? state
-          : "OUTDATED",
+        locale === 'ru' || !form.value.translations[locale] ? state : 'OUTDATED',
       ]),
     );
   }
@@ -731,12 +614,11 @@ export function createSupportMacroAuthoringController(
     locale: string,
     text: string,
     snapshot: Readonly<{ sourceText: string; targetText: string }>,
-  ): "APPLIED" | "STALE_SOURCE" | "TARGET_CONFLICT" {
-    if (form.value.body !== snapshot.sourceText) return "STALE_SOURCE";
-    if ((form.value.translations[locale] ?? "") !== snapshot.targetText)
-      return "TARGET_CONFLICT";
+  ): 'APPLIED' | 'STALE_SOURCE' | 'TARGET_CONFLICT' {
+    if (form.value.body !== snapshot.sourceText) return 'STALE_SOURCE';
+    if ((form.value.translations[locale] ?? '') !== snapshot.targetText) return 'TARGET_CONFLICT';
     form.value.translations = { ...form.value.translations, [locale]: text };
-    return "APPLIED";
+    return 'APPLIED';
   }
 
   function setTranslationState(locale: string, state: string): void {
@@ -764,8 +646,8 @@ export function createSupportMacroAuthoringController(
     loadMoreRevisions,
     validatePreview,
     saveDraft,
-    publish: () => execute("PUBLISH"),
-    archive: () => execute("ARCHIVE"),
+    publish: () => execute('PUBLISH'),
+    archive: () => execute('ARCHIVE'),
     rollback,
     updateSourceBody,
     applyTranslation,

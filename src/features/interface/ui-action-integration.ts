@@ -1,10 +1,10 @@
-import type { UiElement } from '@/shared/types/domain'
+import type { UiElement } from '@/shared/types/domain';
 
-type UiActionTarget = Pick<UiElement, 'code' | 'kind' | 'route' | 'modalName'>
-export type InterfaceSection = 'ELEMENT' | 'PAGE' | 'MODAL'
+type UiActionTarget = Pick<UiElement, 'code' | 'kind' | 'route' | 'modalName'>;
+export type InterfaceSection = 'ELEMENT' | 'PAGE' | 'MODAL';
 
 export function isUiElementInSection(kind: UiElement['kind'], section: InterfaceSection): boolean {
-  return section === 'ELEMENT' ? kind === 'ELEMENT' || kind === 'BUTTON' : kind === section
+  return section === 'ELEMENT' ? kind === 'ELEMENT' || kind === 'BUTTON' : kind === section;
 }
 
 export function buildUiActionIntegrationGuide(target: UiActionTarget): string | null {
@@ -37,7 +37,7 @@ const widget = new ChatWidgetInstance({
 
 Параметры query включайте прямо в \`route\`: отдельного canonical-поля \`query\` нет.
 
-Для прямой команды \`open_page\` SDK дождётся Promise callback перед финальным ACK. В \`SHOW_CTA\` ACK подтверждает только показ CTA; этот же callback сработает позже после клика пользователя, без отдельного command ACK.`
+Для прямой команды \`open_page\` SDK дождётся Promise callback перед финальным ACK. В \`SHOW_CTA\` ACK подтверждает только показ CTA; этот же callback сработает позже после клика пользователя, без отдельного command ACK.`;
   }
 
   if (target.kind === 'MODAL' && target.modalName) {
@@ -67,8 +67,8 @@ const widget = new ChatWidgetInstance({
 
 \`modalName\` — ключ разрешённого modal registry, а не имя JavaScript-функции. Не используйте \`eval\` или поиск функции в \`window\`.
 
-Если registry асинхронный, верните его Promise. Для прямой команды \`open_modal\` SDK дождётся Promise callback перед финальным ACK. В \`SHOW_CTA\` ACK подтверждает только показ CTA; этот же callback сработает позже после клика пользователя, без отдельного command ACK.`
+Если registry асинхронный, верните его Promise. Для прямой команды \`open_modal\` SDK дождётся Promise callback перед финальным ACK. В \`SHOW_CTA\` ACK подтверждает только показ CTA; этот же callback сработает позже после клика пользователя, без отдельного command ACK.`;
   }
 
-  return null
+  return null;
 }

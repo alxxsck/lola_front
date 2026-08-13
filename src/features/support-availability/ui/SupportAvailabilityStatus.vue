@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import Tag from "primevue/tag";
+import { computed, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import Tag from 'primevue/tag';
 import {
   SUPPORT_AVAILABILITY_SELF_REASONS,
   SUPPORT_AVAILABILITY_STATES,
   type SupportAvailabilityReasonCode,
   type SupportAvailabilitySnapshot,
   type SupportAvailabilityState,
-} from "@/features/support-availability/api/support-availability-source";
-import type { ChangeOwnAvailabilityInput } from "@/features/support-availability/model/use-support-availability";
-import { relativeTime } from "@/shared/lib/format";
+} from '@/features/support-availability/api/support-availability-source';
+import type { ChangeOwnAvailabilityInput } from '@/features/support-availability/model/use-support-availability';
+import { relativeTime } from '@/shared/lib/format';
 
 const props = defineProps<{
   availability: SupportAvailabilitySnapshot | null;
@@ -35,28 +35,23 @@ const emit = defineEmits<{
     },
   ];
   retry: [];
-  "retry-after-reconcile": [];
+  'retry-after-reconcile': [];
 }>();
 
-const recommendedReason: Record<
-  SupportAvailabilityState,
-  SupportAvailabilityReasonCode
-> = {
-  AVAILABLE: "RETURNED",
-  BUSY: "FOCUS",
-  AWAY: "BREAK",
-  DRAINING: "WRAP_UP",
-  OFFLINE: "SHIFT_END",
+const recommendedReason: Record<SupportAvailabilityState, SupportAvailabilityReasonCode> = {
+  AVAILABLE: 'RETURNED',
+  BUSY: 'FOCUS',
+  AWAY: 'BREAK',
+  DRAINING: 'WRAP_UP',
+  OFFLINE: 'SHIFT_END',
 };
 
-const selectedState = ref<SupportAvailabilityState>("AVAILABLE");
-const selectedReason = ref<SupportAvailabilityReasonCode>("RETURNED");
-const reasonNote = ref("");
+const selectedState = ref<SupportAvailabilityState>('AVAILABLE');
+const selectedReason = ref<SupportAvailabilityReasonCode>('RETURNED');
+const reasonNote = ref('');
 const awayDurationMinutes = ref(15);
-const validationError = ref("");
-const availableReasons = computed(
-  () => SUPPORT_AVAILABILITY_SELF_REASONS[selectedState.value],
-);
+const validationError = ref('');
+const availableReasons = computed(() => SUPPORT_AVAILABILITY_SELF_REASONS[selectedState.value]);
 const isAwayDurationValid = computed(
   () =>
     Number.isInteger(awayDurationMinutes.value) &&
@@ -70,7 +65,7 @@ watch(
     if (draft) {
       selectedState.value = draft.state;
       selectedReason.value = draft.reasonCode;
-      reasonNote.value = draft.reasonNote ?? "";
+      reasonNote.value = draft.reasonNote ?? '';
       awayDurationMinutes.value = Math.max(
         1,
         Math.min(480, Math.round((draft.hardDurationSeconds ?? 900) / 60)),
@@ -80,7 +75,7 @@ watch(
     if (snapshot) {
       selectedState.value = snapshot.declaredState;
       selectedReason.value = recommendedReason[snapshot.declaredState];
-      reasonNote.value = "";
+      reasonNote.value = '';
       awayDurationMinutes.value = 15;
     }
   },
@@ -90,73 +85,72 @@ watch(
 function labelState(value: SupportAvailabilityState): string {
   return (
     {
-      AVAILABLE: "Доступен",
-      BUSY: "Занят",
-      AWAY: "Отошёл",
-      DRAINING: "Завершает работу",
-      OFFLINE: "Офлайн",
-    }[value] ?? "Неизвестный статус"
+      AVAILABLE: 'Доступен',
+      BUSY: 'Занят',
+      AWAY: 'Отошёл',
+      DRAINING: 'Завершает работу',
+      OFFLINE: 'Офлайн',
+    }[value] ?? 'Неизвестный статус'
   );
 }
 
 function stateSeverity(
   value: SupportAvailabilityState,
-): "success" | "info" | "warn" | "danger" | "secondary" {
+): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
   return ({
-    AVAILABLE: "success",
-    BUSY: "info",
-    AWAY: "warn",
-    DRAINING: "warn",
-    OFFLINE: "secondary",
-  }[value] ?? "danger") as "success" | "info" | "warn" | "danger" | "secondary";
+    AVAILABLE: 'success',
+    BUSY: 'info',
+    AWAY: 'warn',
+    DRAINING: 'warn',
+    OFFLINE: 'secondary',
+  }[value] ?? 'danger') as 'success' | 'info' | 'warn' | 'danger' | 'secondary';
 }
 
 function labelReason(value: string | null): string {
   return (
     {
-      SHIFT_START: "Начало смены",
-      RETURNED: "Вернулся к работе",
-      FOCUS: "Нужен фокус",
-      BREAK: "Перерыв",
-      MEETING: "Встреча",
-      TRAINING: "Обучение",
-      WRAP_UP: "Завершение работы",
-      SHIFT_END: "Конец смены",
-      LEAD_INTERVENTION: "Решение лида",
-      LEASE_EXPIRED: "Истёк срок подтверждения",
-      BUSINESS_EXPIRY: "Окно доступности завершено",
-    }[value ?? ""] ?? "Причина не указана"
+      SHIFT_START: 'Начало смены',
+      RETURNED: 'Вернулся к работе',
+      FOCUS: 'Нужен фокус',
+      BREAK: 'Перерыв',
+      MEETING: 'Встреча',
+      TRAINING: 'Обучение',
+      WRAP_UP: 'Завершение работы',
+      SHIFT_END: 'Конец смены',
+      LEAD_INTERVENTION: 'Решение лида',
+      LEASE_EXPIRED: 'Истёк срок подтверждения',
+      BUSINESS_EXPIRY: 'Окно доступности завершено',
+    }[value ?? ''] ?? 'Причина не указана'
   );
 }
 
 function labelSource(value: string | null): string {
   return (
     {
-      SELF: "Вы выбрали",
-      LEAD_OVERRIDE: "Изменил лид",
-      LEASE_EXPIRY: "Истёк срок подтверждения",
-      BUSINESS_EXPIRY: "По правилам доступности",
-    }[value ?? ""] ?? "Источник не указан"
+      SELF: 'Вы выбрали',
+      LEAD_OVERRIDE: 'Изменил лид',
+      LEASE_EXPIRY: 'Истёк срок подтверждения',
+      BUSINESS_EXPIRY: 'По правилам доступности',
+    }[value ?? ''] ?? 'Источник не указан'
   );
 }
 
 function selectState(): void {
   selectedReason.value = availableReasons.value[0]!;
-  validationError.value = "";
+  validationError.value = '';
 }
 
 function submit(): void {
-  if (selectedState.value === "AWAY" && !isAwayDurationValid.value) {
-    validationError.value =
-      "Для статуса «Отошёл» укажите длительность от 1 минуты до 8 часов.";
+  if (selectedState.value === 'AWAY' && !isAwayDurationValid.value) {
+    validationError.value = 'Для статуса «Отошёл» укажите длительность от 1 минуты до 8 часов.';
     return;
   }
-  validationError.value = "";
-  emit("change", {
+  validationError.value = '';
+  emit('change', {
     state: selectedState.value,
     reasonCode: selectedReason.value,
     ...(reasonNote.value.trim() ? { reasonNote: reasonNote.value.trim() } : {}),
-    ...(selectedState.value === "AWAY"
+    ...(selectedState.value === 'AWAY'
       ? { hardDurationSeconds: awayDurationMinutes.value * 60 }
       : {}),
   });
@@ -164,10 +158,7 @@ function submit(): void {
 </script>
 
 <template>
-  <section
-    class="availability-status card"
-    aria-labelledby="availability-status-heading"
-  >
+  <section class="availability-status card" aria-labelledby="availability-status-heading">
     <header class="availability-status__header">
       <div>
         <span class="eyebrow">Моя доступность</span>
@@ -195,8 +186,8 @@ function submit(): void {
         <span>
           {{
             availability.acceptsNewWork
-              ? "Получаете новые обращения"
-              : "Новые обращения не назначаются"
+              ? 'Получаете новые обращения'
+              : 'Новые обращения не назначаются'
           }}
         </span>
       </div>
@@ -219,21 +210,13 @@ function submit(): void {
         </div>
         <div v-if="availability.effectiveUntil">
           <dt>
-            {{
-              availability.source === "BUSINESS_EXPIRY"
-                ? "Окно завершилось"
-                : "Действует до"
-            }}
+            {{ availability.source === 'BUSINESS_EXPIRY' ? 'Окно завершилось' : 'Действует до' }}
           </dt>
           <dd>{{ relativeTime(availability.effectiveUntil) }}</dd>
         </div>
       </dl>
 
-      <form
-        v-if="canManage"
-        class="availability-status__form"
-        @submit.prevent="submit"
-      >
+      <form v-if="canManage" class="availability-status__form" @submit.prevent="submit">
         <label>
           <span>Новый статус</span>
           <select
@@ -241,26 +224,15 @@ function submit(): void {
             :disabled="changing || unknownOutcome"
             @change="selectState"
           >
-            <option
-              v-for="state in SUPPORT_AVAILABILITY_STATES"
-              :key="state"
-              :value="state"
-            >
+            <option v-for="state in SUPPORT_AVAILABILITY_STATES" :key="state" :value="state">
               {{ labelState(state) }}
             </option>
           </select>
         </label>
         <label>
           <span>Причина</span>
-          <select
-            v-model="selectedReason"
-            :disabled="changing || unknownOutcome"
-          >
-            <option
-              v-for="reason in availableReasons"
-              :key="reason"
-              :value="reason"
-            >
+          <select v-model="selectedReason" :disabled="changing || unknownOutcome">
+            <option v-for="reason in availableReasons" :key="reason" :value="reason">
               {{ labelReason(reason) }}
             </option>
           </select>
@@ -279,10 +251,7 @@ function submit(): void {
           <small>От 1 минуты до 8 часов.</small>
         </label>
         <label class="availability-status__note">
-          <span
-            >Комментарий
-            <small>необязательно, без персональных данных</small></span
-          >
+          <span>Комментарий <small>необязательно, без персональных данных</small></span>
           <textarea
             v-model="reasonNote"
             rows="2"

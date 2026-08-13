@@ -1,4 +1,4 @@
-import { computed, ref } from "vue";
+import { computed, ref } from 'vue';
 import type {
   CreateSupportExternalMappingDto,
   PreviewSupportExternalMappingDto,
@@ -14,72 +14,70 @@ import type {
   SupportExternalOAuthStartResponseDto,
   SupportExternalOAuthTenantResponseDto,
   UpdateSupportExternalMappingDraftDto,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
 import type {
   SupportExternalMutation,
   SupportExternalProvider,
   SupportExternalWorkSource,
-} from "../api/support-external-work-source";
+} from '../api/support-external-work-source';
 
-export type SupportExternalSettingsRecovery =
-  | "UNKNOWN_OUTCOME"
-  | "RETRYABLE_FAILURE";
+export type SupportExternalSettingsRecovery = 'UNKNOWN_OUTCOME' | 'RETRYABLE_FAILURE';
 
 type SettingsAttempt =
   | {
-      kind: "TEST_CONNECTION";
+      kind: 'TEST_CONNECTION';
       connectionId: string;
       idempotencyKey: string;
     }
   | {
-      kind: "START_OAUTH";
+      kind: 'START_OAUTH';
       provider: SupportExternalProvider;
       idempotencyKey: string;
     }
   | {
-      kind: "SELECT_OAUTH_TENANT";
+      kind: 'SELECT_OAUTH_TENANT';
       sessionId: string;
       tenantIdentity: string;
       idempotencyKey: string;
     }
   | {
-      kind: "RECONNECT_CONNECTION";
+      kind: 'RECONNECT_CONNECTION';
       connectionId: string;
       expectedVersion: number;
       idempotencyKey: string;
     }
   | {
-      kind: "DISABLE_CONNECTION" | "REVOKE_CONNECTION";
+      kind: 'DISABLE_CONNECTION' | 'REVOKE_CONNECTION';
       connectionId: string;
       expectedVersion: number;
       idempotencyKey: string;
     }
   | {
-      kind: "REFRESH_CATALOG";
+      kind: 'REFRESH_CATALOG';
       connectionId: string;
       idempotencyKey: string;
     }
   | {
-      kind: "CREATE_MAPPING";
+      kind: 'CREATE_MAPPING';
       body: CreateSupportExternalMappingDto;
       idempotencyKey: string;
     }
   | {
-      kind: "SAVE_MAPPING";
+      kind: 'SAVE_MAPPING';
       mappingId: string;
       expectedVersion: number;
       body: UpdateSupportExternalMappingDraftDto;
       idempotencyKey: string;
     }
   | {
-      kind: "BEGIN_MAPPING_DRAFT" | "PUBLISH_MAPPING";
+      kind: 'BEGIN_MAPPING_DRAFT' | 'PUBLISH_MAPPING';
       mappingId: string;
       expectedVersion: number;
       idempotencyKey: string;
     }
   | {
-      kind: "ROLLBACK_MAPPING";
+      kind: 'ROLLBACK_MAPPING';
       mappingId: string;
       revisionId: string;
       expectedVersion: number;
@@ -113,59 +111,56 @@ function retainedScope(context: SupportExternalSettingsContext): string | null {
 
 function attemptLabel(attempt: SettingsAttempt): string {
   switch (attempt.kind) {
-    case "TEST_CONNECTION":
-      return "Проверка подключения";
-    case "START_OAUTH":
-    case "RECONNECT_CONNECTION":
-      return "OAuth-подключение";
-    case "SELECT_OAUTH_TENANT":
-      return "Выбор сайта или учётной записи";
-    case "DISABLE_CONNECTION":
-      return "Отключение подключения";
-    case "REVOKE_CONNECTION":
-      return "Отзыв доступа";
-    case "REFRESH_CATALOG":
-      return "Обновление назначений";
-    case "CREATE_MAPPING":
-      return "Создание черновика правил";
-    case "SAVE_MAPPING":
-      return "Сохранение черновика правил";
-    case "BEGIN_MAPPING_DRAFT":
-      return "Новый черновик правил";
-    case "PUBLISH_MAPPING":
-      return "Публикация правил";
-    case "ROLLBACK_MAPPING":
-      return "Возврат прежних правил";
+    case 'TEST_CONNECTION':
+      return 'Проверка подключения';
+    case 'START_OAUTH':
+    case 'RECONNECT_CONNECTION':
+      return 'OAuth-подключение';
+    case 'SELECT_OAUTH_TENANT':
+      return 'Выбор сайта или учётной записи';
+    case 'DISABLE_CONNECTION':
+      return 'Отключение подключения';
+    case 'REVOKE_CONNECTION':
+      return 'Отзыв доступа';
+    case 'REFRESH_CATALOG':
+      return 'Обновление назначений';
+    case 'CREATE_MAPPING':
+      return 'Создание черновика правил';
+    case 'SAVE_MAPPING':
+      return 'Сохранение черновика правил';
+    case 'BEGIN_MAPPING_DRAFT':
+      return 'Новый черновик правил';
+    case 'PUBLISH_MAPPING':
+      return 'Публикация правил';
+    case 'ROLLBACK_MAPPING':
+      return 'Возврат прежних правил';
   }
 }
 
 function receiptIdFrom(cause: unknown): string | null {
   const details = normalizeApiError(cause).details;
-  if (!details || typeof details !== "object" || !("receiptId" in details))
-    return null;
+  if (!details || typeof details !== 'object' || !('receiptId' in details)) return null;
   const value = details.receiptId;
-  return typeof value === "string" &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(
-      value,
-    )
+  return typeof value === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(value)
     ? value.toLowerCase()
     : null;
 }
 
 function attemptOperation(attempt: SettingsAttempt): string {
   return {
-    TEST_CONNECTION: "TEST_CONNECTION",
-    START_OAUTH: "START_OAUTH",
-    SELECT_OAUTH_TENANT: "SELECT_OAUTH_TENANT",
-    RECONNECT_CONNECTION: "RECONNECT_OAUTH",
-    DISABLE_CONNECTION: "DISABLE_CONNECTION",
-    REVOKE_CONNECTION: "REVOKE_CONNECTION",
-    REFRESH_CATALOG: "REFRESH_CATALOG",
-    CREATE_MAPPING: "MAPPING_CREATE",
-    SAVE_MAPPING: "MAPPING_REPLACE_DRAFT",
-    BEGIN_MAPPING_DRAFT: "MAPPING_BEGIN_DRAFT",
-    PUBLISH_MAPPING: "MAPPING_PUBLISH",
-    ROLLBACK_MAPPING: "MAPPING_ROLLBACK",
+    TEST_CONNECTION: 'TEST_CONNECTION',
+    START_OAUTH: 'START_OAUTH',
+    SELECT_OAUTH_TENANT: 'SELECT_OAUTH_TENANT',
+    RECONNECT_CONNECTION: 'RECONNECT_OAUTH',
+    DISABLE_CONNECTION: 'DISABLE_CONNECTION',
+    REVOKE_CONNECTION: 'REVOKE_CONNECTION',
+    REFRESH_CATALOG: 'REFRESH_CATALOG',
+    CREATE_MAPPING: 'MAPPING_CREATE',
+    SAVE_MAPPING: 'MAPPING_REPLACE_DRAFT',
+    BEGIN_MAPPING_DRAFT: 'MAPPING_BEGIN_DRAFT',
+    PUBLISH_MAPPING: 'MAPPING_PUBLISH',
+    ROLLBACK_MAPPING: 'MAPPING_ROLLBACK',
   }[attempt.kind];
 }
 
@@ -189,8 +184,8 @@ export function createSupportExternalSettingsController(
   const loading = ref(false);
   const loadingDetail = ref(false);
   const mutating = ref(false);
-  const error = ref("");
-  const success = ref("");
+  const error = ref('');
+  const success = ref('');
   const conflict = ref(false);
   const conflictDraft = ref<{
     mappingId: string;
@@ -208,17 +203,13 @@ export function createSupportExternalSettingsController(
   let pendingReceiptId: string | null = null;
 
   const selectedConnection = computed(
-    () =>
-      connections.value.find((item) => item.id === selectedConnectionId.value) ??
-      null,
+    () => connections.value.find((item) => item.id === selectedConnectionId.value) ?? null,
   );
   const selectedMapping = computed(
     () => mappings.value.find((item) => item.id === selectedMappingId.value) ?? null,
   );
   const connectionMappings = computed(() =>
-    mappings.value.filter(
-      (item) => item.connectionId === selectedConnectionId.value,
-    ),
+    mappings.value.filter((item) => item.connectionId === selectedConnectionId.value),
   );
 
   function scopeKey(): string | null {
@@ -254,7 +245,7 @@ export function createSupportExternalSettingsController(
     if (pendingAttemptScope && pendingAttempt && mutating.value)
       retainedAttempts.set(pendingAttemptScope, {
         attempt: pendingAttempt,
-        state: "UNKNOWN_OUTCOME",
+        state: 'UNKNOWN_OUTCOME',
         ...(pendingReceiptId ? { receiptId: pendingReceiptId } : {}),
       });
     generation += 1;
@@ -271,8 +262,8 @@ export function createSupportExternalSettingsController(
     pendingAttemptScope = null;
     pendingReceiptId = null;
     purge();
-    error.value = "";
-    success.value = "";
+    error.value = '';
+    success.value = '';
     conflict.value = false;
   }
 
@@ -295,8 +286,8 @@ export function createSupportExternalSettingsController(
       value.status === 403 ||
       value.status === 404 ||
       value.status === 428 ||
-      value.code === "MFA_REQUIRED" ||
-      value.code === "MFA_ENROLLMENT_REQUIRED"
+      value.code === 'MFA_REQUIRED' ||
+      value.code === 'MFA_ENROLLMENT_REQUIRED'
     );
   }
 
@@ -308,19 +299,19 @@ export function createSupportExternalSettingsController(
     if (value.status === 403 || value.status === 404) {
       if (attemptScope) retainedAttempts.delete(attemptScope);
       purge();
-      error.value = "Внешние системы недоступны для текущего проекта или роли.";
+      error.value = 'Внешние системы недоступны для текущего проекта или роли.';
       await context.onForbidden?.();
       return true;
     }
     if (
       value.status === 401 ||
       value.status === 428 ||
-      value.code === "MFA_REQUIRED" ||
-      value.code === "MFA_ENROLLMENT_REQUIRED"
+      value.code === 'MFA_REQUIRED' ||
+      value.code === 'MFA_ENROLLMENT_REQUIRED'
     ) {
       if (attemptScope) retainedAttempts.delete(attemptScope);
       purge();
-      error.value = "Нужно войти заново. Команда не будет повторена.";
+      error.value = 'Нужно войти заново. Команда не будет повторена.';
       await context.onAuthenticationRequired?.();
       return true;
     }
@@ -356,10 +347,8 @@ export function createSupportExternalSettingsController(
       catalog.value = next;
       const mapping =
         mappings.value.find(
-          (item) =>
-            item.id === preferredMappingId && item.connectionId === connectionId,
-        ) ??
-        mappings.value.find((item) => item.connectionId === connectionId);
+          (item) => item.id === preferredMappingId && item.connectionId === connectionId,
+        ) ?? mappings.value.find((item) => item.connectionId === connectionId);
       if (mapping) await selectMapping(mapping.id);
       else {
         selectedMappingId.value = null;
@@ -368,9 +357,9 @@ export function createSupportExternalSettingsController(
       }
     } catch (cause) {
       if (requestGeneration !== detailGeneration || scopeKey() !== scope) return;
-      if (normalizeApiError(cause).name === "AbortError") return;
+      if (normalizeApiError(cause).name === 'AbortError') return;
       if (await handleAccessFailure(cause)) return;
-      error.value = "Каталог пока недоступен. Состояние подключения сохранено.";
+      error.value = 'Каталог пока недоступен. Состояние подключения сохранено.';
     } finally {
       if (requestGeneration === detailGeneration) {
         loadingDetail.value = false;
@@ -385,8 +374,7 @@ export function createSupportExternalSettingsController(
     if (!scope || !projectId) return;
     const root = mappings.value.find((item) => item.id === mappingId);
     if (!root || root.connectionId !== selectedConnectionId.value) return;
-    if (conflictDraft.value?.mappingId !== mappingId)
-      conflictDraft.value = null;
+    if (conflictDraft.value?.mappingId !== mappingId) conflictDraft.value = null;
     detailAbort?.abort();
     const requestGeneration = ++detailGeneration;
     const abort = new AbortController();
@@ -415,9 +403,9 @@ export function createSupportExternalSettingsController(
       revisions.value = nextRevisions.items;
     } catch (cause) {
       if (requestGeneration !== detailGeneration || scopeKey() !== scope) return;
-      if (normalizeApiError(cause).name === "AbortError") return;
+      if (normalizeApiError(cause).name === 'AbortError') return;
       if (await handleAccessFailure(cause)) return;
-      error.value = "Не удалось загрузить данные для проверки правил.";
+      error.value = 'Не удалось загрузить данные для проверки правил.';
     } finally {
       if (requestGeneration === detailGeneration) {
         loadingDetail.value = false;
@@ -441,8 +429,8 @@ export function createSupportExternalSettingsController(
     const abort = new AbortController();
     loadAbort = abort;
     loading.value = true;
-    error.value = "";
-    success.value = "";
+    error.value = '';
+    success.value = '';
     conflict.value = false;
     try {
       const [nextConnections, nextMappings] = await Promise.all([
@@ -452,9 +440,7 @@ export function createSupportExternalSettingsController(
       if (!current(scope, requestGeneration)) return false;
       connections.value = nextConnections;
       mappings.value = nextMappings;
-      selectedConnectionId.value = nextConnections.some(
-        (item) => item.id === preferredConnectionId,
-      )
+      selectedConnectionId.value = nextConnections.some((item) => item.id === preferredConnectionId)
         ? preferredConnectionId
         : (nextConnections[0]?.id ?? null);
       selectedMappingId.value = null;
@@ -464,10 +450,10 @@ export function createSupportExternalSettingsController(
       return true;
     } catch (cause) {
       if (!current(scope, requestGeneration)) return false;
-      if (normalizeApiError(cause).name === "AbortError") return false;
+      if (normalizeApiError(cause).name === 'AbortError') return false;
       if (await handleAccessFailure(cause)) return false;
       purge();
-      error.value = "Не удалось загрузить подтверждённые настройки внешних систем.";
+      error.value = 'Не удалось загрузить подтверждённые настройки внешних систем.';
       return false;
     } finally {
       if (current(scope, requestGeneration)) {
@@ -492,7 +478,7 @@ export function createSupportExternalSettingsController(
       const page = await source.listConnections(projectId, cursor, signal);
       all.push(...page.items);
       if (!page.nextCursor) break;
-      if (seen.has(page.nextCursor)) throw new Error("Connection cursor repeated");
+      if (seen.has(page.nextCursor)) throw new Error('Connection cursor repeated');
       seen.add(page.nextCursor);
       cursor = page.nextCursor;
     } while (cursor);
@@ -514,7 +500,7 @@ export function createSupportExternalSettingsController(
       );
       all.push(...page.items);
       if (!page.nextCursor) break;
-      if (seen.has(page.nextCursor)) throw new Error("Mapping cursor repeated");
+      if (seen.has(page.nextCursor)) throw new Error('Mapping cursor repeated');
       seen.add(page.nextCursor);
       cursor = page.nextCursor;
     } while (cursor);
@@ -527,21 +513,16 @@ export function createSupportExternalSettingsController(
     signal: AbortSignal,
   ): Promise<SupportExternalMutation<unknown>> {
     switch (attempt.kind) {
-      case "TEST_CONNECTION":
+      case 'TEST_CONNECTION':
         return source.testConnection(
           projectId,
           attempt.connectionId,
           attempt.idempotencyKey,
           signal,
         );
-      case "START_OAUTH":
-        return source.startOAuth(
-          projectId,
-          attempt.provider,
-          attempt.idempotencyKey,
-          signal,
-        );
-      case "RECONNECT_CONNECTION":
+      case 'START_OAUTH':
+        return source.startOAuth(projectId, attempt.provider, attempt.idempotencyKey, signal);
+      case 'RECONNECT_CONNECTION':
         return source.reconnectConnection(
           projectId,
           attempt.connectionId,
@@ -549,7 +530,7 @@ export function createSupportExternalSettingsController(
           attempt.idempotencyKey,
           signal,
         );
-      case "SELECT_OAUTH_TENANT":
+      case 'SELECT_OAUTH_TENANT':
         return source.selectOAuthTenant(
           projectId,
           attempt.sessionId,
@@ -557,7 +538,7 @@ export function createSupportExternalSettingsController(
           attempt.idempotencyKey,
           signal,
         );
-      case "DISABLE_CONNECTION":
+      case 'DISABLE_CONNECTION':
         return source.disableConnection(
           projectId,
           attempt.connectionId,
@@ -565,7 +546,7 @@ export function createSupportExternalSettingsController(
           attempt.idempotencyKey,
           signal,
         );
-      case "REVOKE_CONNECTION":
+      case 'REVOKE_CONNECTION':
         return source.revokeConnection(
           projectId,
           attempt.connectionId,
@@ -573,21 +554,16 @@ export function createSupportExternalSettingsController(
           attempt.idempotencyKey,
           signal,
         );
-      case "REFRESH_CATALOG":
+      case 'REFRESH_CATALOG':
         return source.refreshCatalog(
           projectId,
           attempt.connectionId,
           attempt.idempotencyKey,
           signal,
         );
-      case "CREATE_MAPPING":
-        return source.createMapping(
-          projectId,
-          attempt.body,
-          attempt.idempotencyKey,
-          signal,
-        );
-      case "SAVE_MAPPING":
+      case 'CREATE_MAPPING':
+        return source.createMapping(projectId, attempt.body, attempt.idempotencyKey, signal);
+      case 'SAVE_MAPPING':
         return source.replaceMappingDraft(
           projectId,
           attempt.mappingId,
@@ -596,7 +572,7 @@ export function createSupportExternalSettingsController(
           attempt.idempotencyKey,
           signal,
         );
-      case "BEGIN_MAPPING_DRAFT":
+      case 'BEGIN_MAPPING_DRAFT':
         return source.beginMappingDraft(
           projectId,
           attempt.mappingId,
@@ -604,7 +580,7 @@ export function createSupportExternalSettingsController(
           attempt.idempotencyKey,
           signal,
         );
-      case "PUBLISH_MAPPING":
+      case 'PUBLISH_MAPPING':
         return source.publishMapping(
           projectId,
           attempt.mappingId,
@@ -612,7 +588,7 @@ export function createSupportExternalSettingsController(
           attempt.idempotencyKey,
           signal,
         );
-      case "ROLLBACK_MAPPING":
+      case 'ROLLBACK_MAPPING':
         return source.rollbackMapping(
           projectId,
           attempt.mappingId,
@@ -636,29 +612,23 @@ export function createSupportExternalSettingsController(
     pendingAttempt = attempt;
     pendingAttemptScope = scope;
     pendingReceiptId = null;
-    retainedAttempts.set(scope, { attempt, state: "UNKNOWN_OUTCOME" });
+    retainedAttempts.set(scope, { attempt, state: 'UNKNOWN_OUTCOME' });
     mutating.value = true;
-    error.value = "";
-    success.value = "";
+    error.value = '';
+    success.value = '';
     conflict.value = false;
     try {
       const result = await executeAttempt(projectId, attempt, abort.signal);
       if (!current(scope, requestGeneration)) return;
-      if (
-        attempt.kind === "START_OAUTH" ||
-        attempt.kind === "RECONNECT_CONNECTION"
-      ) {
+      if (attempt.kind === 'START_OAUTH' || attempt.kind === 'RECONNECT_CONNECTION') {
         oauth.value = result.value as SupportExternalOAuthStartResponseDto;
         context.openOAuth?.(oauth.value.launchPath);
       }
-      if (attempt.kind === "SELECT_OAUTH_TENANT") {
+      if (attempt.kind === 'SELECT_OAUTH_TENANT') {
         oauth.value = null;
         oauthTenants.value = [];
       }
-      if (
-        attempt.kind === "SAVE_MAPPING" &&
-        conflictDraft.value?.mappingId === attempt.mappingId
-      )
+      if (attempt.kind === 'SAVE_MAPPING' && conflictDraft.value?.mappingId === attempt.mappingId)
         conflictDraft.value = null;
       pendingReceiptId = result.metadata.receiptId;
       retainedAttempts.delete(scope);
@@ -667,12 +637,12 @@ export function createSupportExternalSettingsController(
       if (!reconciled && scopeKey() === scope) {
         retainedAttempts.set(scope, {
           attempt,
-          state: "RETRYABLE_FAILURE",
+          state: 'RETRYABLE_FAILURE',
           ...(pendingReceiptId ? { receiptId: pendingReceiptId } : {}),
         });
         pendingAttempt = attempt;
         pendingAttemptScope = scope;
-        recovery.value = "RETRYABLE_FAILURE";
+        recovery.value = 'RETRYABLE_FAILURE';
         error.value = `${attemptLabel(attempt)} принята, но состояние на сервере не перечитано. Разрешён только точный повтор.`;
         return;
       }
@@ -688,48 +658,50 @@ export function createSupportExternalSettingsController(
       if (await handleAccessFailure(value, scope)) return;
       if (
         value.status === 409 &&
-        (value.code === "SUPPORT_EXTERNAL_MUTATION_OUTCOME_PENDING" ||
-          value.code === "SUPPORT_EXTERNAL_MUTATION_OUTCOME_UNKNOWN")
+        (value.code === 'SUPPORT_EXTERNAL_MUTATION_OUTCOME_PENDING' ||
+          value.code === 'SUPPORT_EXTERNAL_MUTATION_OUTCOME_UNKNOWN')
       ) {
         const receiptId = receiptIdFrom(value);
         if (!receiptId) {
-          recovery.value = "UNKNOWN_OUTCOME";
-          error.value = "Подтверждение команды повреждено. Новые команды заблокированы до ручной сверки.";
+          recovery.value = 'UNKNOWN_OUTCOME';
+          error.value =
+            'Подтверждение команды повреждено. Новые команды заблокированы до ручной сверки.';
           return;
         }
         pendingReceiptId = receiptId;
         retainedAttempts.set(scope, {
           attempt,
-          state: "UNKNOWN_OUTCOME",
+          state: 'UNKNOWN_OUTCOME',
           receiptId,
         });
         await reconcileReceipt(scope, projectId, attempt, receiptId, abort.signal);
         return;
       }
-      if (value.status === 409 && value.code === "VERSION_CONFLICT") {
+      if (value.status === 409 && value.code === 'VERSION_CONFLICT') {
         retainedAttempts.delete(scope);
         pendingAttempt = null;
         pendingAttemptScope = null;
         pendingReceiptId = null;
         recovery.value = null;
         conflictDraft.value =
-          attempt.kind === "SAVE_MAPPING"
+          attempt.kind === 'SAVE_MAPPING'
             ? { mappingId: attempt.mappingId, body: attempt.body }
             : null;
         await loadAuthoritative(true);
         conflict.value = true;
-        error.value = "Состояние изменилось на сервере. Черновик сохранён; подтвердите действие заново.";
+        error.value =
+          'Состояние изменилось на сервере. Черновик сохранён; подтвердите действие заново.';
         return;
       }
       if (value.status === 0) {
-        retainedAttempts.set(scope, { attempt, state: "UNKNOWN_OUTCOME" });
-        recovery.value = "UNKNOWN_OUTCOME";
+        retainedAttempts.set(scope, { attempt, state: 'UNKNOWN_OUTCOME' });
+        recovery.value = 'UNKNOWN_OUTCOME';
         error.value = `${attemptLabel(attempt)} имеет неизвестный результат. Разрешён только точный повтор.`;
         return;
       }
       if (value.status === 503 || value.status === 429) {
-        retainedAttempts.set(scope, { attempt, state: "RETRYABLE_FAILURE" });
-        recovery.value = "RETRYABLE_FAILURE";
+        retainedAttempts.set(scope, { attempt, state: 'RETRYABLE_FAILURE' });
+        recovery.value = 'RETRYABLE_FAILURE';
         error.value = `${attemptLabel(attempt)} временно недоступна. Повтор использует ту же команду.`;
         return;
       }
@@ -757,25 +729,22 @@ export function createSupportExternalSettingsController(
     try {
       const outcome = await source.readSettingsMutation(projectId, receiptId, signal);
       if (scopeKey() !== scope) return;
-      if (
-        outcome.receiptId !== receiptId ||
-        outcome.operation !== attemptOperation(attempt)
-      ) {
-        recovery.value = "UNKNOWN_OUTCOME";
-        error.value = "Подтверждение не соответствует сохранённой команде. Нужна ручная сверка.";
+      if (outcome.receiptId !== receiptId || outcome.operation !== attemptOperation(attempt)) {
+        recovery.value = 'UNKNOWN_OUTCOME';
+        error.value = 'Подтверждение не соответствует сохранённой команде. Нужна ручная сверка.';
         return;
       }
-      if (outcome.status !== "SUCCEEDED") {
+      if (outcome.status !== 'SUCCEEDED') {
         retainedAttempts.set(scope, {
           attempt,
-          state: "UNKNOWN_OUTCOME",
+          state: 'UNKNOWN_OUTCOME',
           receiptId,
         });
-        recovery.value = "UNKNOWN_OUTCOME";
+        recovery.value = 'UNKNOWN_OUTCOME';
         error.value =
-          outcome.status === "PENDING"
-            ? "Команда ещё выполняется. Новые команды заблокированы; проверьте статус позже."
-            : "Сервер не может подтвердить результат. Новые команды заблокированы до ручной сверки.";
+          outcome.status === 'PENDING'
+            ? 'Команда ещё выполняется. Новые команды заблокированы; проверьте статус позже.'
+            : 'Сервер не может подтвердить результат. Новые команды заблокированы до ручной сверки.';
         return;
       }
       retainedAttempts.delete(scope);
@@ -784,11 +753,12 @@ export function createSupportExternalSettingsController(
       if (!reconciled && scopeKey() === scope) {
         retainedAttempts.set(scope, {
           attempt,
-          state: "RETRYABLE_FAILURE",
+          state: 'RETRYABLE_FAILURE',
           receiptId,
         });
-        recovery.value = "RETRYABLE_FAILURE";
-        error.value = "Команда подтверждена, но состояние на сервере не перечитано. Проверьте статус снова.";
+        recovery.value = 'RETRYABLE_FAILURE';
+        error.value =
+          'Команда подтверждена, но состояние на сервере не перечитано. Проверьте статус снова.';
         return;
       }
       pendingAttempt = null;
@@ -797,15 +767,15 @@ export function createSupportExternalSettingsController(
       success.value = `${attemptLabel(attempt)} подтверждена сервером.`;
     } catch (cause) {
       if (scopeKey() !== scope) return;
-      if (normalizeApiError(cause).name === "AbortError") return;
+      if (normalizeApiError(cause).name === 'AbortError') return;
       if (await handleAccessFailure(cause, scope)) return;
       retainedAttempts.set(scope, {
         attempt,
-        state: "RETRYABLE_FAILURE",
+        state: 'RETRYABLE_FAILURE',
         receiptId,
       });
-      recovery.value = "RETRYABLE_FAILURE";
-      error.value = "Подтверждение команды пока недоступно. Новые команды остаются заблокированы.";
+      recovery.value = 'RETRYABLE_FAILURE';
+      error.value = 'Подтверждение команды пока недоступно. Новые команды остаются заблокированы.';
     }
   }
 
@@ -817,7 +787,7 @@ export function createSupportExternalSettingsController(
     const connection = selectedConnection.value;
     if (!connection || recovery.value) return;
     await run({
-      kind: "TEST_CONNECTION",
+      kind: 'TEST_CONNECTION',
       connectionId: connection.id,
       idempotencyKey: key(),
     });
@@ -825,19 +795,19 @@ export function createSupportExternalSettingsController(
 
   async function createMapping(body: CreateSupportExternalMappingDto): Promise<void> {
     if (recovery.value) return;
-    await run({ kind: "CREATE_MAPPING", body, idempotencyKey: key() });
+    await run({ kind: 'CREATE_MAPPING', body, idempotencyKey: key() });
   }
 
   async function startOAuth(provider: SupportExternalProvider): Promise<void> {
     if (recovery.value) return;
-    await run({ kind: "START_OAUTH", provider, idempotencyKey: key() });
+    await run({ kind: 'START_OAUTH', provider, idempotencyKey: key() });
   }
 
   async function reconnectSelectedConnection(): Promise<void> {
     const connection = selectedConnection.value;
     if (!connection || recovery.value) return;
     await run({
-      kind: "RECONNECT_CONNECTION",
+      kind: 'RECONNECT_CONNECTION',
       connectionId: connection.id,
       expectedVersion: connection.version,
       idempotencyKey: key(),
@@ -848,7 +818,7 @@ export function createSupportExternalSettingsController(
     const connection = selectedConnection.value;
     if (!connection || recovery.value) return;
     await run({
-      kind: "DISABLE_CONNECTION",
+      kind: 'DISABLE_CONNECTION',
       connectionId: connection.id,
       expectedVersion: connection.version,
       idempotencyKey: key(),
@@ -859,7 +829,7 @@ export function createSupportExternalSettingsController(
     const connection = selectedConnection.value;
     if (!connection || recovery.value) return;
     await run({
-      kind: "REVOKE_CONNECTION",
+      kind: 'REVOKE_CONNECTION',
       connectionId: connection.id,
       expectedVersion: connection.version,
       idempotencyKey: key(),
@@ -870,7 +840,7 @@ export function createSupportExternalSettingsController(
     const connection = selectedConnection.value;
     if (!connection || recovery.value) return;
     await run({
-      kind: "REFRESH_CATALOG",
+      kind: 'REFRESH_CATALOG',
       connectionId: connection.id,
       idempotencyKey: key(),
     });
@@ -880,7 +850,7 @@ export function createSupportExternalSettingsController(
     const mapping = selectedMapping.value;
     if (!mapping || recovery.value) return;
     await run({
-      kind: "SAVE_MAPPING",
+      kind: 'SAVE_MAPPING',
       mappingId: mapping.id,
       expectedVersion: mapping.version,
       body,
@@ -892,7 +862,7 @@ export function createSupportExternalSettingsController(
     const mapping = selectedMapping.value;
     if (!mapping || recovery.value) return;
     await run({
-      kind: "BEGIN_MAPPING_DRAFT",
+      kind: 'BEGIN_MAPPING_DRAFT',
       mappingId: mapping.id,
       expectedVersion: mapping.version,
       idempotencyKey: key(),
@@ -926,7 +896,7 @@ export function createSupportExternalSettingsController(
       commit(value);
     } catch (cause) {
       if (!current(scope, requestGeneration)) return;
-      if (normalizeApiError(cause).name === "AbortError") return;
+      if (normalizeApiError(cause).name === 'AbortError') return;
       if (await handleAccessFailure(cause)) return;
       error.value = failureCopy;
     } finally {
@@ -942,7 +912,7 @@ export function createSupportExternalSettingsController(
       (value) => {
         validation.value = value;
       },
-      "Не удалось проверить черновик правил.",
+      'Не удалось проверить черновик правил.',
     );
   }
 
@@ -954,7 +924,7 @@ export function createSupportExternalSettingsController(
       (value) => {
         preview.value = value;
       },
-      "Не удалось построить безопасный предварительный просмотр.",
+      'Не удалось построить безопасный предварительный просмотр.',
     );
   }
 
@@ -966,7 +936,7 @@ export function createSupportExternalSettingsController(
       (value) => {
         diff.value = value;
       },
-      "Не удалось перечитать сравнение версий.",
+      'Не удалось перечитать сравнение версий.',
     );
   }
 
@@ -974,7 +944,7 @@ export function createSupportExternalSettingsController(
     const mapping = selectedMapping.value;
     if (!mapping || !mappingDraft.value || recovery.value) return;
     await run({
-      kind: "PUBLISH_MAPPING",
+      kind: 'PUBLISH_MAPPING',
       mappingId: mapping.id,
       expectedVersion: mapping.version,
       idempotencyKey: key(),
@@ -983,12 +953,12 @@ export function createSupportExternalSettingsController(
 
   async function rollbackMapping(
     revisionId: string,
-    reasonCode: RollbackSupportExternalMappingDto["reasonCode"],
+    reasonCode: RollbackSupportExternalMappingDto['reasonCode'],
   ): Promise<void> {
     const mapping = selectedMapping.value;
     if (!mapping || recovery.value) return;
     await run({
-      kind: "ROLLBACK_MAPPING",
+      kind: 'ROLLBACK_MAPPING',
       mappingId: mapping.id,
       revisionId,
       expectedVersion: mapping.version,
@@ -1005,7 +975,7 @@ export function createSupportExternalSettingsController(
       (value) => {
         oauthTenants.value = value.items;
       },
-      "Не удалось перечитать доступные сайты и учётные записи.",
+      'Не удалось перечитать доступные сайты и учётные записи.',
     );
   }
 
@@ -1013,7 +983,7 @@ export function createSupportExternalSettingsController(
     const sessionId = oauth.value?.sessionId;
     if (!sessionId || !tenantIdentity || recovery.value) return;
     await run({
-      kind: "SELECT_OAUTH_TENANT",
+      kind: 'SELECT_OAUTH_TENANT',
       sessionId,
       tenantIdentity,
       idempotencyKey: key(),
@@ -1030,13 +1000,7 @@ export function createSupportExternalSettingsController(
       mutationAbort = abort;
       mutating.value = true;
       try {
-        await reconcileReceipt(
-          scope,
-          projectId,
-          pendingAttempt,
-          pendingReceiptId,
-          abort.signal,
-        );
+        await reconcileReceipt(scope, projectId, pendingAttempt, pendingReceiptId, abort.signal);
       } finally {
         if (mutationAbort === abort) {
           mutationAbort = null;

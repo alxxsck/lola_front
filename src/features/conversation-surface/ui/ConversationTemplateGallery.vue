@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
+import { computed, nextTick, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
 import type {
   SupportMacroCatalogFreshnessDto,
   SupportMacroResponseDto,
-} from "@/shared/api/generated/models";
-import type { ConversationReplyTemplate } from "../model/conversation-reply-templates";
+} from '@/shared/api/generated/models';
+import type { ConversationReplyTemplate } from '../model/conversation-reply-templates';
 
 type TemplateGalleryItem = SupportMacroResponseDto | ConversationReplyTemplate;
 
@@ -29,10 +29,10 @@ const props = withDefaults(
   {
     macros: () => [],
     templates: () => [],
-    query: "",
+    query: '',
     loading: false,
     applyingId: null,
-    error: "",
+    error: '',
     hasMore: false,
     freshness: null,
   },
@@ -40,16 +40,14 @@ const props = withDefaults(
 
 // Runtime emits keep the shared gallery compatible with the legacy User workspace
 // while Support passes the server-owned macro projection.
-const emit = defineEmits(["close", "select", "search", "loadMore"]);
+const emit = defineEmits(['close', 'select', 'search', 'loadMore']);
 
 const localQuery = ref(props.query);
 const searchInput = ref<{ $el?: HTMLInputElement } | null>(null);
 const items = computed<readonly TemplateGalleryItem[]>(() =>
   props.macros.length ? props.macros : props.templates,
 );
-const serverOwned = computed(
-  () => props.macros.length > 0 || props.templates.length === 0,
-);
+const serverOwned = computed(() => props.macros.length > 0 || props.templates.length === 0);
 
 watch(
   () => props.query,
@@ -66,7 +64,7 @@ watch(
 );
 
 function isMacro(item: TemplateGalleryItem): item is SupportMacroResponseDto {
-  return "stableCode" in item;
+  return 'stableCode' in item;
 }
 
 function title(item: TemplateGalleryItem): string {
@@ -80,9 +78,7 @@ function title(item: TemplateGalleryItem): string {
 
 function body(item: TemplateGalleryItem): string {
   if (!isMacro(item)) return item.text;
-  return (
-    item.publishedRevision?.configuration.body ?? "Шаблон ещё не опубликован."
-  );
+  return item.publishedRevision?.configuration.body ?? 'Шаблон ещё не опубликован.';
 }
 
 function description(item: TemplateGalleryItem): string {
@@ -90,16 +86,14 @@ function description(item: TemplateGalleryItem): string {
 }
 
 function shortcuts(item: TemplateGalleryItem): string[] {
-  return isMacro(item)
-    ? (item.publishedRevision?.configuration.shortcuts ?? [])
-    : [];
+  return isMacro(item) ? (item.publishedRevision?.configuration.shortcuts ?? []) : [];
 }
 
 function applicability(item: TemplateGalleryItem): string[] {
   if (!isMacro(item)) return [];
   return [
-    item.applicability.locale ?? "любой язык",
-    item.applicability.visibility === "PROJECT" ? "весь проект" : "команды",
+    item.applicability.locale ?? 'любой язык',
+    item.applicability.visibility === 'PROJECT' ? 'весь проект' : 'команды',
     ...item.applicability.categoryCodes.slice(0, 2),
   ];
 }
@@ -107,12 +101,12 @@ function applicability(item: TemplateGalleryItem): string[] {
 function disabled(item: TemplateGalleryItem): boolean {
   return (
     Boolean(props.applyingId) ||
-    (isMacro(item) && (item.lifecycle !== "ACTIVE" || !item.publishedRevision))
+    (isMacro(item) && (item.lifecycle !== 'ACTIVE' || !item.publishedRevision))
   );
 }
 
 function submitSearch(): void {
-  emit("search", localQuery.value.trim());
+  emit('search', localQuery.value.trim());
 }
 </script>
 
@@ -128,24 +122,19 @@ function submitSearch(): void {
   >
     <template #header>
       <div class="macro-dialog__heading">
-        <span>{{ serverOwned ? "Шаблоны поддержки" : "Быстрый ответ" }}</span>
+        <span>{{ serverOwned ? 'Шаблоны поддержки' : 'Быстрый ответ' }}</span>
         <h3>Шаблоны ответа</h3>
         <p>
           {{
             serverOwned
-              ? "Выберите опубликованный шаблон — он появится как обычный редактируемый черновик."
-              : "Выберите быстрый ответ — перед отправкой его можно изменить."
+              ? 'Выберите опубликованный шаблон — он появится как обычный редактируемый черновик.'
+              : 'Выберите быстрый ответ — перед отправкой его можно изменить.'
           }}
         </p>
       </div>
     </template>
 
-    <form
-      v-if="serverOwned"
-      class="macro-search"
-      role="search"
-      @submit.prevent="submitSearch"
-    >
+    <form v-if="serverOwned" class="macro-search" role="search" @submit.prevent="submitSearch">
       <i class="pi pi-search" aria-hidden="true" />
       <InputText
         ref="searchInput"
@@ -165,24 +154,13 @@ function submitSearch(): void {
       <span>· версия каталога {{ freshness.generation }}</span>
     </p>
 
-    <div
-      v-if="loading && !items.length"
-      class="macro-list"
-      aria-label="Загрузка шаблонов"
-    >
-      <Skeleton
-        v-for="index in 3"
-        :key="index"
-        height="94px"
-        border-radius="14px"
-      />
+    <div v-if="loading && !items.length" class="macro-list" aria-label="Загрузка шаблонов">
+      <Skeleton v-for="index in 3" :key="index" height="94px" border-radius="14px" />
     </div>
     <p v-else-if="!items.length" class="macro-empty">
       <i class="pi pi-file-edit" aria-hidden="true" />
       <strong>Подходящих шаблонов нет</strong>
-      <span
-        >Измените запрос или попросите администратора опубликовать шаблон.</span
-      >
+      <span>Измените запрос или попросите администратора опубликовать шаблон.</span>
     </p>
     <div v-else class="macro-list" aria-live="polite">
       <button
@@ -193,9 +171,7 @@ function submitSearch(): void {
         :disabled="disabled(item)"
         @click="emit('select', item)"
       >
-        <span class="macro-row__icon"
-          ><i class="pi pi-file-edit" aria-hidden="true"
-        /></span>
+        <span class="macro-row__icon"><i class="pi pi-file-edit" aria-hidden="true" /></span>
         <span class="macro-row__content">
           <span class="macro-row__title">
             <strong>{{ title(item) }}</strong>
@@ -208,14 +184,10 @@ function submitSearch(): void {
           <span class="macro-row__body">{{ body(item) }}</span>
           <span class="macro-row__meta">
             <span>{{ description(item) }}</span>
-            <span
-              v-for="shortcut in shortcuts(item).slice(0, 3)"
-              :key="shortcut"
+            <span v-for="shortcut in shortcuts(item).slice(0, 3)" :key="shortcut"
               >/{{ shortcut }}</span
             >
-            <span v-for="fact in applicability(item)" :key="fact">{{
-              fact
-            }}</span>
+            <span v-for="fact in applicability(item)" :key="fact">{{ fact }}</span>
           </span>
         </span>
         <span class="macro-row__action" aria-hidden="true">
@@ -386,7 +358,7 @@ function submitSearch(): void {
   flex-wrap: wrap;
   gap: 6px;
   color: var(--text-tertiary);
-  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
   font-size: 0.64rem;
 }
 .macro-empty {

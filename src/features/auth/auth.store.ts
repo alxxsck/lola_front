@@ -1,51 +1,51 @@
-import { computed, ref } from "vue";
-import { defineStore } from "pinia";
+import { computed, ref } from 'vue';
+import { defineStore } from 'pinia';
 import {
   authApi,
   AuthenticationOperationCancelledError,
   type AuthContext,
   type MfaChallenge,
-} from "./auth.api";
-import { runLogoutCleanups } from "./logout-cleanup";
+} from './auth.api';
+import { runLogoutCleanups } from './logout-cleanup';
 import {
   beginAuthTeardown,
   endAuthTeardown,
   registerUnauthorizedHandler,
-} from "@/shared/api/http/axios-instance";
-import { notifyAuthSessionEnded } from "./auth-session-navigation";
+} from '@/shared/api/http/axios-instance';
+import { notifyAuthSessionEnded } from './auth-session-navigation';
 import {
   clearAuthSession,
   getAccessToken,
   registerRemoteAuthSessionClearHandler,
   storeSelectedProjectId,
-} from "@/shared/api/http/auth-session";
-import { ApiError } from "@/shared/api/http/api-error";
-import { safeInternalRedirect } from "./post-authentication-redirect";
+} from '@/shared/api/http/auth-session';
+import { ApiError } from '@/shared/api/http/api-error';
+import { safeInternalRedirect } from './post-authentication-redirect';
 import {
   clearInteractiveLoginRequirement,
   isInteractiveLoginRequired,
   requireInteractiveLogin,
-} from "./interactive-login-requirement";
-import type { AuthProject, CmsUser, Project } from "@/shared/types/domain";
+} from './interactive-login-requirement';
+import type { AuthProject, CmsUser, Project } from '@/shared/types/domain';
 
 export type AuthPhase =
-  | "ANONYMOUS"
-  | "LOGIN_PENDING"
-  | "SETUP_REQUIRED"
-  | "SETUP_PENDING"
-  | "MFA_ENROLLMENT_REQUIRED"
-  | "MFA_REQUIRED"
-  | "MFA_PENDING"
-  | "MFA_RECOVERY_CODES"
-  | "ANONYMOUS_WITH_SETUP_SUCCESS"
-  | "AUTHENTICATED";
+  | 'ANONYMOUS'
+  | 'LOGIN_PENDING'
+  | 'SETUP_REQUIRED'
+  | 'SETUP_PENDING'
+  | 'MFA_ENROLLMENT_REQUIRED'
+  | 'MFA_REQUIRED'
+  | 'MFA_PENDING'
+  | 'MFA_RECOVERY_CODES'
+  | 'ANONYMOUS_WITH_SETUP_SUCCESS'
+  | 'AUTHENTICATED';
 
-export const useAuthStore = defineStore("auth", () => {
+export const useAuthStore = defineStore('auth', () => {
   const user = ref<CmsUser | null>(null);
   const project = ref<AuthProject | null>(null);
   const projects = ref<AuthProject[]>([]);
   const supportEnabled = ref<boolean | null>(null);
-  const phase = ref<AuthPhase>("ANONYMOUS");
+  const phase = ref<AuthPhase>('ANONYMOUS');
   const setupToken = ref<string | null>(null);
   const mfaChallenge = ref<MfaChallenge | null>(null);
   const recoveryCodes = ref<string[]>([]);
@@ -55,33 +55,23 @@ export const useAuthStore = defineStore("auth", () => {
   let restorePromise: Promise<void> | null = null;
   let setupAttemptId = 0;
   let authenticationEpoch = 0;
-  const isAuthenticated = computed(
-    () => phase.value === "AUTHENTICATED" && Boolean(user.value),
-  );
+  const isAuthenticated = computed(() => phase.value === 'AUTHENTICATED' && Boolean(user.value));
   const requiresPasswordSetup = computed(
-    () => phase.value === "SETUP_REQUIRED" || phase.value === "SETUP_PENDING",
+    () => phase.value === 'SETUP_REQUIRED' || phase.value === 'SETUP_PENDING',
   );
   const requiresProjectSelection = computed(() =>
     Boolean(user.value && projects.value.length > 1 && !project.value),
   );
   const authenticatedLandingPath = computed(() => {
-    if (requiresProjectSelection.value) return "/login";
-    if (project.value) return "/overview";
-    if (
-      user.value?.platformPermissionCodes?.includes("platform.cms_users.read")
-    )
-      return "/platform/cms-users";
-    if (
-      user.value?.platformPermissionCodes?.includes(
-        "platform.notifications.operations.read",
-      )
-    )
-      return "/platform/notification-operations";
-    if (
-      user.value?.platformPermissionCodes?.includes("platform.ai_pricing.read")
-    )
-      return "/platform/ai-pricing";
-    return "/settings/security";
+    if (requiresProjectSelection.value) return '/login';
+    if (project.value) return '/overview';
+    if (user.value?.platformPermissionCodes?.includes('platform.cms_users.read'))
+      return '/platform/cms-users';
+    if (user.value?.platformPermissionCodes?.includes('platform.notifications.operations.read'))
+      return '/platform/notification-operations';
+    if (user.value?.platformPermissionCodes?.includes('platform.ai_pricing.read'))
+      return '/platform/ai-pricing';
+    return '/settings/security';
   });
 
   function clearLocalState() {
@@ -111,7 +101,7 @@ export const useAuthStore = defineStore("auth", () => {
     authApi.cancelMfa();
     clearAuthSession();
     clearLocalState();
-    phase.value = "ANONYMOUS";
+    phase.value = 'ANONYMOUS';
   }
 
   function resetRemoteAuthentication() {
@@ -124,15 +114,15 @@ export const useAuthStore = defineStore("auth", () => {
     postAuthenticationRedirect.value = null;
     authApi.cancelMfa();
     clearLocalState();
-    phase.value = "ANONYMOUS";
+    phase.value = 'ANONYMOUS';
     restored.value = true;
-    notifyAuthSessionEnded("SESSION_EXPIRED");
+    notifyAuthSessionEnded('SESSION_EXPIRED');
   }
 
   function resetExpiredAuthentication() {
     resetAuthentication();
     restored.value = true;
-    notifyAuthSessionEnded("SESSION_EXPIRED");
+    notifyAuthSessionEnded('SESSION_EXPIRED');
   }
 
   function applyContext(context: AuthContext) {
@@ -140,11 +130,8 @@ export const useAuthStore = defineStore("auth", () => {
     projects.value = context.projects;
     supportEnabled.value = context.capabilities.supportEnabled;
     const selectedId =
-      context.projects.length === 1
-        ? context.projects[0]?.id
-        : context.selectedProjectId;
-    project.value =
-      context.projects.find((item) => item.id === selectedId) ?? null;
+      context.projects.length === 1 ? context.projects[0]?.id : context.selectedProjectId;
+    project.value = context.projects.find((item) => item.id === selectedId) ?? null;
     if (project.value) storeSelectedProjectId(project.value.id);
   }
 
@@ -153,7 +140,7 @@ export const useAuthStore = defineStore("auth", () => {
     if (restorePromise) return restorePromise;
     if (isInteractiveLoginRequired()) {
       clearLocalState();
-      phase.value = "ANONYMOUS";
+      phase.value = 'ANONYMOUS';
       restored.value = true;
       return;
     }
@@ -161,21 +148,15 @@ export const useAuthStore = defineStore("auth", () => {
     restorePromise = (async () => {
       restoring.value = true;
       try {
-        const context = await authApi.restore(
-          () => restoreEpoch === authenticationEpoch,
-        );
-        if (
-          context &&
-          restoreEpoch === authenticationEpoch &&
-          !isInteractiveLoginRequired()
-        ) {
+        const context = await authApi.restore(() => restoreEpoch === authenticationEpoch);
+        if (context && restoreEpoch === authenticationEpoch && !isInteractiveLoginRequired()) {
           applyContext(context);
-          phase.value = "AUTHENTICATED";
+          phase.value = 'AUTHENTICATED';
         }
       } catch {
         if (restoreEpoch === authenticationEpoch) {
           clearLocalState();
-          phase.value = "ANONYMOUS";
+          phase.value = 'ANONYMOUS';
         }
       } finally {
         restored.value = true;
@@ -187,20 +168,14 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   async function refreshContext() {
-    if (phase.value !== "AUTHENTICATED") return;
+    if (phase.value !== 'AUTHENTICATED') return;
     const refreshEpoch = authenticationEpoch;
     try {
       const context = await authApi.refreshContext();
-      if (
-        refreshEpoch === authenticationEpoch &&
-        phase.value === "AUTHENTICATED"
-      )
+      if (refreshEpoch === authenticationEpoch && phase.value === 'AUTHENTICATED')
         applyContext(context);
     } catch (cause) {
-      if (
-        refreshEpoch === authenticationEpoch &&
-        phase.value === "AUTHENTICATED"
-      )
+      if (refreshEpoch === authenticationEpoch && phase.value === 'AUTHENTICATED')
         resetAuthentication();
       throw cause;
     }
@@ -210,7 +185,7 @@ export const useAuthStore = defineStore("auth", () => {
     // An explicit credential ceremony becomes authoritative over any stale restore attempt.
     const attemptEpoch = ++authenticationEpoch;
     restored.value = true;
-    phase.value = "LOGIN_PENDING";
+    phase.value = 'LOGIN_PENDING';
     setupToken.value = null;
     mfaChallenge.value = null;
     recoveryCodes.value = [];
@@ -220,31 +195,27 @@ export const useAuthStore = defineStore("auth", () => {
         password,
         () => attemptEpoch === authenticationEpoch,
       );
-      if (attemptEpoch !== authenticationEpoch)
-        throw new AuthenticationOperationCancelledError();
-      if (result.kind === "PASSWORD_SETUP_REQUIRED") {
+      if (attemptEpoch !== authenticationEpoch) throw new AuthenticationOperationCancelledError();
+      if (result.kind === 'PASSWORD_SETUP_REQUIRED') {
         clearLocalState();
         setupToken.value = result.setupToken;
-        phase.value = "SETUP_REQUIRED";
+        phase.value = 'SETUP_REQUIRED';
         return result.kind;
       }
-      if (
-        result.kind === "MFA_ENROLLMENT_REQUIRED" ||
-        result.kind === "MFA_REQUIRED"
-      ) {
+      if (result.kind === 'MFA_ENROLLMENT_REQUIRED' || result.kind === 'MFA_REQUIRED') {
         clearLocalState();
         mfaChallenge.value = result;
         phase.value = result.kind;
         return result.kind;
       }
       applyContext(result.context);
-      phase.value = "AUTHENTICATED";
+      phase.value = 'AUTHENTICATED';
       clearInteractiveLoginRequirement();
       return result.kind;
     } catch (cause) {
       if (attemptEpoch === authenticationEpoch) {
         clearLocalState();
-        phase.value = "ANONYMOUS";
+        phase.value = 'ANONYMOUS';
       }
       throw cause;
     }
@@ -252,26 +223,25 @@ export const useAuthStore = defineStore("auth", () => {
 
   async function completeMfaPasskey(label?: string) {
     const challenge = mfaChallenge.value;
-    if (!challenge) throw new Error("MFA-сессия недоступна. Войдите ещё раз.");
+    if (!challenge) throw new Error('MFA-сессия недоступна. Войдите ещё раз.');
     const attemptEpoch = ++authenticationEpoch;
-    phase.value = "MFA_PENDING";
+    phase.value = 'MFA_PENDING';
     try {
       const result = await authApi.completeMfaPasskey(
         challenge,
         label,
         () => attemptEpoch === authenticationEpoch,
       );
-      if (attemptEpoch !== authenticationEpoch)
-        throw new AuthenticationOperationCancelledError();
-      if (result.kind === "AUTHENTICATED") {
+      if (attemptEpoch !== authenticationEpoch) throw new AuthenticationOperationCancelledError();
+      if (result.kind === 'AUTHENTICATED') {
         mfaChallenge.value = null;
         applyContext(result.context);
-        phase.value = "AUTHENTICATED";
+        phase.value = 'AUTHENTICATED';
         clearInteractiveLoginRequirement();
       } else {
         mfaChallenge.value = null;
         recoveryCodes.value = [...result.recoveryCodes];
-        phase.value = "MFA_RECOVERY_CODES";
+        phase.value = 'MFA_RECOVERY_CODES';
       }
       return result.kind;
     } catch (cause) {
@@ -282,11 +252,11 @@ export const useAuthStore = defineStore("auth", () => {
 
   async function completeMfaRecovery(recoveryCode: string, label?: string) {
     const challenge = mfaChallenge.value;
-    if (!challenge || challenge.kind !== "MFA_REQUIRED") {
-      throw new Error("MFA recovery-сессия недоступна. Войдите ещё раз.");
+    if (!challenge || challenge.kind !== 'MFA_REQUIRED') {
+      throw new Error('MFA recovery-сессия недоступна. Войдите ещё раз.');
     }
     const attemptEpoch = ++authenticationEpoch;
-    phase.value = "MFA_PENDING";
+    phase.value = 'MFA_PENDING';
     try {
       const result = await authApi.completeMfaRecovery(
         challenge,
@@ -294,11 +264,10 @@ export const useAuthStore = defineStore("auth", () => {
         label,
         () => attemptEpoch === authenticationEpoch,
       );
-      if (attemptEpoch !== authenticationEpoch)
-        throw new AuthenticationOperationCancelledError();
+      if (attemptEpoch !== authenticationEpoch) throw new AuthenticationOperationCancelledError();
       mfaChallenge.value = null;
       recoveryCodes.value = [...result.recoveryCodes];
-      phase.value = "MFA_RECOVERY_CODES";
+      phase.value = 'MFA_RECOVERY_CODES';
       return result.kind;
     } catch (cause) {
       if (attemptEpoch === authenticationEpoch) phase.value = challenge.kind;
@@ -326,39 +295,28 @@ export const useAuthStore = defineStore("auth", () => {
     clearAuthSession();
     clearLocalState();
     setupToken.value = token;
-    phase.value = "SETUP_REQUIRED";
+    phase.value = 'SETUP_REQUIRED';
     restored.value = true;
     restoring.value = false;
   }
 
-  async function completePasswordSetup(
-    newPassword: string,
-    passwordConfirmation: string,
-  ) {
+  async function completePasswordSetup(newPassword: string, passwordConfirmation: string) {
     const token = setupToken.value;
-    if (!token)
-      throw new Error("Сессия установки пароля недоступна. Войдите ещё раз.");
+    if (!token) throw new Error('Сессия установки пароля недоступна. Войдите ещё раз.');
     const attemptId = ++setupAttemptId;
-    phase.value = "SETUP_PENDING";
+    phase.value = 'SETUP_PENDING';
     try {
-      const result = await authApi.completePasswordSetup(
-        token,
-        newPassword,
-        passwordConfirmation,
-      );
+      const result = await authApi.completePasswordSetup(token, newPassword, passwordConfirmation);
       if (attemptId === setupAttemptId && setupToken.value === token) {
         setupToken.value = null;
-        phase.value = "ANONYMOUS_WITH_SETUP_SUCCESS";
+        phase.value = 'ANONYMOUS_WITH_SETUP_SUCCESS';
       }
       return result.kind;
     } catch (cause) {
       if (attemptId === setupAttemptId && setupToken.value === token) {
-        if (
-          cause instanceof ApiError &&
-          cause.code === "PASSWORD_SETUP_TOKEN_INVALID"
-        )
+        if (cause instanceof ApiError && cause.code === 'PASSWORD_SETUP_TOKEN_INVALID')
           resetAuthentication();
-        else phase.value = "SETUP_REQUIRED";
+        else phase.value = 'SETUP_REQUIRED';
       }
       throw cause;
     }
@@ -375,7 +333,7 @@ export const useAuthStore = defineStore("auth", () => {
 
   function selectProject(projectId: string) {
     const selected = projects.value.find((item) => item.id === projectId);
-    if (!selected) throw new Error("Проект недоступен текущему пользователю");
+    if (!selected) throw new Error('Проект недоступен текущему пользователю');
     project.value = selected;
     storeSelectedProjectId(selected.id);
   }
@@ -391,9 +349,7 @@ export const useAuthStore = defineStore("auth", () => {
       effectivePermissionCodes: current?.effectivePermissionCodes,
     };
     project.value = projectWithAccess;
-    projects.value = projects.value.map((item) =>
-      item.id === next.id ? projectWithAccess : item,
-    );
+    projects.value = projects.value.map((item) => (item.id === next.id ? projectWithAccess : item));
   }
 
   async function logout(allDevices = false) {
@@ -403,7 +359,7 @@ export const useAuthStore = defineStore("auth", () => {
     beginAuthTeardown();
     const supportCleanup = runLogoutCleanups(actorId, accessToken);
     resetAuthentication();
-    notifyAuthSessionEnded("LOGOUT");
+    notifyAuthSessionEnded('LOGOUT');
     try {
       await supportCleanup;
       if (allDevices) await authApi.logoutAll(accessToken);

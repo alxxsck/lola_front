@@ -1,10 +1,10 @@
-import { ref } from "vue";
-import { ApiError } from "@/shared/api/http/api-error";
+import { ref } from 'vue';
+import { ApiError } from '@/shared/api/http/api-error';
 import type {
   SupportLeadCaseRiskPage,
   SupportLeadRiskType,
   SupportLeadRisksSource,
-} from "@/features/support-control/api/support-lead-source";
+} from '@/features/support-control/api/support-lead-source';
 
 export interface SupportLeadRisksContext {
   projectId(): string | undefined;
@@ -16,12 +16,12 @@ export interface SupportLeadRisksContext {
 export function createSupportLeadRisksController(
   context: SupportLeadRisksContext,
   source: SupportLeadRisksSource,
-  initialRiskType: SupportLeadRiskType = "UNASSIGNED_AGED",
+  initialRiskType: SupportLeadRiskType = 'UNASSIGNED_AGED',
 ) {
   const riskType = ref<SupportLeadRiskType>(initialRiskType);
   const page = ref<SupportLeadCaseRiskPage | null>(null);
   const loading = ref(false);
-  const error = ref("");
+  const error = ref('');
   let generation = 0;
   let requestAbort: AbortController | null = null;
 
@@ -31,21 +31,16 @@ export function createSupportLeadRisksController(
     requestAbort = null;
     page.value = null;
     loading.value = false;
-    error.value = "";
+    error.value = '';
   }
 
   function isCurrent(projectId: string, requestGeneration: number): boolean {
     return (
-      requestGeneration === generation &&
-      context.canRead() &&
-      context.projectId() === projectId
+      requestGeneration === generation && context.canRead() && context.projectId() === projectId
     );
   }
 
-  async function load(
-    nextRiskType = riskType.value,
-    cursor?: string,
-  ): Promise<void> {
+  async function load(nextRiskType = riskType.value, cursor?: string): Promise<void> {
     const projectId = context.projectId();
     const typeChanged = nextRiskType !== riskType.value;
     const append = Boolean(cursor);
@@ -55,7 +50,7 @@ export function createSupportLeadRisksController(
     const abort = new AbortController();
     requestAbort = abort;
     if (typeChanged) page.value = null;
-    error.value = "";
+    error.value = '';
     if (!projectId || !context.canRead()) {
       loading.value = false;
       requestAbort = null;
@@ -70,22 +65,17 @@ export function createSupportLeadRisksController(
         cursor ? { cursor } : undefined,
         abort.signal,
       );
-      if (!isCurrent(projectId, requestGeneration) || riskType.value !== nextRiskType)
-        return;
+      if (!isCurrent(projectId, requestGeneration) || riskType.value !== nextRiskType) return;
       if (!append || !page.value) {
         page.value = result;
         return;
       }
-      const existing = new Set(
-        page.value.items.map((item) => `${item.caseId}:${item.riskType}`),
-      );
+      const existing = new Set(page.value.items.map((item) => `${item.caseId}:${item.riskType}`));
       page.value = {
         ...result,
         items: [
           ...page.value.items,
-          ...result.items.filter(
-            (item) => !existing.has(`${item.caseId}:${item.riskType}`),
-          ),
+          ...result.items.filter((item) => !existing.has(`${item.caseId}:${item.riskType}`)),
         ],
       };
     } catch (cause) {
@@ -95,7 +85,7 @@ export function createSupportLeadRisksController(
         await context.onForbidden?.();
         return;
       }
-      error.value = "Не удалось загрузить риски обращений";
+      error.value = 'Не удалось загрузить риски обращений';
     } finally {
       if (requestGeneration === generation) {
         loading.value = false;

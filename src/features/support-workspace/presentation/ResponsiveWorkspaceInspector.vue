@@ -1,25 +1,21 @@
 <script setup lang="ts">
-import Button from "primevue/button";
-import Drawer from "primevue/drawer";
+import Button from 'primevue/button';
+import Drawer from 'primevue/drawer';
 
 defineProps<{
-  mode: "DESKTOP" | "TABLET" | "MOBILE";
+  mode: 'DESKTOP' | 'TABLET' | 'MOBILE';
   mobileVisible: boolean;
   drawerVisible: boolean;
 }>();
 
 const emit = defineEmits<{
   closeMobile: [];
-  "update:drawerVisible": [visible: boolean];
+  'update:drawerVisible': [visible: boolean];
 }>();
 </script>
 
 <template>
-  <aside
-    v-if="mode === 'DESKTOP'"
-    class="context-pane"
-    aria-label="Контекст диалога"
-  >
+  <aside v-if="mode === 'DESKTOP'" class="context-pane" aria-label="Контекст диалога">
     <slot />
   </aside>
 

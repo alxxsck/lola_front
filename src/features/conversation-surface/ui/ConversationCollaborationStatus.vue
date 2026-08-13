@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import Popover from "primevue/popover";
-import type { ConversationSurfaceCollaboration } from "../model/conversation-surface-contract";
+import { computed, ref } from 'vue';
+import Popover from 'primevue/popover';
+import type { ConversationSurfaceCollaboration } from '../model/conversation-surface-contract';
 
 const props = defineProps<{
-  variant: "PRESENCE" | "COLLISION";
+  variant: 'PRESENCE' | 'COLLISION';
   collaboration: ConversationSurfaceCollaboration;
 }>();
 
@@ -12,14 +12,14 @@ function names(items: Array<{ displayName: string }>): string {
   const visible = items.slice(0, 2).map((item) => item.displayName);
   if (visible.length === 1) return visible[0]!;
   if (visible.length === 2) return `${visible[0]} и ${visible[1]}`;
-  return "";
+  return '';
 }
 
 const viewerLabel = computed(() => {
   const count = props.collaboration.viewers.length;
-  if (!count) return "";
-  const suffix = count > 2 ? ` и ещё ${count - 2}` : "";
-  return `${count === 1 ? "Смотрит" : "Смотрят"}: ${names(props.collaboration.viewers)}${suffix}`;
+  if (!count) return '';
+  const suffix = count > 2 ? ` и ещё ${count - 2}` : '';
+  return `${count === 1 ? 'Смотрит' : 'Смотрят'}: ${names(props.collaboration.viewers)}${suffix}`;
 });
 const viewerCountLabel = computed(() => {
   const count = props.collaboration.viewers.length;
@@ -27,12 +27,12 @@ const viewerCountLabel = computed(() => {
   const mod10 = count % 10;
   const noun =
     mod100 >= 11 && mod100 <= 14
-      ? "наблюдателей"
+      ? 'наблюдателей'
       : mod10 === 1
-        ? "наблюдатель"
+        ? 'наблюдатель'
         : mod10 >= 2 && mod10 <= 4
-          ? "наблюдателя"
-          : "наблюдателей";
+          ? 'наблюдателя'
+          : 'наблюдателей';
   return `${count} ${noun}`;
 });
 const presencePopover = ref<InstanceType<typeof Popover> | null>(null);
@@ -42,24 +42,19 @@ function togglePresence(event: Event): void {
 }
 const typerLabel = computed(() => {
   const count = props.collaboration.typers.length;
-  if (!count) return "";
-  const suffix = count > 2 ? ` и ещё ${count - 2}` : "";
-  return `${names(props.collaboration.typers)}${suffix} ${count === 1 ? "печатает" : "печатают"} ответ`;
+  if (!count) return '';
+  const suffix = count > 2 ? ` и ещё ${count - 2}` : '';
+  return `${names(props.collaboration.typers)}${suffix} ${count === 1 ? 'печатает' : 'печатают'} ответ`;
 });
 const showCollision = computed(
-  () => props.collaboration.collision.state === "OTHER_OPERATOR_REPLIED",
+  () => props.collaboration.collision.state === 'OTHER_OPERATOR_REPLIED',
 );
-const degraded = computed(
-  () => props.collaboration.availability === "DEGRADED",
-);
+const degraded = computed(() => props.collaboration.availability === 'DEGRADED');
 </script>
 
 <template>
   <Transition name="collaboration-status">
-    <div
-      v-if="variant === 'PRESENCE' && viewerLabel"
-      class="collaboration-presence-shell"
-    >
+    <div v-if="variant === 'PRESENCE' && viewerLabel" class="collaboration-presence-shell">
       <button
         type="button"
         class="collaboration-presence"
@@ -71,24 +66,15 @@ const degraded = computed(
         <i class="pi pi-eye" aria-hidden="true" />
         <span>{{ collaboration.viewers.length }}</span>
       </button>
-      <Popover
-        ref="presencePopover"
-        class="collaboration-presence-popover"
-        :base-z-index="1200"
-      >
-        <section
-          class="collaboration-presence-card"
-          aria-label="Кто сейчас смотрит диалог"
-        >
+      <Popover ref="presencePopover" class="collaboration-presence-popover" :base-z-index="1200">
+        <section class="collaboration-presence-card" aria-label="Кто сейчас смотрит диалог">
           <header>
             <span>Сейчас смотрят</span>
             <strong>{{ collaboration.viewers.length }}</strong>
           </header>
           <ul>
             <li v-for="viewer in collaboration.viewers" :key="viewer.cmsUserId">
-              <i aria-hidden="true">{{
-                viewer.displayName.trim().charAt(0).toUpperCase()
-              }}</i>
+              <i aria-hidden="true">{{ viewer.displayName.trim().charAt(0).toUpperCase() }}</i>
               <span>{{ viewer.displayName }}</span>
             </li>
           </ul>
@@ -97,19 +83,14 @@ const degraded = computed(
       </Popover>
     </div>
     <div
-      v-else-if="
-        variant === 'COLLISION' && (showCollision || typerLabel || degraded)
-      "
+      v-else-if="variant === 'COLLISION' && (showCollision || typerLabel || degraded)"
       class="collaboration-warning"
       :class="{ 'is-collision': showCollision }"
       role="status"
       aria-live="polite"
       aria-atomic="true"
     >
-      <i
-        :class="showCollision ? 'pi pi-exclamation-circle' : 'pi pi-pencil'"
-        aria-hidden="true"
-      />
+      <i :class="showCollision ? 'pi pi-exclamation-circle' : 'pi pi-pencil'" aria-hidden="true" />
       <span v-if="showCollision">
         <strong>Коллега уже отправил ответ</strong>
         <small>Проверьте обновлённую переписку перед отправкой своего.</small>
@@ -120,10 +101,7 @@ const degraded = computed(
       </span>
       <span v-else>
         <strong>Не удалось проверить параллельную работу</strong>
-        <small
-          >Перед отправкой обновите переписку и проверьте последние
-          ответы.</small
-        >
+        <small>Перед отправкой обновите переписку и проверьте последние ответы.</small>
       </span>
     </div>
   </Transition>
@@ -243,15 +221,10 @@ const degraded = computed(
   gap: 10px;
   margin: 0 12px 8px;
   padding: 8px 12px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-warning) 28%, var(--border-default));
+  border: 1px solid color-mix(in srgb, var(--status-warning) 28%, var(--border-default));
   border-radius: 10px;
   color: var(--text-primary);
-  background: color-mix(
-    in srgb,
-    var(--status-warning-soft) 72%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--status-warning-soft) 72%, var(--surface-card));
 }
 .collaboration-warning > i {
   flex: 0 0 auto;
@@ -273,11 +246,7 @@ const degraded = computed(
   line-height: 1.35;
 }
 .collaboration-warning.is-collision {
-  border-color: color-mix(
-    in srgb,
-    var(--status-warning) 42%,
-    var(--border-default)
-  );
+  border-color: color-mix(in srgb, var(--status-warning) 42%, var(--border-default));
 }
 .collaboration-status-enter-active,
 .collaboration-status-leave-active {

@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import { formatDate } from "@/shared/lib/format";
-import CaseEventVerification from "@/features/event-query/ui/CaseEventVerification.vue";
-import type { CaseVerificationRunResponseDto } from "@/shared/api/generated/models";
-import type { EndUserCaseDetailBundle } from "../api/end-user-cases-repository";
-import type { EndUserCaseStatus } from "../model/end-user-case";
-import { isTerminalEndUserCase } from "../model/end-user-case";
-import type { EndUserCaseEscalationAction } from "../model/end-user-case-escalation";
-import EndUserCaseEscalationPanel from "./EndUserCaseEscalationPanel.vue";
+import { ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import { formatDate } from '@/shared/lib/format';
+import CaseEventVerification from '@/features/event-query/ui/CaseEventVerification.vue';
+import type { CaseVerificationRunResponseDto } from '@/shared/api/generated/models';
+import type { EndUserCaseDetailBundle } from '../api/end-user-cases-repository';
+import type { EndUserCaseStatus } from '../model/end-user-case';
+import { isTerminalEndUserCase } from '../model/end-user-case';
+import type { EndUserCaseEscalationAction } from '../model/end-user-case-escalation';
+import EndUserCaseEscalationPanel from './EndUserCaseEscalationPanel.vue';
 import {
   endUserCaseActionLabel,
   endUserCaseCapabilityLabel,
@@ -21,7 +21,7 @@ import {
   endUserCasePriorityLabel,
   endUserCaseStatusLabel,
   endUserCaseToneLabel,
-} from "../model/end-user-case-presentation";
+} from '../model/end-user-case-presentation';
 
 const props = defineProps<{
   value: EndUserCaseDetailBundle | null;
@@ -53,21 +53,15 @@ defineEmits<{
   verificationCompleted: [run: CaseVerificationRunResponseDto];
 }>();
 
-type RelatedTab = "messages" | "history";
+type RelatedTab = 'messages' | 'history';
 
-const relatedTabs: readonly RelatedTab[] = ["messages", "history"];
-const activeRelatedTab = ref<RelatedTab>("messages");
-const resolutionActions: readonly EndUserCaseStatus[] = [
-  "RESOLVED",
-  "UNRESOLVED",
-];
+const relatedTabs: readonly RelatedTab[] = ['messages', 'history'];
+const activeRelatedTab = ref<RelatedTab>('messages');
+const resolutionActions: readonly EndUserCaseStatus[] = ['RESOLVED', 'UNRESOLVED'];
 
 const workflowStatusOptions = (statuses: EndUserCaseStatus[]) =>
   statuses
-    .filter(
-      (status) =>
-        status !== "WAITING_ADMIN" && !resolutionActions.includes(status),
-    )
+    .filter((status) => status !== 'WAITING_ADMIN' && !resolutionActions.includes(status))
     .map((status) => ({
       label: endUserCaseActionLabel(status),
       value: status,
@@ -76,58 +70,49 @@ const workflowStatusOptions = (statuses: EndUserCaseStatus[]) =>
 watch(
   () => props.value?.case.id,
   (caseId, previousCaseId) => {
-    if (caseId !== previousCaseId) activeRelatedTab.value = "messages";
+    if (caseId !== previousCaseId) activeRelatedTab.value = 'messages';
   },
 );
 
 function handleRelatedTabKeydown(event: KeyboardEvent, tab: RelatedTab): void {
   const currentIndex = relatedTabs.indexOf(tab);
   let nextIndex: number | null = null;
-  if (event.key === "ArrowRight") {
+  if (event.key === 'ArrowRight') {
     nextIndex = (currentIndex + 1) % relatedTabs.length;
-  } else if (event.key === "ArrowLeft") {
+  } else if (event.key === 'ArrowLeft') {
     nextIndex = (currentIndex - 1 + relatedTabs.length) % relatedTabs.length;
-  } else if (event.key === "Home") {
+  } else if (event.key === 'Home') {
     nextIndex = 0;
-  } else if (event.key === "End") {
+  } else if (event.key === 'End') {
     nextIndex = relatedTabs.length - 1;
   }
   if (nextIndex === null) return;
   event.preventDefault();
   const nextTab = relatedTabs[nextIndex]!;
   activeRelatedTab.value = nextTab;
-  requestAnimationFrame(() =>
-    document.getElementById(`case-${nextTab}-tab`)?.focus(),
-  );
+  requestAnimationFrame(() => document.getElementById(`case-${nextTab}-tab`)?.focus());
 }
 
 const resolutionLabel = (assessment: string): string =>
   ({
-    NOT_ASSESSED: "Решение ещё не оценено",
-    LIKELY_RESOLVED: "Вероятно решено — требует подтверждения",
-    CONFIRMED_RESOLVED: "Решение подтверждено",
-    LIKELY_UNRESOLVED: "Вероятно не решено",
-    CONFIRMED_UNRESOLVED: "Подтверждено: не решено",
-    INCONCLUSIVE: "Недостаточно данных",
-  })[assessment] ?? "Статус решения неизвестен";
+    NOT_ASSESSED: 'Решение ещё не оценено',
+    LIKELY_RESOLVED: 'Вероятно решено — требует подтверждения',
+    CONFIRMED_RESOLVED: 'Решение подтверждено',
+    LIKELY_UNRESOLVED: 'Вероятно не решено',
+    CONFIRMED_UNRESOLVED: 'Подтверждено: не решено',
+    INCONCLUSIVE: 'Недостаточно данных',
+  })[assessment] ?? 'Статус решения неизвестен';
 
 const roleLabel = (role: string): string =>
-  ({ USER: "Пользователь", ASSISTANT: "Retenive", ADMIN: "Администратор" })[
-    role
-  ] ?? role;
+  ({ USER: 'Пользователь', ASSISTANT: 'Retenive', ADMIN: 'Администратор' })[role] ?? role;
 
-const messageChannel = (message: {
-  role: string;
-  metadata: unknown;
-}): "TEXT" | "VOICE" | "CMS" => {
-  if (message.role === "ADMIN") return "CMS";
+const messageChannel = (message: { role: string; metadata: unknown }): 'TEXT' | 'VOICE' | 'CMS' => {
+  if (message.role === 'ADMIN') return 'CMS';
   const metadata =
-    message.metadata &&
-    typeof message.metadata === "object" &&
-    !Array.isArray(message.metadata)
+    message.metadata && typeof message.metadata === 'object' && !Array.isArray(message.metadata)
       ? (message.metadata as Record<string, unknown>)
       : {};
-  return metadata.source === "voice" ? "VOICE" : "TEXT";
+  return metadata.source === 'voice' ? 'VOICE' : 'TEXT';
 };
 </script>
 
@@ -147,22 +132,16 @@ const messageChannel = (message: {
         <header class="detail-header">
           <div class="kicker">
             <span>Обращение № {{ value.case.projectSequence }}</span>
-            <span class="group-badge">{{
-              endUserCaseGroupLabel(value.case.groupCode)
-            }}</span>
+            <span class="group-badge">{{ endUserCaseGroupLabel(value.case.groupCode) }}</span>
           </div>
           <h2 tabindex="-1">{{ value.case.title }}</h2>
           <p>{{ value.case.goal }}</p>
           <div class="badges">
-            <span class="badge status">{{
-              endUserCaseStatusLabel(value.case.status)
-            }}</span>
+            <span class="badge status">{{ endUserCaseStatusLabel(value.case.status) }}</span>
             <span class="badge priority">
               {{ endUserCasePriorityLabel(value.case.priority) }}
             </span>
-            <span class="badge">{{
-              resolutionLabel(value.case.resolution.assessment)
-            }}</span>
+            <span class="badge">{{ resolutionLabel(value.case.resolution.assessment) }}</span>
           </div>
         </header>
 
@@ -184,9 +163,7 @@ const messageChannel = (message: {
           </div>
           <div>
             <span>Исполнитель</span>
-            <strong>{{
-              value.case.assignee?.displayName ?? "Не назначен"
-            }}</strong>
+            <strong>{{ value.case.assignee?.displayName ?? 'Не назначен' }}</strong>
           </div>
           <div>
             <span>Последняя активность</span>
@@ -206,14 +183,8 @@ const messageChannel = (message: {
         </div>
       </section>
 
-      <Message v-if="error" severity="warn" :closable="false">{{
-        error
-      }}</Message>
-      <Message
-        v-if="value.case.mergedIntoCaseId"
-        severity="info"
-        :closable="false"
-      >
+      <Message v-if="error" severity="warn" :closable="false">{{ error }}</Message>
+      <Message v-if="value.case.mergedIntoCaseId" severity="info" :closable="false">
         Это обращение объединено с
         <RouterLink
           :to="{
@@ -224,13 +195,9 @@ const messageChannel = (message: {
           основным обращением </RouterLink
         >.
       </Message>
-      <Message
-        v-if="value.case.degradedReason"
-        severity="warn"
-        :closable="false"
-      >
-        Анализ временно отстаёт. Сохранённые сообщения и действия остаются
-        доступны, но сводка может обновиться позже.
+      <Message v-if="value.case.degradedReason" severity="warn" :closable="false">
+        Анализ временно отстаёт. Сохранённые сообщения и действия остаются доступны, но сводка может
+        обновиться позже.
       </Message>
 
       <EndUserCaseEscalationPanel
@@ -244,10 +211,7 @@ const messageChannel = (message: {
         @action="$emit('requestEscalationAction', $event)"
       />
 
-      <section
-        class="detail-card overview-card"
-        aria-labelledby="case-overview-title"
-      >
+      <section class="detail-card overview-card" aria-labelledby="case-overview-title">
         <h3 id="case-overview-title" class="card-title">Обзор</h3>
 
         <div class="overview-block">
@@ -255,7 +219,7 @@ const messageChannel = (message: {
             <h4>Актуальная сводка</h4>
             <small>Версия {{ value.case.version }}</small>
           </div>
-          <p>{{ value.case.summary || "Сводка ещё формируется." }}</p>
+          <p>{{ value.case.summary || 'Сводка ещё формируется.' }}</p>
         </div>
 
         <template v-if="value.case.workSummary">
@@ -266,17 +230,12 @@ const messageChannel = (message: {
                 Каналы:
                 {{
                   value.case.channels.length
-                    ? value.case.channels
-                        .map(endUserCaseChannelLabel)
-                        .join(", ")
-                    : "не определены"
+                    ? value.case.channels.map(endUserCaseChannelLabel).join(', ')
+                    : 'не определены'
                 }}
               </small>
             </div>
-            <div
-              v-if="value.case.workSummary.aiCapabilities.length"
-              class="capability-list"
-            >
+            <div v-if="value.case.workSummary.aiCapabilities.length" class="capability-list">
               <div
                 v-for="capability in value.case.workSummary.aiCapabilities"
                 :key="capability.actionTypeCode"
@@ -286,15 +245,12 @@ const messageChannel = (message: {
                   endUserCaseCapabilityLabel(capability.actionTypeCode)
                 }}</strong>
                 <span>
-                  {{ capability.invocationCount }} вызовов ·
-                  {{ capability.succeeded }} успешно · {{ capability.failed }} с
-                  ошибкой
+                  {{ capability.invocationCount }} вызовов · {{ capability.succeeded }} успешно ·
+                  {{ capability.failed }} с ошибкой
                 </span>
               </div>
             </div>
-            <p v-else class="empty-copy">
-              Инструменты Retenive ещё не использовались.
-            </p>
+            <p v-else class="empty-copy">Инструменты Retenive ещё не использовались.</p>
             <p
               v-if="
                 value.case.workSummary.cmsParticipation.messageCount ||
@@ -309,19 +265,13 @@ const messageChannel = (message: {
             </p>
           </div>
 
-          <div
-            v-if="value.case.workSummary.blockers.length"
-            class="overview-block work-copy"
-          >
+          <div v-if="value.case.workSummary.blockers.length" class="overview-block work-copy">
             <h4>Блокеры</h4>
-            <span>{{ value.case.workSummary.blockers.join(" · ") }}</span>
+            <span>{{ value.case.workSummary.blockers.join(' · ') }}</span>
           </div>
-          <div
-            v-if="value.case.workSummary.limitations.length"
-            class="overview-block work-copy"
-          >
+          <div v-if="value.case.workSummary.limitations.length" class="overview-block work-copy">
             <h4>Ограничения</h4>
-            <span>{{ value.case.workSummary.limitations.join(" · ") }}</span>
+            <span>{{ value.case.workSummary.limitations.join(' · ') }}</span>
           </div>
         </template>
       </section>
@@ -463,12 +413,8 @@ const messageChannel = (message: {
             >
               <div class="evidence-meta">
                 <strong>{{ roleLabel(link.message.role) }}</strong>
-                <span>{{
-                  link.relation === "PRIMARY" ? "Основное" : "Контекст"
-                }}</span>
-                <span>{{
-                  endUserCaseChannelLabel(messageChannel(link.message))
-                }}</span>
+                <span>{{ link.relation === 'PRIMARY' ? 'Основное' : 'Контекст' }}</span>
+                <span>{{ endUserCaseChannelLabel(messageChannel(link.message)) }}</span>
                 <time :datetime="link.message.createdAt">
                   {{ formatDate(link.message.createdAt) }}
                 </time>
@@ -489,9 +435,7 @@ const messageChannel = (message: {
                   Открыть в диалоге
                   <i class="pi pi-arrow-up-right" aria-hidden="true" />
                 </RouterLink>
-                <span v-else>
-                  Диалог {{ link.message.threadId.slice(0, 8) }}
-                </span>
+                <span v-else> Диалог {{ link.message.threadId.slice(0, 8) }} </span>
                 <Button
                   v-if="canManage"
                   label="Исключить"
@@ -524,16 +468,10 @@ const messageChannel = (message: {
           <div v-if="!value.timeline.events.length" class="empty-copy">
             История появится после следующего изменения.
           </div>
-          <div
-            v-for="event in value.timeline.events"
-            :key="event.id"
-            class="timeline-row"
-          >
+          <div v-for="event in value.timeline.events" :key="event.id" class="timeline-row">
             <i class="pi pi-circle-fill" />
             <strong>{{ endUserCaseEventLabel(event.type) }}</strong>
-            <time :datetime="event.createdAt">{{
-              formatDate(event.createdAt)
-            }}</time>
+            <time :datetime="event.createdAt">{{ formatDate(event.createdAt) }}</time>
           </div>
         </div>
       </section>
@@ -750,15 +688,15 @@ const messageChannel = (message: {
   height: 2px;
   border-radius: 999px;
   background: transparent;
-  content: "";
+  content: '';
 }
 .related-tabs button:hover {
   color: var(--text-secondary);
 }
-.related-tabs button[aria-selected="true"] {
+.related-tabs button[aria-selected='true'] {
   color: var(--text-primary);
 }
-.related-tabs button[aria-selected="true"]::after {
+.related-tabs button[aria-selected='true']::after {
   background: var(--action-primary);
 }
 .related-tabs strong {

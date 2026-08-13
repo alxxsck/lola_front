@@ -1,30 +1,27 @@
-import { applyRuleCommand } from './rule-commands'
-import type {
-  RuleCommandResult,
-  RuleDomainContext,
-  RuleDraft,
-  RuleLeafInput,
-} from './rule-types'
+import { applyRuleCommand } from './rule-commands';
+import type { RuleCommandResult, RuleDomainContext, RuleDraft, RuleLeafInput } from './rule-types';
 
 export interface RuleQuickStartRecipe {
-  id: string
-  icon: string
-  label: string
-  description: string
-  nodes?: RuleLeafInput[]
+  id: string;
+  icon: string;
+  label: string;
+  description: string;
+  nodes?: RuleLeafInput[];
 }
 
-const MINUTE_MS = 60_000
-const DAY_MS = 86_400_000
+const MINUTE_MS = 60_000;
+const DAY_MS = 86_400_000;
 
 function eventText(event: RuleDomainContext['contract']['events'][number]) {
-  return `${event.code} ${event.name}`
+  return `${event.code} ${event.name}`;
 }
 
 function countEvents(context: RuleDomainContext, operator: 'eq' | 'gte') {
   return context.contract.events.filter((event) =>
-    event.aggregateMeasures.some((measure) =>
-      measure.measure === 'count' && measure.compareOperators.includes(operator)))
+    event.aggregateMeasures.some(
+      (measure) => measure.measure === 'count' && measure.compareOperators.includes(operator),
+    ),
+  );
 }
 
 function countNode(
@@ -40,39 +37,51 @@ function countNode(
     filters: [],
     window: { kind: 'last', durationMs, boundary: 'beforeTrigger' },
     compare: { operator, value },
-  }
+  };
 }
 
 export function createRuleQuickStartRecipes(context: RuleDomainContext): RuleQuickStartRecipe[] {
-  const countedEvents = countEvents(context, 'gte')
-  const countedEvent = countedEvents[0]
-  const absenceEvents = countEvents(context, 'eq')
-  const depositEvents = absenceEvents.filter((event) => /deposit|депозит/i.test(eventText(event)))
-  const depositEvent = depositEvents.find((event) => /succeed|success|успеш/i.test(eventText(event)))
-    ?? depositEvents.find((event) => !/fail|error|ошиб|отклон/i.test(eventText(event)))
-    ?? depositEvents[0]
-  const registrationEvent = countedEvents.find((event) => /registr|регистра/i.test(eventText(event)))
-  const sumCandidate = context.contract.events.flatMap((event) =>
-    event.fields
-      .filter((field) => field.capabilities.aggregateMeasure.measures.includes('sum'))
-      .map((field) => ({
-        event,
-        field,
-        currencyField: event.fields.find((candidate) =>
-          candidate.semanticType === 'currency'
-          && candidate.capabilities.aggregateFilter.operators.includes('eq')
-          && candidate.allowedValues?.length),
-      })))
+  const countedEvents = countEvents(context, 'gte');
+  const countedEvent = countedEvents[0];
+  const absenceEvents = countEvents(context, 'eq');
+  const depositEvents = absenceEvents.filter((event) => /deposit|депозит/i.test(eventText(event)));
+  const depositEvent =
+    depositEvents.find((event) => /succeed|success|успеш/i.test(eventText(event))) ??
+    depositEvents.find((event) => !/fail|error|ошиб|отклон/i.test(eventText(event))) ??
+    depositEvents[0];
+  const registrationEvent = countedEvents.find((event) =>
+    /registr|регистра/i.test(eventText(event)),
+  );
+  const sumCandidate = context.contract.events
+    .flatMap((event) =>
+      event.fields
+        .filter((field) => field.capabilities.aggregateMeasure.measures.includes('sum'))
+        .map((field) => ({
+          event,
+          field,
+          currencyField: event.fields.find(
+            (candidate) =>
+              candidate.semanticType === 'currency' &&
+              candidate.capabilities.aggregateFilter.operators.includes('eq') &&
+              candidate.allowedValues?.length,
+          ),
+        })),
+    )
     .filter(({ field, currencyField }) => !field.semanticType?.startsWith('money') || currencyField)
     .find(({ event }) =>
-      event.aggregateMeasures.some((measure) =>
-        measure.measure === 'sum' && measure.compareOperators.includes('gte')))
+      event.aggregateMeasures.some(
+        (measure) => measure.measure === 'sum' && measure.compareOperators.includes('gte'),
+      ),
+    );
   const filterCandidate = countedEvents.flatMap((event) =>
     event.fields
-      .filter((field) =>
-        field.capabilities.aggregateFilter.operators.includes('eq')
-        && field.allowedValues?.length)
-      .map((field) => ({ event, field, value: field.allowedValues![0]! })))[0]
+      .filter(
+        (field) =>
+          field.capabilities.aggregateFilter.operators.includes('eq') &&
+          field.allowedValues?.length,
+      )
+      .map((field) => ({ event, field, value: field.allowedValues![0]! })),
+  )[0];
 
   return [
     {
@@ -87,22 +96,28 @@ export function createRuleQuickStartRecipes(context: RuleDomainContext): RuleQui
       icon: 'pi pi-calendar',
       label: 'Активен 3 дня подряд',
       description: 'Три последовательных активных дня',
-      nodes: [{
-        kind: 'activityDayStreak',
-        compare: { operator: 'gte', value: 3 },
-      }],
+      nodes: [
+        {
+          kind: 'activityDayStreak',
+          compare: { operator: 'gte', value: 3 },
+        },
+      ],
     },
     {
       id: 'registration-no-deposit-5m',
       icon: 'pi pi-clock',
       label: 'Регистрация без депозита 5 минут',
-      description: registrationEvent && depositEvent
-        ? `${registrationEvent.name} была, ${depositEvent.name.toLocaleLowerCase('ru-RU')} не было`
-        : 'Нужны события регистрации и успешного депозита',
-      nodes: registrationEvent && depositEvent ? [
-        countNode(registrationEvent.code, 5 * MINUTE_MS, 'gte', 1),
-        countNode(depositEvent.code, 5 * MINUTE_MS, 'eq', 0),
-      ] : undefined,
+      description:
+        registrationEvent && depositEvent
+          ? `${registrationEvent.name} была, ${depositEvent.name.toLocaleLowerCase('ru-RU')} не было`
+          : 'Нужны события регистрации и успешного депозита',
+      nodes:
+        registrationEvent && depositEvent
+          ? [
+              countNode(registrationEvent.code, 5 * MINUTE_MS, 'gte', 1),
+              countNode(depositEvent.code, 5 * MINUTE_MS, 'eq', 0),
+            ]
+          : undefined,
     },
     {
       id: 'frequent-24h',
@@ -118,19 +133,27 @@ export function createRuleQuickStartRecipes(context: RuleDomainContext): RuleQui
       description: sumCandidate
         ? `${sumCandidate.event.name} · ${sumCandidate.field.label}`
         : 'Нет поля с поддержкой суммы',
-      nodes: sumCandidate ? [{
-        kind: 'eventAggregate',
-        eventCode: sumCandidate.event.code,
-        measure: 'sum',
-        fieldKey: sumCandidate.field.fieldKey,
-        filters: sumCandidate.currencyField ? [{
-          fieldKey: sumCandidate.currencyField.fieldKey,
-          operator: 'eq',
-          value: sumCandidate.currencyField.allowedValues![0]!,
-        }] : [],
-        window: { kind: 'last', durationMs: 30 * DAY_MS, boundary: 'beforeTrigger' },
-        compare: { operator: 'gte', value: '100' },
-      }] : undefined,
+      nodes: sumCandidate
+        ? [
+            {
+              kind: 'eventAggregate',
+              eventCode: sumCandidate.event.code,
+              measure: 'sum',
+              fieldKey: sumCandidate.field.fieldKey,
+              filters: sumCandidate.currencyField
+                ? [
+                    {
+                      fieldKey: sumCandidate.currencyField.fieldKey,
+                      operator: 'eq',
+                      value: sumCandidate.currencyField.allowedValues![0]!,
+                    },
+                  ]
+                : [],
+              window: { kind: 'last', durationMs: 30 * DAY_MS, boundary: 'beforeTrigger' },
+              compare: { operator: 'gte', value: '100' },
+            },
+          ]
+        : undefined,
     },
     {
       id: 'filtered-30d',
@@ -139,20 +162,26 @@ export function createRuleQuickStartRecipes(context: RuleDomainContext): RuleQui
       description: filterCandidate
         ? `${filterCandidate.event.name} · ${filterCandidate.field.label}: ${String(filterCandidate.value)}`
         : 'Нет поля с готовыми значениями',
-      nodes: filterCandidate ? [{
-        kind: 'eventAggregate',
-        eventCode: filterCandidate.event.code,
-        measure: 'count',
-        filters: [{
-          fieldKey: filterCandidate.field.fieldKey,
-          operator: 'eq',
-          value: filterCandidate.value,
-        }],
-        window: { kind: 'last', durationMs: 30 * DAY_MS, boundary: 'beforeTrigger' },
-        compare: { operator: 'gte', value: 1 },
-      }] : undefined,
+      nodes: filterCandidate
+        ? [
+            {
+              kind: 'eventAggregate',
+              eventCode: filterCandidate.event.code,
+              measure: 'count',
+              filters: [
+                {
+                  fieldKey: filterCandidate.field.fieldKey,
+                  operator: 'eq',
+                  value: filterCandidate.value,
+                },
+              ],
+              window: { kind: 'last', durationMs: 30 * DAY_MS, boundary: 'beforeTrigger' },
+              compare: { operator: 'gte', value: 1 },
+            },
+          ]
+        : undefined,
     },
-  ]
+  ];
 }
 
 export function applyRuleQuickStartRecipe(
@@ -169,32 +198,44 @@ export function applyRuleQuickStartRecipe(
         code: 'recipe-unavailable',
         message: 'Для этого примера в каталоге проекта не хватает совместимых данных.',
       },
-    }
+    };
   }
   if (recipe.nodes.length === 1) {
-    return applyRuleCommand(draft, {
+    return applyRuleCommand(
+      draft,
+      {
+        type: 'add',
+        parentNodeId,
+        node: recipe.nodes[0]!,
+      },
+      context,
+    );
+  }
+
+  const group = applyRuleCommand(
+    draft,
+    {
       type: 'add',
       parentNodeId,
-      node: recipe.nodes[0]!,
-    }, context)
-  }
+      node: { kind: 'all' },
+    },
+    context,
+  );
+  if (!group.ok) return group;
 
-  const group = applyRuleCommand(draft, {
-    type: 'add',
-    parentNodeId,
-    node: { kind: 'all' },
-  }, context)
-  if (!group.ok) return group
-
-  let nextDraft = group.draft
+  let nextDraft = group.draft;
   for (const node of recipe.nodes) {
-    const result = applyRuleCommand(nextDraft, {
-      type: 'add',
-      parentNodeId: group.focusNodeId,
-      node,
-    }, context)
-    if (!result.ok) return { ...result, draft }
-    nextDraft = result.draft
+    const result = applyRuleCommand(
+      nextDraft,
+      {
+        type: 'add',
+        parentNodeId: group.focusNodeId,
+        node,
+      },
+      context,
+    );
+    if (!result.ok) return { ...result, draft };
+    nextDraft = result.draft;
   }
-  return { ok: true, draft: nextDraft, focusNodeId: group.focusNodeId }
+  return { ok: true, draft: nextDraft, focusNodeId: group.focusNodeId };
 }

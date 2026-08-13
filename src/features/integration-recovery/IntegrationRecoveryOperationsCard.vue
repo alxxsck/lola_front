@@ -1,15 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from 'vue';
 import type {
   IntegrationConnectionResponseDto,
   IntegrationRecoveryOperationDetailDto,
   IntegrationRecoveryOperationListItemDto,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
-import {
-  integrationRecoveryApi,
-  type IntegrationDirection,
-} from "./integration-recovery.api";
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
+import { integrationRecoveryApi, type IntegrationDirection } from './integration-recovery.api';
 
 const props = defineProps<{
   projectId: string;
@@ -22,9 +19,9 @@ const operations = ref<IntegrationRecoveryOperationListItemDto[]>([]);
 const connections = ref<IntegrationConnectionResponseDto[]>([]);
 const selected = ref<IntegrationRecoveryOperationDetailDto | null>(null);
 const loading = ref(false);
-const pendingKey = ref("");
-const error = ref("");
-const success = ref("");
+const pendingKey = ref('');
+const error = ref('');
+const success = ref('');
 let epoch = 0;
 
 const canOperate = computed(() => props.canManage && props.canReadActivity);
@@ -32,69 +29,61 @@ const canOperate = computed(() => props.canManage && props.canReadActivity);
 function errorCopy(cause: unknown): string {
   const apiError = normalizeApiError(cause);
   if (apiError.status === 409)
-    return "Состояние изменилось. Данные обновлены — повторите действие после проверки.";
-  if (apiError.status === 403) return "Недостаточно прав для этого действия.";
-  return "Операцию выполнить не удалось. Обновите данные и попробуйте снова.";
+    return 'Состояние изменилось. Данные обновлены — повторите действие после проверки.';
+  if (apiError.status === 403) return 'Недостаточно прав для этого действия.';
+  return 'Операцию выполнить не удалось. Обновите данные и попробуйте снова.';
 }
 
 function requestReason(action: string): string | null {
-  const reason = window.prompt(`Укажите причину: ${action}`, "")?.trim();
+  const reason = window.prompt(`Укажите причину: ${action}`, '')?.trim();
   return reason ? reason.slice(0, 500) : null;
 }
 
 function formatDate(value: string | null): string {
-  return value ? new Date(value).toLocaleString("ru-RU") : "—";
+  return value ? new Date(value).toLocaleString('ru-RU') : '—';
 }
 
 function operationLabel(item: IntegrationRecoveryOperationListItemDto): string {
-  if (item.operationKind === "INGRESS") return "Приём";
-  if (item.operationKind === "DISPATCH") return "Отправка";
-  return "Подключение";
+  if (item.operationKind === 'INGRESS') return 'Приём';
+  if (item.operationKind === 'DISPATCH') return 'Отправка';
+  return 'Подключение';
 }
 
 function canCancel(item: IntegrationRecoveryOperationListItemDto): boolean {
   return (
-    item.operationKind === "DISPATCH" &&
-    (item.status === "PENDING" || item.status === "RETRY_WAIT")
+    item.operationKind === 'DISPATCH' && (item.status === 'PENDING' || item.status === 'RETRY_WAIT')
   );
 }
 
 function canReplay(item: IntegrationRecoveryOperationListItemDto): boolean {
-  if (item.operationKind === "DISPATCH")
-    return (
-      item.status === "FAILED_PERMANENT" || item.status === "OUTCOME_UNKNOWN"
-    );
-  if (item.operationKind !== "INGRESS") return false;
+  if (item.operationKind === 'DISPATCH')
+    return item.status === 'FAILED_PERMANENT' || item.status === 'OUTCOME_UNKNOWN';
+  if (item.operationKind !== 'INGRESS') return false;
   return (
-    item.status === "UNMAPPED" ||
-    item.status === "SCHEMA_INVALID" ||
-    item.status === "FAILED_PERMANENT" ||
-    item.status === "QUARANTINED"
+    item.status === 'UNMAPPED' ||
+    item.status === 'SCHEMA_INVALID' ||
+    item.status === 'FAILED_PERMANENT' ||
+    item.status === 'QUARANTINED'
   );
 }
 
 function canQuarantine(
-  item:
-    | IntegrationRecoveryOperationListItemDto
-    | IntegrationRecoveryOperationDetailDto,
+  item: IntegrationRecoveryOperationListItemDto | IntegrationRecoveryOperationDetailDto,
 ): boolean {
   return (
-    item.operationKind === "INGRESS" &&
-    (item.status === "RECEIVED" || item.status === "RETRY_WAIT")
+    item.operationKind === 'INGRESS' && (item.status === 'RECEIVED' || item.status === 'RETRY_WAIT')
   );
 }
 
 function recoveryCommandLabel(
   commandType: string,
-  direction: IntegrationRecoveryOperationDetailDto["direction"],
+  direction: IntegrationRecoveryOperationDetailDto['direction'],
 ): string {
-  if (commandType === "PAUSE_DIRECTION")
-    return direction === "INBOUND" ? "Пауза приёма" : "Пауза отправки";
-  if (commandType === "RESUME_DIRECTION")
-    return direction === "INBOUND"
-      ? "Возобновление приёма"
-      : "Возобновление отправки";
-  if (commandType === "QUARANTINE_INGRESS") return "Ручной карантин";
+  if (commandType === 'PAUSE_DIRECTION')
+    return direction === 'INBOUND' ? 'Пауза приёма' : 'Пауза отправки';
+  if (commandType === 'RESUME_DIRECTION')
+    return direction === 'INBOUND' ? 'Возобновление приёма' : 'Возобновление отправки';
+  if (commandType === 'QUARANTINE_INGRESS') return 'Ручной карантин';
   return commandType;
 }
 
@@ -103,8 +92,8 @@ async function load(): Promise<void> {
   operations.value = [];
   connections.value = [];
   selected.value = null;
-  error.value = "";
-  success.value = "";
+  error.value = '';
+  success.value = '';
   if (!props.projectId || !props.canReadActivity) return;
   loading.value = true;
   try {
@@ -124,41 +113,28 @@ async function load(): Promise<void> {
   }
 }
 
-async function showDetail(
-  item: IntegrationRecoveryOperationListItemDto,
-): Promise<void> {
+async function showDetail(item: IntegrationRecoveryOperationListItemDto): Promise<void> {
   const key = `detail:${item.operationKind}:${item.id}`;
   if (pendingKey.value) return;
   const current = epoch;
   const projectId = props.projectId;
   pendingKey.value = key;
-  error.value = "";
+  error.value = '';
   try {
-    const detail = await integrationRecoveryApi.detail(
-      projectId,
-      item.operationKind,
-      item.id,
-    );
+    const detail = await integrationRecoveryApi.detail(projectId, item.operationKind, item.id);
     if (current !== epoch || projectId !== props.projectId) return;
     selected.value = detail;
   } catch (cause) {
-    if (current === epoch && projectId === props.projectId)
-      error.value = errorCopy(cause);
+    if (current === epoch && projectId === props.projectId) error.value = errorCopy(cause);
   } finally {
-    if (pendingKey.value === key) pendingKey.value = "";
+    if (pendingKey.value === key) pendingKey.value = '';
   }
 }
 
-async function cancel(
-  item: IntegrationRecoveryOperationListItemDto,
-): Promise<void> {
+async function cancel(item: IntegrationRecoveryOperationListItemDto): Promise<void> {
   if (!canOperate.value || !canCancel(item) || pendingKey.value) return;
-  const reason = requestReason("отменить отправку");
-  if (
-    !reason ||
-    !window.confirm("Отменить эту отправку? Действие будет записано в аудит.")
-  )
-    return;
+  const reason = requestReason('отменить отправку');
+  if (!reason || !window.confirm('Отменить эту отправку? Действие будет записано в аудит.')) return;
   const current = epoch;
   const projectId = props.projectId;
   await runCommand(`cancel:${item.id}`, projectId, current, async () => {
@@ -167,45 +143,38 @@ async function cancel(
       item.id,
       {
         expectedOperationsVersion: item.operationsVersion,
-        expectedState: item.status as "PENDING" | "RETRY_WAIT",
+        expectedState: item.status as 'PENDING' | 'RETRY_WAIT',
         reason,
       },
       crypto.randomUUID(),
     );
-    return "Отправка отменена.";
+    return 'Отправка отменена.';
   });
 }
 
-async function replay(
-  item: IntegrationRecoveryOperationListItemDto,
-): Promise<void> {
+async function replay(item: IntegrationRecoveryOperationListItemDto): Promise<void> {
   if (!canOperate.value || !canReplay(item) || pendingKey.value) return;
-  const reason = requestReason("повторить обработку");
+  const reason = requestReason('повторить обработку');
   if (!reason) return;
   if (
-    item.status === "OUTCOME_UNKNOWN" &&
+    item.status === 'OUTCOME_UNKNOWN' &&
     !window.confirm(
-      "Результат прошлой отправки неизвестен. Повтор может создать дубликат. Продолжить?",
+      'Результат прошлой отправки неизвестен. Повтор может создать дубликат. Продолжить?',
     )
   )
     return;
-  if (
-    !window.confirm(
-      "Запустить повторную обработку? Действие будет записано в аудит.",
-    )
-  )
-    return;
+  if (!window.confirm('Запустить повторную обработку? Действие будет записано в аудит.')) return;
   const current = epoch;
   const projectId = props.projectId;
   await runCommand(`replay:${item.id}`, projectId, current, async () => {
-    if (item.operationKind === "DISPATCH") {
+    if (item.operationKind === 'DISPATCH') {
       await integrationRecoveryApi.replayDispatch(
         projectId,
         item.id,
         {
-          acknowledgeDuplicateRisk: item.status === "OUTCOME_UNKNOWN",
+          acknowledgeDuplicateRisk: item.status === 'OUTCOME_UNKNOWN',
           expectedOperationsVersion: item.operationsVersion,
-          expectedState: item.status as "FAILED_PERMANENT" | "OUTCOME_UNKNOWN",
+          expectedState: item.status as 'FAILED_PERMANENT' | 'OUTCOME_UNKNOWN',
           reason,
         },
         crypto.randomUUID(),
@@ -217,26 +186,22 @@ async function replay(
         {
           expectedOperationsVersion: item.operationsVersion,
           expectedStatus: item.status as
-            "UNMAPPED" | "SCHEMA_INVALID" | "FAILED_PERMANENT" | "QUARANTINED",
+            'UNMAPPED' | 'SCHEMA_INVALID' | 'FAILED_PERMANENT' | 'QUARANTINED',
           reason,
         },
         crypto.randomUUID(),
       );
     }
-    return "Повторная обработка поставлена в очередь.";
+    return 'Повторная обработка поставлена в очередь.';
   });
 }
 
-async function quarantine(
-  item: IntegrationRecoveryOperationDetailDto,
-): Promise<void> {
+async function quarantine(item: IntegrationRecoveryOperationDetailDto): Promise<void> {
   if (!canOperate.value || !canQuarantine(item) || pendingKey.value) return;
-  const reason = requestReason("поместить входящее событие в карантин");
+  const reason = requestReason('поместить входящее событие в карантин');
   if (
     !reason ||
-    !window.confirm(
-      "Поместить входящее событие в карантин? Действие будет записано в аудит.",
-    )
+    !window.confirm('Поместить входящее событие в карантин? Действие будет записано в аудит.')
   )
     return;
   const current = epoch;
@@ -247,12 +212,12 @@ async function quarantine(
       item.id,
       {
         expectedOperationsVersion: item.operationsVersion,
-        expectedStatus: item.status as "RECEIVED" | "RETRY_WAIT",
+        expectedStatus: item.status as 'RECEIVED' | 'RETRY_WAIT',
         reason,
       },
       crypto.randomUUID(),
     );
-    return "Входящее событие помещено в карантин.";
+    return 'Входящее событие помещено в карантин.';
   });
 }
 
@@ -261,42 +226,30 @@ async function toggleDirection(
   direction: IntegrationDirection,
 ): Promise<void> {
   if (!canOperate.value || pendingKey.value) return;
-  const paused =
-    direction === "INBOUND"
-      ? connection.inboundPaused
-      : connection.outboundPaused;
+  const paused = direction === 'INBOUND' ? connection.inboundPaused : connection.outboundPaused;
   const nextPaused = !paused;
-  const action = nextPaused ? "приостановить" : "возобновить";
-  const reason = requestReason(
-    `${action} ${direction === "INBOUND" ? "приём" : "отправку"}`,
-  );
+  const action = nextPaused ? 'приостановить' : 'возобновить';
+  const reason = requestReason(`${action} ${direction === 'INBOUND' ? 'приём' : 'отправку'}`);
   if (
     !reason ||
     !window.confirm(
-      `${action === "приостановить" ? "Приостановить" : "Возобновить"} направление для ${connection.displayName}?`,
+      `${action === 'приостановить' ? 'Приостановить' : 'Возобновить'} направление для ${connection.displayName}?`,
     )
   )
     return;
   const current = epoch;
   const projectId = props.projectId;
-  await runCommand(
-    `direction:${connection.id}:${direction}`,
-    projectId,
-    current,
-    async () => {
-      await integrationRecoveryApi.changeDirectionPause(
-        projectId,
-        connection.id,
-        direction,
-        nextPaused,
-        { expectedPaused: paused, expectedVersion: connection.version, reason },
-        crypto.randomUUID(),
-      );
-      return nextPaused
-        ? "Направление приостановлено."
-        : "Направление возобновлено.";
-    },
-  );
+  await runCommand(`direction:${connection.id}:${direction}`, projectId, current, async () => {
+    await integrationRecoveryApi.changeDirectionPause(
+      projectId,
+      connection.id,
+      direction,
+      nextPaused,
+      { expectedPaused: paused, expectedVersion: connection.version, reason },
+      crypto.randomUUID(),
+    );
+    return nextPaused ? 'Направление приостановлено.' : 'Направление возобновлено.';
+  });
 }
 
 async function runCommand(
@@ -306,8 +259,8 @@ async function runCommand(
   command: () => Promise<string>,
 ): Promise<void> {
   pendingKey.value = key;
-  error.value = "";
-  success.value = "";
+  error.value = '';
+  success.value = '';
   try {
     const message = await command();
     if (commandEpoch !== epoch || projectId !== props.projectId) return;
@@ -321,17 +274,12 @@ async function runCommand(
     if (projectId !== props.projectId) return;
     error.value = message;
   } finally {
-    pendingKey.value = "";
+    pendingKey.value = '';
   }
 }
 
 watch(
-  () =>
-    [
-      props.projectId,
-      props.canReadActivity,
-      props.canReadIntegrations,
-    ] as const,
+  () => [props.projectId, props.canReadActivity, props.canReadIntegrations] as const,
   () => void load(),
 );
 onMounted(() => void load());
@@ -343,16 +291,11 @@ onMounted(() => void load());
       <div class="card-title">
         <h2>Восстановление интеграций</h2>
         <p>
-          Безопасные метаданные, ручной повтор и независимая пауза направлений.
-          Payload и секреты не отображаются.
+          Безопасные метаданные, ручной повтор и независимая пауза направлений. Payload и секреты не
+          отображаются.
         </p>
       </div>
-      <button
-        type="button"
-        class="secondary"
-        :disabled="loading || !!pendingKey"
-        @click="load"
-      >
+      <button type="button" class="secondary" :disabled="loading || !!pendingKey" @click="load">
         Обновить
       </button>
     </div>
@@ -360,22 +303,14 @@ onMounted(() => void load());
     <p v-if="error" class="feedback error" role="alert">{{ error }}</p>
     <p v-if="success" class="feedback success" role="status">{{ success }}</p>
     <p v-if="!canOperate" class="read-only-note">
-      Режим просмотра: команды доступны только с правами чтения активности и
-      управления интеграциями.
+      Режим просмотра: команды доступны только с правами чтения активности и управления
+      интеграциями.
     </p>
 
-    <section
-      v-if="connections.length"
-      class="direction-section"
-      aria-labelledby="direction-title"
-    >
+    <section v-if="connections.length" class="direction-section" aria-labelledby="direction-title">
       <h3 id="direction-title">Направления подключений</h3>
       <div class="connection-list">
-        <article
-          v-for="connection in connections"
-          :key="connection.id"
-          class="connection-row"
-        >
+        <article v-for="connection in connections" :key="connection.id" class="connection-row">
           <div>
             <strong>{{ connection.displayName }}</strong
             ><small>{{ connection.provider }}</small>
@@ -386,9 +321,7 @@ onMounted(() => void load());
             :disabled="!canOperate || !!pendingKey"
             @click="toggleDirection(connection, 'INBOUND')"
           >
-            {{
-              connection.inboundPaused ? "Возобновить приём" : "Пауза приёма"
-            }}
+            {{ connection.inboundPaused ? 'Возобновить приём' : 'Пауза приёма' }}
           </button>
           <button
             type="button"
@@ -396,11 +329,7 @@ onMounted(() => void load());
             :disabled="!canOperate || !!pendingKey"
             @click="toggleDirection(connection, 'OUTBOUND')"
           >
-            {{
-              connection.outboundPaused
-                ? "Возобновить отправку"
-                : "Пауза отправки"
-            }}
+            {{ connection.outboundPaused ? 'Возобновить отправку' : 'Пауза отправки' }}
           </button>
         </article>
       </div>
@@ -420,16 +349,11 @@ onMounted(() => void load());
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="item in operations"
-            :key="`${item.operationKind}:${item.id}`"
-          >
+          <tr v-for="item in operations" :key="`${item.operationKind}:${item.id}`">
             <td>{{ operationLabel(item) }}</td>
             <td>{{ item.provider }}</td>
             <td>
-              <span class="status" :data-status="item.status">{{
-                item.status
-              }}</span
+              <span class="status" :data-status="item.status">{{ item.status }}</span
               ><small v-if="item.failureCode">{{ item.failureCode }}</small>
             </td>
             <td>{{ item.attemptCount }}</td>
@@ -470,11 +394,7 @@ onMounted(() => void load());
     </div>
     <p v-else-if="!loading" class="empty-state">Операций пока нет.</p>
 
-    <section
-      v-if="selected"
-      class="operation-detail"
-      aria-labelledby="operation-detail-title"
-    >
+    <section v-if="selected" class="operation-detail" aria-labelledby="operation-detail-title">
       <div class="detail-heading">
         <h3 id="operation-detail-title">Детали операции</h3>
         <div class="row-actions">
@@ -487,9 +407,7 @@ onMounted(() => void load());
           >
             В карантин
           </button>
-          <button type="button" class="secondary" @click="selected = null">
-            Закрыть
-          </button>
+          <button type="button" class="secondary" @click="selected = null">Закрыть</button>
         </div>
       </div>
       <dl class="integration-facts">
@@ -510,7 +428,7 @@ onMounted(() => void load());
         <div v-if="selected.operationKind !== 'CONNECTION'">
           <dt>Маршрут</dt>
           <dd>
-            <code>{{ selected.routeId || "—" }}</code>
+            <code>{{ selected.routeId || '—' }}</code>
           </dd>
         </div>
         <div>
@@ -525,9 +443,8 @@ onMounted(() => void load());
       <h4>Попытки</h4>
       <ul class="detail-list">
         <li v-for="attempt in selected.attempts" :key="attempt.attemptNumber">
-          № {{ attempt.attemptNumber }} ·
-          {{ attempt.outcome || "в процессе" }} ·
-          {{ attempt.errorCode || "без ошибки" }}
+          № {{ attempt.attemptNumber }} · {{ attempt.outcome || 'в процессе' }} ·
+          {{ attempt.errorCode || 'без ошибки' }}
         </li>
         <li v-if="!selected.attempts.length">Попыток нет.</li>
       </ul>

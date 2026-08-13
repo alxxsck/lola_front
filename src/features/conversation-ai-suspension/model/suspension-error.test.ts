@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
-import { ApiError } from '@/shared/api/http/api-error'
-import { suspensionError } from './suspension-error'
+import { describe, expect, it } from 'vitest';
+import { ApiError } from '@/shared/api/http/api-error';
+import { suspensionError } from './suspension-error';
 
 describe('понятные ошибки управления AI', () => {
   it.each([
@@ -14,15 +14,17 @@ describe('понятные ошибки управления AI', () => {
     [new ApiError(503, 'down'), 'UNAVAILABLE'],
     [new ApiError(0, 'network'), 'NETWORK'],
   ] as const)('сопоставляет ответ сервера %s с видом %s', (cause, kind) => {
-    expect(suspensionError(cause)).toMatchObject({ kind })
-  })
+    expect(suspensionError(cause)).toMatchObject({ kind });
+  });
 
   it('показывает время ожидания и номер обращения без внутренних подробностей', () => {
-    expect(suspensionError(new ApiError(429, 'stack trace', undefined, 'request-7', undefined, 45))).toEqual({
+    expect(
+      suspensionError(new ApiError(429, 'stack trace', undefined, 'request-7', undefined, 45)),
+    ).toEqual({
       kind: 'RATE_LIMITED',
       message: 'Слишком много действий. Повторите через 45 сек.',
       retryAfterSeconds: 45,
       requestId: 'request-7',
-    })
-  })
-})
+    });
+  });
+});

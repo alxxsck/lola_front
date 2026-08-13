@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { reactive } from "vue";
-import Button from "primevue/button";
-import InputNumber from "primevue/inputnumber";
-import ToggleSwitch from "primevue/toggleswitch";
-import { useToast } from "primevue/usetoast";
-import { useSettingsResource } from "@/shared/lib/use-settings-resource";
-import AISettingsSectionCard from "@/shared/ui/AISettingsSectionCard.vue";
-import { userMemoryRepository } from "../api/user-memory-repository";
-import type { UserMemorySettings } from "../model/user-memory";
+import { reactive } from 'vue';
+import Button from 'primevue/button';
+import InputNumber from 'primevue/inputnumber';
+import ToggleSwitch from 'primevue/toggleswitch';
+import { useToast } from 'primevue/usetoast';
+import { useSettingsResource } from '@/shared/lib/use-settings-resource';
+import AISettingsSectionCard from '@/shared/ui/AISettingsSectionCard.vue';
+import { userMemoryRepository } from '../api/user-memory-repository';
+import type { UserMemorySettings } from '../model/user-memory';
 
 const props = defineProps<{ projectId: string; editable: boolean }>();
 const emit = defineEmits<{ changed: [projectVersion: number] }>();
@@ -27,7 +27,7 @@ const {
   const loaded = await userMemoryRepository.getSettings(props.projectId);
   fill(loaded);
   return loaded;
-}, "Не удалось загрузить настройки памяти");
+}, 'Не удалось загрузить настройки памяти');
 
 function fill(value: UserMemorySettings) {
   settings.value = value;
@@ -47,14 +47,14 @@ async function save() {
         expectedVersion: current.projectVersion,
         ...form,
       }),
-    "Не удалось сохранить настройки памяти",
+    'Не удалось сохранить настройки памяти',
   );
   if (!saved) return;
   fill(saved);
-  emit("changed", saved.projectVersion);
+  emit('changed', saved.projectVersion);
   toast.add({
-    severity: "success",
-    summary: "Настройки памяти сохранены",
+    severity: 'success',
+    summary: 'Настройки памяти сохранены',
     life: 2800,
   });
 }
@@ -73,9 +73,7 @@ async function save() {
       <div class="settings-fields">
         <label class="setting-card feature-toggle">
           <span>
-            <strong>{{
-              form.enabled ? "Память включена" : "Память приостановлена"
-            }}</strong>
+            <strong>{{ form.enabled ? 'Память включена' : 'Память приостановлена' }}</strong>
             <small>Сохранённые факты не удаляются при выключении.</small>
           </span>
           <ToggleSwitch v-model="form.enabled" :disabled="!editable" />
@@ -89,9 +87,7 @@ async function save() {
             :use-grouping="false"
             :disabled="!editable"
           />
-          <small class="field-hint"
-            >Максимальное число AI-извлечений за сутки.</small
-          >
+          <small class="field-hint">Максимальное число AI-извлечений за сутки.</small>
         </label>
         <label class="setting-card field-card">
           <span>Срок хранения факта</span>
@@ -103,9 +99,7 @@ async function save() {
             suffix=" дней"
             :disabled="!editable"
           />
-          <small class="field-hint"
-            >После этого срока факт перестанет использоваться.</small
-          >
+          <small class="field-hint">После этого срока факт перестанет использоваться.</small>
         </label>
       </div>
       <footer class="settings-actions">

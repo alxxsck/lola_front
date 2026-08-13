@@ -1,5 +1,5 @@
-import { ref } from "vue";
-import { ApiError } from "@/shared/api/http/api-error";
+import { ref } from 'vue';
+import { ApiError } from '@/shared/api/http/api-error';
 import type {
   SupportInboxItem,
   SupportInboxMode,
@@ -7,12 +7,9 @@ import type {
   SupportWorkspaceCaseRow,
   SupportWorkspaceConversation,
   SupportWorkspaceSource,
-} from "@/features/support-workspace/api/support-workspace-source";
+} from '@/features/support-workspace/api/support-workspace-source';
 
-export type SupportInboxSource = Pick<
-  SupportWorkspaceSource,
-  "readCases" | "readConversations"
->;
+export type SupportInboxSource = Pick<SupportWorkspaceSource, 'readCases' | 'readConversations'>;
 
 export interface SupportInboxContext {
   projectId(): string | undefined;
@@ -20,7 +17,7 @@ export interface SupportInboxContext {
   onForbidden?(): void | Promise<void>;
 }
 
-export type SupportInboxFailure = "NONE" | "FORBIDDEN" | "CONFLICT" | "ERROR";
+export type SupportInboxFailure = 'NONE' | 'FORBIDDEN' | 'CONFLICT' | 'ERROR';
 
 /**
  * Owns project-scoped inbox loading and prevents a stale request from writing
@@ -33,8 +30,8 @@ export function createSupportInboxController(
   const items = ref<SupportInboxItem[]>([]);
   const nextCursor = ref<string | null>(null);
   const loading = ref(false);
-  const error = ref("");
-  const failure = ref<SupportInboxFailure>("NONE");
+  const error = ref('');
+  const failure = ref<SupportInboxFailure>('NONE');
   let generation = 0;
 
   function reset(): void {
@@ -42,8 +39,8 @@ export function createSupportInboxController(
     items.value = [];
     nextCursor.value = null;
     loading.value = false;
-    error.value = "";
-    failure.value = "NONE";
+    error.value = '';
+    failure.value = 'NONE';
   }
 
   function isCurrent(
@@ -66,14 +63,12 @@ export function createSupportInboxController(
 
   function scopedItems(
     mode: SupportInboxMode,
-    pageItems: readonly (
-      SupportWorkspaceCaseRow | SupportWorkspaceConversation
-    )[],
+    pageItems: readonly (SupportWorkspaceCaseRow | SupportWorkspaceConversation)[],
   ): SupportInboxItem[] {
     return pageItems.map((item) =>
-      mode === "CASES"
-        ? { ...item, kind: "CASE" as const }
-        : { ...item, kind: "CONVERSATION" as const },
+      mode === 'CASES'
+        ? { ...item, kind: 'CASE' as const }
+        : { ...item, kind: 'CONVERSATION' as const },
     ) as SupportInboxItem[];
   }
 
@@ -84,7 +79,7 @@ export function createSupportInboxController(
     if (readState.conversationId !== conversationId) return;
     let changed = false;
     const nextItems = items.value.map((item) => {
-      if (item.kind !== "CONVERSATION" || item.id !== conversationId) {
+      if (item.kind !== 'CONVERSATION' || item.id !== conversationId) {
         return item;
       }
       if (readState.lastReadOrdinal < item.readState.lastReadOrdinal) {
@@ -101,7 +96,7 @@ export function createSupportInboxController(
     mode: SupportInboxMode,
     request: { cursor?: string; limit: number },
   ) {
-    return mode === "CASES"
+    return mode === 'CASES'
       ? source.readCases(projectId, request)
       : source.readConversations(projectId, request);
   }
@@ -115,8 +110,8 @@ export function createSupportInboxController(
       return;
     }
     loading.value = true;
-    error.value = "";
-    failure.value = "NONE";
+    error.value = '';
+    failure.value = 'NONE';
     try {
       const page = await readPage(projectId, mode, {
         limit: 30,
@@ -126,24 +121,18 @@ export function createSupportInboxController(
       nextCursor.value = page.nextCursor;
     } catch (cause) {
       if (!isCurrent(projectId, mode, requestGeneration)) return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         items.value = [];
         nextCursor.value = null;
-        failure.value = "FORBIDDEN";
-        error.value = "Доступ к входящим изменился";
+        failure.value = 'FORBIDDEN';
+        error.value = 'Доступ к входящим изменился';
         await context.onForbidden?.();
       } else {
-        failure.value =
-          cause instanceof ApiError && cause.status === 409
-            ? "CONFLICT"
-            : "ERROR";
+        failure.value = cause instanceof ApiError && cause.status === 409 ? 'CONFLICT' : 'ERROR';
         error.value =
-          failure.value === "CONFLICT"
-            ? "Список входящих изменился на сервере"
-            : `Не удалось загрузить список ${mode === "CASES" ? "обращений" : "диалогов"}`;
+          failure.value === 'CONFLICT'
+            ? 'Список входящих изменился на сервере'
+            : `Не удалось загрузить список ${mode === 'CASES' ? 'обращений' : 'диалогов'}`;
       }
     } finally {
       if (requestGeneration === generation) loading.value = false;
@@ -157,8 +146,8 @@ export function createSupportInboxController(
     if (!projectId || !cursor || loading.value) return;
     const requestGeneration = ++generation;
     loading.value = true;
-    error.value = "";
-    failure.value = "NONE";
+    error.value = '';
+    failure.value = 'NONE';
     try {
       const page = await readPage(projectId, mode, {
         cursor,
@@ -169,24 +158,18 @@ export function createSupportInboxController(
       nextCursor.value = page.nextCursor;
     } catch (cause) {
       if (!isCurrent(projectId, mode, requestGeneration)) return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         items.value = [];
         nextCursor.value = null;
-        failure.value = "FORBIDDEN";
-        error.value = "Доступ к входящим изменился";
+        failure.value = 'FORBIDDEN';
+        error.value = 'Доступ к входящим изменился';
         await context.onForbidden?.();
       } else {
-        failure.value =
-          cause instanceof ApiError && cause.status === 409
-            ? "CONFLICT"
-            : "ERROR";
+        failure.value = cause instanceof ApiError && cause.status === 409 ? 'CONFLICT' : 'ERROR';
         error.value =
-          failure.value === "CONFLICT"
-            ? "Курсор страницы устарел — обновите список"
-            : `Не удалось загрузить следующую страницу ${mode === "CASES" ? "обращений" : "диалогов"}`;
+          failure.value === 'CONFLICT'
+            ? 'Курсор страницы устарел — обновите список'
+            : `Не удалось загрузить следующую страницу ${mode === 'CASES' ? 'обращений' : 'диалогов'}`;
       }
     } finally {
       if (requestGeneration === generation) loading.value = false;

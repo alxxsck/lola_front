@@ -3,7 +3,7 @@ import type {
   EventQueryPolicyFieldDto,
   EventQueryPolicyFieldDtoSemanticType,
   EventQueryPolicyItemDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 export interface SchemaField {
   path: string;
@@ -11,81 +11,64 @@ export interface SchemaField {
 }
 
 function record(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
 }
 
-export function flattenSchemaFields(
-  schema: Record<string, unknown>,
-  prefix = "",
-): SchemaField[] {
+export function flattenSchemaFields(schema: Record<string, unknown>, prefix = ''): SchemaField[] {
   const properties = record(schema.properties);
   if (!properties) return [];
 
   return Object.entries(properties).flatMap(([key, value]) => {
     const field = record(value);
     const path = prefix ? `${prefix}.${key}` : key;
-    if (!field || typeof field.type !== "string") return [];
-    if (field.type === "object") {
+    if (!field || typeof field.type !== 'string') return [];
+    if (field.type === 'object') {
       return flattenSchemaFields(field, path);
     }
-    if (!["string", "number", "integer", "boolean"].includes(field.type)) {
+    if (!['string', 'number', 'integer', 'boolean'].includes(field.type)) {
       return [];
     }
     return [{ path, schemaType: field.type }];
   });
 }
 
-export function schemaTypeToSemanticType(
-  schemaType: string,
-): EventQueryPolicyFieldDtoSemanticType {
-  if (schemaType === "integer") return "INTEGER";
-  if (schemaType === "number") return "DECIMAL";
-  if (schemaType === "boolean") return "BOOLEAN";
-  return "STRING";
+export function schemaTypeToSemanticType(schemaType: string): EventQueryPolicyFieldDtoSemanticType {
+  if (schemaType === 'integer') return 'INTEGER';
+  if (schemaType === 'number') return 'DECIMAL';
+  if (schemaType === 'boolean') return 'BOOLEAN';
+  return 'STRING';
 }
 
-const modes = new Set(["SUMMARY", "AGGREGATE", "LATEST"]);
+const modes = new Set(['SUMMARY', 'AGGREGATE', 'LATEST']);
 const semanticTypes = new Set([
-  "STRING",
-  "BOOLEAN",
-  "INTEGER",
-  "DECIMAL",
-  "MONEY",
-  "CURRENCY",
-  "DATETIME",
-  "BUSINESS_TIME",
+  'STRING',
+  'BOOLEAN',
+  'INTEGER',
+  'DECIMAL',
+  'MONEY',
+  'CURRENCY',
+  'DATETIME',
+  'BUSINESS_TIME',
 ]);
-const sensitivities = new Set([
-  "PUBLIC_TO_END_USER",
-  "PRIVATE_DERIVED",
-  "FORBIDDEN",
-]);
-const operations = new Set([
-  "PROJECT",
-  "FILTER",
-  "GROUP_BY",
-  "SUM",
-  "MIN",
-  "MAX",
-  "AVG",
-]);
+const sensitivities = new Set(['PUBLIC_TO_END_USER', 'PRIVATE_DERIVED', 'FORBIDDEN']);
+const operations = new Set(['PROJECT', 'FILTER', 'GROUP_BY', 'SUM', 'MIN', 'MAX', 'AVG']);
 
 function policyField(value: unknown): EventQueryPolicyFieldDto | null {
   const field = record(value);
   if (
     !field ||
-    typeof field.path !== "string" ||
-    typeof field.semanticType !== "string" ||
+    typeof field.path !== 'string' ||
+    typeof field.semanticType !== 'string' ||
     !semanticTypes.has(field.semanticType) ||
-    typeof field.sensitivity !== "string" ||
+    typeof field.sensitivity !== 'string' ||
     !sensitivities.has(field.sensitivity) ||
     !Array.isArray(field.operations) ||
     !field.operations.every(
-      (operation) => typeof operation === "string" && operations.has(operation),
+      (operation) => typeof operation === 'string' && operations.has(operation),
     ) ||
-    (field.currencyPath !== undefined && typeof field.currencyPath !== "string")
+    (field.currencyPath !== undefined && typeof field.currencyPath !== 'string')
   ) {
     return null;
   }
@@ -99,15 +82,13 @@ export function eventQueryPolicyItemFromConfiguration(
   const configuration = record(value);
   if (
     !configuration ||
-    typeof configuration.descriptionForAI !== "string" ||
+    typeof configuration.descriptionForAI !== 'string' ||
     !Array.isArray(configuration.allowedModes) ||
     configuration.allowedModes.length === 0 ||
-    !configuration.allowedModes.every(
-      (mode) => typeof mode === "string" && modes.has(mode),
-    ) ||
+    !configuration.allowedModes.every((mode) => typeof mode === 'string' && modes.has(mode)) ||
     !Array.isArray(configuration.safeFields) ||
-    typeof configuration.maxInteractiveLookbackHours !== "number" ||
-    typeof configuration.maxVerificationLookbackHours !== "number"
+    typeof configuration.maxInteractiveLookbackHours !== 'number' ||
+    typeof configuration.maxVerificationLookbackHours !== 'number'
   ) {
     return null;
   }
@@ -116,8 +97,7 @@ export function eventQueryPolicyItemFromConfiguration(
   return {
     stableCode,
     descriptionForAI: configuration.descriptionForAI,
-    allowedModes:
-      configuration.allowedModes as EventQueryPolicyItemDto["allowedModes"],
+    allowedModes: configuration.allowedModes as EventQueryPolicyItemDto['allowedModes'],
     safeFields: safeFields as EventQueryPolicyFieldDto[],
     maxInteractiveLookbackHours: configuration.maxInteractiveLookbackHours,
     maxVerificationLookbackHours: configuration.maxVerificationLookbackHours,
@@ -153,13 +133,11 @@ export function mergeRecommendedSafeFields(
   const additions = recommendations
     .filter((field) => !existingPaths.has(field.path))
     .map((field) => ({ ...field, operations: [...field.operations] }));
-  const aggregateEnabled = item.allowedModes.includes("AGGREGATE");
+  const aggregateEnabled = item.allowedModes.includes('AGGREGATE');
   if (additions.length === 0 && aggregateEnabled) return item;
   return {
     ...item,
-    allowedModes: aggregateEnabled
-      ? item.allowedModes
-      : [...item.allowedModes, "AGGREGATE"],
+    allowedModes: aggregateEnabled ? item.allowedModes : [...item.allowedModes, 'AGGREGATE'],
     safeFields: [...item.safeFields, ...additions],
   };
 }

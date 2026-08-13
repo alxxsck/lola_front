@@ -1,8 +1,8 @@
 export interface EndUserAttributeDefinition {
   key: string;
   version: number;
-  owner: "CMS_MANAGED" | "MODULE_PROJECTED";
-  classification: "INTERNAL" | "SENSITIVE" | "RESTRICTED";
+  owner: 'CMS_MANAGED' | 'MODULE_PROJECTED';
+  classification: 'INTERNAL' | 'SENSITIVE' | 'RESTRICTED';
   schema: unknown;
   label: Record<string, string>;
   description: Record<string, string>;
@@ -11,7 +11,7 @@ export interface EndUserAttributeDefinition {
 export interface EndUserAttributeCurrent {
   version: number;
   definitionVersion: number;
-  state: "UNSET" | "SCHEDULED" | "EXPIRED" | "ACTIVE";
+  state: 'UNSET' | 'SCHEDULED' | 'EXPIRED' | 'ACTIVE';
   value: unknown;
   effectiveAt: string;
   expiresAt: string | null;
@@ -28,7 +28,7 @@ export interface EndUserOperationalState {
   }>;
 }
 export interface PutEndUserAttributeInput {
-  operation: "SET" | "UNSET";
+  operation: 'SET' | 'UNSET';
   value?: unknown;
   expectedVersion: number;
   reason: string;
@@ -44,7 +44,7 @@ export interface EndUserAttributeHistory {
     id: string;
     version: number;
     definitionVersion: number;
-    operation: "SET" | "UNSET";
+    operation: 'SET' | 'UNSET';
     value: unknown;
     effectiveAt: string;
     expiresAt: string | null;

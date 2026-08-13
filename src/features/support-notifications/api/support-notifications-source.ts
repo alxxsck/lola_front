@@ -6,19 +6,17 @@ import {
   personalSupportNotificationReadPreferences,
   personalSupportNotificationResolveDeepLink,
   personalSupportNotificationUpdatePreference,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   BrowserPushSubscriptionResponseDto,
   PersonalSupportNotificationAdmissionResponseDto,
   PersonalSupportNotificationDeepLinkTargetDto,
   PersonalSupportNotificationPreferenceResponseDto,
-} from "@/shared/api/generated/models";
-import { dataMode } from "@/shared/config/data-mode";
+} from '@/shared/api/generated/models';
+import { dataMode } from '@/shared/config/data-mode';
 
 export type SupportNotificationTopic =
-  | "SUPPORT_CASE_CREATED"
-  | "SUPPORT_CASE_ATTENTION"
-  | "SUPPORT_CASE_ASSIGNED_TO_ME";
+  'SUPPORT_CASE_CREATED' | 'SUPPORT_CASE_ATTENTION' | 'SUPPORT_CASE_ASSIGNED_TO_ME';
 
 export interface BrowserSubscriptionMaterial {
   endpoint: string;
@@ -28,11 +26,11 @@ export interface BrowserSubscriptionMaterial {
 
 export type SupportNotificationConfiguration = Pick<
   PersonalSupportNotificationAdmissionResponseDto,
-  | "evaluatedAt"
-  | "activeSubscriptionCount"
-  | "capabilities"
-  | "applicationServerKey"
-  | "applicationServerKeyRevision"
+  | 'evaluatedAt'
+  | 'activeSubscriptionCount'
+  | 'capabilities'
+  | 'applicationServerKey'
+  | 'applicationServerKeyRevision'
 >;
 
 export interface SupportNotificationsSource {
@@ -54,9 +52,7 @@ export interface SupportNotificationsSource {
     },
     signal?: AbortSignal,
   ): Promise<readonly PersonalSupportNotificationPreferenceResponseDto[]>;
-  listDevices(
-    signal?: AbortSignal,
-  ): Promise<readonly BrowserPushSubscriptionResponseDto[]>;
+  listDevices(signal?: AbortSignal): Promise<readonly BrowserPushSubscriptionResponseDto[]>;
   registerDevice(
     input: BrowserSubscriptionMaterial & {
       expectedVersion?: number;
@@ -65,7 +61,7 @@ export interface SupportNotificationsSource {
     signal?: AbortSignal,
   ): Promise<BrowserPushSubscriptionResponseDto>;
   revokeDevice(
-    device: Pick<BrowserPushSubscriptionResponseDto, "id" | "version">,
+    device: Pick<BrowserPushSubscriptionResponseDto, 'id' | 'version'>,
     idempotencyKey: string,
     signal?: AbortSignal,
   ): Promise<BrowserPushSubscriptionResponseDto>;
@@ -80,16 +76,14 @@ export const apiSupportNotificationsSource: SupportNotificationsSource = {
     return personalSupportNotificationReadAdmission(projectId, { signal });
   },
   async readPreferences(projectId, signal) {
-    return (
-      await personalSupportNotificationReadPreferences(projectId, { signal })
-    ).items;
+    return (await personalSupportNotificationReadPreferences(projectId, { signal })).items;
   },
   async updatePreference(projectId, input, signal) {
     const { idempotencyKey, ...body } = input;
     return (
       await personalSupportNotificationUpdatePreference(projectId, body, {
         signal,
-        headers: { "Idempotency-Key": idempotencyKey },
+        headers: { 'Idempotency-Key': idempotencyKey },
       })
     ).items;
   },
@@ -100,14 +94,14 @@ export const apiSupportNotificationsSource: SupportNotificationsSource = {
     const { idempotencyKey, ...body } = input;
     return personalBrowserPushRegisterSubscription(body, {
       signal,
-      headers: { "Idempotency-Key": idempotencyKey },
+      headers: { 'Idempotency-Key': idempotencyKey },
     });
   },
   revokeDevice(device, idempotencyKey, signal) {
     return personalBrowserPushRevokeSubscription(
       device.id,
       { expectedVersion: device.version },
-      { signal, headers: { "Idempotency-Key": idempotencyKey } },
+      { signal, headers: { 'Idempotency-Key': idempotencyKey } },
     );
   },
   resolveDeepLink(capability, signal) {
@@ -115,25 +109,19 @@ export const apiSupportNotificationsSource: SupportNotificationsSource = {
   },
 };
 
-const mockPreferences = new Map<
-  string,
-  PersonalSupportNotificationPreferenceResponseDto[]
->([]);
+const mockPreferences = new Map<string, PersonalSupportNotificationPreferenceResponseDto[]>([]);
 let mockDevices: BrowserPushSubscriptionResponseDto[] = [];
-const mockSourceStateKey = "support-notifications-source-mock:v1";
+const mockSourceStateKey = 'support-notifications-source-mock:v1';
 
 function hydrateMockSourceState(): void {
   try {
     const raw = sessionStorage.getItem(mockSourceStateKey);
     if (!raw) return;
     const value = JSON.parse(raw) as {
-      preferences?: Record<
-        string,
-        PersonalSupportNotificationPreferenceResponseDto[]
-      >;
+      preferences?: Record<string, PersonalSupportNotificationPreferenceResponseDto[]>;
       devices?: BrowserPushSubscriptionResponseDto[];
     };
-    if (value.preferences && typeof value.preferences === "object") {
+    if (value.preferences && typeof value.preferences === 'object') {
       mockPreferences.clear();
       Object.entries(value.preferences).forEach(([projectId, items]) => {
         if (Array.isArray(items)) mockPreferences.set(projectId, items);
@@ -159,32 +147,30 @@ function persistMockSourceState(): void {
   }
 }
 
-function preferences(
-  projectId: string,
-): PersonalSupportNotificationPreferenceResponseDto[] {
+function preferences(projectId: string): PersonalSupportNotificationPreferenceResponseDto[] {
   hydrateMockSourceState();
   const current = mockPreferences.get(projectId);
   if (current) return current;
   const created: PersonalSupportNotificationPreferenceResponseDto[] = [
     {
-      topic: "SUPPORT_CASE_CREATED",
-      channel: "BROWSER_PUSH",
+      topic: 'SUPPORT_CASE_CREATED',
+      channel: 'BROWSER_PUSH',
       subscribed: false,
-      source: "DEFAULT",
+      source: 'DEFAULT',
       version: null,
     },
     {
-      topic: "SUPPORT_CASE_ATTENTION",
-      channel: "BROWSER_PUSH",
+      topic: 'SUPPORT_CASE_ATTENTION',
+      channel: 'BROWSER_PUSH',
       subscribed: false,
-      source: "DEFAULT",
+      source: 'DEFAULT',
       version: null,
     },
     {
-      topic: "SUPPORT_CASE_ASSIGNED_TO_ME",
-      channel: "BROWSER_PUSH",
+      topic: 'SUPPORT_CASE_ASSIGNED_TO_ME',
+      channel: 'BROWSER_PUSH',
       subscribed: true,
-      source: "DEFAULT",
+      source: 'DEFAULT',
       version: null,
     },
   ];
@@ -198,18 +184,16 @@ const mockSupportNotificationsSource: SupportNotificationsSource = {
     hydrateMockSourceState();
     return {
       evaluatedAt: new Date().toISOString(),
-      activeSubscriptionCount: mockDevices.filter(
-        (item) => item.status === "ACTIVE",
-      ).length,
+      activeSubscriptionCount: mockDevices.filter((item) => item.status === 'ACTIVE').length,
       capabilities: {
-        newCases: "AVAILABLE",
-        assignedToMe: "AVAILABLE",
-        attention: "AVAILABLE",
-        deviceRegistration: "AVAILABLE",
-        deepLinkResolve: "AVAILABLE",
+        newCases: 'AVAILABLE',
+        assignedToMe: 'AVAILABLE',
+        attention: 'AVAILABLE',
+        deviceRegistration: 'AVAILABLE',
+        deepLinkResolve: 'AVAILABLE',
       },
-      applicationServerKey: "BElv1bUj-demo-public-key",
-      applicationServerKeyRevision: "fedcba9876543210",
+      applicationServerKey: 'BElv1bUj-demo-public-key',
+      applicationServerKeyRevision: 'fedcba9876543210',
     };
   },
   async readPreferences(projectId) {
@@ -221,7 +205,7 @@ const mockSupportNotificationsSource: SupportNotificationsSource = {
         ? {
             ...item,
             subscribed: input.subscribed,
-            source: "EXPLICIT" as const,
+            source: 'EXPLICIT' as const,
             version: (item.version ?? 0) + 1,
           }
         : item,
@@ -239,8 +223,8 @@ const mockSupportNotificationsSource: SupportNotificationsSource = {
     const now = new Date().toISOString();
     const created: BrowserPushSubscriptionResponseDto = {
       id: crypto.randomUUID(),
-      userAgentClass: "Chrome · macOS",
-      status: "ACTIVE",
+      userAgentClass: 'Chrome · macOS',
+      status: 'ACTIVE',
       version: 1,
       createdAt: now,
       lastSeenAt: now,
@@ -256,30 +240,26 @@ const mockSupportNotificationsSource: SupportNotificationsSource = {
     const revoked: BrowserPushSubscriptionResponseDto = {
       ...(current ?? {
         id: device.id,
-        userAgentClass: "Браузер",
+        userAgentClass: 'Браузер',
         createdAt: new Date().toISOString(),
         lastSeenAt: new Date().toISOString(),
       }),
-      status: "REVOKED",
+      status: 'REVOKED',
       version: device.version + 1,
       revokedAt: new Date().toISOString(),
     };
-    mockDevices = mockDevices.map((item) =>
-      item.id === device.id ? revoked : item,
-    );
+    mockDevices = mockDevices.map((item) => (item.id === device.id ? revoked : item));
     persistMockSourceState();
     return structuredClone(revoked);
   },
   async resolveDeepLink() {
     return {
-      target: "SUPPORT_OPERATOR_WORKSPACE",
-      projectId: "prj_retenive_demo",
-      selection: { kind: "CASE", caseId: "case-demo-deposit" },
+      target: 'SUPPORT_OPERATOR_WORKSPACE',
+      projectId: 'prj_retenive_demo',
+      selection: { kind: 'CASE', caseId: 'case-demo-deposit' },
     };
   },
 };
 
 export const supportNotificationsSource =
-  dataMode === "mock"
-    ? mockSupportNotificationsSource
-    : apiSupportNotificationsSource;
+  dataMode === 'mock' ? mockSupportNotificationsSource : apiSupportNotificationsSource;

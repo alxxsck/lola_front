@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import Skeleton from "primevue/skeleton";
-import type {
-  ReportingQueryResult,
-  ReportingVisualization,
-} from "../model/reporting-types";
-import ReportingEvidenceRail from "./ReportingEvidenceRail.vue";
+import { computed } from 'vue';
+import Skeleton from 'primevue/skeleton';
+import type { ReportingQueryResult, ReportingVisualization } from '../model/reporting-types';
+import ReportingEvidenceRail from './ReportingEvidenceRail.vue';
 
 const props = defineProps<{
   result?: ReportingQueryResult | null;
@@ -14,47 +11,35 @@ const props = defineProps<{
   compact?: boolean;
 }>();
 
-const number = new Intl.NumberFormat("ru");
-const percent = new Intl.NumberFormat("ru", { maximumFractionDigits: 1 });
+const number = new Intl.NumberFormat('ru');
+const percent = new Intl.NumberFormat('ru', { maximumFractionDigits: 1 });
 const nonRenderableState = computed(() => {
   const result = props.result;
   if (!result) return null;
   const terminalWithoutData = [
-    "queued",
-    "running",
-    "empty",
-    "suppressed",
-    "forbidden",
-    "failed",
-    "expired",
+    'queued',
+    'running',
+    'empty',
+    'suppressed',
+    'forbidden',
+    'failed',
+    'expired',
   ].includes(result.status);
   if (!terminalWithoutData && result.data && result.receipt) return null;
   const copy = {
-    queued: ["Запрос в очереди", "Результат появится после запуска."],
-    running: ["Идёт расчёт", "Данные обновятся после завершения."],
-    empty: [
-      "Данных нет",
-      result.safeMessage ?? "За выбранный период ничего не найдено.",
-    ],
+    queued: ['Запрос в очереди', 'Результат появится после запуска.'],
+    running: ['Идёт расчёт', 'Данные обновятся после завершения.'],
+    empty: ['Данных нет', result.safeMessage ?? 'За выбранный период ничего не найдено.'],
     suppressed: [
-      "Результат скрыт",
-      result.safeMessage ?? "Группа слишком мала для безопасного показа.",
+      'Результат скрыт',
+      result.safeMessage ?? 'Группа слишком мала для безопасного показа.',
     ],
-    forbidden: [
-      "Доступ отозван",
-      result.safeMessage ?? "Результат и его схема удалены.",
-    ],
-    failed: [
-      "Расчёт не выполнен",
-      result.safeMessage ?? "Повторите запрос позже.",
-    ],
-    expired: [
-      "Результат устарел",
-      result.safeMessage ?? "Запустите расчёт ещё раз.",
-    ],
-    complete: ["Результат недоступен", "Ответ не содержит данных."],
-    stale: ["Результат недоступен", "Ответ не содержит данных."],
-    partial: ["Результат недоступен", "Ответ не содержит данных."],
+    forbidden: ['Доступ отозван', result.safeMessage ?? 'Результат и его схема удалены.'],
+    failed: ['Расчёт не выполнен', result.safeMessage ?? 'Повторите запрос позже.'],
+    expired: ['Результат устарел', result.safeMessage ?? 'Запустите расчёт ещё раз.'],
+    complete: ['Результат недоступен', 'Ответ не содержит данных.'],
+    stale: ['Результат недоступен', 'Ответ не содержит данных.'],
+    partial: ['Результат недоступен', 'Ответ не содержит данных.'],
   } satisfies Record<string, [string, string]>;
   return copy[result.status];
 });
@@ -62,31 +47,29 @@ const nonRenderableState = computed(() => {
 const values = computed(() => {
   const data = props.result?.data;
   if (!data) return [];
-  if (data.kind === "TIME_SERIES") return data.points;
-  if (data.kind === "CATEGORY") return data.values;
-  if (data.kind === "SCALAR") return [{ label: "Значение", value: data.value }];
+  if (data.kind === 'TIME_SERIES') return data.points;
+  if (data.kind === 'CATEGORY') return data.values;
+  if (data.kind === 'SCALAR') return [{ label: 'Значение', value: data.value }];
   return [];
 });
 
 const primaryValue = computed(() => {
   const data = props.result?.data;
   if (!data) return null;
-  if (data.kind === "SCALAR") return data.value;
-  if (data.kind === "TIME_SERIES") return data.points.at(-1)?.value ?? null;
-  if (data.kind === "CATEGORY")
-    return data.values.reduce((sum, item) => sum + item.value, 0);
+  if (data.kind === 'SCALAR') return data.value;
+  if (data.kind === 'TIME_SERIES') return data.points.at(-1)?.value ?? null;
+  if (data.kind === 'CATEGORY') return data.values.reduce((sum, item) => sum + item.value, 0);
   return null;
 });
 
 const primaryUnit = computed(() => {
   const data = props.result?.data;
-  return data && data.kind !== "ROWS" ? data.unit : "";
+  return data && data.kind !== 'ROWS' ? data.unit : '';
 });
 
 const linePoints = computed(() => {
   const data = props.result?.data;
-  if (!data || data.kind !== "TIME_SERIES" || data.points.length === 0)
-    return "";
+  if (!data || data.kind !== 'TIME_SERIES' || data.points.length === 0) return '';
   const chartWidth = 600;
   const chartHeight = 176;
   const maximum = Math.max(...data.points.map((point) => point.value));
@@ -95,28 +78,19 @@ const linePoints = computed(() => {
   return data.points
     .map((point, index) => {
       const x = (index / Math.max(data.points.length - 1, 1)) * chartWidth;
-      const y =
-        chartHeight -
-        ((point.value - minimum) / spread) * (chartHeight - 20) -
-        10;
+      const y = chartHeight - ((point.value - minimum) / spread) * (chartHeight - 20) - 10;
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
-    .join(" ");
+    .join(' ');
 });
 
-const categoryMaximum = computed(() =>
-  Math.max(...values.value.map((item) => item.value), 1),
-);
-const categoryTotal = computed(() =>
-  values.value.reduce((sum, item) => sum + item.value, 0),
-);
+const categoryMaximum = computed(() => Math.max(...values.value.map((item) => item.value), 1));
+const categoryTotal = computed(() => values.value.reduce((sum, item) => sum + item.value, 0));
 const donutSegments = computed(() => {
   const circumference = 251.327;
   let offset = 0;
   return values.value.map((item, index) => {
-    const length = categoryTotal.value
-      ? (item.value / categoryTotal.value) * circumference
-      : 0;
+    const length = categoryTotal.value ? (item.value / categoryTotal.value) * circumference : 0;
     const segment = { ...item, index, length, offset: -offset };
     offset += length;
     return segment;
@@ -126,48 +100,41 @@ const donutSegments = computed(() => {
 const tableRows = computed<Array<Record<string, string | number>>>(() => {
   const data = props.result?.data;
   if (!data) return [];
-  if (data.kind === "ROWS") return data.rows;
+  if (data.kind === 'ROWS') return data.rows;
   return values.value.map((item) => ({ label: item.label, value: item.value }));
 });
 
 const tableColumns = computed(() => {
   const data = props.result?.data;
-  if (data?.kind === "ROWS") return data.columns;
+  if (data?.kind === 'ROWS') return data.columns;
   return [
-    { key: "label", label: "Период / категория" },
-    { key: "value", label: "Значение" },
+    { key: 'label', label: 'Период / категория' },
+    { key: 'value', label: 'Значение' },
   ];
 });
 
 function formattedValue(value: string | number): string {
-  return typeof value === "number" ? number.format(value) : value;
+  return typeof value === 'number' ? number.format(value) : value;
 }
 
 function unitLabel(unit: string): string {
-  if (unit === "users") return "пользователей";
-  if (unit === "events") return "событий";
-  if (unit === "orders") return "заказов";
+  if (unit === 'users') return 'пользователей';
+  if (unit === 'events') return 'событий';
+  if (unit === 'orders') return 'заказов';
   return unit;
 }
 </script>
 
 <template>
   <section class="chart-shell" :class="{ compact }" :aria-busy="loading">
-    <div
-      v-if="loading"
-      class="chart-loading"
-      role="status"
-      aria-label="Расчёт отчёта"
-    >
+    <div v-if="loading" class="chart-loading" role="status" aria-label="Расчёт отчёта">
       <Skeleton width="32%" height="2.8rem" />
       <Skeleton width="100%" height="12rem" />
       <Skeleton width="64%" height="0.9rem" />
     </div>
 
     <div v-else-if="!result" class="chart-empty">
-      <span class="empty-orbit" aria-hidden="true"
-        ><i class="pi pi-chart-line"
-      /></span>
+      <span class="empty-orbit" aria-hidden="true"><i class="pi pi-chart-line" /></span>
       <strong>Предпросмотр ещё не запущен</strong>
       <p>Настройте запрос и нажмите «Предпросмотр».</p>
     </div>
@@ -177,9 +144,7 @@ function unitLabel(unit: string): string {
       class="chart-empty result-state"
       :role="result?.status === 'forbidden' ? 'alert' : 'status'"
     >
-      <span class="empty-orbit" aria-hidden="true"
-        ><i class="pi pi-info-circle"
-      /></span>
+      <span class="empty-orbit" aria-hidden="true"><i class="pi pi-info-circle" /></span>
       <strong>{{ nonRenderableState[0] }}</strong>
       <p>{{ nonRenderableState[1] }}</p>
     </div>
@@ -192,7 +157,7 @@ function unitLabel(unit: string): string {
             v-if="result.status === 'stale' || result.status === 'partial'"
             class="result-status"
           >
-            {{ result.status === "stale" ? "Данные устарели" : "Частично" }}
+            {{ result.status === 'stale' ? 'Данные устарели' : 'Частично' }}
           </span>
         </div>
         <p>{{ result.summary }}</p>
@@ -204,33 +169,21 @@ function unitLabel(unit: string): string {
         role="img"
         :aria-label="result.summary"
       >
-        <strong>{{
-          primaryValue === null ? "—" : number.format(primaryValue)
-        }}</strong>
+        <strong>{{ primaryValue === null ? '—' : number.format(primaryValue) }}</strong>
         <span>{{ unitLabel(primaryUnit) }}</span>
-        <em
-          v-if="
-            result.data.kind === 'SCALAR' && result.data.delta !== undefined
-          "
-        >
+        <em v-if="result.data.kind === 'SCALAR' && result.data.delta !== undefined">
           <i class="pi pi-arrow-up-right" aria-hidden="true" />
           {{ percent.format(result.data.delta) }}% к прошлому периоду
         </em>
       </div>
 
       <div
-        v-else-if="
-          visualization === 'LINE' && result.data.kind === 'TIME_SERIES'
-        "
+        v-else-if="visualization === 'LINE' && result.data.kind === 'TIME_SERIES'"
         class="line-chart"
         role="img"
         :aria-label="result.summary"
       >
-        <svg
-          viewBox="0 0 600 210"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
+        <svg viewBox="0 0 600 210" preserveAspectRatio="none" aria-hidden="true">
           <line
             v-for="y in [24, 76, 128, 180]"
             :key="y"
@@ -262,11 +215,7 @@ function unitLabel(unit: string): string {
         role="img"
         :aria-label="result.summary"
       >
-        <div
-          v-for="(item, index) in result.data.values"
-          :key="item.label"
-          class="bar-row"
-        >
+        <div v-for="(item, index) in result.data.values" :key="item.label" class="bar-row">
           <span>{{ item.label }}</span>
           <div class="bar-track" aria-hidden="true">
             <span
@@ -311,10 +260,7 @@ function unitLabel(unit: string): string {
             :key="item.label"
             class="donut-legend-item"
           >
-            <i
-              :class="`series-dot series-${(index % 6) + 1}`"
-              aria-hidden="true"
-            />
+            <i :class="`series-dot series-${(index % 6) + 1}`" aria-hidden="true" />
             <span>{{ item.label }}</span>
             <strong>{{ number.format(item.value) }}</strong>
             <em>{{ percent.format((item.value / categoryTotal) * 100) }}%</em>
@@ -339,7 +285,7 @@ function unitLabel(unit: string): string {
           <tbody>
             <tr v-for="(row, index) in tableRows" :key="index">
               <td v-for="column in tableColumns" :key="column.key">
-                {{ formattedValue(row[column.key] ?? "—") }}
+                {{ formattedValue(row[column.key] ?? '—') }}
               </td>
             </tr>
           </tbody>
@@ -360,7 +306,7 @@ function unitLabel(unit: string): string {
             <tbody>
               <tr v-for="(row, index) in tableRows" :key="index">
                 <td v-for="column in tableColumns" :key="column.key">
-                  {{ formattedValue(row[column.key] ?? "—") }}
+                  {{ formattedValue(row[column.key] ?? '—') }}
                 </td>
               </tr>
             </tbody>

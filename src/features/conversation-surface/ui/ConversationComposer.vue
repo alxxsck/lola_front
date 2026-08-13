@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import Button from "primevue/button";
-import Textarea from "primevue/textarea";
-import ReplyTranslationPreview from "@/features/conversation-translation/ui/ReplyTranslationPreview.vue";
+import { computed, ref } from 'vue';
+import Button from 'primevue/button';
+import Textarea from 'primevue/textarea';
+import ReplyTranslationPreview from '@/features/conversation-translation/ui/ReplyTranslationPreview.vue';
 import type {
   ConversationSurfaceComposer,
   ConversationSurfaceComposerAction,
-} from "../model/conversation-surface-contract";
+} from '../model/conversation-surface-contract';
 
 const props = defineProps<{
   composer: ConversationSurfaceComposer;
@@ -15,73 +15,69 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "update:draft": [value: string];
-  "send-source": [];
-  "request-reply-translation": [];
-  "reconcile-reply-translation": [];
-  "retry-reply-translation": [];
-  "save-reply-translation": [text: string];
-  "send-reply-translation": [text?: string];
-  "check-send-outcome": [];
-  "discard-send-attempt": [];
-  "change-mode": [mode: "PUBLIC_REPLY" | "INTERNAL_NOTE"];
+  'update:draft': [value: string];
+  'send-source': [];
+  'request-reply-translation': [];
+  'reconcile-reply-translation': [];
+  'retry-reply-translation': [];
+  'save-reply-translation': [text: string];
+  'send-reply-translation': [text?: string];
+  'check-send-outcome': [];
+  'discard-send-attempt': [];
+  'change-mode': [mode: 'PUBLIC_REPLY' | 'INTERNAL_NOTE'];
   action: [action: ConversationSurfaceComposerAction];
-  "add-attachments": [files: File[]];
-  "remove-attachment": [localId: string];
-  "retry-attachment": [localId: string];
-  "download-attachment": [attachmentId: string];
+  'add-attachments': [files: File[]];
+  'remove-attachment': [localId: string];
+  'retry-attachment': [localId: string];
+  'download-attachment': [attachmentId: string];
 }>();
 
 const actionMenuVisible = ref(false);
 const attachmentInput = ref<HTMLInputElement | null>(null);
 const readyAttachmentCount = computed(
-  () => props.composer.attachments?.items.filter((item) => item.state === "READY" && item.canAttach).length ?? 0,
+  () =>
+    props.composer.attachments?.items.filter((item) => item.state === 'READY' && item.canAttach)
+      .length ?? 0,
 );
 const blocked = computed(
   () =>
-    props.composer.visibility !== "ENABLED" ||
+    props.composer.visibility !== 'ENABLED' ||
     props.composer.sending ||
-    props.composer.outcome?.state === "CHECKING_OUTCOME" ||
-    props.composer.outcome?.state === "BLOCKED" ||
-    props.composer.sendCapability.kind === "BLOCKED",
+    props.composer.outcome?.state === 'CHECKING_OUTCOME' ||
+    props.composer.outcome?.state === 'BLOCKED' ||
+    props.composer.sendCapability.kind === 'BLOCKED',
 );
 const sourceSendEnabled = computed(
   () =>
     !blocked.value &&
-    props.composer.sendCapability.kind === "SOURCE" &&
+    props.composer.sendCapability.kind === 'SOURCE' &&
     (Boolean(props.draft.trim()) || readyAttachmentCount.value > 0) &&
     !props.composer.attachments?.busy &&
-    (props.composer.mode !== "INTERNAL_NOTE" ||
+    (props.composer.mode !== 'INTERNAL_NOTE' ||
       new TextEncoder().encode(props.draft.trim()).byteLength <= 20_480),
 );
 const noteByteLength = computed(() =>
-  props.composer.mode === "INTERNAL_NOTE"
-    ? new TextEncoder().encode(props.draft).byteLength
-    : 0,
+  props.composer.mode === 'INTERNAL_NOTE' ? new TextEncoder().encode(props.draft).byteLength : 0,
 );
 const translatedSendDisabled = computed(() => {
   const preview = props.composer.replyPreview;
   return (
     blocked.value ||
-    props.composer.mode !== "PUBLIC_REPLY" ||
-    props.composer.sendCapability.kind !== "TRANSLATED_PREVIEW" ||
+    props.composer.mode !== 'PUBLIC_REPLY' ||
+    props.composer.sendCapability.kind !== 'TRANSLATED_PREVIEW' ||
     !preview ||
     preview.busy ||
     preview.stale ||
     preview.disabled ||
     props.composer.attachments?.busy ||
-    preview.draft?.status !== "READY"
+    preview.draft?.status !== 'READY'
   );
 });
 const blockedReason = computed(() =>
-  props.composer.sendCapability.kind === "BLOCKED"
-    ? props.composer.sendCapability.reason
-    : "",
+  props.composer.sendCapability.kind === 'BLOCKED' ? props.composer.sendCapability.reason : '',
 );
 const translated = computed(
-  () =>
-    props.composer.mode === "PUBLIC_REPLY" &&
-    Boolean(props.composer.replyPreview),
+  () => props.composer.mode === 'PUBLIC_REPLY' && Boolean(props.composer.replyPreview),
 );
 const hasActionMenuItems = computed(() =>
   [
@@ -91,91 +87,92 @@ const hasActionMenuItems = computed(() =>
     props.composer.actions.internalNotes,
     props.composer.actions.knowledge,
     props.composer.actions.sendWithoutTranslation,
-  ].some((action) => action && action.visibility !== "HIDDEN"),
+  ].some((action) => action && action.visibility !== 'HIDDEN'),
 );
 const footerVisible = computed(
   () =>
-    props.composer.sendCapability.kind !== "TRANSLATED_PREVIEW" ||
+    props.composer.sendCapability.kind !== 'TRANSLATED_PREVIEW' ||
     hasActionMenuItems.value ||
-    props.composer.actions.templates.visibility !== "HIDDEN" ||
-    props.composer.actions.improveWithAI.visibility !== "HIDDEN",
+    props.composer.actions.templates.visibility !== 'HIDDEN' ||
+    props.composer.actions.improveWithAI.visibility !== 'HIDDEN',
 );
 
 function requestSourceSend(): void {
-  if (sourceSendEnabled.value) emit("send-source");
+  if (sourceSendEnabled.value) emit('send-source');
 }
 
 function requestTranslatedSend(text?: string): void {
   if (!translatedSendDisabled.value && (text === undefined || text.trim()))
-    emit("send-reply-translation", text);
+    emit('send-reply-translation', text);
 }
 
 function handleKeydown(event: KeyboardEvent): void {
   if (
-    event.key === "/" &&
+    event.key === '/' &&
     !event.isComposing &&
     !event.ctrlKey &&
     !event.metaKey &&
     !event.altKey &&
     !props.draft &&
-    props.composer.actions.templates.visibility === "ENABLED"
+    props.composer.actions.templates.visibility === 'ENABLED'
   ) {
     event.preventDefault();
-    emit("action", "TEMPLATES");
+    emit('action', 'TEMPLATES');
     return;
   }
-  if (event.key !== "Enter" || event.isComposing || event.shiftKey) return;
+  if (event.key !== 'Enter' || event.isComposing || event.shiftKey) return;
   const plain = !event.ctrlKey && !event.metaKey && !event.altKey;
   const command = (event.ctrlKey || event.metaKey) && !event.altKey;
   if (!plain && !command) return;
   event.preventDefault();
-  if (props.composer.sendCapability.kind === "TRANSLATED_PREVIEW")
-    requestTranslatedSend();
+  if (props.composer.sendCapability.kind === 'TRANSLATED_PREVIEW') requestTranslatedSend();
   else requestSourceSend();
 }
 
 function runAction(action: ConversationSurfaceComposerAction): void {
   actionMenuVisible.value = false;
   if (blocked.value) return;
-  if (action === "ATTACHMENT") {
+  if (action === 'ATTACHMENT') {
     attachmentInput.value?.click();
     return;
   }
-  emit("action", action);
+  emit('action', action);
 }
 
 function selectAttachments(event: Event): void {
   const input = event.target as HTMLInputElement;
   const files = [...(input.files ?? [])];
-  input.value = "";
-  if (files.length) emit("add-attachments", files);
+  input.value = '';
+  if (files.length) emit('add-attachments', files);
 }
 
 function formatBytes(value: number): string {
   if (value < 1024) return `${value} Б`;
   if (value < 1024 * 1024) return `${Math.ceil(value / 1024)} КБ`;
-  return `${(value / (1024 * 1024)).toLocaleString("ru-RU", { maximumFractionDigits: 1 })} МБ`;
+  return `${(value / (1024 * 1024)).toLocaleString('ru-RU', { maximumFractionDigits: 1 })} МБ`;
 }
 
-function attachmentStateLabel(state: NonNullable<ConversationSurfaceComposer["attachments"]>["items"][number]["state"]): string {
+function attachmentStateLabel(
+  state: NonNullable<ConversationSurfaceComposer['attachments']>['items'][number]['state'],
+): string {
   return {
-    QUEUED: "Готовим",
-    UPLOADING: "Загружаем",
-    SCANNING: "Проверяем",
-    READY: "Готово",
-    REJECTED: "Отклонено",
-    FAILED: "Ошибка",
-    EXPIRED: "Срок истёк",
-    REVOKED: "Удалено",
+    QUEUED: 'Готовим',
+    UPLOADING: 'Загружаем',
+    SCANNING: 'Проверяем',
+    READY: 'Готово',
+    REJECTED: 'Отклонено',
+    FAILED: 'Ошибка',
+    EXPIRED: 'Срок истёк',
+    REVOKED: 'Удалено',
   }[state];
 }
 
 function runOutcomeAction(): void {
-  if (props.composer.outcome?.action?.kind === "DISCARD") {
-    emit("discard-send-attempt");
+  if (props.composer.outcome?.action?.kind === 'DISCARD') {
+    emit('discard-send-attempt');
     return;
   }
-  emit("check-send-outcome");
+  emit('check-send-outcome');
 }
 </script>
 
@@ -187,11 +184,7 @@ function runOutcomeAction(): void {
       'is-note': composer.mode === 'INTERNAL_NOTE',
       'is-blocked': blocked,
     }"
-    :aria-label="
-      composer.mode === 'INTERNAL_NOTE'
-        ? 'Внутренняя заметка'
-        : 'Ответ пользователю'
-    "
+    :aria-label="composer.mode === 'INTERNAL_NOTE' ? 'Внутренняя заметка' : 'Ответ пользователю'"
     @submit.prevent="requestSourceSend"
   >
     <div
@@ -238,8 +231,8 @@ function runOutcomeAction(): void {
         <strong>{{ composer.knowledgeSource.title }}</strong>
         <small>
           Источник · версия {{ composer.knowledgeSource.revisionNumber }} ·
-          {{ composer.knowledgeSource.mode === "QUOTE" ? "цитата" : "ссылка" }}
-          {{ composer.knowledgeSource.edited ? " · изменён" : "" }}
+          {{ composer.knowledgeSource.mode === 'QUOTE' ? 'цитата' : 'ссылка' }}
+          {{ composer.knowledgeSource.edited ? ' · изменён' : '' }}
         </small>
       </span>
       <Button
@@ -256,7 +249,7 @@ function runOutcomeAction(): void {
     <div class="conversation-composer__source">
       <div class="conversation-composer__label">
         <span>
-          {{ composer.mode === "INTERNAL_NOTE" ? "Заметка" : "Ваш текст" }} ·
+          {{ composer.mode === 'INTERNAL_NOTE' ? 'Заметка' : 'Ваш текст' }} ·
           {{ workingLocaleLabel }}
         </span>
         <span
@@ -265,11 +258,7 @@ function runOutcomeAction(): void {
           :class="`is-${composer.recipientStatus.tone.toLowerCase()}`"
         >
           <i
-            :class="
-              composer.recipientStatus.tone === 'ONLINE'
-                ? 'pi pi-circle-fill'
-                : 'pi pi-wifi'
-            "
+            :class="composer.recipientStatus.tone === 'ONLINE' ? 'pi pi-circle-fill' : 'pi pi-wifi'"
             aria-hidden="true"
           />
           {{ composer.recipientStatus.label }}
@@ -285,9 +274,7 @@ function runOutcomeAction(): void {
             : 'Ответить от имени оператора'
         "
         :aria-label="
-          composer.mode === 'INTERNAL_NOTE'
-            ? 'Внутренняя заметка'
-            : 'Ответ пользователю'
+          composer.mode === 'INTERNAL_NOTE' ? 'Внутренняя заметка' : 'Ответ пользователю'
         "
         :disabled="blocked"
         @update:model-value="emit('update:draft', $event)"
@@ -311,20 +298,41 @@ function runOutcomeAction(): void {
       >
         <header>
           <span><i class="pi pi-paperclip" aria-hidden="true" /> Вложения</span>
-          <small>{{ composer.attachments.items.filter((item) => ['QUEUED', 'UPLOADING', 'SCANNING', 'READY'].includes(item.state)).length }} из {{ composer.attachments.maxFiles }}</small>
+          <small
+            >{{
+              composer.attachments.items.filter((item) =>
+                ['QUEUED', 'UPLOADING', 'SCANNING', 'READY'].includes(item.state),
+              ).length
+            }}
+            из {{ composer.attachments.maxFiles }}</small
+          >
         </header>
         <ul>
-          <li v-for="item in composer.attachments.items" :key="item.localId" :class="`is-${item.state.toLowerCase()}`">
-            <i :class="item.contentType.startsWith('image/') ? 'pi pi-image' : 'pi pi-file'" aria-hidden="true" />
+          <li
+            v-for="item in composer.attachments.items"
+            :key="item.localId"
+            :class="`is-${item.state.toLowerCase()}`"
+          >
+            <i
+              :class="item.contentType.startsWith('image/') ? 'pi pi-image' : 'pi pi-file'"
+              aria-hidden="true"
+            />
             <span>
               <strong :title="item.filename">{{ item.filename }}</strong>
               <small>
                 {{ formatBytes(item.sizeBytes) }} ·
-                {{ item.state === 'FAILED' && !item.canRetry ? 'Выберите файл заново' : attachmentStateLabel(item.state) }}
+                {{
+                  item.state === 'FAILED' && !item.canRetry
+                    ? 'Выберите файл заново'
+                    : attachmentStateLabel(item.state)
+                }}
               </small>
             </span>
             <span class="conversation-composer__attachment-state" aria-hidden="true">
-              <i v-if="['QUEUED', 'UPLOADING', 'SCANNING'].includes(item.state)" class="pi pi-spin pi-spinner" />
+              <i
+                v-if="['QUEUED', 'UPLOADING', 'SCANNING'].includes(item.state)"
+                class="pi pi-spin pi-spinner"
+              />
               <i v-else-if="item.state === 'READY'" class="pi pi-check-circle" />
               <i v-else class="pi pi-exclamation-circle" />
             </span>
@@ -336,7 +344,9 @@ function runOutcomeAction(): void {
                 title="Повторить загрузку"
                 :disabled="blocked"
                 @click="emit('retry-attachment', item.localId)"
-              ><i class="pi pi-refresh" aria-hidden="true" /></button>
+              >
+                <i class="pi pi-refresh" aria-hidden="true" />
+              </button>
               <button
                 v-if="item.id && item.state === 'READY' && composer.attachments.canDownload"
                 type="button"
@@ -344,19 +354,27 @@ function runOutcomeAction(): void {
                 title="Скачать"
                 :disabled="blocked"
                 @click="emit('download-attachment', item.id)"
-              ><i class="pi pi-download" aria-hidden="true" /></button>
+              >
+                <i class="pi pi-download" aria-hidden="true" />
+              </button>
               <button
                 type="button"
                 :aria-label="`Убрать ${item.filename}`"
                 title="Убрать вложение"
                 :disabled="blocked"
                 @click="emit('remove-attachment', item.localId)"
-              ><i class="pi pi-times" aria-hidden="true" /></button>
+              >
+                <i class="pi pi-times" aria-hidden="true" />
+              </button>
             </span>
           </li>
         </ul>
       </section>
-      <p v-if="composer.attachments?.error" class="conversation-composer__attachment-error" role="alert">
+      <p
+        v-if="composer.attachments?.error"
+        class="conversation-composer__attachment-error"
+        role="alert"
+      >
         {{ composer.attachments.error }}
       </p>
       <p
@@ -365,7 +383,7 @@ function runOutcomeAction(): void {
         :class="{ 'is-invalid': noteByteLength > 20480 }"
       >
         <span>Не попадёт пользователю, в AI или в публичную историю.</span>
-        <span>{{ noteByteLength.toLocaleString("ru-RU") }} / 20 480 байт</span>
+        <span>{{ noteByteLength.toLocaleString('ru-RU') }} / 20 480 байт</span>
       </p>
     </div>
 
@@ -386,11 +404,7 @@ function runOutcomeAction(): void {
     />
 
     <div
-      v-else-if="
-        composer.mode === 'PUBLIC_REPLY' &&
-        composer.translationAssist &&
-        draft.trim()
-      "
+      v-else-if="composer.mode === 'PUBLIC_REPLY' && composer.translationAssist && draft.trim()"
       class="conversation-composer__assist"
     >
       <div>
@@ -399,7 +413,7 @@ function runOutcomeAction(): void {
           {{
             composer.translationAssist.targetLocale
               ? `Перевод на ${composer.translationAssist.targetLocale.toUpperCase()}`
-              : "Язык можно выбрать в настройках"
+              : 'Язык можно выбрать в настройках'
           }}
         </strong>
       </div>
@@ -442,11 +456,7 @@ function runOutcomeAction(): void {
         v-if="composer.outcome.action"
         type="button"
         :label="composer.outcome.action.label"
-        :icon="
-          composer.outcome.action.kind === 'DISCARD'
-            ? 'pi pi-refresh'
-            : 'pi pi-search'
-        "
+        :icon="composer.outcome.action.kind === 'DISCARD' ? 'pi pi-refresh' : 'pi pi-search'"
         severity="secondary"
         outlined
         size="small"
@@ -455,11 +465,7 @@ function runOutcomeAction(): void {
       />
     </p>
 
-    <p
-      v-if="blockedReason"
-      class="conversation-composer__blocked"
-      role="status"
-    >
+    <p v-if="blockedReason" class="conversation-composer__blocked" role="status">
       {{ blockedReason }}
     </p>
 
@@ -467,8 +473,8 @@ function runOutcomeAction(): void {
       <span>
         {{
           translated
-            ? `Шаг ${composer.replyPreview?.draft?.status === "READY" ? "2 из 2 · перевод готов и проверен" : "1 из 2 · сначала перевод, затем отправка"}`
-            : "Enter — отправить · Shift+Enter — перенос строки"
+            ? `Шаг ${composer.replyPreview?.draft?.status === 'READY' ? '2 из 2 · перевод готов и проверен' : '1 из 2 · сначала перевод, затем отправка'}`
+            : 'Enter — отправить · Shift+Enter — перенос строки'
         }}
       </span>
       <div>
@@ -491,11 +497,7 @@ function runOutcomeAction(): void {
             :disabled="blocked"
             @click="actionMenuVisible = !actionMenuVisible"
           />
-          <div
-            v-if="actionMenuVisible"
-            class="conversation-composer__action-menu"
-            role="menu"
-          >
+          <div v-if="actionMenuVisible" class="conversation-composer__action-menu" role="menu">
             <strong>Действия в диалоге</strong>
             <button
               v-if="composer.actions.attachment.visibility !== 'HIDDEN'"
@@ -515,9 +517,7 @@ function runOutcomeAction(): void {
               v-if="composer.actions.createTicket.visibility !== 'HIDDEN'"
               type="button"
               role="menuitem"
-              :disabled="
-                composer.actions.createTicket.visibility === 'DISABLED'
-              "
+              :disabled="composer.actions.createTicket.visibility === 'DISABLED'"
               :title="composer.actions.createTicket.reason"
               @click="runAction('CREATE_TICKET')"
             >
@@ -534,9 +534,7 @@ function runOutcomeAction(): void {
               "
               type="button"
               role="menuitem"
-              :disabled="
-                composer.actions.classifyCase.visibility === 'DISABLED'
-              "
+              :disabled="composer.actions.classifyCase.visibility === 'DISABLED'"
               :title="composer.actions.classifyCase.reason"
               @click="runAction('CLASSIFY_CASE')"
             >
@@ -553,9 +551,7 @@ function runOutcomeAction(): void {
               "
               type="button"
               role="menuitem"
-              :disabled="
-                composer.actions.internalNotes.visibility === 'DISABLED'
-              "
+              :disabled="composer.actions.internalNotes.visibility === 'DISABLED'"
               :title="composer.actions.internalNotes.reason"
               @click="runAction('INTERNAL_NOTES')"
             >
@@ -567,8 +563,7 @@ function runOutcomeAction(): void {
             </button>
             <button
               v-if="
-                composer.actions.knowledge &&
-                composer.actions.knowledge.visibility !== 'HIDDEN'
+                composer.actions.knowledge && composer.actions.knowledge.visibility !== 'HIDDEN'
               "
               type="button"
               role="menuitem"
@@ -583,15 +578,10 @@ function runOutcomeAction(): void {
               </span>
             </button>
             <button
-              v-if="
-                composer.actions.sendWithoutTranslation.visibility !== 'HIDDEN'
-              "
+              v-if="composer.actions.sendWithoutTranslation.visibility !== 'HIDDEN'"
               type="button"
               role="menuitem"
-              :disabled="
-                composer.actions.sendWithoutTranslation.visibility ===
-                'DISABLED'
-              "
+              :disabled="composer.actions.sendWithoutTranslation.visibility === 'DISABLED'"
               :title="composer.actions.sendWithoutTranslation.reason"
               @click="runAction('SEND_WITHOUT_TRANSLATION')"
             >
@@ -625,9 +615,7 @@ function runOutcomeAction(): void {
           severity="secondary"
           text
           class="conversation-composer__ai"
-          :disabled="
-            composer.actions.improveWithAI.visibility === 'DISABLED' || blocked
-          "
+          :disabled="composer.actions.improveWithAI.visibility === 'DISABLED' || blocked"
           :title="composer.actions.improveWithAI.reason"
           @click="emit('action', 'IMPROVE_WITH_AI')"
         />
@@ -641,9 +629,7 @@ function runOutcomeAction(): void {
                 ? 'Повторить отправку'
                 : 'Отправить'
           "
-          :icon="
-            composer.mode === 'INTERNAL_NOTE' ? 'pi pi-lock' : 'pi pi-send'
-          "
+          :icon="composer.mode === 'INTERNAL_NOTE' ? 'pi pi-lock' : 'pi pi-send'"
           class="conversation-composer__send"
           :loading="composer.sending"
           :disabled="!sourceSendEnabled"
@@ -762,11 +748,7 @@ function runOutcomeAction(): void {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 .conversation-composer.is-note {
-  background: color-mix(
-    in srgb,
-    var(--status-warning-soft) 20%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--status-warning-soft) 20%, var(--surface-card));
 }
 .conversation-composer.is-note :deep(textarea) {
   min-height: 42px;
@@ -817,7 +799,11 @@ function runOutcomeAction(): void {
   font-size: 10px;
   font-weight: 750;
 }
-.conversation-composer__attachments > header span { display: inline-flex; align-items: center; gap: 5px; }
+.conversation-composer__attachments > header span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
 .conversation-composer__attachments ul {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
@@ -837,9 +823,13 @@ function runOutcomeAction(): void {
   border-radius: 9px;
   background: var(--surface-card);
 }
-.conversation-composer__attachments li > span { min-width: 0; }
+.conversation-composer__attachments li > span {
+  min-width: 0;
+}
 .conversation-composer__attachments li strong,
-.conversation-composer__attachments li small { display: block; }
+.conversation-composer__attachments li small {
+  display: block;
+}
 .conversation-composer__attachments li strong {
   overflow: hidden;
   color: var(--text-primary);
@@ -847,8 +837,16 @@ function runOutcomeAction(): void {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.conversation-composer__attachments li small { color: var(--text-muted); font-size: 9px; }
-.conversation-composer__attachment-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 2px; }
+.conversation-composer__attachments li small {
+  color: var(--text-muted);
+  font-size: 9px;
+}
+.conversation-composer__attachment-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
 .conversation-composer__attachment-actions > button {
   display: inline-grid;
   width: 28px;
@@ -861,14 +859,34 @@ function runOutcomeAction(): void {
   background: transparent;
   cursor: pointer;
 }
-.conversation-composer__attachment-actions > button:hover { background: var(--surface-hover); color: var(--text-primary); }
-.conversation-composer__attachment-actions > button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
-.conversation-composer__attachments .is-ready > .pi-check-circle { color: var(--status-success); }
+.conversation-composer__attachment-actions > button:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+.conversation-composer__attachment-actions > button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+.conversation-composer__attachments .is-ready > .pi-check-circle {
+  color: var(--status-success);
+}
 .conversation-composer__attachments .is-rejected,
 .conversation-composer__attachments .is-failed,
-.conversation-composer__attachments .is-expired { border-color: var(--status-danger-border); background: var(--status-danger-soft); }
-.conversation-composer__attachment-error { margin: 0; color: var(--status-danger-text); font-size: 10px; }
-@keyframes attachment-tray-in { from { opacity: 0; transform: translateY(4px); } }
+.conversation-composer__attachments .is-expired {
+  border-color: var(--status-danger-border);
+  background: var(--status-danger-soft);
+}
+.conversation-composer__attachment-error {
+  margin: 0;
+  color: var(--status-danger-text);
+  font-size: 10px;
+}
+@keyframes attachment-tray-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
 .is-translated .conversation-composer__source {
   padding-right: 14px;
   padding-bottom: 46px;
@@ -889,7 +907,7 @@ function runOutcomeAction(): void {
   border-radius: 5px;
   background: var(--border-subtle);
   color: var(--text-secondary);
-  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
@@ -1135,9 +1153,7 @@ function runOutcomeAction(): void {
   .conversation-composer__footer :deep(.p-button) {
     min-height: 44px;
   }
-  .conversation-composer.is-note
-    .conversation-composer__footer
-    :deep(.p-button) {
+  .conversation-composer.is-note .conversation-composer__footer :deep(.p-button) {
     min-height: 40px;
   }
 }

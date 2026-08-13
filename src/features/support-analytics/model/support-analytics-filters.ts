@@ -2,13 +2,13 @@ import type {
   ReportingCatalogDatasetDto,
   ReportingCatalogMetricDto,
   ReportingQueryFilterDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 export function parseSupportAnalyticsFilterValue(value: string): string[] {
   return [
     ...new Set(
       value
-        .split(",")
+        .split(',')
         .map((item) => item.trim())
         .filter(Boolean),
     ),
@@ -30,9 +30,9 @@ export function compatibleSupportAnalyticsFilters(
     )
     .map(([dimension, values]) => ({
       dimension,
-      operator: values.length === 1 ? "EQUALS" : "IN",
+      operator: values.length === 1 ? 'EQUALS' : 'IN',
       value: (values.length === 1
         ? values[0]
-        : values) as unknown as ReportingQueryFilterDto["value"],
+        : values) as unknown as ReportingQueryFilterDto['value'],
     }));
 }

@@ -1,97 +1,87 @@
-import type { ProjectAction } from "./project-action";
+import type { ProjectAction } from './project-action';
 
 const actionCopy: Record<string, { name: string; description: string }> = {
   SHOW_ASSISTANT: {
-    name: "Показать Retenive",
-    description: "Показывает или возвращает окно Retenive на странице.",
+    name: 'Показать Retenive',
+    description: 'Показывает или возвращает окно Retenive на странице.',
   },
   HIDE_ASSISTANT: {
-    name: "Скрыть Retenive",
-    description: "Скрывает окно Retenive на странице.",
+    name: 'Скрыть Retenive',
+    description: 'Скрывает окно Retenive на странице.',
   },
   PLAY_ANIMATION: {
-    name: "Проиграть анимацию",
-    description: "Запускает выбранную анимацию Retenive.",
+    name: 'Проиграть анимацию',
+    description: 'Запускает выбранную анимацию Retenive.',
   },
   HIGHLIGHT_ELEMENT: {
-    name: "Подсветить элемент",
-    description:
-      "Привлекает внимание пользователя к выбранному элементу страницы.",
+    name: 'Подсветить элемент',
+    description: 'Привлекает внимание пользователя к выбранному элементу страницы.',
   },
   OPEN_PAGE: {
-    name: "Открыть страницу",
-    description:
-      "Переходит на страницу, заранее добавленную в разделе «Интерфейс».",
+    name: 'Открыть страницу',
+    description: 'Переходит на страницу, заранее добавленную в разделе «Интерфейс».',
   },
   OPEN_MODAL: {
-    name: "Открыть модальное окно",
-    description: "Открывает окно, заранее добавленное в разделе «Интерфейс».",
+    name: 'Открыть модальное окно',
+    description: 'Открывает окно, заранее добавленное в разделе «Интерфейс».',
   },
   SAY: {
-    name: "Сказать текст",
-    description: "Добавляет в сценарий новую реплику Retenive.",
+    name: 'Сказать текст',
+    description: 'Добавляет в сценарий новую реплику Retenive.',
   },
   ASK_CHOICE: {
-    name: "Задать вопрос с вариантами",
-    description:
-      "Показывает пользователю вопрос и продолжает сценарий по выбранному ответу.",
+    name: 'Задать вопрос с вариантами',
+    description: 'Показывает пользователю вопрос и продолжает сценарий по выбранному ответу.',
   },
   CONDITION: {
-    name: "Проверить условие",
-    description:
-      "Проверяет заданные условия и продолжает сценарий по первой подходящей ветке.",
+    name: 'Проверить условие',
+    description: 'Проверяет заданные условия и продолжает сценарий по первой подходящей ветке.',
   },
   OPEN_CHAT: {
-    name: "Открыть чат",
-    description: "Открывает пользователю окно чата с Retenive.",
+    name: 'Открыть чат',
+    description: 'Открывает пользователю окно чата с Retenive.',
   },
   CLOSE_CHAT: {
-    name: "Закрыть чат",
-    description: "Закрывает окно чата с Retenive.",
+    name: 'Закрыть чат',
+    description: 'Закрывает окно чата с Retenive.',
   },
   REMOVE_HIGHLIGHT: {
-    name: "Убрать подсветку",
-    description: "Убирает подсветку с выбранного элемента интерфейса.",
+    name: 'Убрать подсветку',
+    description: 'Убирает подсветку с выбранного элемента интерфейса.',
   },
   SHOW_CTA: {
-    name: "Показать кнопку",
-    description: "Показывает пользователю кнопку с заданным действием.",
+    name: 'Показать кнопку',
+    description: 'Показывает пользователю кнопку с заданным действием.',
   },
   WAIT_FOR: {
-    name: "Подождать",
-    description: "Делает паузу перед следующим шагом сценария.",
+    name: 'Подождать',
+    description: 'Делает паузу перед следующим шагом сценария.',
   },
   TRACK: {
-    name: "Записать событие",
-    description: "Сохраняет выбранное событие в журнале проекта.",
+    name: 'Записать событие',
+    description: 'Сохраняет выбранное событие в журнале проекта.',
   },
   COMPLETE_SCENARIO: {
-    name: "Завершить сценарий",
-    description: "Завершает сценарий и пропускает оставшиеся шаги.",
+    name: 'Завершить сценарий',
+    description: 'Завершает сценарий и пропускает оставшиеся шаги.',
   },
   SPEAK_TEXT: {
-    name: "Озвучить текст",
-    description:
-      "Преобразует текст в речь и при необходимости ждёт окончания воспроизведения.",
+    name: 'Озвучить текст',
+    description: 'Преобразует текст в речь и при необходимости ждёт окончания воспроизведения.',
   },
   START_VOICE_CONVERSATION: {
-    name: "Начать голосовой диалог",
-    description:
-      "Предлагает пользователю начать голосовой диалог и произносит первую реплику.",
+    name: 'Начать голосовой диалог',
+    description: 'Предлагает пользователю начать голосовой диалог и произносит первую реплику.',
   },
   REQUEST_ADMIN_ATTENTION: {
-    name: "Запросить помощь администратора",
+    name: 'Запросить помощь администратора',
     description:
-      "Создаёт обращение для команды, когда пользователь явно просит помощи человека. Retenive ничего не выполняет без решения администратора.",
+      'Создаёт обращение для команды, когда пользователь явно просит помощи человека. Retenive ничего не выполняет без решения администратора.',
   },
 };
 
 export function projectActionName(action: ProjectAction): string {
-  return (
-    action.nameOverride ||
-    actionCopy[action.code]?.name ||
-    action.actionTypeRevision.name
-  );
+  return action.nameOverride || actionCopy[action.code]?.name || action.actionTypeRevision.name;
 }
 
 export function actionTypeName(code: string, fallback: string): string {
@@ -111,47 +101,42 @@ export function projectActionDescription(action: ProjectAction): string {
 }
 
 export function actionOriginLabel(origin: string): string {
-  return origin === "SYSTEM" ? "Встроенное" : "Подключённое";
+  return origin === 'SYSTEM' ? 'Встроенное' : 'Подключённое';
 }
 
 export function actionExecutorLabel(executor: string): string {
   return (
     {
-      FRONTEND_COMMAND: "В приложении",
-      SERVER_HANDLER: "На сервере",
-      CASE_ESCALATION: "Эскалация обращения",
-      RETIRED: "Выведено из эксплуатации",
-    }[executor] ?? "Способ выполнения не указан"
+      FRONTEND_COMMAND: 'В приложении',
+      SERVER_HANDLER: 'На сервере',
+      CASE_ESCALATION: 'Эскалация обращения',
+      RETIRED: 'Выведено из эксплуатации',
+    }[executor] ?? 'Способ выполнения не указан'
   );
 }
 
 export function actionRiskLabel(risk: string): string {
   return (
     {
-      UI_EFFECT: "Изменяет интерфейс",
-      CONVERSATION_EFFECT: "Продолжает диалог",
-      EVENT_WRITE: "Записывает событие",
-      SCENARIO_CONTROL: "Управляет сценарием",
-      EXTERNAL_REQUEST: "Создаёт запрос",
-    }[risk] ?? "Обычное действие"
+      UI_EFFECT: 'Изменяет интерфейс',
+      CONVERSATION_EFFECT: 'Продолжает диалог',
+      EVENT_WRITE: 'Записывает событие',
+      SCENARIO_CONTROL: 'Управляет сценарием',
+      EXTERNAL_REQUEST: 'Создаёт запрос',
+    }[risk] ?? 'Обычное действие'
   );
 }
 
 export function actionConfirmationLabel(policy: string): string {
   return (
     {
-      NEVER: "Не требуется",
-      WHEN_REQUIRED: "При необходимости",
-      ALWAYS: "Всегда спрашивать пользователя",
-    }[policy] ?? "Определяется автоматически"
+      NEVER: 'Не требуется',
+      WHEN_REQUIRED: 'При необходимости',
+      ALWAYS: 'Всегда спрашивать пользователя',
+    }[policy] ?? 'Определяется автоматически'
   );
 }
 
 export function needsInterfaceSetup(code: string): boolean {
-  return [
-    "OPEN_MODAL",
-    "OPEN_PAGE",
-    "HIGHLIGHT_ELEMENT",
-    "PLAY_ANIMATION",
-  ].includes(code);
+  return ['OPEN_MODAL', 'OPEN_PAGE', 'HIGHLIGHT_ELEMENT', 'PLAY_ANIMATION'].includes(code);
 }

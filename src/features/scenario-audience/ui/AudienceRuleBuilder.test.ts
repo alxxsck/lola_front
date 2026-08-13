@@ -1,89 +1,89 @@
-import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
-import { defineComponent, ref } from "vue";
-import { describe, expect, it, vi } from "vitest";
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
+import { defineComponent, ref } from 'vue';
+import { describe, expect, it, vi } from 'vitest';
 
 import type {
   AudienceCatalogResponseDto,
   SegmentSummaryResponseDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 import {
   createAudienceDraft,
   serializeAudienceDraft,
   type AudienceDomainContext,
   type AudienceDraft,
-} from "../model";
-import AudienceRuleBuilder from "./AudienceRuleBuilder.vue";
+} from '../model';
+import AudienceRuleBuilder from './AudienceRuleBuilder.vue';
 
 const catalog: AudienceCatalogResponseDto = {
   version: 1,
-  revision: "audience-catalog-3",
+  revision: 'audience-catalog-3',
   locales: [
-    { code: "ru-RU", language: "ru", label: "Русский (Россия)" },
-    { code: "en-US", language: "en", label: "English (US)" },
+    { code: 'ru-RU', language: 'ru', label: 'Русский (Россия)' },
+    { code: 'en-US', language: 'en', label: 'English (US)' },
   ],
   localeSource: {
-    operators: ["eq", "neq", "in", "exists", "not_exists"],
-    control: "SELECT",
-    authoringAvailability: "AVAILABLE",
+    operators: ['eq', 'neq', 'in', 'exists', 'not_exists'],
+    control: 'SELECT',
+    authoringAvailability: 'AVAILABLE',
   },
   languageSource: {
-    operators: ["eq", "neq", "in", "exists", "not_exists"],
-    control: "SELECT",
-    authoringAvailability: "AVAILABLE",
+    operators: ['eq', 'neq', 'in', 'exists', 'not_exists'],
+    control: 'SELECT',
+    authoringAvailability: 'AVAILABLE',
   },
   country: {
-    source: "profile.country",
-    valueType: "countryCode",
-    semantics: "ISO_3166_1_ALPHA_2_UPPERCASE",
-    operators: ["eq", "neq", "in", "exists", "not_exists"],
-    control: "COUNTRY_CODE",
-    authoringAvailability: "AVAILABLE",
+    source: 'profile.country',
+    valueType: 'countryCode',
+    semantics: 'ISO_3166_1_ALPHA_2_UPPERCASE',
+    operators: ['eq', 'neq', 'in', 'exists', 'not_exists'],
+    control: 'COUNTRY_CODE',
+    authoringAvailability: 'AVAILABLE',
   },
   attributes: [
     {
-      definitionId: "attribute-1",
-      definitionRevisionId: "attribute-revision-4",
+      definitionId: 'attribute-1',
+      definitionRevisionId: 'attribute-revision-4',
       revision: 4,
-      key: "vipLevel",
-      label: "VIP-уровень",
-      description: "Уровень программы лояльности",
-      valueType: "number",
+      key: 'vipLevel',
+      label: 'VIP-уровень',
+      description: 'Уровень программы лояльности',
+      valueType: 'number',
       required: false,
       sensitive: true,
-      operators: ["eq", "gte", "not_in", "exists", "not_exists"],
-      control: "NUMBER",
-      authoringAvailability: "AVAILABLE",
+      operators: ['eq', 'gte', 'not_in', 'exists', 'not_exists'],
+      control: 'NUMBER',
+      authoringAvailability: 'AVAILABLE',
     },
   ],
   segmentSource: {
-    operators: ["is_member", "is_not_member"],
-    searchEndpoint: "/segments",
-    control: "SEARCH",
-    authoringAvailability: "AVAILABLE",
+    operators: ['is_member', 'is_not_member'],
+    searchEndpoint: '/segments',
+    control: 'SEARCH',
+    authoringAvailability: 'AVAILABLE',
   },
   snapshotPolicy: {
-    initialEvaluation: "RUN_START",
-    missingOrNull: "NO_MATCH_EXCEPT_NOT_EXISTS",
-    deletedDefinition: "PINNED_SNAPSHOT_CONTINUES",
-    unavailableSource: "PUBLISH_REJECTED_EXPLAIN_UNAVAILABLE",
-    segmentRevision: "PINNED_REVISION",
-    persistence: "SNAPSHOT_WITH_SEPARATE_LAST_RECHECK",
-    recheckTrigger: "DELIVERY_RECHECK_ELIGIBILITY",
+    initialEvaluation: 'RUN_START',
+    missingOrNull: 'NO_MATCH_EXCEPT_NOT_EXISTS',
+    deletedDefinition: 'PINNED_SNAPSHOT_CONTINUES',
+    unavailableSource: 'PUBLISH_REJECTED_EXPLAIN_UNAVAILABLE',
+    segmentRevision: 'PINNED_REVISION',
+    persistence: 'SNAPSHOT_WITH_SEPARATE_LAST_RECHECK',
+    recheckTrigger: 'DELIVERY_RECHECK_ELIGIBILITY',
   },
 };
 
 const segments: SegmentSummaryResponseDto[] = [
   {
-    segmentId: "segment-1",
-    key: "vip",
-    name: "VIP-пользователи",
-    status: "ACTIVE",
+    segmentId: 'segment-1',
+    key: 'vip',
+    name: 'VIP-пользователи',
+    status: 'ACTIVE',
     currentRevision: {
-      segmentRevisionId: "segment-revision-2",
+      segmentRevisionId: 'segment-revision-2',
       revision: 2,
-      catalogRevision: "audience-catalog-3",
-      contentHash: "hash",
-      publishedAt: "2026-07-18T00:00:00.000Z",
+      catalogRevision: 'audience-catalog-3',
+      contentHash: 'hash',
+      publishedAt: '2026-07-18T00:00:00.000Z',
     },
   },
 ];
@@ -109,112 +109,92 @@ function mountBuilder(
 }
 
 async function openSource(wrapper: VueWrapper, source: string) {
-  await wrapper
-    .get('button[aria-label^="Добавить условие аудитории в"]')
-    .trigger("click");
-  await wrapper
-    .get(`button[data-audience-source="${source}"]`)
-    .trigger("click");
+  await wrapper.get('button[aria-label^="Добавить условие аудитории в"]').trigger('click');
+  await wrapper.get(`button[data-audience-source="${source}"]`).trigger('click');
 }
 
-describe("AudienceRuleBuilder", () => {
-  it("explains profile data and group actions in plain language", async () => {
+describe('AudienceRuleBuilder', () => {
+  it('explains profile data and group actions in plain language', async () => {
     const v2Context = {
       catalog: {
         version: 2,
-        source: "CURRENT_PROFILE",
-        revision: "audience-v2",
+        source: 'CURRENT_PROFILE',
+        revision: 'audience-v2',
         attributes: [
           {
-            definitionId: "attribute-tier",
-            definitionRevisionId: "attribute-tier-r1",
+            definitionId: 'attribute-tier',
+            definitionRevisionId: 'attribute-tier-r1',
             revision: 1,
-            key: "tier",
-            label: "Уровень лояльности",
-            valueType: "STRING",
-            lifecycle: "ACTIVE",
-            classification: "INTERNAL",
+            key: 'tier',
+            label: 'Уровень лояльности',
+            valueType: 'STRING',
+            lifecycle: 'ACTIVE',
+            classification: 'INTERNAL',
             audienceRead: true,
-            authoringAvailability: "AVAILABLE",
-            operators: ["eq", "exists", "is_missing", "is_stale"],
-            control: "TEXT",
+            authoringAvailability: 'AVAILABLE',
+            operators: ['eq', 'exists', 'is_missing', 'is_stale'],
+            control: 'TEXT',
             constraints: {},
-            defaultFreshnessHint: { mode: "USE_LAST_KNOWN" },
+            defaultFreshnessHint: { mode: 'USE_LAST_KNOWN' },
           },
         ],
         freshnessPolicies: [],
         segmentSource: {
-          operators: ["is_member", "is_not_member"],
-          searchEndpoint: "/segments",
-          control: "SEARCH",
-          authoringAvailability: "AVAILABLE",
+          operators: ['is_member', 'is_not_member'],
+          searchEndpoint: '/segments',
+          control: 'SEARCH',
+          authoringAvailability: 'AVAILABLE',
         },
         snapshotPolicy: {
-          initialEvaluation: "RUN_START",
-          missing: "NO_MATCH",
-          stale: "TRI_STATE",
-          truth: "KLEENE",
-          persistence: "SNAPSHOT_WITH_SEPARATE_LAST_RECHECK",
-          recheckTrigger: "DELIVERY_RECHECK_ELIGIBILITY",
-          revision: "PINNED",
+          initialEvaluation: 'RUN_START',
+          missing: 'NO_MATCH',
+          stale: 'TRI_STATE',
+          truth: 'KLEENE',
+          persistence: 'SNAPSHOT_WITH_SEPARATE_LAST_RECHECK',
+          recheckTrigger: 'DELIVERY_RECHECK_ELIGIBILITY',
+          revision: 'PINNED',
         },
       },
       segments: [],
     } as unknown as AudienceDomainContext;
     const wrapper = mountBuilder(v2Context);
 
-    expect(wrapper.text()).toContain("Насколько свежими должны быть данные?");
-    expect(wrapper.text()).toContain("Использовать текущие данные");
-    expect(wrapper.text()).toContain("Учитывать только недавние данные");
-    expect(wrapper.text()).toContain("Должны выполняться все условия");
-    const allConditions = wrapper.get(
-      'button[aria-label="Должны выполняться все условия"]',
-    );
-    const anyCondition = wrapper.get(
-      'button[aria-label="Достаточно одного условия"]',
-    );
-    expect(allConditions.attributes("aria-pressed")).toBe("true");
-    expect(anyCondition.attributes("aria-pressed")).toBe("false");
-    expect(wrapper.find('select[aria-label^="Как учитывать условия"]').exists()).toBe(
-      false,
-    );
-    await anyCondition.trigger("click");
-    expect(anyCondition.attributes("aria-pressed")).toBe("true");
-    expect(
-      (wrapper.vm as unknown as { draft: AudienceDraft }).draft.root.kind,
-    ).toBe("any");
-    expect(wrapper.text()).not.toMatch(
-      /Current Profile|End User|backend|pinned contract|\bRun\b/,
-    );
+    expect(wrapper.text()).toContain('Насколько свежими должны быть данные?');
+    expect(wrapper.text()).toContain('Использовать текущие данные');
+    expect(wrapper.text()).toContain('Учитывать только недавние данные');
+    expect(wrapper.text()).toContain('Должны выполняться все условия');
+    const allConditions = wrapper.get('button[aria-label="Должны выполняться все условия"]');
+    const anyCondition = wrapper.get('button[aria-label="Достаточно одного условия"]');
+    expect(allConditions.attributes('aria-pressed')).toBe('true');
+    expect(anyCondition.attributes('aria-pressed')).toBe('false');
+    expect(wrapper.find('select[aria-label^="Как учитывать условия"]').exists()).toBe(false);
+    await anyCondition.trigger('click');
+    expect(anyCondition.attributes('aria-pressed')).toBe('true');
+    expect((wrapper.vm as unknown as { draft: AudienceDraft }).draft.root.kind).toBe('any');
+    expect(wrapper.text()).not.toMatch(/Current Profile|End User|backend|pinned contract|\bRun\b/);
     expect(
       wrapper
         .get('button[aria-label^="Исключить пользователей по условиям группы"]')
-        .attributes("title"),
-    ).toBe("Исключить пользователей, которые подходят под условия группы");
+        .attributes('title'),
+    ).toBe('Исключить пользователей, которые подходят под условия группы');
 
-    await wrapper
-      .get('button[aria-label^="Добавить условие аудитории в"]')
-      .trigger("click");
-    expect(wrapper.text()).toContain("Поле профиля пользователя");
-    await wrapper
-      .get('button[data-audience-source="userAttribute"]')
-      .trigger("click");
-    expect(wrapper.get(".leaf-editor").text()).toContain("Данные пользователя");
-    expect(wrapper.get(".leaf-editor").text()).toContain("Поле профиля");
-    expect(wrapper.get(".leaf-editor").text()).not.toMatch(
+    await wrapper.get('button[aria-label^="Добавить условие аудитории в"]').trigger('click');
+    expect(wrapper.text()).toContain('Поле профиля пользователя');
+    await wrapper.get('button[data-audience-source="userAttribute"]').trigger('click');
+    expect(wrapper.get('.leaf-editor').text()).toContain('Данные пользователя');
+    expect(wrapper.get('.leaf-editor').text()).toContain('Поле профиля');
+    expect(wrapper.get('.leaf-editor').text()).not.toMatch(
       /Current Profile|End User|backend|raw paths|\bRun\b/,
     );
     wrapper.unmount();
   });
 
-  it("creates a locale condition without raw paths or JSON", async () => {
+  it('creates a locale condition without raw paths or JSON', async () => {
     const wrapper = mountBuilder();
-    await openSource(wrapper, "locale");
-    await wrapper.get('select[aria-label="Проверка региона и языка"]').setValue("eq");
-    await wrapper.get('select[aria-label="Значение региона и языка"]').setValue("ru-RU");
-    await wrapper
-      .get('button[aria-label="Сохранить условие аудитории"]')
-      .trigger("click");
+    await openSource(wrapper, 'locale');
+    await wrapper.get('select[aria-label="Проверка региона и языка"]').setValue('eq');
+    await wrapper.get('select[aria-label="Значение региона и языка"]').setValue('ru-RU');
+    await wrapper.get('button[aria-label="Сохранить условие аудитории"]').trigger('click');
     await flushPromises();
 
     const draft = (wrapper.vm as unknown as { draft: AudienceDraft }).draft;
@@ -223,59 +203,45 @@ describe("AudienceRuleBuilder", () => {
       value: {
         version: 1,
         root: {
-          kind: "all",
-          children: [{ kind: "locale", operator: "eq", value: "ru-RU" }],
+          kind: 'all',
+          children: [{ kind: 'locale', operator: 'eq', value: 'ru-RU' }],
         },
       },
     });
-    expect(wrapper.text()).toContain("регион и язык — равно ru-RU");
-    expect(wrapper.text()).toContain("1 условие");
-    expect(wrapper.text()).not.toContain("user.locale");
+    expect(wrapper.text()).toContain('регион и язык — равно ru-RU');
+    expect(wrapper.text()).toContain('1 условие');
+    expect(wrapper.text()).not.toContain('user.locale');
     wrapper.unmount();
   });
 
-  it("uses a multi-select value for the in operator", async () => {
+  it('uses a multi-select value for the in operator', async () => {
     const wrapper = mountBuilder();
-    await openSource(wrapper, "locale");
-    await wrapper.get('select[aria-label="Проверка региона и языка"]').setValue("in");
-    await wrapper
-      .get('select[aria-label="Значения региона и языка"]')
-      .setValue(["ru-RU", "en-US"]);
-    await wrapper
-      .get('button[aria-label="Сохранить условие аудитории"]')
-      .trigger("click");
+    await openSource(wrapper, 'locale');
+    await wrapper.get('select[aria-label="Проверка региона и языка"]').setValue('in');
+    await wrapper.get('select[aria-label="Значения региона и языка"]').setValue(['ru-RU', 'en-US']);
+    await wrapper.get('button[aria-label="Сохранить условие аудитории"]').trigger('click');
 
     const draft = (wrapper.vm as unknown as { draft: AudienceDraft }).draft;
     expect(serializeAudienceDraft(draft, context)).toMatchObject({
       ok: true,
       value: {
         root: {
-          children: [
-            { kind: "locale", operator: "in", value: ["ru-RU", "en-US"] },
-          ],
+          children: [{ kind: 'locale', operator: 'in', value: ['ru-RU', 'en-US'] }],
         },
       },
     });
     wrapper.unmount();
   });
 
-  it("uses a typed attribute control and warns that preview values are redacted", async () => {
+  it('uses a typed attribute control and warns that preview values are redacted', async () => {
     const wrapper = mountBuilder();
-    await openSource(wrapper, "userAttribute");
-    await wrapper
-      .get('select[aria-label="Поле профиля пользователя"]')
-      .setValue("attribute-1");
-    await wrapper
-      .get('select[aria-label="Проверка поля VIP-уровень"]')
-      .setValue("gte");
-    expect(wrapper.text()).toContain("Чувствительное значение");
-    expect(wrapper.text()).toContain("значение будет скрыто");
-    await wrapper
-      .get('input[aria-label="Значение поля VIP-уровень"]')
-      .setValue("3");
-    await wrapper
-      .get('button[aria-label="Сохранить условие аудитории"]')
-      .trigger("click");
+    await openSource(wrapper, 'userAttribute');
+    await wrapper.get('select[aria-label="Поле профиля пользователя"]').setValue('attribute-1');
+    await wrapper.get('select[aria-label="Проверка поля VIP-уровень"]').setValue('gte');
+    expect(wrapper.text()).toContain('Чувствительное значение');
+    expect(wrapper.text()).toContain('значение будет скрыто');
+    await wrapper.get('input[aria-label="Значение поля VIP-уровень"]').setValue('3');
+    await wrapper.get('button[aria-label="Сохранить условие аудитории"]').trigger('click');
 
     const draft = (wrapper.vm as unknown as { draft: AudienceDraft }).draft;
     expect(serializeAudienceDraft(draft, context)).toMatchObject({
@@ -284,9 +250,9 @@ describe("AudienceRuleBuilder", () => {
         root: {
           children: [
             {
-              kind: "userAttribute",
-              definitionId: "attribute-1",
-              operator: "gte",
+              kind: 'userAttribute',
+              definitionId: 'attribute-1',
+              operator: 'gte',
               value: 3,
             },
           ],
@@ -296,42 +262,30 @@ describe("AudienceRuleBuilder", () => {
     wrapper.unmount();
   });
 
-  it("applies not_in with a typed list value", async () => {
+  it('applies not_in with a typed list value', async () => {
     const wrapper = mountBuilder();
-    await openSource(wrapper, "userAttribute");
-    await wrapper
-      .get('select[aria-label="Поле профиля пользователя"]')
-      .setValue("attribute-1");
-    await wrapper
-      .get('select[aria-label="Проверка поля VIP-уровень"]')
-      .setValue("not_in");
-    await wrapper
-      .get('input[aria-label="Значения поля VIP-уровень"]')
-      .setValue("2, 3");
-    const apply = wrapper.get(
-      'button[aria-label="Сохранить условие аудитории"]',
-    );
+    await openSource(wrapper, 'userAttribute');
+    await wrapper.get('select[aria-label="Поле профиля пользователя"]').setValue('attribute-1');
+    await wrapper.get('select[aria-label="Проверка поля VIP-уровень"]').setValue('not_in');
+    await wrapper.get('input[aria-label="Значения поля VIP-уровень"]').setValue('2, 3');
+    const apply = wrapper.get('button[aria-label="Сохранить условие аудитории"]');
     expect((apply.element as HTMLButtonElement).disabled).toBe(false);
-    await apply.trigger("click");
+    await apply.trigger('click');
 
     const draft = (wrapper.vm as unknown as { draft: AudienceDraft }).draft;
     expect(serializeAudienceDraft(draft, context)).toMatchObject({
       ok: true,
-      value: { root: { children: [{ operator: "not_in", value: [2, 3] }] } },
+      value: { root: { children: [{ operator: 'not_in', value: [2, 3] }] } },
     });
     wrapper.unmount();
   });
 
-  it("pins the selected Segment revision and explains why the version is fixed", async () => {
+  it('pins the selected Segment revision and explains why the version is fixed', async () => {
     const wrapper = mountBuilder();
-    await openSource(wrapper, "segmentMembership");
-    await wrapper
-      .get('select[aria-label="Сегмент аудитории"]')
-      .setValue("segment-1");
-    expect(wrapper.text()).toContain("Сценарий сохранит версию 2");
-    await wrapper
-      .get('button[aria-label="Сохранить условие аудитории"]')
-      .trigger("click");
+    await openSource(wrapper, 'segmentMembership');
+    await wrapper.get('select[aria-label="Сегмент аудитории"]').setValue('segment-1');
+    expect(wrapper.text()).toContain('Сценарий сохранит версию 2');
+    await wrapper.get('button[aria-label="Сохранить условие аудитории"]').trigger('click');
 
     const draft = (wrapper.vm as unknown as { draft: AudienceDraft }).draft;
     expect(serializeAudienceDraft(draft, context)).toMatchObject({
@@ -340,50 +294,44 @@ describe("AudienceRuleBuilder", () => {
         root: {
           children: [
             {
-              kind: "segmentMembership",
-              segmentId: "segment-1",
-              segmentRevisionId: "segment-revision-2",
-              operator: "is_member",
+              kind: 'segmentMembership',
+              segmentId: 'segment-1',
+              segmentRevisionId: 'segment-revision-2',
+              operator: 'is_member',
             },
           ],
         },
       },
     });
-    expect(wrapper.text()).toContain("VIP-пользователи");
-    expect(wrapper.text()).toContain("версия 2");
+    expect(wrapper.text()).toContain('VIP-пользователи');
+    expect(wrapper.text()).toContain('версия 2');
     wrapper.unmount();
   });
 
-  it("searches the backend catalog before selecting a Segment beyond the preload", async () => {
+  it('searches the backend catalog before selecting a Segment beyond the preload', async () => {
     const searchedSegment: SegmentSummaryResponseDto = {
-      segmentId: "segment-101",
-      key: "whales",
-      name: "Whales",
-      status: "ACTIVE",
+      segmentId: 'segment-101',
+      key: 'whales',
+      name: 'Whales',
+      status: 'ACTIVE',
       currentRevision: {
-        segmentRevisionId: "segment-revision-9",
+        segmentRevisionId: 'segment-revision-9',
         revision: 9,
-        catalogRevision: "audience-catalog-3",
-        contentHash: "hash-9",
-        publishedAt: "2026-07-18T00:00:00.000Z",
+        catalogRevision: 'audience-catalog-3',
+        contentHash: 'hash-9',
+        publishedAt: '2026-07-18T00:00:00.000Z',
       },
     };
     const search = vi.fn().mockResolvedValue([searchedSegment]);
     const wrapper = mountBuilder(context, search);
-    await openSource(wrapper, "segmentMembership");
-    await wrapper
-      .get('input[aria-label="Поиск сегмента аудитории"]')
-      .setValue("whale");
-    await wrapper.get(".segment-search").trigger("submit");
+    await openSource(wrapper, 'segmentMembership');
+    await wrapper.get('input[aria-label="Поиск сегмента аудитории"]').setValue('whale');
+    await wrapper.get('.segment-search').trigger('submit');
     await flushPromises();
-    await wrapper
-      .get('select[aria-label="Сегмент аудитории"]')
-      .setValue("segment-101");
-    await wrapper
-      .get('button[aria-label="Сохранить условие аудитории"]')
-      .trigger("click");
+    await wrapper.get('select[aria-label="Сегмент аудитории"]').setValue('segment-101');
+    await wrapper.get('button[aria-label="Сохранить условие аудитории"]').trigger('click');
 
-    expect(search).toHaveBeenCalledWith("whale");
+    expect(search).toHaveBeenCalledWith('whale');
     const draft = (wrapper.vm as unknown as { draft: AudienceDraft }).draft;
     expect(
       serializeAudienceDraft(draft, {
@@ -396,8 +344,8 @@ describe("AudienceRuleBuilder", () => {
         root: {
           children: [
             {
-              segmentId: "segment-101",
-              segmentRevisionId: "segment-revision-9",
+              segmentId: 'segment-101',
+              segmentRevisionId: 'segment-revision-9',
             },
           ],
         },
@@ -406,74 +354,55 @@ describe("AudienceRuleBuilder", () => {
     wrapper.unmount();
   });
 
-  it("supports nested groups, keyboard buttons and explicit NOT independently from delete", async () => {
+  it('supports nested groups, keyboard buttons and explicit NOT independently from delete', async () => {
     const wrapper = mountBuilder();
-    await wrapper
-      .get('button[aria-label^="Добавить группу аудитории в"]')
-      .trigger("click");
-    const nestedAdd = wrapper
-      .findAll('button[aria-label^="Добавить условие аудитории в"]')
-      .at(0)!;
-    await nestedAdd.trigger("click");
-    await wrapper
-      .get('button[data-audience-source="country"]')
-      .trigger("click");
-    await wrapper.get('input[aria-label="Код страны"]').setValue("ES");
-    await wrapper
-      .get('button[aria-label="Сохранить условие аудитории"]')
-      .trigger("click");
-    await wrapper
-      .get('button[aria-label^="Исключить пользователей по условию:"]')
-      .trigger("click");
+    await wrapper.get('button[aria-label^="Добавить группу аудитории в"]').trigger('click');
+    const nestedAdd = wrapper.findAll('button[aria-label^="Добавить условие аудитории в"]').at(0)!;
+    await nestedAdd.trigger('click');
+    await wrapper.get('button[data-audience-source="country"]').trigger('click');
+    await wrapper.get('input[aria-label="Код страны"]').setValue('ES');
+    await wrapper.get('button[aria-label="Сохранить условие аудитории"]').trigger('click');
+    await wrapper.get('button[aria-label^="Исключить пользователей по условию:"]').trigger('click');
 
-    expect(wrapper.text()).toContain("Исключение");
-    expect(
-      wrapper.find('button[aria-label^="Удалить условие аудитории:"]').exists(),
-    ).toBe(true);
+    expect(wrapper.text()).toContain('Исключение');
+    expect(wrapper.find('button[aria-label^="Удалить условие аудитории:"]').exists()).toBe(true);
     wrapper.unmount();
   });
 
-  it("can invert a nested group, not only a leaf", async () => {
+  it('can invert a nested group, not only a leaf', async () => {
     const wrapper = mountBuilder();
-    await wrapper
-      .get('button[aria-label^="Добавить группу аудитории в"]')
-      .trigger("click");
-    const nestedGroup = wrapper.get(
-      ".audience-node .audience-node .group-card",
-    );
+    await wrapper.get('button[aria-label^="Добавить группу аудитории в"]').trigger('click');
+    const nestedGroup = wrapper.get('.audience-node .audience-node .group-card');
 
     await nestedGroup
       .get('button[aria-label^="Исключить пользователей по условиям группы:"]')
-      .trigger("click");
+      .trigger('click');
 
-    expect(
-      wrapper.get(".audience-node .audience-node .not-card").text(),
-    ).toContain("Подходящие пользователи будут исключены");
+    expect(wrapper.get('.audience-node .audience-node .not-card').text()).toContain(
+      'Подходящие пользователи будут исключены',
+    );
     wrapper.unmount();
   });
 
-  it("focuses the exact editor control requested by a backend issue", async () => {
+  it('focuses the exact editor control requested by a backend issue', async () => {
     const wrapper = mountBuilder();
-    await openSource(wrapper, "country");
-    await wrapper.get('input[aria-label="Код страны"]').setValue("ES");
-    await wrapper
-      .get('button[aria-label="Сохранить условие аудитории"]')
-      .trigger("click");
+    await openSource(wrapper, 'country');
+    await wrapper.get('input[aria-label="Код страны"]').setValue('ES');
+    await wrapper.get('button[aria-label="Сохранить условие аудитории"]').trigger('click');
     const draft = (wrapper.vm as unknown as { draft: AudienceDraft }).draft;
-    const nodeId =
-      draft.root.kind === "all" ? draft.root.children[0]!.nodeId : "";
+    const nodeId = draft.root.kind === 'all' ? draft.root.children[0]!.nodeId : '';
 
     (
       wrapper.getComponent(AudienceRuleBuilder).vm as unknown as {
         focusIssue: (issue: object) => void;
       }
-    ).focusIssue({ nodeId, fieldPath: "value", message: "Страна недоступна" });
+    ).focusIssue({ nodeId, fieldPath: 'value', message: 'Страна недоступна' });
     await flushPromises();
 
     const input = wrapper.get('input[aria-label="Код страны"]');
     expect(document.activeElement).toBe(input.element);
-    expect(input.attributes("aria-invalid")).toBe("true");
-    expect(wrapper.text()).toContain("Страна недоступна");
+    expect(input.attributes('aria-invalid')).toBe('true');
+    expect(wrapper.text()).toContain('Страна недоступна');
     wrapper.unmount();
   });
 });

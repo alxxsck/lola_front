@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 
 export interface PagedSearchOption {
   value: string;
@@ -31,26 +31,26 @@ const props = withDefaults(
     load: (input: PagedSearchRequest) => Promise<PagedSearchPage>;
   }>(),
   {
-    searchPlaceholder: "Поиск по названию или коду",
-    emptyText: "Ничего не найдено",
+    searchPlaceholder: 'Поиск по названию или коду',
+    emptyText: 'Ничего не найдено',
     disabled: false,
-    reloadKey: "",
+    reloadKey: '',
     selectedOption: undefined,
   },
 );
 
 const emit = defineEmits<{
-  "update:modelValue": [value: string];
+  'update:modelValue': [value: string];
   select: [option: PagedSearchOption];
 }>();
 
 const open = ref(false);
-const query = ref("");
+const query = ref('');
 const options = ref<PagedSearchOption[]>([]);
 const chosenOption = ref<PagedSearchOption>();
 const nextCursor = ref<string | null>(null);
 const loading = ref(false);
-const error = ref("");
+const error = ref('');
 const loaded = ref(false);
 let requestGeneration = 0;
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
@@ -58,12 +58,8 @@ let searchTimer: ReturnType<typeof setTimeout> | undefined;
 const selected = computed(
   () =>
     options.value.find((option) => option.value === props.modelValue) ??
-    (chosenOption.value?.value === props.modelValue
-      ? chosenOption.value
-      : undefined) ??
-    (props.selectedOption?.value === props.modelValue
-      ? props.selectedOption
-      : undefined),
+    (chosenOption.value?.value === props.modelValue ? chosenOption.value : undefined) ??
+    (props.selectedOption?.value === props.modelValue ? props.selectedOption : undefined),
 );
 
 watch(
@@ -79,12 +75,12 @@ watch(
     requestGeneration += 1;
     clearSearchTimer();
     open.value = false;
-    query.value = "";
+    query.value = '';
     options.value = [];
     chosenOption.value = undefined;
     nextCursor.value = null;
     loading.value = false;
-    error.value = "";
+    error.value = '';
     loaded.value = false;
   },
 );
@@ -117,7 +113,7 @@ async function loadPage(append: boolean): Promise<void> {
   if (append && (!cursor || loading.value)) return;
   const generation = ++requestGeneration;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const page = await props.load({
       query: query.value.trim(),
@@ -128,15 +124,13 @@ async function loadPage(append: boolean): Promise<void> {
     const combined = append ? [...options.value, ...page.items] : page.items;
     options.value = combined.filter(
       (option, index, all) =>
-        all.findIndex((candidate) => candidate.value === option.value) ===
-        index,
+        all.findIndex((candidate) => candidate.value === option.value) === index,
     );
     nextCursor.value = page.nextCursor;
     loaded.value = true;
   } catch (cause) {
     if (generation !== requestGeneration) return;
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось загрузить список";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить список';
     if (!append) options.value = [];
     nextCursor.value = null;
     loaded.value = true;
@@ -147,8 +141,8 @@ async function loadPage(append: boolean): Promise<void> {
 
 function choose(option: PagedSearchOption): void {
   chosenOption.value = option;
-  emit("update:modelValue", option.value);
-  emit("select", option);
+  emit('update:modelValue', option.value);
+  emit('select', option);
   open.value = false;
 }
 
@@ -202,26 +196,16 @@ function closeOnEscape(): void {
         >
           <span>{{ option.label }}</span>
           <small v-if="option.description">{{ option.description }}</small>
-          <i
-            v-if="option.value === modelValue"
-            class="pi pi-check"
-            aria-hidden="true"
-          />
+          <i v-if="option.value === modelValue" class="pi pi-check" aria-hidden="true" />
         </button>
       </div>
 
-      <p v-if="loading" class="paged-search-select__status" role="status">
-        Загрузка…
-      </p>
+      <p v-if="loading" class="paged-search-select__status" role="status">Загрузка…</p>
       <p v-else-if="error" class="paged-search-select__error" role="alert">
         {{ error }}
         <button type="button" @click="loadPage(false)">Повторить</button>
       </p>
-      <p
-        v-else-if="loaded && !options.length"
-        class="paged-search-select__status"
-        role="status"
-      >
+      <p v-else-if="loaded && !options.length" class="paged-search-select__status" role="status">
         {{ emptyText }}
       </p>
       <button
@@ -373,14 +357,12 @@ button.paged-search-select__trigger:focus-visible {
   line-height: 1.25;
   text-align: left;
 }
-.paged-search-select__options
-  > button.paged-search-select__option:hover:not(:disabled) {
+.paged-search-select__options > button.paged-search-select__option:hover:not(:disabled) {
   border-color: var(--border-subtle);
   background: var(--surface-hover);
   color: var(--text-primary);
 }
-.paged-search-select__options
-  > button.paged-search-select__option[aria-selected="true"] {
+.paged-search-select__options > button.paged-search-select__option[aria-selected='true'] {
   border-color: color-mix(in srgb, var(--action-primary) 18%, transparent);
   background: var(--surface-active);
   color: var(--text-primary);

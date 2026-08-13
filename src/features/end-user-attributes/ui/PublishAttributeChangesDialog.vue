@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Textarea from "primevue/textarea";
-import ToggleSwitch from "primevue/toggleswitch";
+import { computed, reactive, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import InputNumber from 'primevue/inputnumber';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Textarea from 'primevue/textarea';
+import ToggleSwitch from 'primevue/toggleswitch';
 import type {
   AttributeContractIssueResponseDto,
   AttributePublicationChangesResponseDto,
-} from "@/shared/api/generated/models";
-import type { AttributePublicationFormCommand } from "../model/publication-domain";
-import PublicationImpactSummary from "./PublicationImpactSummary.vue";
+} from '@/shared/api/generated/models';
+import type { AttributePublicationFormCommand } from '../model/publication-domain';
+import PublicationImpactSummary from './PublicationImpactSummary.vue';
 
 const props = defineProps<{
   canConfirmSecurity: boolean;
@@ -24,88 +24,70 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   publish: [command: AttributePublicationFormCommand];
-  "update:visible": [visible: boolean];
+  'update:visible': [visible: boolean];
 }>();
 
 const form = reactive({
-  reason: "",
+  reason: '',
   graceDays: 7,
-  breakingChangePlan: "",
-  readinessEvidenceId: "",
+  breakingChangePlan: '',
+  readinessEvidenceId: '',
   confirmSecurity: false,
 });
 
 const securityDefinitionIds = computed(() => [
   ...new Set(
     props.issues
-      .filter(
-        (issue) =>
-          issue.compatibility === "SECURITY" && Boolean(issue.definitionId),
-      )
+      .filter((issue) => issue.compatibility === 'SECURITY' && Boolean(issue.definitionId))
       .map((issue) => issue.definitionId as string),
   ),
 ]);
-const requiresSecurityConfirmation = computed(
-  () => securityDefinitionIds.value.length > 0,
-);
+const requiresSecurityConfirmation = computed(() => securityDefinitionIds.value.length > 0);
 const requiresReadinessEvidence = computed(() =>
   props.issues.some(
     (issue) =>
-      issue.code === "ATTRIBUTE_REQUIREMENT_CHANGED" ||
-      issue.code === "ATTRIBUTE_REQUIRED_ENFORCED_ADDED",
+      issue.code === 'ATTRIBUTE_REQUIREMENT_CHANGED' ||
+      issue.code === 'ATTRIBUTE_REQUIRED_ENFORCED_ADDED',
   ),
 );
 const requiresBreakingPlan = computed(
-  () =>
-    props.changes.contractChanged &&
-    props.changes.contractCompatibility === "BREAKING",
+  () => props.changes.contractChanged && props.changes.contractCompatibility === 'BREAKING',
 );
 const profileResyncRequired = computed(() =>
-  props.issues.some((issue) => issue.compatibility === "BREAKING"),
+  props.issues.some((issue) => issue.compatibility === 'BREAKING'),
 );
 const canSubmit = computed(
   () =>
     form.reason.trim().length > 0 &&
-    (!requiresBreakingPlan.value ||
-      form.breakingChangePlan.trim().length > 0) &&
-    (!requiresReadinessEvidence.value ||
-      form.readinessEvidenceId.trim().length > 0) &&
-    (!requiresSecurityConfirmation.value ||
-      (props.canConfirmSecurity && form.confirmSecurity)),
+    (!requiresBreakingPlan.value || form.breakingChangePlan.trim().length > 0) &&
+    (!requiresReadinessEvidence.value || form.readinessEvidenceId.trim().length > 0) &&
+    (!requiresSecurityConfirmation.value || (props.canConfirmSecurity && form.confirmSecurity)),
 );
 
 watch(
   () => props.visible,
   (visible) => {
     if (!visible) return;
-    form.reason = "";
+    form.reason = '';
     form.graceDays = 7;
-    form.breakingChangePlan = "";
-    form.readinessEvidenceId = "";
+    form.breakingChangePlan = '';
+    form.readinessEvidenceId = '';
     form.confirmSecurity = false;
   },
 );
 
 function close() {
-  emit("update:visible", false);
+  emit('update:visible', false);
 }
 
 function submit() {
   if (!canSubmit.value || props.publishing) return;
-  emit("publish", {
-    breakingChangePlan: requiresBreakingPlan.value
-      ? form.breakingChangePlan.trim()
-      : null,
-    compatibilityGraceDays: props.changes.contractChanged
-      ? form.graceDays
-      : undefined,
-    readinessEvidenceId: requiresReadinessEvidence.value
-      ? form.readinessEvidenceId.trim()
-      : null,
+  emit('publish', {
+    breakingChangePlan: requiresBreakingPlan.value ? form.breakingChangePlan.trim() : null,
+    compatibilityGraceDays: props.changes.contractChanged ? form.graceDays : undefined,
+    readinessEvidenceId: requiresReadinessEvidence.value ? form.readinessEvidenceId.trim() : null,
     reason: form.reason.trim(),
-    securityConfirmations: form.confirmSecurity
-      ? securityDefinitionIds.value
-      : [],
+    securityConfirmations: form.confirmSecurity ? securityDefinitionIds.value : [],
   });
 }
 </script>
@@ -124,13 +106,9 @@ function submit() {
         :profile-resync-required="profileResyncRequired"
       />
 
-      <Message
-        v-if="changes.policyChanged"
-        severity="info"
-        :closable="false"
-      >
-        Разрешение ИИ начнёт действовать сразу после публикации. Уже сохранённые
-        значения перечитывать или отправлять заново не нужно.
+      <Message v-if="changes.policyChanged" severity="info" :closable="false">
+        Разрешение ИИ начнёт действовать сразу после публикации. Уже сохранённые значения
+        перечитывать или отправлять заново не нужно.
       </Message>
 
       <label>
@@ -142,28 +120,16 @@ function submit() {
       <template v-if="changes.contractChanged">
         <label data-testid="compatibility-grace">
           <span>Переходный период, дней</span>
-          <InputNumber
-            v-model="form.graceDays"
-            :min="0"
-            :max="30"
-            :use-grouping="false"
-          />
+          <InputNumber v-model="form.graceDays" :min="0" :max="30" :use-grouping="false" />
           <small>
-            Сколько дней backend продукта может отправлять предыдущую версию
-            контракта.
+            Сколько дней backend продукта может отправлять предыдущую версию контракта.
           </small>
         </label>
 
         <label v-if="requiresBreakingPlan" data-testid="breaking-plan">
           <span>План перехода *</span>
-          <Textarea
-            v-model="form.breakingChangePlan"
-            rows="3"
-            maxlength="2000"
-          />
-          <small>
-            Опишите обновление producer-интеграции и затронутых профилей.
-          </small>
+          <Textarea v-model="form.breakingChangePlan" rows="3" maxlength="2000" />
+          <small> Опишите обновление producer-интеграции и затронутых профилей. </small>
         </label>
 
         <label v-if="requiresReadinessEvidence">
@@ -176,15 +142,9 @@ function submit() {
         </label>
       </template>
 
-      <label
-        v-if="requiresSecurityConfirmation"
-        class="security-confirmation"
-      >
+      <label v-if="requiresSecurityConfirmation" class="security-confirmation">
         <ToggleSwitch v-model="form.confirmSecurity" />
-        <span>
-          Я проверил назначение и новые способы использования персональных
-          данных.
-        </span>
+        <span> Я проверил назначение и новые способы использования персональных данных. </span>
       </label>
 
       <Message

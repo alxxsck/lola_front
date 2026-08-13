@@ -1,52 +1,48 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import Button from 'primevue/button'
-import Dialog from 'primevue/dialog'
-import Message from 'primevue/message'
-import { useAuthStore } from '@/features/auth/auth.store'
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Message from 'primevue/message';
+import { useAuthStore } from '@/features/auth/auth.store';
 import {
   formatExactCurrencyRate as formatMoney,
   isValidTextToSpeechRate,
-} from '@/features/ai-pricing/ai-pricing.model'
+} from '@/features/ai-pricing/ai-pricing.model';
 import {
   fetchTextToSpeechPricing,
   publishTextToSpeechPricing,
   type TextToSpeechPricingRevision,
   type TextToSpeechPricingState,
-} from '@/features/ai-pricing/ai-pricing.api'
-import { normalizeApiError } from '@/shared/api/http/api-error'
+} from '@/features/ai-pricing/ai-pricing.api';
+import { normalizeApiError } from '@/shared/api/http/api-error';
 
-const auth = useAuthStore()
-const router = useRouter()
-const state = ref<TextToSpeechPricingState | null>(null)
-const loading = ref(false)
-const loadingMore = ref(false)
-const publishing = ref(false)
-const error = ref('')
-const freshAuthRequired = ref(false)
-const publicationOutcomeUnknown = ref(false)
-const notice = ref('')
-const rate = ref('')
-const reason = ref('')
-const validationError = ref('')
-const confirmationOpen = ref(false)
+const auth = useAuthStore();
+const router = useRouter();
+const state = ref<TextToSpeechPricingState | null>(null);
+const loading = ref(false);
+const loadingMore = ref(false);
+const publishing = ref(false);
+const error = ref('');
+const freshAuthRequired = ref(false);
+const publicationOutcomeUnknown = ref(false);
+const notice = ref('');
+const rate = ref('');
+const reason = ref('');
+const validationError = ref('');
+const confirmationOpen = ref(false);
 const pendingPublication = ref<{
-  ratePerMillionCharacters: string
-  changeReason: string
-} | null>(null)
-let loadGeneration = 0
-let latestSuccessfulLoadGeneration = 0
-let mutationGeneration = 0
-let activeRequest: AbortController | undefined
+  ratePerMillionCharacters: string;
+  changeReason: string;
+} | null>(null);
+let loadGeneration = 0;
+let latestSuccessfulLoadGeneration = 0;
+let mutationGeneration = 0;
+let activeRequest: AbortController | undefined;
 
-const permissions = computed(() => auth.user?.platformPermissionCodes ?? [])
-const canRead = computed(() =>
-  permissions.value.includes('platform.ai_pricing.read'),
-)
-const canWrite = computed(() =>
-  permissions.value.includes('platform.ai_pricing.write'),
-)
+const permissions = computed(() => auth.user?.platformPermissionCodes ?? []);
+const canRead = computed(() => permissions.value.includes('platform.ai_pricing.read'));
+const canWrite = computed(() => permissions.value.includes('platform.ai_pricing.write'));
 
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat('ru-RU', {
@@ -55,7 +51,7 @@ function formatDate(value: string): string {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(value))
+  }).format(new Date(value));
 }
 
 function actorLabel(revision: TextToSpeechPricingRevision): string {
@@ -63,227 +59,198 @@ function actorLabel(revision: TextToSpeechPricingRevision): string {
     CMS_USER: 'CMS User',
     BREAK_GLASS: 'Break-glass',
     SYSTEM: 'System',
-  }[revision.createdBy.type]
-  return `${type} · ${revision.createdBy.id}`
+  }[revision.createdBy.type];
+  return `${type} · ${revision.createdBy.id}`;
 }
 
 function clearSensitiveState(): void {
-  activeRequest?.abort()
-  activeRequest = undefined
-  loadGeneration += 1
-  mutationGeneration += 1
-  publishing.value = false
-  state.value = null
-  rate.value = ''
-  reason.value = ''
-  validationError.value = ''
-  confirmationOpen.value = false
-  pendingPublication.value = null
-  notice.value = ''
-  error.value = ''
-  freshAuthRequired.value = false
-  publicationOutcomeUnknown.value = false
+  activeRequest?.abort();
+  activeRequest = undefined;
+  loadGeneration += 1;
+  mutationGeneration += 1;
+  publishing.value = false;
+  state.value = null;
+  rate.value = '';
+  reason.value = '';
+  validationError.value = '';
+  confirmationOpen.value = false;
+  pendingPublication.value = null;
+  notice.value = '';
+  error.value = '';
+  freshAuthRequired.value = false;
+  publicationOutcomeUnknown.value = false;
 }
 
 async function refreshAuthorityAfterForbidden(): Promise<void> {
-  state.value = null
-  confirmationOpen.value = false
-  pendingPublication.value = null
+  state.value = null;
+  confirmationOpen.value = false;
+  pendingPublication.value = null;
   try {
-    await auth.refreshContext()
+    await auth.refreshContext();
   } catch {
-    await router.replace({ name: 'login' })
-    return
+    await router.replace({ name: 'login' });
+    return;
   }
   if (auth.isAuthenticated && !canRead.value) {
-    await router.replace(auth.authenticatedLandingPath)
+    await router.replace(auth.authenticatedLandingPath);
   }
 }
 
 async function load(): Promise<boolean> {
-  activeRequest?.abort()
-  const controller = new AbortController()
-  activeRequest = controller
-  const generation = ++loadGeneration
-  loading.value = true
-  error.value = ''
-  freshAuthRequired.value = false
+  activeRequest?.abort();
+  const controller = new AbortController();
+  activeRequest = controller;
+  const generation = ++loadGeneration;
+  loading.value = true;
+  error.value = '';
+  freshAuthRequired.value = false;
   try {
-    const next = await fetchTextToSpeechPricing(
-      { limit: 50 },
-      controller.signal,
-    )
-    if (generation !== loadGeneration) return false
-    state.value = next
-    latestSuccessfulLoadGeneration = generation
-    error.value = ''
-    publicationOutcomeUnknown.value = false
-    return true
+    const next = await fetchTextToSpeechPricing({ limit: 50 }, controller.signal);
+    if (generation !== loadGeneration) return false;
+    state.value = next;
+    latestSuccessfulLoadGeneration = generation;
+    error.value = '';
+    publicationOutcomeUnknown.value = false;
+    return true;
   } catch (cause) {
-    if (controller.signal.aborted || generation !== loadGeneration) return false
-    const normalized = normalizeApiError(cause)
+    if (controller.signal.aborted || generation !== loadGeneration) return false;
+    const normalized = normalizeApiError(cause);
     if (normalized.status === 403) {
-      error.value = 'Недостаточно прав для просмотра тарифов AI.'
-      await refreshAuthorityAfterForbidden()
+      error.value = 'Недостаточно прав для просмотра тарифов AI.';
+      await refreshAuthorityAfterForbidden();
     } else {
-      error.value = 'Не удалось загрузить тарифы AI.'
+      error.value = 'Не удалось загрузить тарифы AI.';
     }
-    return false
+    return false;
   } finally {
-    if (generation === loadGeneration) loading.value = false
+    if (generation === loadGeneration) loading.value = false;
   }
 }
 
 async function loadMore(): Promise<void> {
-  const current = state.value
-  if (!current?.hasMore || !current.nextCursor || loadingMore.value) return
-  loadingMore.value = true
-  error.value = ''
+  const current = state.value;
+  if (!current?.hasMore || !current.nextCursor || loadingMore.value) return;
+  loadingMore.value = true;
+  error.value = '';
   try {
     const next = await fetchTextToSpeechPricing({
       cursor: current.nextCursor,
       limit: 50,
-    })
-    if (state.value !== current) return
-    const ids = new Set(current.history.map(({ id }) => id))
+    });
+    if (state.value !== current) return;
+    const ids = new Set(current.history.map(({ id }) => id));
     state.value = {
       ...current,
-      history: [
-        ...current.history,
-        ...next.history.filter(({ id }) => !ids.has(id)),
-      ],
+      history: [...current.history, ...next.history.filter(({ id }) => !ids.has(id))],
       hasMore: next.hasMore,
       nextCursor: next.nextCursor,
-    }
+    };
   } catch (cause) {
-    const normalized = normalizeApiError(cause)
+    const normalized = normalizeApiError(cause);
     if (normalized.status === 403) {
-      error.value = 'Недостаточно прав для просмотра тарифов AI.'
-      await refreshAuthorityAfterForbidden()
+      error.value = 'Недостаточно прав для просмотра тарифов AI.';
+      await refreshAuthorityAfterForbidden();
     } else {
-      error.value = 'Не удалось загрузить продолжение истории тарифов.'
+      error.value = 'Не удалось загрузить продолжение истории тарифов.';
     }
   } finally {
-    loadingMore.value = false
+    loadingMore.value = false;
   }
 }
 
 function preparePublication(): void {
-  if (publicationOutcomeUnknown.value) return
-  const normalizedRate = rate.value.trim()
-  const normalizedReason = reason.value.trim().normalize('NFC')
+  if (publicationOutcomeUnknown.value) return;
+  const normalizedRate = rate.value.trim();
+  const normalizedReason = reason.value.trim().normalize('NFC');
   if (!isValidTextToSpeechRate(normalizedRate)) {
     validationError.value =
-      'Укажите положительную ставку не более 1 000 000, до 12 знаков после запятой.'
-    return
+      'Укажите положительную ставку не более 1 000 000, до 12 знаков после запятой.';
+    return;
   }
   if (normalizedReason.length < 3 || normalizedReason.length > 500) {
-    validationError.value = 'Укажите причину изменения от 3 до 500 символов.'
-    return
+    validationError.value = 'Укажите причину изменения от 3 до 500 символов.';
+    return;
   }
-  validationError.value = ''
+  validationError.value = '';
   pendingPublication.value = {
     ratePerMillionCharacters: normalizedRate,
     changeReason: normalizedReason,
-  }
-  confirmationOpen.value = true
+  };
+  confirmationOpen.value = true;
 }
 
 function cancelConfirmation(): void {
-  if (publishing.value) return
-  confirmationOpen.value = false
-  pendingPublication.value = null
+  if (publishing.value) return;
+  confirmationOpen.value = false;
+  pendingPublication.value = null;
 }
 
 async function confirmPublication(): Promise<void> {
-  const input = pendingPublication.value
-  if (!input || publishing.value) return
-  confirmationOpen.value = false
-  pendingPublication.value = null
-  const authorityKey = currentAuthorityKey()
-  const generation = ++mutationGeneration
-  publishing.value = true
-  error.value = ''
-  freshAuthRequired.value = false
-  notice.value = ''
+  const input = pendingPublication.value;
+  if (!input || publishing.value) return;
+  confirmationOpen.value = false;
+  pendingPublication.value = null;
+  const authorityKey = currentAuthorityKey();
+  const generation = ++mutationGeneration;
+  publishing.value = true;
+  error.value = '';
+  freshAuthRequired.value = false;
+  notice.value = '';
   try {
-    await publishTextToSpeechPricing(input)
-    if (
-      generation !== mutationGeneration ||
-      authorityKey !== currentAuthorityKey()
-    )
-      return
-    rate.value = ''
-    reason.value = ''
-    const rereadGeneration = loadGeneration + 1
-    const refreshed = await load()
-    if (
-      generation !== mutationGeneration ||
-      authorityKey !== currentAuthorityKey()
-    )
-      return
+    await publishTextToSpeechPricing(input);
+    if (generation !== mutationGeneration || authorityKey !== currentAuthorityKey()) return;
+    rate.value = '';
+    reason.value = '';
+    const rereadGeneration = loadGeneration + 1;
+    const refreshed = await load();
+    if (generation !== mutationGeneration || authorityKey !== currentAuthorityKey()) return;
     if (refreshed || latestSuccessfulLoadGeneration > rereadGeneration) {
-      notice.value =
-        'Новая ставка опубликована. Исторические операции не пересчитаны.'
+      notice.value = 'Новая ставка опубликована. Исторические операции не пересчитаны.';
     } else {
-      publicationOutcomeUnknown.value = true
+      publicationOutcomeUnknown.value = true;
       error.value =
-        'Ставка опубликована, но состояние не удалось перечитать. Обновите историю перед новой публикацией.'
+        'Ставка опубликована, но состояние не удалось перечитать. Обновите историю перед новой публикацией.';
     }
   } catch (cause) {
-    if (
-      generation !== mutationGeneration ||
-      authorityKey !== currentAuthorityKey()
-    )
-      return
-    const normalized = normalizeApiError(cause)
+    if (generation !== mutationGeneration || authorityKey !== currentAuthorityKey()) return;
+    const normalized = normalizeApiError(cause);
     if (
       normalized.status === 428 ||
-      [
-        'MFA_REQUIRED',
-        'MFA_ENROLLMENT_REQUIRED',
-        'REAUTHENTICATION_REQUIRED',
-      ].includes(normalized.code ?? '')
+      ['MFA_REQUIRED', 'MFA_ENROLLMENT_REQUIRED', 'REAUTHENTICATION_REQUIRED'].includes(
+        normalized.code ?? '',
+      )
     ) {
-      freshAuthRequired.value = true
-      error.value =
-        'Требуется свежий вход с MFA. Публикация не повторялась автоматически.'
+      freshAuthRequired.value = true;
+      error.value = 'Требуется свежий вход с MFA. Публикация не повторялась автоматически.';
     } else if (normalized.status === 403) {
-      error.value =
-        'Недостаточно прав для публикации ставки. Действие не повторялось.'
-      await refreshAuthorityAfterForbidden()
+      error.value = 'Недостаточно прав для публикации ставки. Действие не повторялось.';
+      await refreshAuthorityAfterForbidden();
     } else if (normalized.status === 0 || normalized.status >= 500) {
-      publicationOutcomeUnknown.value = true
-      error.value =
-        'Результат публикации неизвестен. Обновите историю перед новой попыткой.'
+      publicationOutcomeUnknown.value = true;
+      error.value = 'Результат публикации неизвестен. Обновите историю перед новой попыткой.';
     } else {
-      error.value = 'Не удалось опубликовать ставку. Действие не повторялось.'
+      error.value = 'Не удалось опубликовать ставку. Действие не повторялось.';
     }
   } finally {
-    if (generation === mutationGeneration) publishing.value = false
+    if (generation === mutationGeneration) publishing.value = false;
   }
 }
 
 function currentAuthorityKey(): string {
-  return [
-    auth.isAuthenticated,
-    auth.user?.id ?? '',
-    canRead.value,
-    canWrite.value,
-  ].join(':')
+  return [auth.isAuthenticated, auth.user?.id ?? '', canRead.value, canWrite.value].join(':');
 }
 
 async function requireFreshLogin(): Promise<void> {
   try {
-    await auth.logout()
+    await auth.logout();
   } catch {
     // Local authority is cleared by logout even when the network is unavailable.
   }
-  clearSensitiveState()
+  clearSensitiveState();
   await router.replace({
     name: 'login',
     query: { redirect: '/platform/ai-pricing' },
-  })
+  });
 }
 
 watch(
@@ -293,31 +260,31 @@ watch(
     read: canRead.value,
   }),
   async ({ authenticated, read }) => {
-    clearSensitiveState()
-    if (!authenticated) return
+    clearSensitiveState();
+    if (!authenticated) return;
     if (!read) {
-      await router.replace(auth.authenticatedLandingPath)
-      return
+      await router.replace(auth.authenticatedLandingPath);
+      return;
     }
-    await load()
+    await load();
   },
   { immediate: true },
-)
+);
 
 watch(canWrite, (allowed) => {
-  if (allowed) return
-  rate.value = ''
-  reason.value = ''
-  validationError.value = ''
-  confirmationOpen.value = false
-  pendingPublication.value = null
-})
+  if (allowed) return;
+  rate.value = '';
+  reason.value = '';
+  validationError.value = '';
+  confirmationOpen.value = false;
+  pendingPublication.value = null;
+});
 
 onBeforeUnmount(() => {
-  activeRequest?.abort()
-  loadGeneration += 1
-  mutationGeneration += 1
-})
+  activeRequest?.abort();
+  loadGeneration += 1;
+  mutationGeneration += 1;
+});
 </script>
 
 <template>
@@ -327,8 +294,7 @@ onBeforeUnmount(() => {
         <div class="eyebrow">Control plane · Platform scope</div>
         <h1>Тарифы AI</h1>
         <p class="subtitle">
-          Ручная публикация проверенных тарифов, которые применяются только к
-          новым операциям.
+          Ручная публикация проверенных тарифов, которые применяются только к новым операциям.
         </p>
       </div>
       <Button
@@ -372,21 +338,14 @@ onBeforeUnmount(() => {
         </div>
       </header>
 
-      <Message
-        v-if="!state.current"
-        severity="warn"
-        :closable="false"
-        class="empty-warning"
-      >
+      <Message v-if="!state.current" severity="warn" :closable="false" class="empty-warning">
         Озвучивание текста заблокировано до первичной настройки ставки.
       </Message>
 
       <div v-else class="current-rate" aria-label="Текущая ставка">
         <div>
           <span>Текущая ставка</span>
-          <strong>{{
-            formatMoney(state.current.rate, state.current.currency)
-          }}</strong>
+          <strong>{{ formatMoney(state.current.rate, state.current.currency) }}</strong>
           <small>за 1 000 000 входных символов</small>
         </div>
         <dl>
@@ -405,12 +364,7 @@ onBeforeUnmount(() => {
         </dl>
       </div>
 
-      <a
-        class="source-link"
-        :href="state.sourceUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
+      <a class="source-link" :href="state.sourceUrl" target="_blank" rel="noopener noreferrer">
         <i class="pi pi-external-link" />
         Проверить официальный тариф xAI
       </a>
@@ -425,8 +379,8 @@ onBeforeUnmount(() => {
           <span class="eyebrow">Новая revision</span>
           <h3 id="publish-rate-title">Опубликовать новую ставку</h3>
           <p>
-            Дату начала действия назначает сервер. Изменить, удалить или задним
-            числом применить revision нельзя.
+            Дату начала действия назначает сервер. Изменить, удалить или задним числом применить
+            revision нельзя.
           </p>
         </div>
         <label>
@@ -474,9 +428,7 @@ onBeforeUnmount(() => {
         <div v-if="state.history.length" class="history-list">
           <article v-for="revision in state.history" :key="revision.id">
             <div class="history-rate">
-              <strong>{{
-                formatMoney(revision.rate, revision.currency)
-              }}</strong>
+              <strong>{{ formatMoney(revision.rate, revision.currency) }}</strong>
               <small>за 1 000 000 символов</small>
             </div>
             <div>
@@ -511,13 +463,8 @@ onBeforeUnmount(() => {
     >
       <section v-if="pendingPublication" class="confirmation">
         <span class="confirmation-icon"><i class="pi pi-shield" /></span>
-        <p>
-          Новая ставка применяется только к следующим операциям. История не
-          пересчитывается.
-        </p>
-        <strong>{{
-          formatMoney(pendingPublication.ratePerMillionCharacters, 'usd')
-        }}</strong>
+        <p>Новая ставка применяется только к следующим операциям. История не пересчитывается.</p>
+        <strong>{{ formatMoney(pendingPublication.ratePerMillionCharacters, 'usd') }}</strong>
         <div class="confirmation-actions">
           <Button
             label="Отмена"

@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
-import { useRouter } from "vue-router";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { notificationOperationsApi } from "@/features/notification-operations/api/notification-operations.api";
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { notificationOperationsApi } from '@/features/notification-operations/api/notification-operations.api';
 import {
   notificationOperationsPermissions,
   type NotificationOperationsDelivery,
   type NotificationOperationsFilters,
   type NotificationOperationsIntegration,
   type NotificationOperationsQuarantineReason,
-} from "@/features/notification-operations/model/notification-operations";
-import { createNotificationOperationsController } from "@/features/notification-operations/model/use-notification-operations";
-import ExceptionalDeliveryTable from "@/features/notification-operations/ui/ExceptionalDeliveryTable.vue";
-import NotificationIntegrationTable from "@/features/notification-operations/ui/NotificationIntegrationTable.vue";
-import NotificationOperationsHealth from "@/features/notification-operations/ui/NotificationOperationsHealth.vue";
-import QuarantineIntegrationDialog from "@/features/notification-operations/ui/QuarantineIntegrationDialog.vue";
-import ReplayDeliveryDialog from "@/features/notification-operations/ui/ReplayDeliveryDialog.vue";
+} from '@/features/notification-operations/model/notification-operations';
+import { createNotificationOperationsController } from '@/features/notification-operations/model/use-notification-operations';
+import ExceptionalDeliveryTable from '@/features/notification-operations/ui/ExceptionalDeliveryTable.vue';
+import NotificationIntegrationTable from '@/features/notification-operations/ui/NotificationIntegrationTable.vue';
+import NotificationOperationsHealth from '@/features/notification-operations/ui/NotificationOperationsHealth.vue';
+import QuarantineIntegrationDialog from '@/features/notification-operations/ui/QuarantineIntegrationDialog.vue';
+import ReplayDeliveryDialog from '@/features/notification-operations/ui/ReplayDeliveryDialog.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -26,13 +26,13 @@ const controller = createNotificationOperationsController({
 });
 const replayTarget = ref<NotificationOperationsDelivery | null>(null);
 const quarantineTarget = ref<NotificationOperationsIntegration | null>(null);
-const filterError = ref("");
+const filterError = ref('');
 const filterDraft = reactive<NotificationOperationsFilters>({
-  projectId: "",
-  channel: "",
-  status: "",
-  integrationKind: "",
-  integrationStatus: "",
+  projectId: '',
+  channel: '',
+  status: '',
+  integrationKind: '',
+  integrationStatus: '',
 });
 
 const permissions = computed(() =>
@@ -44,50 +44,49 @@ const loading = computed(
     controller.deliveriesLoading.value ||
     controller.integrationsLoading.value,
 );
-const uuidPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
 const channelOptions = [
-  { value: "", label: "Все operational каналы" },
-  { value: "SLACK_WEBHOOK", label: "Slack" },
-  { value: "TELEGRAM_OPERATIONAL", label: "Telegram operational" },
+  { value: '', label: 'Все operational каналы' },
+  { value: 'SLACK_WEBHOOK', label: 'Slack' },
+  { value: 'TELEGRAM_OPERATIONAL', label: 'Telegram operational' },
 ] as const;
 const deliveryStatusOptions = [
-  { value: "", label: "Все exceptional статусы" },
-  { value: "REJECTED", label: "Отклонена" },
-  { value: "OUTCOME_UNKNOWN", label: "Результат неизвестен" },
-  { value: "DEAD_LETTER", label: "Dead letter" },
-  { value: "CANCELLED", label: "Отменена" },
-  { value: "SUPPRESSED", label: "Подавлена" },
+  { value: '', label: 'Все exceptional статусы' },
+  { value: 'REJECTED', label: 'Отклонена' },
+  { value: 'OUTCOME_UNKNOWN', label: 'Результат неизвестен' },
+  { value: 'DEAD_LETTER', label: 'Dead letter' },
+  { value: 'CANCELLED', label: 'Отменена' },
+  { value: 'SUPPRESSED', label: 'Подавлена' },
 ] as const;
 const integrationKindOptions = [
-  { value: "", label: "Все типы интеграций" },
-  { value: "SLACK_DESTINATION", label: "Slack destination" },
+  { value: '', label: 'Все типы интеграций' },
+  { value: 'SLACK_DESTINATION', label: 'Slack destination' },
   {
-    value: "TELEGRAM_OPERATIONAL_DESTINATION",
-    label: "Telegram operational destination",
+    value: 'TELEGRAM_OPERATIONAL_DESTINATION',
+    label: 'Telegram operational destination',
   },
   {
-    value: "TELEGRAM_PRODUCT_INSTALLATION",
-    label: "Telegram product installation",
+    value: 'TELEGRAM_PRODUCT_INSTALLATION',
+    label: 'Telegram product installation',
   },
 ] as const;
 const integrationStatusOptions = [
-  { value: "", label: "Все статусы интеграций" },
-  { value: "PENDING_TEST", label: "Ожидает test" },
-  { value: "PENDING_SETUP", label: "Ожидает setup" },
-  { value: "ACTIVE", label: "Активна" },
-  { value: "DISABLED", label: "Отключена" },
-  { value: "INVALID", label: "Invalid" },
+  { value: '', label: 'Все статусы интеграций' },
+  { value: 'PENDING_TEST', label: 'Ожидает test' },
+  { value: 'PENDING_SETUP', label: 'Ожидает setup' },
+  { value: 'ACTIVE', label: 'Активна' },
+  { value: 'DISABLED', label: 'Отключена' },
+  { value: 'INVALID', label: 'Invalid' },
 ] as const;
 
 async function applyFilters(): Promise<void> {
   const projectId = filterDraft.projectId.trim();
   if (projectId && !uuidPattern.test(projectId)) {
-    filterError.value = "Project ID должен быть UUID.";
+    filterError.value = 'Project ID должен быть UUID.';
     return;
   }
-  filterError.value = "";
+  filterError.value = '';
   replayTarget.value = null;
   quarantineTarget.value = null;
   await controller.setFilters({ ...filterDraft, projectId });
@@ -95,11 +94,11 @@ async function applyFilters(): Promise<void> {
 
 async function resetFilters(): Promise<void> {
   Object.assign(filterDraft, {
-    projectId: "",
-    channel: "",
-    status: "",
-    integrationKind: "",
-    integrationStatus: "",
+    projectId: '',
+    channel: '',
+    status: '',
+    integrationKind: '',
+    integrationStatus: '',
   });
   await applyFilters();
 }
@@ -116,17 +115,11 @@ async function confirmQuarantine(
 ): Promise<void> {
   const target = quarantineTarget.value;
   quarantineTarget.value = null;
-  if (target)
-    await controller.quarantineIntegration(
-      target.integrationId,
-      reason,
-      confirmation,
-    );
+  if (target) await controller.quarantineIntegration(target.integrationId, reason, confirmation);
 }
 
 function openReplay(deliveryId: string): void {
-  replayTarget.value =
-    controller.deliveries.value.find((item) => item.id === deliveryId) ?? null;
+  replayTarget.value = controller.deliveries.value.find((item) => item.id === deliveryId) ?? null;
 }
 
 function openQuarantine(integrationId: string): void {
@@ -144,15 +137,15 @@ async function requireFreshLogin(): Promise<void> {
   }
   controller.dispose();
   await router.replace({
-    name: "login",
-    query: { redirect: "/platform/notification-operations" },
+    name: 'login',
+    query: { redirect: '/platform/notification-operations' },
   });
 }
 
 watch(
   () => ({
-    userId: auth.user?.id ?? "",
-    projectId: auth.project?.id ?? "",
+    userId: auth.user?.id ?? '',
+    projectId: auth.project?.id ?? '',
     read: permissions.value.read,
     operate: permissions.value.operate,
     authenticated: auth.isAuthenticated,
@@ -161,9 +154,7 @@ watch(
     replayTarget.value = null;
     quarantineTarget.value = null;
     controller.setContext({
-      authorityKey: authenticated
-        ? `${userId}:${projectId}:${read}:${operate}`
-        : "",
+      authorityKey: authenticated ? `${userId}:${projectId}:${read}:${operate}` : '',
       permissions: { read, operate },
     });
     if (!authenticated) return;
@@ -179,11 +170,11 @@ watch(
 watch(
   () => controller.error.value?.kind,
   async (kind) => {
-    if (kind !== "FORBIDDEN" || !auth.isAuthenticated) return;
+    if (kind !== 'FORBIDDEN' || !auth.isAuthenticated) return;
     try {
       await auth.refreshContext();
     } catch {
-      await router.replace({ name: "login" });
+      await router.replace({ name: 'login' });
     }
   },
 );
@@ -198,8 +189,8 @@ onBeforeUnmount(() => controller.dispose());
         <div class="eyebrow">Control plane · Platform scope</div>
         <h1>Доставка и восстановление</h1>
         <p class="subtitle">
-          Безопасное здоровье очередей, единичный replay и quarantine
-          скомпрометированных интеграций без recipient data и содержимого.
+          Безопасное здоровье очередей, единичный replay и quarantine скомпрометированных интеграций
+          без recipient data и содержимого.
         </p>
       </div>
       <Button
@@ -261,40 +252,23 @@ onBeforeUnmount(() => controller.dispose());
       </label>
       <label>
         <span>Канал delivery</span>
-        <select
-          v-model="filterDraft.channel"
-          :disabled="controller.mutating.value"
-        >
-          <option
-            v-for="option in channelOptions"
-            :key="option.value"
-            :value="option.value"
-          >
+        <select v-model="filterDraft.channel" :disabled="controller.mutating.value">
+          <option v-for="option in channelOptions" :key="option.value" :value="option.value">
             {{ option.label }}
           </option>
         </select>
       </label>
       <label>
         <span>Статус delivery</span>
-        <select
-          v-model="filterDraft.status"
-          :disabled="controller.mutating.value"
-        >
-          <option
-            v-for="option in deliveryStatusOptions"
-            :key="option.value"
-            :value="option.value"
-          >
+        <select v-model="filterDraft.status" :disabled="controller.mutating.value">
+          <option v-for="option in deliveryStatusOptions" :key="option.value" :value="option.value">
             {{ option.label }}
           </option>
         </select>
       </label>
       <label>
         <span>Тип интеграции</span>
-        <select
-          v-model="filterDraft.integrationKind"
-          :disabled="controller.mutating.value"
-        >
+        <select v-model="filterDraft.integrationKind" :disabled="controller.mutating.value">
           <option
             v-for="option in integrationKindOptions"
             :key="option.value"
@@ -306,10 +280,7 @@ onBeforeUnmount(() => controller.dispose());
       </label>
       <label>
         <span>Статус интеграции</span>
-        <select
-          v-model="filterDraft.integrationStatus"
-          :disabled="controller.mutating.value"
-        >
+        <select v-model="filterDraft.integrationStatus" :disabled="controller.mutating.value">
           <option
             v-for="option in integrationStatusOptions"
             :key="option.value"
@@ -320,11 +291,7 @@ onBeforeUnmount(() => controller.dispose());
         </select>
       </label>
       <div class="filter-actions">
-        <Button
-          type="submit"
-          label="Применить"
-          :disabled="controller.mutating.value"
-        />
+        <Button type="submit" label="Применить" :disabled="controller.mutating.value" />
         <Button
           type="button"
           label="Сбросить"

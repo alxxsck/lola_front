@@ -9,19 +9,17 @@ import {
   attributeContractWorkspace,
   attributeDefinitionImpact,
   profileHealthHealth,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   AttributeContractPublicationsParams,
   AttributeContractRevisionsParams,
   ProfileHealthHealthParams,
   PublishAttributeContractDto,
   SaveAttributeContractDraftDto,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
 
-async function call<Response>(
-  request: () => Promise<Response>,
-): Promise<Response> {
+async function call<Response>(request: () => Promise<Response>): Promise<Response> {
   try {
     return await request();
   } catch (cause) {
@@ -30,18 +28,15 @@ async function call<Response>(
 }
 
 export const attributeContractRepository = {
-  workspace: (projectId: string) =>
-    call(() => attributeContractWorkspace(projectId)),
+  workspace: (projectId: string) => call(() => attributeContractWorkspace(projectId)),
   saveDraft: (projectId: string, body: SaveAttributeContractDraftDto) =>
     call(() => attributeContractSaveDraft(projectId, body)),
   validate: (projectId: string, expectedDraftVersion: number) =>
     call(() => attributeContractValidate(projectId, { expectedDraftVersion })),
   publish: (projectId: string, body: PublishAttributeContractDto) =>
     call(() => attributeContractPublish(projectId, body)),
-  publications: (
-    projectId: string,
-    params?: AttributeContractPublicationsParams,
-  ) => call(() => attributeContractPublications(projectId, params)),
+  publications: (projectId: string, params?: AttributeContractPublicationsParams) =>
+    call(() => attributeContractPublications(projectId, params)),
   publication: (projectId: string, publicationId: string) =>
     call(() => attributeContractPublication(projectId, publicationId)),
   revisions: (projectId: string, params?: AttributeContractRevisionsParams) =>

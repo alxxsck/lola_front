@@ -1,38 +1,34 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch } from 'vue';
 
-import {
-  adaptRunExplain,
-  runtimeExplainLabel,
-  type RunExplainView,
-} from "../model";
-import { scenarioAuthoringRepository } from "@/shared/api/repository/scenario-authoring";
+import { adaptRunExplain, runtimeExplainLabel, type RunExplainView } from '../model';
+import { scenarioAuthoringRepository } from '@/shared/api/repository/scenario-authoring';
 
 const props = defineProps<{ projectId: string; runId: string }>();
 const loading = ref(false);
-const error = ref("");
+const error = ref('');
 const explain = ref<RunExplainView | null>(null);
 let sequence = 0;
 
 function date(value?: string | null) {
-  return value ? new Date(value).toLocaleString("ru-RU") : "—";
+  return value ? new Date(value).toLocaleString('ru-RU') : '—';
 }
 
 function kindLabel(kind: string) {
-  if (kind === "all") return "Все условия";
-  if (kind === "any") return "Хотя бы одно условие";
-  if (kind === "not") return "Инверсия результата";
-  if (kind === "eventField") return "Поле события запуска";
-  if (kind === "eventAggregate") return "История событий";
-  if (kind === "activityDayStreak") return "Активные дни";
-  if (kind === "locale") return "Locale пользователя";
-  if (kind === "language") return "Язык пользователя";
-  if (kind === "country") return "Страна пользователя";
-  if (kind === "userAttribute") return "Атрибут пользователя";
-  if (kind === "profileAttribute") return "Поле Current Profile";
-  if (kind === "segmentMembership") return "Участие в сегменте";
-  if (kind === "legacy") return "Устаревшие условия";
-  if (kind === "unavailable") return "Объяснение недоступно";
+  if (kind === 'all') return 'Все условия';
+  if (kind === 'any') return 'Хотя бы одно условие';
+  if (kind === 'not') return 'Инверсия результата';
+  if (kind === 'eventField') return 'Поле события запуска';
+  if (kind === 'eventAggregate') return 'История событий';
+  if (kind === 'activityDayStreak') return 'Активные дни';
+  if (kind === 'locale') return 'Locale пользователя';
+  if (kind === 'language') return 'Язык пользователя';
+  if (kind === 'country') return 'Страна пользователя';
+  if (kind === 'userAttribute') return 'Атрибут пользователя';
+  if (kind === 'profileAttribute') return 'Поле Current Profile';
+  if (kind === 'segmentMembership') return 'Участие в сегменте';
+  if (kind === 'legacy') return 'Устаревшие условия';
+  if (kind === 'unavailable') return 'Объяснение недоступно';
   return kind;
 }
 
@@ -40,19 +36,13 @@ async function load() {
   if (!props.projectId || !props.runId) return;
   const request = ++sequence;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
-    const response = await scenarioAuthoringRepository.explainRun(
-      props.projectId,
-      props.runId,
-    );
+    const response = await scenarioAuthoringRepository.explainRun(props.projectId, props.runId);
     if (request === sequence) explain.value = adaptRunExplain(response);
   } catch (cause) {
     if (request === sequence)
-      error.value =
-        cause instanceof Error
-          ? cause.message
-          : "Не удалось загрузить объяснение Run";
+      error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить объяснение Run';
   } finally {
     if (request === sequence) loading.value = false;
   }
@@ -66,10 +56,7 @@ watch(() => [props.projectId, props.runId] as const, load, { immediate: true });
     <header>
       <span>Фактический Run</span>
       <h3 id="run-explain-title">Почему сценарий выполнился именно так</h3>
-      <p>
-        Показываем зафиксированную версию и сохранённые факты запуска, а не
-        последний черновик.
-      </p>
+      <p>Показываем зафиксированную версию и сохранённые факты запуска, а не последний черновик.</p>
     </header>
     <p v-if="loading" role="status" class="explain-state">
       <i class="pi pi-spin pi-spinner" /> Загружаем explain…
@@ -79,30 +66,17 @@ watch(() => [props.projectId, props.runId] as const, load, { immediate: true });
       ><button type="button" @click="load">Повторить</button>
     </div>
     <template v-else-if="explain">
-      <div
-        class="revision-card"
-        :class="{ unavailable: !explain.revision.pinned }"
-      >
-        <i
-          :class="
-            explain.revision.pinned ? 'pi pi-lock' : 'pi pi-question-circle'
-          "
-        />
+      <div class="revision-card" :class="{ unavailable: !explain.revision.pinned }">
+        <i :class="explain.revision.pinned ? 'pi pi-lock' : 'pi pi-question-circle'" />
         <div>
           <strong>{{ explain.revision.label }}</strong
           ><template v-if="explain.revision.pinned"
-            ><span
-              >{{ explain.revision.id }} · catalog
-              {{ explain.revision.catalogRevision }}</span
+            ><span>{{ explain.revision.id }} · catalog {{ explain.revision.catalogRevision }}</span
             ><small
               >Опубликована {{ date(explain.revision.publishedAt) }} · hash
               {{ explain.revision.contentHash }}</small
-            ><a :href="`/scenarios/${explain.revision.scenarioId}`"
-              >Открыть сценарий</a
-            ></template
-          ><small v-else
-            >Нельзя утверждать, что Run использовал текущий draft.</small
-          >
+            ><a :href="`/scenarios/${explain.revision.scenarioId}`">Открыть сценарий</a></template
+          ><small v-else>Нельзя утверждать, что Run использовал текущий draft.</small>
         </div>
       </div>
 
@@ -113,20 +87,16 @@ watch(() => [props.projectId, props.runId] as const, load, { immediate: true });
             <span>Событие</span><strong>{{ explain.trigger.code }}</strong>
           </div>
           <div>
-            <span>Schema</span
-            ><strong>v{{ explain.trigger.schemaVersion }}</strong>
+            <span>Schema</span><strong>v{{ explain.trigger.schemaVersion }}</strong>
           </div>
           <div>
-            <span>Получено</span
-            ><strong>{{ date(explain.trigger.receivedAt) }}</strong>
+            <span>Получено</span><strong>{{ date(explain.trigger.receivedAt) }}</strong>
           </div>
           <div>
-            <span>Источник</span
-            ><strong>{{ runtimeExplainLabel(explain.trigger.source) }}</strong>
+            <span>Источник</span><strong>{{ runtimeExplainLabel(explain.trigger.source) }}</strong>
           </div>
         </div>
-        <a
-          :href="`/event-logs?eventId=${encodeURIComponent(explain.trigger.eventLogId)}`"
+        <a :href="`/event-logs?eventId=${encodeURIComponent(explain.trigger.eventLogId)}`"
           >Открыть Event Log</a
         >
       </section>
@@ -157,9 +127,7 @@ watch(() => [props.projectId, props.runId] as const, load, { immediate: true });
                 "
               /><strong>{{ kindLabel(row.kind) }}</strong
               ><span v-if="row.state === 'unavailable'">{{
-                row.unknownReason
-                  ? runtimeExplainLabel(row.unknownReason)
-                  : "Данные недоступны"
+                row.unknownReason ? runtimeExplainLabel(row.unknownReason) : 'Данные недоступны'
               }}</span>
             </div>
             <dl>
@@ -183,13 +151,9 @@ watch(() => [props.projectId, props.runId] as const, load, { immediate: true });
           <div class="section-title">
             <h4>Eligibility recheck</h4>
             <span
-              >{{
-                runtimeExplainLabel(explain.eligibility.lastRecheck.decision)
-              }}
+              >{{ runtimeExplainLabel(explain.eligibility.lastRecheck.decision) }}
               ·
-              {{
-                runtimeExplainLabel(explain.eligibility.lastRecheck.fidelity)
-              }}</span
+              {{ runtimeExplainLabel(explain.eligibility.lastRecheck.fidelity) }}</span
             >
           </div>
           <p>
@@ -209,68 +173,50 @@ watch(() => [props.projectId, props.runId] as const, load, { immediate: true });
         </div>
         <p class="snapshot-copy">
           Первоначальное решение сохранено в Run
-          {{ date(explain.audience.evaluatedAt) }} и не пересчитывается по
-          текущему профилю.
+          {{ date(explain.audience.evaluatedAt) }} и не пересчитывается по текущему профилю.
         </p>
         <div class="fact-grid audience-facts">
           <div>
             <span>Profile version</span
-            ><strong>{{ explain.audience.profileVersion ?? "—" }}</strong>
+            ><strong>{{ explain.audience.profileVersion ?? '—' }}</strong>
           </div>
           <div>
             <span>Contract revision</span
-            ><strong>{{ explain.audience.contractRevision ?? "—" }}</strong>
+            ><strong>{{ explain.audience.contractRevision ?? '—' }}</strong>
           </div>
           <div>
-            <span>Profile observed</span
-            ><strong>{{ date(explain.audience.observedAt) }}</strong>
+            <span>Profile observed</span><strong>{{ date(explain.audience.observedAt) }}</strong>
           </div>
           <div>
             <span>Freshness</span
             ><strong
-              >{{ explain.audience.freshness?.mode ?? "—"
+              >{{ explain.audience.freshness?.mode ?? '—'
               }}{{
-                explain.audience.ageSeconds === null ||
-                explain.audience.ageSeconds === undefined
-                  ? ""
+                explain.audience.ageSeconds === null || explain.audience.ageSeconds === undefined
+                  ? ''
                   : ` · ${explain.audience.ageSeconds} сек.`
               }}</strong
             >
           </div>
           <div>
-            <span>Truth</span
-            ><strong>{{ runtimeExplainLabel(explain.audience.truth) }}</strong>
+            <span>Truth</span><strong>{{ runtimeExplainLabel(explain.audience.truth) }}</strong>
           </div>
           <div>
-            <span>Source</span
-            ><strong>{{ runtimeExplainLabel(explain.audience.source) }}</strong>
+            <span>Source</span><strong>{{ runtimeExplainLabel(explain.audience.source) }}</strong>
           </div>
         </div>
         <div class="dependency-counts">
-          <span
-            >{{ explain.audience.segmentRevisionIds.length }} segment
-            revision</span
-          ><span
-            >{{ explain.audience.attributeRevisionIds.length }} attribute
-            revision</span
-          >
+          <span>{{ explain.audience.segmentRevisionIds.length }} segment revision</span
+          ><span>{{ explain.audience.attributeRevisionIds.length }} attribute revision</span>
         </div>
         <div class="dependency-ids">
           <div v-if="explain.audience.segmentRevisionIds.length">
             <strong>Segment revisions</strong
-            ><code
-              v-for="id in explain.audience.segmentRevisionIds"
-              :key="id"
-              >{{ id }}</code
-            >
+            ><code v-for="id in explain.audience.segmentRevisionIds" :key="id">{{ id }}</code>
           </div>
           <div v-if="explain.audience.attributeRevisionIds.length">
             <strong>Attribute revisions</strong
-            ><code
-              v-for="id in explain.audience.attributeRevisionIds"
-              :key="id"
-              >{{ id }}</code
-            >
+            ><code v-for="id in explain.audience.attributeRevisionIds" :key="id">{{ id }}</code>
           </div>
         </div>
         <ol class="eligibility-tree">
@@ -291,9 +237,7 @@ watch(() => [props.projectId, props.runId] as const, load, { immediate: true });
                 "
               /><strong>{{ kindLabel(row.kind) }}</strong
               ><span v-if="row.state === 'unavailable'">{{
-                row.unknownReason
-                  ? runtimeExplainLabel(row.unknownReason)
-                  : "Данные недоступны"
+                row.unknownReason ? runtimeExplainLabel(row.unknownReason) : 'Данные недоступны'
               }}</span>
             </div>
             <dl>
@@ -319,22 +263,16 @@ watch(() => [props.projectId, props.runId] as const, load, { immediate: true });
             <span
               >{{ runtimeExplainLabel(explain.audience.lastRecheck.decision) }}
               ·
-              {{
-                runtimeExplainLabel(explain.audience.lastRecheck.fidelity)
-              }}</span
+              {{ runtimeExplainLabel(explain.audience.lastRecheck.fidelity) }}</span
             >
           </div>
           <p>
             Это отдельное решение на
             {{ date(explain.audience.lastRecheck.evaluatedAt) }}; Profile v{{
-              explain.audience.lastRecheck.profileVersion ?? "—"
-            }}, contract
-            {{ explain.audience.lastRecheck.contractRevision ?? "—" }},
-            {{
-              explain.audience.lastRecheck.freshness?.mode ??
-              "freshness unavailable"
-            }}. Оно не изменяет первоначальный снимок и не подменяет Eligibility
-            recheck.
+              explain.audience.lastRecheck.profileVersion ?? '—'
+            }}, contract {{ explain.audience.lastRecheck.contractRevision ?? '—' }},
+            {{ explain.audience.lastRecheck.freshness?.mode ?? 'freshness unavailable' }}. Оно не
+            изменяет первоначальный снимок и не подменяет Eligibility recheck.
           </p>
           <ol class="eligibility-tree">
             <li
@@ -354,9 +292,7 @@ watch(() => [props.projectId, props.runId] as const, load, { immediate: true });
                   "
                 /><strong>{{ kindLabel(row.kind) }}</strong
                 ><span v-if="row.state === 'unavailable'">{{
-                  row.unknownReason
-                    ? runtimeExplainLabel(row.unknownReason)
-                    : "Данные недоступны"
+                  row.unknownReason ? runtimeExplainLabel(row.unknownReason) : 'Данные недоступны'
                 }}</span>
               </div>
               <dl>
@@ -381,9 +317,7 @@ watch(() => [props.projectId, props.runId] as const, load, { immediate: true });
           <h4>Goal и Deadline</h4>
           <span>{{ explain.goals.length }} ожиданий</span>
         </div>
-        <p v-if="!explain.goals.length" class="empty-copy">
-          В этом Run не было Goal-ожиданий.
-        </p>
+        <p v-if="!explain.goals.length" class="empty-copy">В этом Run не было Goal-ожиданий.</p>
         <div v-else class="goal-list">
           <article v-for="goal in explain.goals" :key="goal.waitId">
             <div>
@@ -398,7 +332,7 @@ watch(() => [props.projectId, props.runId] as const, load, { immediate: true });
               <dt>Ветка</dt>
               <dd>
                 {{ runtimeExplainLabel(goal.selectedBranch) }} →
-                {{ goal.targetNodeKey ?? "завершение" }}
+                {{ goal.targetNodeKey ?? 'завершение' }}
               </dd>
             </dl>
             <a
@@ -435,25 +369,18 @@ watch(() => [props.projectId, props.runId] as const, load, { immediate: true });
         <div class="action-list">
           <article v-for="action in explain.actions" :key="action.id">
             <strong>{{ runtimeExplainLabel(action.actionType) }}</strong
-            ><span
-              >{{ action.nodeKey }} ·
-              {{ runtimeExplainLabel(action.status) }}</span
+            ><span>{{ action.nodeKey }} · {{ runtimeExplainLabel(action.status) }}</span
             ><small>{{
               action.errorCode
                 ? runtimeExplainLabel(action.errorCode)
                 : runtimeExplainLabel(action.executor)
             }}</small>
           </article>
-          <article
-            v-for="continuation in explain.continuations"
-            :key="continuation.id"
-          >
-            <strong
-              >Continuation ·
-              {{ runtimeExplainLabel(continuation.outcome) }}</strong
+          <article v-for="continuation in explain.continuations" :key="continuation.id">
+            <strong>Continuation · {{ runtimeExplainLabel(continuation.outcome) }}</strong
             ><span
               >{{ runtimeExplainLabel(continuation.status) }} →
-              {{ continuation.targetNodeKey ?? "завершение" }}</span
+              {{ continuation.targetNodeKey ?? 'завершение' }}</span
             ><small>Попыток: {{ continuation.attemptCount }}</small>
           </article>
         </div>

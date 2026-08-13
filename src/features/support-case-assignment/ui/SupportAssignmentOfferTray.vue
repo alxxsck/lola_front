@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import type { createSupportAssignmentController } from "@/features/support-case-assignment/model/use-support-assignment";
-import { relativeTime } from "@/shared/lib/format";
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import type { createSupportAssignmentController } from '@/features/support-case-assignment/model/use-support-assignment';
+import { relativeTime } from '@/shared/lib/format';
 
 const props = defineProps<{
   controller: ReturnType<typeof createSupportAssignmentController>;
@@ -11,9 +11,7 @@ const props = defineProps<{
 
 const now = ref(Date.now());
 const activeOffers = computed(() =>
-  props.controller.offers.value.filter(
-    (offer) => Date.parse(offer.expiresAt) > now.value,
-  ),
+  props.controller.offers.value.filter((offer) => Date.parse(offer.expiresAt) > now.value),
 );
 let expiryTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -28,10 +26,7 @@ function scheduleExpiry(): void {
       .filter((value) => Number.isFinite(value) && value > now.value),
   );
   if (!Number.isFinite(nextExpiry)) return;
-  expiryTimer = setTimeout(
-    scheduleExpiry,
-    Math.min(nextExpiry - now.value + 25, 2_147_483_647),
-  );
+  expiryTimer = setTimeout(scheduleExpiry, Math.min(nextExpiry - now.value + 25, 2_147_483_647));
 }
 
 watch(() => props.controller.offers.value, scheduleExpiry, {
@@ -46,9 +41,7 @@ onBeforeUnmount(() => {
 <template>
   <section
     v-if="
-      activeOffers.length ||
-      controller.offerError.value ||
-      controller.offerUnknownOutcome.value
+      activeOffers.length || controller.offerError.value || controller.offerUnknownOutcome.value
     "
     class="assignment-offer-tray"
     aria-label="Предложения назначений"
@@ -79,8 +72,7 @@ onBeforeUnmount(() => {
             aria-label="Принять предложение назначения"
             :loading="controller.offerChangingId.value === offer.assignmentId"
             :disabled="
-              Boolean(controller.offerChangingId.value) ||
-              controller.offerUnknownOutcome.value
+              Boolean(controller.offerChangingId.value) || controller.offerUnknownOutcome.value
             "
             @click="controller.actOnOffer(offer.assignmentId, 'ACCEPT')"
           />
@@ -91,8 +83,7 @@ onBeforeUnmount(() => {
             size="small"
             aria-label="Отклонить предложение назначения"
             :disabled="
-              Boolean(controller.offerChangingId.value) ||
-              controller.offerUnknownOutcome.value
+              Boolean(controller.offerChangingId.value) || controller.offerUnknownOutcome.value
             "
             @click="controller.actOnOffer(offer.assignmentId, 'DECLINE')"
           />

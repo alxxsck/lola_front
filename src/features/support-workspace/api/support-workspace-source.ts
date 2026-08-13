@@ -1,15 +1,12 @@
 import {
   adminConversationCollaborationMark,
   supportWorkspaceRead,
-} from "@/shared/api/generated/retenive-backend";
-import { repository } from "@/shared/api/repository";
-import type {
-  CursorPage,
-  CursorPageRequest,
-} from "@/shared/api/repository/contracts";
-import { mapConversationMessage } from "@/shared/api/repository/mappers";
-import { isMockMode } from "@/shared/config/data-mode";
-import type { ConversationMessage } from "@/shared/types/domain";
+} from '@/shared/api/generated/retenive-backend';
+import { repository } from '@/shared/api/repository';
+import type { CursorPage, CursorPageRequest } from '@/shared/api/repository/contracts';
+import { mapConversationMessage } from '@/shared/api/repository/mappers';
+import { isMockMode } from '@/shared/config/data-mode';
+import type { ConversationMessage } from '@/shared/types/domain';
 import type {
   CmsConversationReadPositionResponseDto,
   SupportCaseRoutingAvailableResponseDto,
@@ -17,13 +14,13 @@ import type {
   SupportWorkspaceCaseRowResponseDto,
   SupportWorkspaceSelectionCaseResponseDto,
   SupportWorkspaceSelectionResponseDto,
-} from "@/shared/api/generated/models";
-import { readMockSupportAssignment } from "@/features/support-case-assignment/api/support-assignment-mock-state";
+} from '@/shared/api/generated/models';
+import { readMockSupportAssignment } from '@/features/support-case-assignment/api/support-assignment-mock-state';
 
 export const SUPPORT_WORKSPACE_MESSAGE_PAGE_LIMIT = 30;
 
 export type SupportWorkspaceMessage = ConversationMessage & { ordinal: number };
-export type SupportInboxMode = "CASES" | "ALL_CONVERSATIONS";
+export type SupportInboxMode = 'CASES' | 'ALL_CONVERSATIONS';
 
 export interface SupportWorkspaceCaseRow {
   id: string;
@@ -42,18 +39,18 @@ export interface SupportWorkspaceCaseRow {
 
 export type SupportWorkspaceSlaSignal =
   | {
-      state: "UNCONFIGURED";
+      state: 'UNCONFIGURED';
       computedAt: string | null;
     }
   | {
-      state: "NO_ACTIVE_CLOCK";
+      state: 'NO_ACTIVE_CLOCK';
       computedAt: string | null;
     }
   | {
-      state: "AVAILABLE";
-      signalCode: "SLA_BREACHED" | "SLA_AT_RISK" | "SLA_PAUSED" | "SLA_DUE";
+      state: 'AVAILABLE';
+      signalCode: 'SLA_BREACHED' | 'SLA_AT_RISK' | 'SLA_PAUSED' | 'SLA_DUE';
       kind: SupportSlaClockKind;
-      timing: "RUNNING" | "PAUSED";
+      timing: 'RUNNING' | 'PAUSED';
       risk: SupportSlaRisk;
       pauseReason: SupportSlaPauseReason;
       currentDeadlineAt: string | null;
@@ -61,17 +58,15 @@ export type SupportWorkspaceSlaSignal =
       computedAt: string;
     };
 
-export type SupportSlaClockKind =
-  "FIRST_HUMAN_RESPONSE" | "NEXT_HUMAN_RESPONSE" | "RESOLUTION";
-export type SupportSlaRisk = "ON_TRACK" | "AT_RISK" | "BREACHED";
-export type SupportSlaPauseReason =
-  "WAITING_END_USER" | "WAITING_SYSTEM" | null;
+export type SupportSlaClockKind = 'FIRST_HUMAN_RESPONSE' | 'NEXT_HUMAN_RESPONSE' | 'RESOLUTION';
+export type SupportSlaRisk = 'ON_TRACK' | 'AT_RISK' | 'BREACHED';
+export type SupportSlaPauseReason = 'WAITING_END_USER' | 'WAITING_SYSTEM' | null;
 
 export interface SupportSlaClock {
   kind: SupportSlaClockKind;
-  timing: "RUNNING" | "PAUSED";
+  timing: 'RUNNING' | 'PAUSED';
   risk: SupportSlaRisk;
-  outcome: "OPEN" | "MET" | "CANCELLED" | "MIGRATED";
+  outcome: 'OPEN' | 'MET' | 'CANCELLED' | 'MIGRATED';
   pauseReason: SupportSlaPauseReason;
   targetBusinessSeconds: number;
   consumedBusinessMs: number;
@@ -82,38 +77,38 @@ export interface SupportSlaClock {
 }
 
 export interface SupportSlaContext {
-  occurrenceState: "ACTIVE" | "TERMINAL" | null;
+  occurrenceState: 'ACTIVE' | 'TERMINAL' | null;
   clocks: SupportSlaClock[];
 }
 
 export type SupportRoutingExclusion =
-  | "ASSIGNMENT_CONFLICT"
-  | "AVAILABILITY_NOT_ROUTABLE"
-  | "CAPACITY_EXHAUSTED"
-  | "CASE_COOLDOWN"
-  | "DATA_SCOPE_DENIED"
-  | "FACT_STALE"
-  | "LANGUAGE_REQUIRED"
-  | "LEASE_EXPIRED"
-  | "MEMBERSHIP_INACTIVE"
-  | "RECEIVE_PERMISSION_MISSING"
-  | "SKILL_REQUIRED"
-  | "TEAM_NOT_ELIGIBLE";
+  | 'ASSIGNMENT_CONFLICT'
+  | 'AVAILABILITY_NOT_ROUTABLE'
+  | 'CAPACITY_EXHAUSTED'
+  | 'CASE_COOLDOWN'
+  | 'DATA_SCOPE_DENIED'
+  | 'FACT_STALE'
+  | 'LANGUAGE_REQUIRED'
+  | 'LEASE_EXPIRED'
+  | 'MEMBERSHIP_INACTIVE'
+  | 'RECEIVE_PERMISSION_MISSING'
+  | 'SKILL_REQUIRED'
+  | 'TEAM_NOT_ELIGIBLE';
 
 export type SupportRoutingContext =
-  | { state: "REDACTED" | "NOT_EVALUATED" }
+  | { state: 'REDACTED' | 'NOT_EVALUATED' }
   | {
-      state: "AVAILABLE";
-      reasonCode: SupportCaseRoutingAvailableResponseDto["reasonCode"];
-      assignmentState: "UNASSIGNED" | "RESERVED" | "ASSIGNED";
-      mode: "SHADOW" | "LIVE_PROPOSAL" | null;
+      state: 'AVAILABLE';
+      reasonCode: SupportCaseRoutingAvailableResponseDto['reasonCode'];
+      assignmentState: 'UNASSIGNED' | 'RESERVED' | 'ASSIGNED';
+      mode: 'SHADOW' | 'LIVE_PROPOSAL' | null;
       outcome:
-        | "WINNER"
-        | "NO_ELIGIBLE_OPERATOR"
-        | "CAPACITY_GAP"
-        | "CONFIGURATION_REQUIRED"
-        | "STALE_INPUT"
-        | "DEGRADED"
+        | 'WINNER'
+        | 'NO_ELIGIBLE_OPERATOR'
+        | 'CAPACITY_GAP'
+        | 'CONFIGURATION_REQUIRED'
+        | 'STALE_INPUT'
+        | 'DEGRADED'
         | null;
       queue: { code: string; name: string } | null;
       candidateCount: number;
@@ -127,26 +122,26 @@ export type SupportRoutingContext =
       } | null;
       fallback: {
         state:
-          | "EVALUATION_PENDING"
-          | "EVALUATION_PROCESSING"
-          | "SCHEDULED"
-          | "PROCESSING"
-          | "EXHAUSTED"
-          | "DEGRADED";
+          | 'EVALUATION_PENDING'
+          | 'EVALUATION_PROCESSING'
+          | 'SCHEDULED'
+          | 'PROCESSING'
+          | 'EXHAUSTED'
+          | 'DEGRADED';
         candidateAttempt: number;
         availableAt: string;
       } | null;
     };
 
 export type SupportInboxItem =
-  | (SupportWorkspaceCaseRow & { kind: "CASE" })
-  | (SupportWorkspaceConversation & { kind: "CONVERSATION" });
+  | (SupportWorkspaceCaseRow & { kind: 'CASE' })
+  | (SupportWorkspaceConversation & { kind: 'CONVERSATION' });
 
 export interface SupportWorkspaceConversation {
   id: string;
   endUserId: string;
   title: string;
-  status: "OPEN" | "CLOSED";
+  status: 'OPEN' | 'CLOSED';
   createdAt: string;
   updatedAt: string;
   messageCount: number;
@@ -188,7 +183,7 @@ export interface SupportWorkspaceSelection {
     suspendAi: boolean;
     transferAssignment: boolean;
     attachments?: {
-      state: "AVAILABLE" | "UNAVAILABLE";
+      state: 'AVAILABLE' | 'UNAVAILABLE';
       upload: boolean;
       download: boolean;
       maxFilesPerMessage: number;
@@ -197,7 +192,7 @@ export interface SupportWorkspaceSelection {
       contentTypes: string[];
     };
     internalNotes?: {
-      state: "AVAILABLE" | "UNAVAILABLE";
+      state: 'AVAILABLE' | 'UNAVAILABLE';
       read: boolean;
       create: boolean;
       historyRead: boolean;
@@ -291,7 +286,7 @@ type WorkspaceConversationDto = {
   id: string;
   endUserId: string;
   title?: string | null;
-  status: "OPEN" | "CLOSED";
+  status: 'OPEN' | 'CLOSED';
   createdAt: string;
   updatedAt: string;
   messageCount: number;
@@ -307,9 +302,7 @@ export function mapConversationReadState(
   expectedConversationId = value.conversationId,
 ): SupportConversationReadState {
   if (value.conversationId !== expectedConversationId) {
-    throw new Error(
-      "Support workspace returned read state for another conversation",
-    );
+    throw new Error('Support workspace returned read state for another conversation');
   }
   return {
     conversationId: value.conversationId,
@@ -328,7 +321,7 @@ function mapWorkspaceConversation(
   return {
     id: conversation.id,
     endUserId: conversation.endUserId,
-    title: conversation.title?.trim() || "Диалог без названия",
+    title: conversation.title?.trim() || 'Диалог без названия',
     status: conversation.status,
     createdAt: conversation.createdAt,
     updatedAt: conversation.updatedAt,
@@ -339,10 +332,7 @@ function mapWorkspaceConversation(
     ...(conversation.lastMessageOrdinal !== undefined
       ? { lastMessageOrdinal: conversation.lastMessageOrdinal }
       : {}),
-    readState: mapConversationReadState(
-      conversation.readState,
-      conversation.id,
-    ),
+    readState: mapConversationReadState(conversation.readState, conversation.id),
   };
 }
 
@@ -366,20 +356,17 @@ export function mapWorkspaceCaseRow(
 }
 
 function mapWorkspaceSlaSignal(
-  value: SupportWorkspaceCaseRowResponseDto["slaSignal"],
+  value: SupportWorkspaceCaseRowResponseDto['slaSignal'],
 ): SupportWorkspaceSlaSignal | null {
   if (!value) return null;
-  if (value.state !== "AVAILABLE") {
+  if (value.state !== 'AVAILABLE') {
     return {
-      state:
-        value.state === "NO_ACTIVE_CLOCK"
-          ? "NO_ACTIVE_CLOCK"
-          : "UNCONFIGURED",
+      state: value.state === 'NO_ACTIVE_CLOCK' ? 'NO_ACTIVE_CLOCK' : 'UNCONFIGURED',
       computedAt: value.computedAt ?? null,
     };
   }
   return {
-    state: "AVAILABLE",
+    state: 'AVAILABLE',
     signalCode: value.signalCode,
     kind: value.kind,
     timing: value.timing,
@@ -414,27 +401,24 @@ function mapSlaContext(
 }
 
 function mapRoutingContext(
-  value: SupportWorkspaceSelectionResponseDto["routing"],
+  value: SupportWorkspaceSelectionResponseDto['routing'],
 ): SupportRoutingContext | null {
   if (!value) return null;
-  if (value.state !== "AVAILABLE") return { state: value.state };
+  if (value.state !== 'AVAILABLE') return { state: value.state };
   const decision = value.decision;
   return {
-    state: "AVAILABLE",
+    state: 'AVAILABLE',
     reasonCode: value.reasonCode,
     assignmentState: value.assignmentState,
     mode: decision?.mode ?? null,
     outcome: decision?.outcome ?? null,
-    queue: decision?.queue
-      ? { code: decision.queue.code, name: decision.queue.name }
-      : null,
+    queue: decision?.queue ? { code: decision.queue.code, name: decision.queue.name } : null,
     candidateCount: decision?.candidateCount ?? 0,
     eligibleCandidateCount:
       decision &&
       !decision.candidates.truncated &&
       decision.candidates.items.length === decision.candidateCount
-        ? decision.candidates.items.filter((candidate) => candidate.eligible)
-            .length
+        ? decision.candidates.items.filter((candidate) => candidate.eligible).length
         : null,
     exclusions: decision?.exclusionCounts ?? {},
     evaluatedAt: decision?.evaluatedAt ?? null,
@@ -462,11 +446,9 @@ function mapSelectionMessages(
   return items.map((item) => {
     const message = mapConversationMessage(item);
     if (message.conversationId !== conversationId)
-      throw new Error(
-        "Support workspace returned a message from another conversation",
-      );
+      throw new Error('Support workspace returned a message from another conversation');
     if (!Number.isSafeInteger(item.ordinal) || item.ordinal < 1) {
-      throw new Error("Support workspace returned an invalid message ordinal");
+      throw new Error('Support workspace returned an invalid message ordinal');
     }
     return { ...message, ordinal: item.ordinal };
   });
@@ -485,9 +467,7 @@ export function withMockMessageOrdinals(
       0,
       ...messages.flatMap((message) => {
         const ordinal = message.ordinal;
-        return typeof ordinal === "number" && Number.isSafeInteger(ordinal)
-          ? [ordinal]
-          : [];
+        return typeof ordinal === 'number' && Number.isSafeInteger(ordinal) ? [ordinal] : [];
       }),
     ) + 1;
   return messages.map((message) => ({
@@ -502,12 +482,10 @@ export function mapWorkspaceCase(
 ): SupportWorkspaceCase | null {
   if (!value) return null;
   if (value.endUserId !== expectedEndUserId) {
-    throw new Error("Support workspace returned a case from another end user");
+    throw new Error('Support workspace returned a case from another end user');
   }
   if (value.assignment && value.assignment.caseId !== value.id) {
-    throw new Error(
-      "Support workspace returned an assignment from another case",
-    );
+    throw new Error('Support workspace returned an assignment from another case');
   }
   return {
     id: value.id,
@@ -526,9 +504,7 @@ export function mapWorkspaceCase(
     assignee: value.assignee
       ? {
           ...(value.assignee.id ? { id: value.assignee.id } : {}),
-          ...(value.assignee.displayName
-            ? { displayName: value.assignee.displayName }
-            : {}),
+          ...(value.assignee.displayName ? { displayName: value.assignee.displayName } : {}),
         }
       : null,
     assignment: value.assignment
@@ -553,16 +529,14 @@ export function mapSupportWorkspaceSelection(
     ? mapWorkspaceConversation(response.conversation)
     : null;
   if (target.conversationId && conversation?.id !== target.conversationId) {
-    throw new Error("Support workspace returned a different conversation");
+    throw new Error('Support workspace returned a different conversation');
   }
   if (conversation && conversation.endUserId !== response.endUser.id) {
-    throw new Error(
-      "Support workspace returned a conversation from another end user",
-    );
+    throw new Error('Support workspace returned a conversation from another end user');
   }
   const supportCase = mapWorkspaceCase(response.case, response.endUser.id);
   if (target.caseId && supportCase?.id !== target.caseId) {
-    throw new Error("Support workspace returned a different case");
+    throw new Error('Support workspace returned a different case');
   }
   return {
     checkpoint: response.checkpoint,
@@ -581,8 +555,7 @@ export function mapSupportWorkspaceSelection(
         : {}),
       ...(response.actionRevisions.conversationUpdatedAt !== undefined
         ? {
-            conversationUpdatedAt:
-              response.actionRevisions.conversationUpdatedAt,
+            conversationUpdatedAt: response.actionRevisions.conversationUpdatedAt,
           }
         : {}),
     },
@@ -598,9 +571,7 @@ export function mapSupportWorkspaceSelection(
         ? mapSelectionMessages(conversation.id, response.messages.items)
         : response.messages.items.length
           ? (() => {
-              throw new Error(
-                "Support workspace returned messages without a conversation",
-              );
+              throw new Error('Support workspace returned messages without a conversation');
             })()
           : [],
       nextCursor: response.messages.nextCursor ?? null,
@@ -613,14 +584,12 @@ export function mapSupportWorkspaceSelection(
 const apiSupportWorkspaceSource: SupportWorkspaceSource = {
   async readCases(projectId, request) {
     const response = await supportWorkspaceRead(projectId, {
-      mode: "CASES",
+      mode: 'CASES',
       limit: request?.limit ?? 30,
       ...(request?.cursor ? { cursor: request.cursor } : {}),
     });
-    if (response.mode !== "CASES") {
-      throw new Error(
-        "Support workspace returned an unexpected Case inbox projection",
-      );
+    if (response.mode !== 'CASES') {
+      throw new Error('Support workspace returned an unexpected Case inbox projection');
     }
     return {
       items: response.items.map(mapWorkspaceCaseRow),
@@ -630,14 +599,12 @@ const apiSupportWorkspaceSource: SupportWorkspaceSource = {
 
   async readConversations(projectId, request) {
     const response = await supportWorkspaceRead(projectId, {
-      mode: "ALL_CONVERSATIONS",
+      mode: 'ALL_CONVERSATIONS',
       limit: request?.limit ?? 30,
       ...(request?.cursor ? { cursor: request.cursor } : {}),
     });
-    if (response.mode !== "ALL_CONVERSATIONS") {
-      throw new Error(
-        "Support workspace returned an unexpected inbox projection",
-      );
+    if (response.mode !== 'ALL_CONVERSATIONS') {
+      throw new Error('Support workspace returned an unexpected inbox projection');
     }
     return {
       items: response.items.map(mapWorkspaceConversation),
@@ -647,26 +614,17 @@ const apiSupportWorkspaceSource: SupportWorkspaceSource = {
 
   async readSelection(projectId, target, request) {
     if (!target.conversationId && !target.caseId)
-      throw new Error("Support workspace selection requires an exact target");
+      throw new Error('Support workspace selection requires an exact target');
     const response = await supportWorkspaceRead(projectId, {
-      mode: "SELECTION",
-      ...(target.conversationId
-        ? { conversationId: target.conversationId }
-        : {}),
+      mode: 'SELECTION',
+      ...(target.conversationId ? { conversationId: target.conversationId } : {}),
       ...(target.caseId ? { caseId: target.caseId } : {}),
-      messageLimit:
-        request?.messageLimit ?? SUPPORT_WORKSPACE_MESSAGE_PAGE_LIMIT,
-      ...(request?.messageCursor
-        ? { messageCursor: request.messageCursor }
-        : {}),
-      ...(request?.messageNewerCursor
-        ? { messageNewerCursor: request.messageNewerCursor }
-        : {}),
+      messageLimit: request?.messageLimit ?? SUPPORT_WORKSPACE_MESSAGE_PAGE_LIMIT,
+      ...(request?.messageCursor ? { messageCursor: request.messageCursor } : {}),
+      ...(request?.messageNewerCursor ? { messageNewerCursor: request.messageNewerCursor } : {}),
     });
-    if (response.mode !== "SELECTION") {
-      throw new Error(
-        "Support workspace did not return the requested conversation",
-      );
+    if (response.mode !== 'SELECTION') {
+      throw new Error('Support workspace did not return the requested conversation');
     }
     return mapSupportWorkspaceSelection(response, target);
   },
@@ -683,13 +641,9 @@ const apiSupportWorkspaceSource: SupportWorkspaceSource = {
 
 function mockCapabilities(
   selectedCase: MockSupportCase | undefined,
-): SupportWorkspaceSelection["capabilities"] {
-  const assignment = selectedCase
-    ? readMockSupportAssignment(selectedCase.id)
-    : null;
-  const actionable = Boolean(
-    selectedCase && selectedCase.status !== "RESOLVED",
-  );
+): SupportWorkspaceSelection['capabilities'] {
+  const assignment = selectedCase ? readMockSupportAssignment(selectedCase.id) : null;
+  const actionable = Boolean(selectedCase && selectedCase.status !== 'RESOLVED');
   return {
     assignCase: false,
     claimAssignment: actionable && !assignment,
@@ -701,17 +655,24 @@ function mockCapabilities(
     suspendAi: false,
     transferAssignment: actionable && Boolean(assignment),
     attachments: {
-      state: "AVAILABLE",
+      state: 'AVAILABLE',
       upload: true,
       download: true,
       maxFilesPerMessage: 10,
       maxBytesPerFile: 20 * 1024 * 1024,
       maxBytesPerMessage: 50 * 1024 * 1024,
-      contentTypes: ["image/jpeg", "image/png", "image/webp", "application/pdf", "text/plain", "text/csv"],
+      contentTypes: [
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'application/pdf',
+        'text/plain',
+        'text/csv',
+      ],
     },
     internalNotes: selectedCase
       ? {
-          state: "AVAILABLE",
+          state: 'AVAILABLE',
           read: true,
           create: true,
           historyRead: true,
@@ -722,7 +683,7 @@ function mockCapabilities(
           attachmentDownload: true,
         }
       : {
-          state: "UNAVAILABLE",
+          state: 'UNAVAILABLE',
           read: false,
           create: false,
           historyRead: false,
@@ -735,10 +696,7 @@ function mockCapabilities(
   };
 }
 
-const mockReadStateByConversation = new Map<
-  string,
-  SupportConversationReadState
->();
+const mockReadStateByConversation = new Map<string, SupportConversationReadState>();
 
 function mockConversationReadState(
   conversationId: string,
@@ -746,8 +704,7 @@ function mockConversationReadState(
 ): SupportConversationReadState {
   const current = mockReadStateByConversation.get(conversationId);
   if (current && current.highestOrdinal >= highestOrdinal) return current;
-  const lastReadOrdinal =
-    current?.lastReadOrdinal ?? Math.max(0, highestOrdinal - 2);
+  const lastReadOrdinal = current?.lastReadOrdinal ?? Math.max(0, highestOrdinal - 2);
   const unreadMessageCount = Math.max(0, highestOrdinal - lastReadOrdinal);
   const value: SupportConversationReadState = {
     conversationId,
@@ -771,83 +728,82 @@ type MockSupportCase = SupportWorkspaceCaseRow & {
 
 const mockSupportCases: readonly MockSupportCase[] = [
   {
-    id: "case-demo-deposit",
-    endUserId: "usr_1",
-    externalEndUserId: "player-0042",
-    conversationId: "conv_1",
-    projectSequence: "48",
-    title: "Не поступил депозит",
+    id: 'case-demo-deposit',
+    endUserId: 'usr_1',
+    externalEndUserId: 'player-0042',
+    conversationId: 'conv_1',
+    projectSequence: '48',
+    title: 'Не поступил депозит',
     summary:
-      "Платёж найден. Провайдер обрабатывает его дольше обычного; ожидаем проверяемый результат.",
-    goal: "Понять статус депозита и получить деньги на счёт",
-    status: "WAITING_SYSTEM",
-    priority: "URGENT",
-    groupCode: "PAYMENTS",
+      'Платёж найден. Провайдер обрабатывает его дольше обычного; ожидаем проверяемый результат.',
+    goal: 'Понять статус депозита и получить деньги на счёт',
+    status: 'WAITING_SYSTEM',
+    priority: 'URGENT',
+    groupCode: 'PAYMENTS',
     attentionRequired: false,
     slaSignal: {
-      state: "AVAILABLE",
-      signalCode: "SLA_PAUSED",
-      kind: "RESOLUTION",
-      timing: "PAUSED",
-      risk: "ON_TRACK",
-      pauseReason: "WAITING_SYSTEM",
-      currentDeadlineAt: "2026-07-26T11:30:00.000Z",
+      state: 'AVAILABLE',
+      signalCode: 'SLA_PAUSED',
+      kind: 'RESOLUTION',
+      timing: 'PAUSED',
+      risk: 'ON_TRACK',
+      pauseReason: 'WAITING_SYSTEM',
+      currentDeadlineAt: '2026-07-26T11:30:00.000Z',
       remainingBusinessMs: 5_400_000,
-      computedAt: "2026-07-26T10:00:00.000Z",
+      computedAt: '2026-07-26T10:00:00.000Z',
     },
-    lastActivityAt: "2026-07-26T10:00:00.000Z",
-    updatedAt: "2026-07-26T10:00:00.000Z",
+    lastActivityAt: '2026-07-26T10:00:00.000Z',
+    updatedAt: '2026-07-26T10:00:00.000Z',
     version: 2,
   },
   {
-    id: "case-demo-game",
-    endUserId: "usr_2",
-    externalEndUserId: "player-0198",
-    conversationId: "conv_3",
-    projectSequence: "47",
-    title: "Не запускается игра",
+    id: 'case-demo-game',
+    endUserId: 'usr_2',
+    externalEndUserId: 'player-0198',
+    conversationId: 'conv_3',
+    projectSequence: '47',
+    title: 'Не запускается игра',
     summary:
-      "Retenive собрала данные об устройстве и предложила безопасные шаги. Пользователь ждёт администратора.",
-    goal: "Запустить игру на мобильном устройстве",
-    status: "WAITING_ADMIN",
-    priority: "HIGH",
-    groupCode: "GAMES",
+      'Retenive собрала данные об устройстве и предложила безопасные шаги. Пользователь ждёт администратора.',
+    goal: 'Запустить игру на мобильном устройстве',
+    status: 'WAITING_ADMIN',
+    priority: 'HIGH',
+    groupCode: 'GAMES',
     attentionRequired: true,
     slaSignal: {
-      state: "AVAILABLE",
-      signalCode: "SLA_AT_RISK",
-      kind: "FIRST_HUMAN_RESPONSE",
-      timing: "RUNNING",
-      risk: "AT_RISK",
+      state: 'AVAILABLE',
+      signalCode: 'SLA_AT_RISK',
+      kind: 'FIRST_HUMAN_RESPONSE',
+      timing: 'RUNNING',
+      risk: 'AT_RISK',
       pauseReason: null,
-      currentDeadlineAt: "2026-07-26T09:35:00.000Z",
+      currentDeadlineAt: '2026-07-26T09:35:00.000Z',
       remainingBusinessMs: 900_000,
-      computedAt: "2026-07-26T09:20:00.000Z",
+      computedAt: '2026-07-26T09:20:00.000Z',
     },
-    lastActivityAt: "2026-07-26T09:20:00.000Z",
-    updatedAt: "2026-07-26T09:20:00.000Z",
+    lastActivityAt: '2026-07-26T09:20:00.000Z',
+    updatedAt: '2026-07-26T09:20:00.000Z',
     version: 1,
   },
   {
-    id: "case-demo-resolved",
-    endUserId: "usr_3",
-    externalEndUserId: "player-0281",
+    id: 'case-demo-resolved',
+    endUserId: 'usr_3',
+    externalEndUserId: 'player-0281',
     conversationId: null,
-    projectSequence: "46",
-    title: "Восстановление доступа",
-    summary:
-      "Доступ восстановлен после проверки аккаунта; обращение завершено.",
-    goal: "Вернуть пользователю доступ к аккаунту",
-    status: "RESOLVED",
-    priority: "NORMAL",
-    groupCode: "ACCOUNT",
+    projectSequence: '46',
+    title: 'Восстановление доступа',
+    summary: 'Доступ восстановлен после проверки аккаунта; обращение завершено.',
+    goal: 'Вернуть пользователю доступ к аккаунту',
+    status: 'RESOLVED',
+    priority: 'NORMAL',
+    groupCode: 'ACCOUNT',
     attentionRequired: false,
     slaSignal: {
-      state: "NO_ACTIVE_CLOCK",
-      computedAt: "2026-07-26T08:30:00.000Z",
+      state: 'NO_ACTIVE_CLOCK',
+      computedAt: '2026-07-26T08:30:00.000Z',
     },
-    lastActivityAt: "2026-07-26T08:30:00.000Z",
-    updatedAt: "2026-07-26T08:30:00.000Z",
+    lastActivityAt: '2026-07-26T08:30:00.000Z',
+    updatedAt: '2026-07-26T08:30:00.000Z',
     version: 4,
   },
 ];
@@ -874,7 +830,7 @@ function mockCaseSelection(value: MockSupportCase): SupportWorkspaceCase {
     assignment: assignment
       ? {
           id: assignment.id,
-          state: "ASSIGNED",
+          state: 'ASSIGNED',
           operatorId: assignment.operatorId,
           operatorName: assignment.operatorName,
           teamName: assignment.teamName,
@@ -905,10 +861,7 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
         updatedAt: item.updatedAt,
         version: item.version,
       })),
-      nextCursor:
-        offset + limit < mockSupportCases.length
-          ? String(offset + limit)
-          : null,
+      nextCursor: offset + limit < mockSupportCases.length ? String(offset + limit) : null,
     };
   },
 
@@ -919,18 +872,14 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
         id: conversation.id,
         endUserId: conversation.endUser.id,
         title: conversation.title,
-        status: conversation.status === "ACTIVE" ? "OPEN" : "CLOSED",
+        status: conversation.status === 'ACTIVE' ? 'OPEN' : 'CLOSED',
         createdAt: conversation.createdAt,
         updatedAt: conversation.updatedAt,
         messageCount: conversation.messageCount,
         isCurrent: conversation.isCurrent,
-        currentInteractionSessionCount:
-          conversation.currentInteractionSessionCount,
+        currentInteractionSessionCount: conversation.currentInteractionSessionCount,
         lastMessageAt: conversation.lastMessage?.createdAt ?? null,
-        readState: mockConversationReadState(
-          conversation.id,
-          conversation.messageCount,
-        ),
+        readState: mockConversationReadState(conversation.id, conversation.messageCount),
       })),
       nextCursor: page.nextCursor,
     };
@@ -938,14 +887,12 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
 
   async readSelection(projectId, target, request) {
     if (!target.conversationId && !target.caseId)
-      throw new Error("Support workspace selection requires an exact target");
+      throw new Error('Support workspace selection requires an exact target');
     const selectedCase = target.caseId
       ? mockSupportCases.find((item) => item.id === target.caseId)
       : undefined;
-    if (target.caseId && !selectedCase)
-      throw new Error("Support workspace Case is unavailable");
-    const conversationId =
-      target.conversationId ?? selectedCase?.conversationId ?? null;
+    if (target.caseId && !selectedCase) throw new Error('Support workspace Case is unavailable');
+    const conversationId = target.conversationId ?? selectedCase?.conversationId ?? null;
     const page = await repository.getProjectConversations(projectId, {
       limit: 100,
     });
@@ -953,26 +900,14 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
       ? page.items.find((item) => item.id === conversationId)
       : undefined;
     if (conversationId && !selected)
-      throw new Error("Support workspace conversation is unavailable");
-    if (
-      selectedCase &&
-      selected &&
-      selected.endUser.id !== selectedCase.endUserId
-    )
-      throw new Error("Mock Case points to another end user conversation");
+      throw new Error('Support workspace conversation is unavailable');
+    if (selectedCase && selected && selected.endUser.id !== selectedCase.endUserId)
+      throw new Error('Mock Case points to another end user conversation');
     const messages = selected
-      ? await repository.getMessages(
-          projectId,
-          selected.endUser.id,
-          selected.id,
-          {
-            limit:
-              request?.messageLimit ?? SUPPORT_WORKSPACE_MESSAGE_PAGE_LIMIT,
-            ...(request?.messageCursor
-              ? { cursor: request.messageCursor }
-              : {}),
-          },
-        )
+      ? await repository.getMessages(projectId, selected.endUser.id, selected.id, {
+          limit: request?.messageLimit ?? SUPPORT_WORKSPACE_MESSAGE_PAGE_LIMIT,
+          ...(request?.messageCursor ? { cursor: request.messageCursor } : {}),
+        })
       : { items: [], nextCursor: null };
     const endUserId = selected?.endUser.id ?? selectedCase!.endUserId;
     const readState = selected
@@ -980,13 +915,13 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
       : null;
     return {
       checkpoint: `mock:${projectId}:${target.caseId ?? conversationId}`,
-      capabilitiesRevision: "mock-read-only",
+      capabilitiesRevision: 'mock-read-only',
       actionRevisions: {},
       classificationOptions: [
-        { code: "PAYMENTS", label: "Платежи" },
-        { code: "GAMES", label: "Игры" },
-        { code: "ACCOUNT", label: "Аккаунт" },
-        { code: "GENERAL", label: "Общие вопросы" },
+        { code: 'PAYMENTS', label: 'Платежи' },
+        { code: 'GAMES', label: 'Игры' },
+        { code: 'ACCOUNT', label: 'Аккаунт' },
+        { code: 'GENERAL', label: 'Общие вопросы' },
       ],
       capabilities: mockCapabilities(selectedCase),
       endUser: {
@@ -999,29 +934,22 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
       case: selectedCase ? mockCaseSelection(selectedCase) : null,
       sla: selectedCase
         ? {
-            occurrenceState:
-              selectedCase.status === "RESOLVED" ? "TERMINAL" : "ACTIVE",
+            occurrenceState: selectedCase.status === 'RESOLVED' ? 'TERMINAL' : 'ACTIVE',
             clocks:
-              selectedCase.slaSignal?.state === "AVAILABLE"
+              selectedCase.slaSignal?.state === 'AVAILABLE'
                 ? [
                     {
                       kind: selectedCase.slaSignal.kind,
                       timing: selectedCase.slaSignal.timing,
                       risk: selectedCase.slaSignal.risk,
-                      outcome:
-                        selectedCase.status === "RESOLVED" ? "MET" : "OPEN",
+                      outcome: selectedCase.status === 'RESOLVED' ? 'MET' : 'OPEN',
                       pauseReason: selectedCase.slaSignal.pauseReason,
                       targetBusinessSeconds: 7_200,
                       consumedBusinessMs: 1_800_000,
-                      remainingBusinessMs:
-                        selectedCase.slaSignal.remainingBusinessMs,
-                      currentDeadlineAt:
-                        selectedCase.slaSignal.currentDeadlineAt,
+                      remainingBusinessMs: selectedCase.slaSignal.remainingBusinessMs,
+                      currentDeadlineAt: selectedCase.slaSignal.currentDeadlineAt,
                       breachedAt: null,
-                      metAt:
-                        selectedCase.status === "RESOLVED"
-                          ? selectedCase.updatedAt
-                          : null,
+                      metAt: selectedCase.status === 'RESOLVED' ? selectedCase.updatedAt : null,
                     },
                   ]
                 : [],
@@ -1029,44 +957,40 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
         : null,
       routing: selectedCase
         ? {
-            state: "AVAILABLE",
+            state: 'AVAILABLE',
             reasonCode:
-              selectedCase.status === "RESOLVED"
-                ? "ROUTING_OFFER_ACCEPTED"
-                : selectedCase.id === "case-demo-game"
-                  ? "CAPACITY_GAP"
-                  : "ROUTING_EVALUATION_PENDING",
-            assignmentState: readMockSupportAssignment(selectedCase.id)
-              ? "ASSIGNED"
-              : "UNASSIGNED",
-            mode: "LIVE_PROPOSAL",
-            outcome:
-              selectedCase.id === "case-demo-game" ? "CAPACITY_GAP" : null,
+              selectedCase.status === 'RESOLVED'
+                ? 'ROUTING_OFFER_ACCEPTED'
+                : selectedCase.id === 'case-demo-game'
+                  ? 'CAPACITY_GAP'
+                  : 'ROUTING_EVALUATION_PENDING',
+            assignmentState: readMockSupportAssignment(selectedCase.id) ? 'ASSIGNED' : 'UNASSIGNED',
+            mode: 'LIVE_PROPOSAL',
+            outcome: selectedCase.id === 'case-demo-game' ? 'CAPACITY_GAP' : null,
             queue: {
               code: selectedCase.groupCode,
               name:
-                selectedCase.groupCode === "PAYMENTS"
-                  ? "Платежи"
-                  : selectedCase.groupCode === "GAMES"
-                    ? "Игры"
-                    : "Аккаунты",
+                selectedCase.groupCode === 'PAYMENTS'
+                  ? 'Платежи'
+                  : selectedCase.groupCode === 'GAMES'
+                    ? 'Игры'
+                    : 'Аккаунты',
             },
-            candidateCount: selectedCase.id === "case-demo-game" ? 4 : 2,
-            eligibleCandidateCount:
-              selectedCase.id === "case-demo-game" ? 0 : 2,
+            candidateCount: selectedCase.id === 'case-demo-game' ? 4 : 2,
+            eligibleCandidateCount: selectedCase.id === 'case-demo-game' ? 0 : 2,
             exclusions:
-              selectedCase.id === "case-demo-game"
+              selectedCase.id === 'case-demo-game'
                 ? { CAPACITY_EXHAUSTED: 3, SKILL_REQUIRED: 1 }
                 : {},
             evaluatedAt: selectedCase.updatedAt,
             candidatesTruncated: false,
             reservation: null,
             fallback:
-              selectedCase.id === "case-demo-game"
+              selectedCase.id === 'case-demo-game'
                 ? {
-                    state: "SCHEDULED",
+                    state: 'SCHEDULED',
                     candidateAttempt: 2,
-                    availableAt: "2026-07-26T09:25:00.000Z",
+                    availableAt: '2026-07-26T09:25:00.000Z',
                   }
                 : null,
           }
@@ -1076,13 +1000,12 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
             id: selected.id,
             endUserId: selected.endUser.id,
             title: selected.title,
-            status: selected.status === "ACTIVE" ? "OPEN" : "CLOSED",
+            status: selected.status === 'ACTIVE' ? 'OPEN' : 'CLOSED',
             createdAt: selected.createdAt,
             updatedAt: selected.updatedAt,
             messageCount: selected.messageCount,
             isCurrent: selected.isCurrent,
-            currentInteractionSessionCount:
-              selected.currentInteractionSessionCount,
+            currentInteractionSessionCount: selected.currentInteractionSessionCount,
             lastMessageAt: selected.lastMessage?.createdAt ?? null,
             readState: readState!,
           }
@@ -1091,9 +1014,7 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
         items: withMockMessageOrdinals(messages.items),
         nextCursor: messages.nextCursor,
         newerCursor: null,
-        anchorOrdinal: request?.messageCursor
-          ? null
-          : (readState?.firstUnreadOrdinal ?? null),
+        anchorOrdinal: request?.messageCursor ? null : (readState?.firstUnreadOrdinal ?? null),
       },
     };
   },
@@ -1104,20 +1025,13 @@ const mockSupportWorkspaceSource: SupportWorkspaceSource = {
       current.highestOrdinal,
       Math.max(current.lastReadOrdinal, lastReadOrdinal),
     );
-    const unreadMessageCount = Math.max(
-      0,
-      current.highestOrdinal - nextLastReadOrdinal,
-    );
+    const unreadMessageCount = Math.max(0, current.highestOrdinal - nextLastReadOrdinal);
     const next: SupportConversationReadState = {
       ...current,
       lastReadOrdinal: nextLastReadOrdinal,
-      firstUnreadOrdinal:
-        unreadMessageCount > 0 ? nextLastReadOrdinal + 1 : null,
+      firstUnreadOrdinal: unreadMessageCount > 0 ? nextLastReadOrdinal + 1 : null,
       unreadMessageCount,
-      unreadCustomerMessageCount: Math.min(
-        current.unreadCustomerMessageCount,
-        unreadMessageCount,
-      ),
+      unreadCustomerMessageCount: Math.min(current.unreadCustomerMessageCount, unreadMessageCount),
       updatedAt: new Date().toISOString(),
     };
     mockReadStateByConversation.set(conversationId, next);

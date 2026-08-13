@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import Dialog from "primevue/dialog";
-import type { NotificationOperationsDelivery } from "../model/notification-operations";
+import { ref, watch } from 'vue';
+import Dialog from 'primevue/dialog';
+import type { NotificationOperationsDelivery } from '../model/notification-operations';
 
 const props = defineProps<{
   target: NotificationOperationsDelivery | null;
@@ -35,8 +35,8 @@ watch(
   >
     <div v-if="target" class="dialog-stack">
       <p>
-        Retenive повторно проверит eligibility под lock. Business delivery, payload
-        hash и журнал попыток останутся прежними.
+        Retenive повторно проверит eligibility под lock. Business delivery, payload hash и журнал
+        попыток останутся прежними.
       </p>
       <dl>
         <div>
@@ -55,18 +55,13 @@ watch(
       <label class="confirmation">
         <input v-model="confirmed" type="checkbox" />
         <span>
-          Я проверил immutable delivery и понимаю, что новая provider attempt
-          будет выполнена только для доказанно не принятой доставки.
+          Я проверил immutable delivery и понимаю, что новая provider attempt будет выполнена только
+          для доказанно не принятой доставки.
         </span>
       </label>
     </div>
     <template #footer>
-      <button
-        type="button"
-        class="secondary-button"
-        :disabled="submitting"
-        @click="emit('cancel')"
-      >
+      <button type="button" class="secondary-button" :disabled="submitting" @click="emit('cancel')">
         Назад
       </button>
       <button

@@ -6,15 +6,15 @@ import {
   projectRoleList,
   projectRoleReassign,
   projectRoleUpdate,
-} from '@/shared/api/generated/retenive-backend'
+} from '@/shared/api/generated/retenive-backend';
 import type {
   ArchiveProjectRoleDto,
   CreateProjectRoleDto,
   ReassignProjectRoleDto,
   UpdateProjectRoleDto,
-} from '@/shared/api/generated/models'
+} from '@/shared/api/generated/models';
 
-const normalizeReason = (value: string) => value.trim().normalize('NFC')
+const normalizeReason = (value: string) => value.trim().normalize('NFC');
 
 export const projectRoleApi = {
   permissions: (projectId: string) => projectPermissionList(projectId),
@@ -28,4 +28,4 @@ export const projectRoleApi = {
     projectRoleReassign(projectId, roleId, { ...body, reason: normalizeReason(body.reason) }),
   archive: (projectId: string, roleId: string, body: ArchiveProjectRoleDto) =>
     projectRoleArchive(projectId, roleId, { ...body, reason: normalizeReason(body.reason) }),
-}
+};

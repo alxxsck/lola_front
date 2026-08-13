@@ -14,16 +14,13 @@ export function contractOperation(document, operationId) {
 }
 
 export function operationParameter(operationValue, name) {
-  const value = operationValue.parameters?.find(
-    (candidate) => candidate.name === name,
-  );
-  if (!value)
-    throw new Error(`${operationValue.operationId} is missing ${name}`);
+  const value = operationValue.parameters?.find((candidate) => candidate.name === name);
+  if (!value) throw new Error(`${operationValue.operationId} is missing ${name}`);
   return value;
 }
 
 export function requireOperationPermission(operationValue, code) {
-  if (operationValue["x-iam-permission"]?.code !== code) {
+  if (operationValue['x-iam-permission']?.code !== code) {
     throw new Error(`${operationValue.operationId} must require ${code}`);
   }
 }
@@ -46,12 +43,7 @@ export function requireSchemaFields(document, schemaName, fields) {
   }
 }
 
-export function requireSchemaPropertyEnum(
-  document,
-  schemaName,
-  propertyName,
-  values,
-) {
+export function requireSchemaPropertyEnum(document, schemaName, propertyName, values) {
   const actual = new Set(
     contractSchema(document, schemaName).properties?.[propertyName]?.enum ?? [],
   );
@@ -65,7 +57,6 @@ export function requireSchemaPropertyEnum(
 export function requireSchemaEnum(document, schemaName, values) {
   const actual = new Set(contractSchema(document, schemaName).enum ?? []);
   for (const value of values) {
-    if (!actual.has(value))
-      throw new Error(`${schemaName} must retain ${value}`);
+    if (!actual.has(value)) throw new Error(`${schemaName} must retain ${value}`);
   }
 }

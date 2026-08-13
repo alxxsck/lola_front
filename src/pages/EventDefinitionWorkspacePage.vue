@@ -1,59 +1,56 @@
 <script setup lang="ts">
-import Dialog from "primevue/dialog";
-import { computed, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import Dialog from 'primevue/dialog';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import EventDefinitionHistory from "@/features/events/EventDefinitionHistory.vue";
-import EventSchemaAuthoring from "@/features/events/EventSchemaAuthoring.vue";
-import EventQueryEventAccess from "@/features/event-query/ui/EventQueryEventAccess.vue";
-import IntegrationEventSummary from "@/features/integration-event-summary/IntegrationEventSummary.vue";
-import { ApiError } from "@/shared/api/http/api-error";
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import EventDefinitionHistory from '@/features/events/EventDefinitionHistory.vue';
+import EventSchemaAuthoring from '@/features/events/EventSchemaAuthoring.vue';
+import EventQueryEventAccess from '@/features/event-query/ui/EventQueryEventAccess.vue';
+import IntegrationEventSummary from '@/features/integration-event-summary/IntegrationEventSummary.vue';
+import { ApiError } from '@/shared/api/http/api-error';
 import {
   applyEventMetadataUpdate,
   eventCatalogRepository,
   type EventCatalogDefinition,
   type EventDefinitionUsage,
-} from "@/shared/api/repository/event-catalog";
+} from '@/shared/api/repository/event-catalog';
 
-type WorkspaceSection =
-  "overview" | "policy" | "ai-access" | "schema" | "usage";
+type WorkspaceSection = 'overview' | 'policy' | 'ai-access' | 'schema' | 'usage';
 
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 
 const definition = ref<EventCatalogDefinition | null>(null);
-const name = ref("");
-const description = ref("");
+const name = ref('');
+const description = ref('');
 const loading = ref(true);
 const saving = ref(false);
-const loadError = ref("");
-const saveError = ref("");
-const success = ref("");
-const activeSection = ref<WorkspaceSection>("overview");
+const loadError = ref('');
+const saveError = ref('');
+const success = ref('');
+const activeSection = ref<WorkspaceSection>('overview');
 const linkedRevisionId = computed(() =>
-  typeof route.query?.revisionId === "string"
-    ? route.query.revisionId
-    : undefined,
+  typeof route.query?.revisionId === 'string' ? route.query.revisionId : undefined,
 );
 const usage = ref<EventDefinitionUsage | null>(null);
 const usageLoading = ref(false);
-const usageError = ref("");
+const usageError = ref('');
 const mutationPending = ref(false);
-const mutationError = ref("");
+const mutationError = ref('');
 const archiveDialogVisible = ref(false);
 const deleteDialogVisible = ref(false);
 const disableDialogVisible = ref(false);
-const archiveReason = ref("");
-const deleteReason = ref("");
-const deleteConfirmation = ref("");
+const archiveReason = ref('');
+const deleteReason = ref('');
+const deleteConfirmation = ref('');
 const policyEnabled = ref(false);
 const policyClientIngestible = ref(false);
 const policyCountsAsActivity = ref(false);
-const policyReason = ref("");
-const policyConflictServer = ref<EventCatalogDefinition["policy"] | null>(null);
+const policyReason = ref('');
+const policyConflictServer = ref<EventCatalogDefinition['policy'] | null>(null);
 interface PolicyCommandSnapshot {
   projectId: string;
   definitionKeyId: string;
@@ -69,40 +66,38 @@ let definitionRequestId = 0;
 let usageRequestId = 0;
 let workspaceGeneration = 0;
 
-const definitionKeyId = computed(() =>
-  String(route.params.definitionKeyId ?? ""),
-);
+const definitionKeyId = computed(() => String(route.params.definitionKeyId ?? ''));
 const canEdit = computed(
   () =>
     hasProjectPermission(
       auth.project?.effectivePermissionCodes ?? [],
-      "project.event_catalog.write",
+      'project.event_catalog.write',
     ) && !definition.value?.readOnly,
 );
 const canManageLifecycle = computed(
   () =>
     hasProjectPermission(
       auth.project?.effectivePermissionCodes ?? [],
-      "project.event_catalog.write",
-    ) && definition.value?.origin === "CUSTOM",
+      'project.event_catalog.write',
+    ) && definition.value?.origin === 'CUSTOM',
 );
 const canPublish = computed(() =>
   hasProjectPermission(
     auth.project?.effectivePermissionCodes ?? [],
-    "project.event_catalog.publish",
+    'project.event_catalog.publish',
   ),
 );
 const canManageEventQueryPolicy = computed(() =>
   hasProjectPermission(
     auth.project?.effectivePermissionCodes ?? [],
-    "project.event_query_policy.manage",
+    'project.event_query_policy.manage',
   ),
 );
 const canReadIntegrationSummary = computed(() => {
   const permissions = auth.project?.effectivePermissionCodes ?? [];
   return (
-    hasProjectPermission(permissions, "project.event_catalog.read") &&
-    hasProjectPermission(permissions, "project.integrations.read")
+    hasProjectPermission(permissions, 'project.event_catalog.read') &&
+    hasProjectPermission(permissions, 'project.integrations.read')
   );
 });
 const canReadEventQueryPolicy = computed(
@@ -110,17 +105,17 @@ const canReadEventQueryPolicy = computed(
     canManageEventQueryPolicy.value ||
     hasProjectPermission(
       auth.project?.effectivePermissionCodes ?? [],
-      "project.event_query_policy.preview",
+      'project.event_query_policy.preview',
     ),
 );
 const workspaceSections = computed<WorkspaceSection[]>(() => [
-  "overview",
-  "policy",
-  ...(canReadEventQueryPolicy.value ? (["ai-access"] as const) : []),
-  "schema",
-  "usage",
+  'overview',
+  'policy',
+  ...(canReadEventQueryPolicy.value ? (['ai-access'] as const) : []),
+  'schema',
+  'usage',
 ]);
-const isArchived = computed(() => definition.value?.lifecycle === "ARCHIVED");
+const isArchived = computed(() => definition.value?.lifecycle === 'ARCHIVED');
 const hasMetadataConcurrencyToken = computed(() =>
   Boolean(definition.value?.metadata.concurrencyToken),
 );
@@ -128,16 +123,14 @@ const isDirty = computed(
   () =>
     Boolean(definition.value) &&
     (name.value !== definition.value?.metadata.name ||
-      description.value !== (definition.value?.metadata.description ?? "")),
+      description.value !== (definition.value?.metadata.description ?? '')),
 );
 const isPolicyDirty = computed(
   () =>
     Boolean(definition.value) &&
     (policyEnabled.value !== definition.value?.policy.enabled ||
-      policyClientIngestible.value !==
-        definition.value?.policy.clientIngestible ||
-      policyCountsAsActivity.value !==
-        definition.value?.policy.countsAsActivity),
+      policyClientIngestible.value !== definition.value?.policy.clientIngestible ||
+      policyCountsAsActivity.value !== definition.value?.policy.countsAsActivity),
 );
 onMounted(loadDefinition);
 watch(
@@ -162,18 +155,18 @@ function resetWorkspace() {
   archiveDialogVisible.value = false;
   deleteDialogVisible.value = false;
   disableDialogVisible.value = false;
-  mutationError.value = "";
-  loadError.value = "";
-  saveError.value = "";
-  usageError.value = "";
-  success.value = "";
-  archiveReason.value = "";
-  deleteReason.value = "";
-  deleteConfirmation.value = "";
+  mutationError.value = '';
+  loadError.value = '';
+  saveError.value = '';
+  usageError.value = '';
+  success.value = '';
+  archiveReason.value = '';
+  deleteReason.value = '';
+  deleteConfirmation.value = '';
   policyEnabled.value = false;
   policyClientIngestible.value = false;
   policyCountsAsActivity.value = false;
-  policyReason.value = "";
+  policyReason.value = '';
   policyConflictServer.value = null;
   pendingDisablePolicy.value = null;
 }
@@ -188,21 +181,19 @@ async function loadDefinition() {
   if (!projectId || !key) return;
   const requestId = ++definitionRequestId;
   loading.value = true;
-  loadError.value = "";
+  loadError.value = '';
   try {
     const loaded = await eventCatalogRepository.getDefinition(projectId, key);
-    if (!isCurrentRequest(projectId, key, requestId, definitionRequestId))
-      return;
+    if (!isCurrentRequest(projectId, key, requestId, definitionRequestId)) return;
     definition.value = loaded;
     syncPolicyForm(loaded);
     name.value = loaded.metadata.name;
-    description.value = loaded.metadata.description ?? "";
+    description.value = loaded.metadata.description ?? '';
     usage.value = null;
     void loadUsage();
   } catch (cause) {
-    if (!isCurrentRequest(projectId, key, requestId, definitionRequestId))
-      return;
-    loadError.value = errorMessage(cause, "Не удалось загрузить событие");
+    if (!isCurrentRequest(projectId, key, requestId, definitionRequestId)) return;
+    loadError.value = errorMessage(cause, 'Не удалось загрузить событие');
   } finally {
     if (isCurrentRequest(projectId, key, requestId, definitionRequestId)) {
       loading.value = false;
@@ -212,19 +203,19 @@ async function loadDefinition() {
 
 async function handleSchemaPublished() {
   await loadDefinition();
-  activeSection.value = "schema";
-  success.value = "Опубликована новая версия схемы.";
+  activeSection.value = 'schema';
+  success.value = 'Опубликована новая версия схемы.';
 }
 
 async function handleSchemaPublicationUncertain(revisionNumber: number) {
   await loadDefinition();
-  activeSection.value = "schema";
+  activeSection.value = 'schema';
   mutationError.value = `На сервере наблюдается схема v${revisionNumber}, совпадающая с отправленным черновиком, но потерянный ответ не позволяет приписать публикацию этой команде. Проверьте историю и audit log.`;
 }
 
 async function handleSchemaDefinitionCreated(created: EventCatalogDefinition) {
   await router.push({
-    name: "event-definition-workspace",
+    name: 'event-definition-workspace',
     params: { definitionKeyId: created.definitionKeyId },
   });
 }
@@ -235,48 +226,37 @@ async function saveMetadata() {
   const generation = workspaceGeneration;
   const nextName = name.value.trim();
   if (!projectId || !current || !canEdit.value || saving.value) return;
-  saveError.value = "";
-  success.value = "";
+  saveError.value = '';
+  success.value = '';
   if (!nextName) {
-    saveError.value = "Укажите название события.";
+    saveError.value = 'Укажите название события.';
     return;
   }
   if (!current.metadata.concurrencyToken) {
     saveError.value =
-      "Сервер не предоставил данные для безопасного сохранения. Обновите страницу или повторите позже.";
+      'Сервер не предоставил данные для безопасного сохранения. Обновите страницу или повторите позже.';
     return;
   }
 
   saving.value = true;
   try {
-    const result = await eventCatalogRepository.updateMetadata(
-      projectId,
-      current.definitionKeyId,
-      {
-        name: nextName,
-        description: description.value.trim() || null,
-        expectedUpdatedAt: current.metadata.concurrencyToken,
-      },
-    );
-    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
-      return;
+    const result = await eventCatalogRepository.updateMetadata(projectId, current.definitionKeyId, {
+      name: nextName,
+      description: description.value.trim() || null,
+      expectedUpdatedAt: current.metadata.concurrencyToken,
+    });
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation)) return;
     if (!result.schemaRevisionUnchanged) {
-      throw new Error(
-        "Ответ сервера нарушает правило сохранения без новой версии схемы",
-      );
+      throw new Error('Ответ сервера нарушает правило сохранения без новой версии схемы');
     }
-    const applied = applyEventMetadataUpdate(
-      definition.value ?? current,
-      result,
-    );
+    const applied = applyEventMetadataUpdate(definition.value ?? current, result);
     definition.value = applied;
     name.value = applied.metadata.name;
-    description.value = applied.metadata.description ?? "";
-    success.value = "Сохранено. Ревизия схемы не изменилась.";
+    description.value = applied.metadata.description ?? '';
+    success.value = 'Сохранено. Ревизия схемы не изменилась.';
   } catch (cause) {
-    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
-      return;
-    saveError.value = errorMessage(cause, "Не удалось сохранить изменения");
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation)) return;
+    saveError.value = errorMessage(cause, 'Не удалось сохранить изменения');
   } finally {
     if (isCurrentWorkspace(projectId, current.definitionKeyId, generation)) {
       saving.value = false;
@@ -286,22 +266,21 @@ async function saveMetadata() {
 
 async function selectSection(section: WorkspaceSection) {
   activeSection.value = section;
-  if (section !== "usage" || usage.value || usageLoading.value) return;
+  if (section !== 'usage' || usage.value || usageLoading.value) return;
   await loadUsage();
 }
 
 function handleTabKeydown(event: KeyboardEvent, section: WorkspaceSection) {
   const currentIndex = workspaceSections.value.indexOf(section);
   let nextIndex: number | null = null;
-  if (event.key === "ArrowRight") {
+  if (event.key === 'ArrowRight') {
     nextIndex = (currentIndex + 1) % workspaceSections.value.length;
-  } else if (event.key === "ArrowLeft") {
+  } else if (event.key === 'ArrowLeft') {
     nextIndex =
-      (currentIndex - 1 + workspaceSections.value.length) %
-      workspaceSections.value.length;
-  } else if (event.key === "Home") {
+      (currentIndex - 1 + workspaceSections.value.length) % workspaceSections.value.length;
+  } else if (event.key === 'Home') {
     nextIndex = 0;
-  } else if (event.key === "End") {
+  } else if (event.key === 'End') {
     nextIndex = workspaceSections.value.length - 1;
   }
   if (nextIndex === null) return;
@@ -309,9 +288,7 @@ function handleTabKeydown(event: KeyboardEvent, section: WorkspaceSection) {
   const next = workspaceSections.value[nextIndex];
   if (!next) return;
   void selectSection(next);
-  requestAnimationFrame(() =>
-    document.getElementById(`event-tab-${next}`)?.focus(),
-  );
+  requestAnimationFrame(() => document.getElementById(`event-tab-${next}`)?.focus());
 }
 
 async function loadUsage() {
@@ -321,20 +298,15 @@ async function loadUsage() {
   const key = current.definitionKeyId;
   const requestId = ++usageRequestId;
   usageLoading.value = true;
-  usageError.value = "";
+  usageError.value = '';
   try {
     const loaded = await eventCatalogRepository.getUsage(projectId, key);
-    if (!isCurrentRequest(projectId, key, requestId, usageRequestId))
-      return null;
+    if (!isCurrentRequest(projectId, key, requestId, usageRequestId)) return null;
     usage.value = loaded;
     return usage.value;
   } catch (cause) {
-    if (!isCurrentRequest(projectId, key, requestId, usageRequestId))
-      return null;
-    usageError.value = errorMessage(
-      cause,
-      "Не удалось загрузить сведения об использовании",
-    );
+    if (!isCurrentRequest(projectId, key, requestId, usageRequestId)) return null;
+    usageError.value = errorMessage(cause, 'Не удалось загрузить сведения об использовании');
     return null;
   } finally {
     if (isCurrentRequest(projectId, key, requestId, usageRequestId)) {
@@ -349,17 +321,10 @@ function isCurrentRequest(
   requestId: number,
   currentRequestId: number,
 ) {
-  return (
-    requestId === currentRequestId &&
-    isCurrentWorkspace(projectId, key, workspaceGeneration)
-  );
+  return requestId === currentRequestId && isCurrentWorkspace(projectId, key, workspaceGeneration);
 }
 
-function isCurrentWorkspace(
-  projectId: string,
-  key: string,
-  generation: number,
-) {
+function isCurrentWorkspace(projectId: string, key: string, generation: number) {
   return (
     generation === workspaceGeneration &&
     auth.project?.id === projectId &&
@@ -368,15 +333,15 @@ function isCurrentWorkspace(
 }
 
 async function prepareArchive() {
-  mutationError.value = "";
+  mutationError.value = '';
   const currentUsage = await loadUsage();
   if (!currentUsage) return;
   archiveDialogVisible.value = true;
 }
 
 async function prepareDelete() {
-  mutationError.value = "";
-  deleteConfirmation.value = "";
+  mutationError.value = '';
+  deleteConfirmation.value = '';
   const currentUsage = await loadUsage();
   if (!currentUsage) return;
   deleteDialogVisible.value = true;
@@ -386,7 +351,7 @@ function syncPolicyForm(current: EventCatalogDefinition) {
   policyEnabled.value = current.policy.enabled;
   policyClientIngestible.value = current.policy.clientIngestible;
   policyCountsAsActivity.value = current.policy.countsAsActivity;
-  policyReason.value = "";
+  policyReason.value = '';
 }
 
 async function requestPolicyChange() {
@@ -399,7 +364,7 @@ async function requestPolicyChange() {
     !policyReason.value.trim()
   )
     return;
-  mutationError.value = "";
+  mutationError.value = '';
   const command: PolicyCommandSnapshot = {
     projectId: current.projectId,
     definitionKeyId: current.definitionKeyId,
@@ -415,14 +380,7 @@ async function requestPolicyChange() {
     const currentUsage = await loadUsage();
     mutationPending.value = false;
     if (!currentUsage) return;
-    if (
-      !isCurrentWorkspace(
-        command.projectId,
-        command.definitionKeyId,
-        command.generation,
-      )
-    )
-      return;
+    if (!isCurrentWorkspace(command.projectId, command.definitionKeyId, command.generation)) return;
     pendingDisablePolicy.value = command;
     disableDialogVisible.value = true;
     return;
@@ -453,54 +411,43 @@ async function executePolicyChange(command: PolicyCommandSnapshot) {
     reason: command.reason,
   };
   mutationPending.value = true;
-  mutationError.value = "";
-  success.value = "";
+  mutationError.value = '';
+  success.value = '';
   try {
-    await eventCatalogRepository.updatePolicy(
-      projectId,
-      command.definitionKeyId,
-      {
-        enabled: command.enabled,
-        clientIngestible: command.clientIngestible,
-        countsAsActivity: command.countsAsActivity,
-        expectedVersion: command.expectedVersion,
-        reason: command.reason,
-      },
-    );
-    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
-      return;
-    const reloaded = await eventCatalogRepository.getDefinition(
-      projectId,
-      command.definitionKeyId,
-    );
-    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
-      return;
+    await eventCatalogRepository.updatePolicy(projectId, command.definitionKeyId, {
+      enabled: command.enabled,
+      clientIngestible: command.clientIngestible,
+      countsAsActivity: command.countsAsActivity,
+      expectedVersion: command.expectedVersion,
+      reason: command.reason,
+    });
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation)) return;
+    const reloaded = await eventCatalogRepository.getDefinition(projectId, command.definitionKeyId);
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation)) return;
     if (
       reloaded.policy.enabled !== command.enabled ||
       reloaded.policy.clientIngestible !== command.clientIngestible ||
       reloaded.policy.countsAsActivity !== command.countsAsActivity ||
       reloaded.policy.version <= command.expectedVersion
     ) {
-      throw new Error("Сервер не подтвердил изменение приёма событий");
+      throw new Error('Сервер не подтвердил изменение приёма событий');
     }
     definition.value = reloaded;
     syncPolicyForm(reloaded);
     usage.value = null;
     disableDialogVisible.value = false;
     pendingDisablePolicy.value = null;
-    success.value = "Правила приёма событий обновлены без новой версии схемы.";
+    success.value = 'Правила приёма событий обновлены без новой версии схемы.';
     policyConflictServer.value = null;
   } catch (cause) {
-    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
-      return;
-    if (cause instanceof ApiError && cause.code === "EVENT_POLICY_CONFLICT") {
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation)) return;
+    if (cause instanceof ApiError && cause.code === 'EVENT_POLICY_CONFLICT') {
       try {
         const reloaded = await eventCatalogRepository.getDefinition(
           projectId,
           current.definitionKeyId,
         );
-        if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
-          return;
+        if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation)) return;
         definition.value = reloaded;
         policyConflictServer.value = reloaded.policy;
         usage.value = null;
@@ -512,18 +459,15 @@ async function executePolicyChange(command: PolicyCommandSnapshot) {
         policyReason.value = attemptedPolicy.reason;
         mutationError.value =
           `Правила на сервере уже обновлены до v${reloaded.policy.version}. ` +
-          "Ваши значения и причина сохранены — проверьте их и повторите сохранение.";
+          'Ваши значения и причина сохранены — проверьте их и повторите сохранение.';
         void loadUsage();
       } catch {
         mutationError.value =
-          "Правила были изменены другим администратором. Ваши локальные значения сохранены, но актуальную версию сервера загрузить не удалось.";
+          'Правила были изменены другим администратором. Ваши локальные значения сохранены, но актуальную версию сервера загрузить не удалось.';
       }
     } else {
       await recoverConflict(cause);
-      mutationError.value = errorMessage(
-        cause,
-        "Не удалось изменить приём событий",
-      );
+      mutationError.value = errorMessage(cause, 'Не удалось изменить приём событий');
     }
   } finally {
     if (isCurrentWorkspace(projectId, current.definitionKeyId, generation)) {
@@ -537,52 +481,36 @@ async function archiveDefinition() {
   const current = definition.value;
   const currentUsage = usage.value;
   const generation = workspaceGeneration;
-  if (
-    !projectId ||
-    !current ||
-    !currentUsage?.canArchive ||
-    mutationPending.value
-  )
-    return;
+  if (!projectId || !current || !currentUsage?.canArchive || mutationPending.value) return;
   mutationPending.value = true;
-  mutationError.value = "";
+  mutationError.value = '';
   try {
     await eventCatalogRepository.archive(projectId, current.definitionKeyId, {
       expectedLifecycleVersion: currentUsage.lifecycleVersion,
       expectedPolicyVersion: currentUsage.policyVersion,
       reason: archiveReason.value.trim() || undefined,
     });
-    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
-      return;
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation)) return;
     const [active, archived] = await Promise.all([
-      eventCatalogRepository.listDefinitions(projectId, "ACTIVE"),
-      eventCatalogRepository.listDefinitions(projectId, "ARCHIVED"),
+      eventCatalogRepository.listDefinitions(projectId, 'ACTIVE'),
+      eventCatalogRepository.listDefinitions(projectId, 'ARCHIVED'),
     ]);
-    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
-      return;
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation)) return;
     const absentFromActive = !active.some(
       (item) => item.definitionKeyId === current.definitionKeyId,
     );
     const archivedDefinition = archived.find(
       (item) => item.definitionKeyId === current.definitionKeyId,
     );
-    if (
-      !absentFromActive ||
-      !archivedDefinition ||
-      archivedDefinition.policy.enabled
-    ) {
-      throw new Error("Сервер не подтвердил перемещение события в архив");
+    if (!absentFromActive || !archivedDefinition || archivedDefinition.policy.enabled) {
+      throw new Error('Сервер не подтвердил перемещение события в архив');
     }
     archiveDialogVisible.value = false;
-    await router.push({ name: "events", query: { lifecycle: "ARCHIVED" } });
+    await router.push({ name: 'events', query: { lifecycle: 'ARCHIVED' } });
   } catch (cause) {
-    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
-      return;
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation)) return;
     await recoverConflict(cause);
-    mutationError.value = errorMessage(
-      cause,
-      "Не удалось архивировать событие",
-    );
+    mutationError.value = errorMessage(cause, 'Не удалось архивировать событие');
   } finally {
     if (isCurrentWorkspace(projectId, current.definitionKeyId, generation)) {
       mutationPending.value = false;
@@ -594,50 +522,32 @@ async function restoreDefinition() {
   const projectId = auth.project?.id;
   const current = definition.value;
   const generation = workspaceGeneration;
-  if (!projectId || !current || !isArchived.value || mutationPending.value)
-    return;
+  if (!projectId || !current || !isArchived.value || mutationPending.value) return;
   mutationPending.value = true;
-  mutationError.value = "";
-  success.value = "";
+  mutationError.value = '';
+  success.value = '';
   try {
     const currentUsage = await loadUsage();
     if (!currentUsage) return;
     await eventCatalogRepository.restore(projectId, current.definitionKeyId, {
       expectedLifecycleVersion: currentUsage.lifecycleVersion,
-      reason: "Restored from CMS workspace",
+      reason: 'Restored from CMS workspace',
     });
-    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
-      return;
-    const active = await eventCatalogRepository.listDefinitions(
-      projectId,
-      "ACTIVE",
-    );
-    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
-      return;
-    const restored = active.find(
-      (item) => item.definitionKeyId === current.definitionKeyId,
-    );
-    if (
-      !restored ||
-      restored.lifecycle !== "ACTIVE" ||
-      restored.policy.enabled
-    ) {
-      throw new Error(
-        "Сервер не подтвердил восстановление с выключенным приёмом событий",
-      );
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation)) return;
+    const active = await eventCatalogRepository.listDefinitions(projectId, 'ACTIVE');
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation)) return;
+    const restored = active.find((item) => item.definitionKeyId === current.definitionKeyId);
+    if (!restored || restored.lifecycle !== 'ACTIVE' || restored.policy.enabled) {
+      throw new Error('Сервер не подтвердил восстановление с выключенным приёмом событий');
     }
     definition.value = restored;
     usage.value = null;
     success.value =
-      "Событие восстановлено. Приём новых событий остаётся выключенным. Доступ AI также остаётся выключенным.";
+      'Событие восстановлено. Приём новых событий остаётся выключенным. Доступ AI также остаётся выключенным.';
   } catch (cause) {
-    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
-      return;
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation)) return;
     await recoverConflict(cause);
-    mutationError.value = errorMessage(
-      cause,
-      "Не удалось восстановить событие",
-    );
+    mutationError.value = errorMessage(cause, 'Не удалось восстановить событие');
   } finally {
     if (isCurrentWorkspace(projectId, current.definitionKeyId, generation)) {
       mutationPending.value = false;
@@ -660,41 +570,29 @@ async function deleteDefinition() {
   )
     return;
   mutationPending.value = true;
-  mutationError.value = "";
+  mutationError.value = '';
   try {
-    await eventCatalogRepository.hardDelete(
-      projectId,
-      current.definitionKeyId,
-      {
-        expectedLifecycleVersion: currentUsage.lifecycleVersion,
-        expectedPolicyVersion: currentUsage.policyVersion,
-        reason: deleteReason.value.trim(),
-      },
-    );
-    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
-      return;
+    await eventCatalogRepository.hardDelete(projectId, current.definitionKeyId, {
+      expectedLifecycleVersion: currentUsage.lifecycleVersion,
+      expectedPolicyVersion: currentUsage.policyVersion,
+      reason: deleteReason.value.trim(),
+    });
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation)) return;
     const lifecycle = current.lifecycle;
-    const remaining = await eventCatalogRepository.listDefinitions(
-      projectId,
-      lifecycle,
-    );
-    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
-      return;
-    if (
-      remaining.some((item) => item.definitionKeyId === current.definitionKeyId)
-    ) {
-      throw new Error("Сервер не подтвердил физическое удаление события");
+    const remaining = await eventCatalogRepository.listDefinitions(projectId, lifecycle);
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation)) return;
+    if (remaining.some((item) => item.definitionKeyId === current.definitionKeyId)) {
+      throw new Error('Сервер не подтвердил физическое удаление события');
     }
     deleteDialogVisible.value = false;
     await router.push({
-      name: "events",
-      query: lifecycle === "ARCHIVED" ? { lifecycle } : {},
+      name: 'events',
+      query: lifecycle === 'ARCHIVED' ? { lifecycle } : {},
     });
   } catch (cause) {
-    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation))
-      return;
+    if (!isCurrentWorkspace(projectId, current.definitionKeyId, generation)) return;
     await recoverConflict(cause);
-    mutationError.value = errorMessage(cause, "Не удалось удалить событие");
+    mutationError.value = errorMessage(cause, 'Не удалось удалить событие');
   } finally {
     if (isCurrentWorkspace(projectId, current.definitionKeyId, generation)) {
       mutationPending.value = false;
@@ -711,11 +609,11 @@ async function recoverConflict(cause: unknown) {
 function blockerLabel(blocker: string) {
   return (
     {
-      SCENARIO_DEPENDENCIES: "Событие используется в сценариях или их истории",
-      ACTIVE_WAITS: "Есть активные ожидания события",
-      EVENT_LOGS: "Существуют записанные Event Logs",
+      SCENARIO_DEPENDENCIES: 'Событие используется в сценариях или их истории',
+      ACTIVE_WAITS: 'Есть активные ожидания события',
+      EVENT_LOGS: 'Существуют записанные Event Logs',
       EVENT_QUERY_POLICY_HISTORY:
-        "Событие использовалось в опубликованной политике доступа AI и не может быть удалено",
+        'Событие использовалось в опубликованной политике доступа AI и не может быть удалено',
     }[blocker] ?? blocker
   );
 }
@@ -727,24 +625,16 @@ function errorMessage(cause: unknown, fallback: string) {
 
 <template>
   <section class="page event-workspace">
-    <button
-      class="back-link"
-      type="button"
-      @click="router.push({ name: 'events' })"
-    >
+    <button class="back-link" type="button" @click="router.push({ name: 'events' })">
       <i class="pi pi-arrow-left" aria-hidden="true" /> К каталогу событий
     </button>
 
-    <div v-if="loading" class="workspace-loading" aria-live="polite">
-      Загружаем событие…
-    </div>
+    <div v-if="loading" class="workspace-loading" aria-live="polite">Загружаем событие…</div>
 
     <div v-else-if="loadError" class="workspace-error card" role="alert">
       <strong>Страница события недоступна</strong>
       <span>{{ loadError }}</span>
-      <button type="button" class="secondary-button" @click="loadDefinition">
-        Повторить
-      </button>
+      <button type="button" class="secondary-button" @click="loadDefinition">Повторить</button>
     </div>
 
     <template v-else-if="definition">
@@ -765,13 +655,7 @@ function errorMessage(cause: unknown, fallback: string) {
             :class="{ archived: isArchived }"
             data-test="lifecycle-state"
           >
-            {{
-              isArchived
-                ? "В архиве"
-                : definition.policy.enabled
-                  ? "Включено"
-                  : "Выключено"
-            }}
+            {{ isArchived ? 'В архиве' : definition.policy.enabled ? 'Включено' : 'Выключено' }}
           </span>
           <template v-if="canManageLifecycle">
             <button
@@ -787,9 +671,7 @@ function errorMessage(cause: unknown, fallback: string) {
               v-else
               type="button"
               class="secondary-button"
-              :disabled="
-                mutationPending || usageLoading || usage?.canArchive === false
-              "
+              :disabled="mutationPending || usageLoading || usage?.canArchive === false"
               @click="prepareArchive"
             >
               Архивировать
@@ -811,18 +693,13 @@ function errorMessage(cause: unknown, fallback: string) {
 
       <aside
         v-if="
-          canManageLifecycle &&
-          usage &&
-          ((!isArchived && !usage.canArchive) || !usage.canDelete)
+          canManageLifecycle && usage && ((!isArchived && !usage.canArchive) || !usage.canDelete)
         "
         class="lifecycle-blocker-summary"
         role="note"
       >
         <strong>Действия ограничены существующими зависимостями.</strong>
-        <span
-          v-for="blocker in usage.deleteBlockers"
-          :key="`delete-${blocker}`"
-        >
+        <span v-for="blocker in usage.deleteBlockers" :key="`delete-${blocker}`">
           {{ blockerLabel(blocker) }}
         </span>
         <router-link
@@ -870,17 +747,13 @@ function errorMessage(cause: unknown, fallback: string) {
         <div>
           <strong>Контракт интеграции остаётся стабильным</strong>
           <p>
-            Сервер продукта отправляет <code>eventCode + payload</code>. Номер
-            версии схемы передавать не нужно: его определяет Retenive.
+            Сервер продукта отправляет <code>eventCode + payload</code>. Номер версии схемы
+            передавать не нужно: его определяет Retenive.
           </p>
         </div>
       </aside>
 
-      <nav
-        class="workspace-navigation card"
-        aria-label="Разделы события"
-        role="tablist"
-      >
+      <nav class="workspace-navigation card" aria-label="Разделы события" role="tablist">
         <button
           id="event-tab-overview"
           type="button"
@@ -968,8 +841,8 @@ function errorMessage(cause: unknown, fallback: string) {
               <span>Название и описание</span>
               <h2>Основное</h2>
               <p>
-                Название и описание помогают людям понимать событие и не
-                изменяют структуру его данных.
+                Название и описание помогают людям понимать событие и не изменяют структуру его
+                данных.
               </p>
             </div>
             <span class="schema-safe-label"
@@ -1006,8 +879,7 @@ function errorMessage(cause: unknown, fallback: string) {
               <code>{{ definition.code }}</code>
             </div>
             <p>
-              Не изменяется после создания. Именно этот код сервер продукта
-              передаёт в Retenive.
+              Не изменяется после создания. Именно этот код сервер продукта передаёт в Retenive.
             </p>
           </div>
 
@@ -1019,8 +891,8 @@ function errorMessage(cause: unknown, fallback: string) {
             class="inline-message error"
             role="alert"
           >
-            Сервер не предоставил данные для безопасного сохранения. Раздел
-            доступен только для чтения.
+            Сервер не предоставил данные для безопасного сохранения. Раздел доступен только для
+            чтения.
           </p>
           <footer v-if="canEdit" class="form-actions">
             <span v-if="isDirty">Есть несохранённые изменения</span>
@@ -1029,7 +901,7 @@ function errorMessage(cause: unknown, fallback: string) {
               type="submit"
               :disabled="!isDirty || saving || !hasMetadataConcurrencyToken"
             >
-              {{ saving ? "Сохраняем…" : "Сохранить" }}
+              {{ saving ? 'Сохраняем…' : 'Сохранить' }}
             </button>
           </footer>
           <p v-else class="read-only-note">
@@ -1042,8 +914,8 @@ function errorMessage(cause: unknown, fallback: string) {
           <strong>v{{ definition.currentSchema.revisionNumber }}</strong>
           <code>{{ definition.currentSchema.revisionId }}</code>
           <p>
-            Эту версию определяет Retenive. Она нужна для истории и диагностики, но
-            не передаётся сервером продукта.
+            Эту версию определяет Retenive. Она нужна для истории и диагностики, но не передаётся
+            сервером продукта.
           </p>
         </aside>
         <IntegrationEventSummary
@@ -1066,10 +938,7 @@ function errorMessage(cause: unknown, fallback: string) {
           <div>
             <span>Правила приёма</span>
             <h2>Приём событий</h2>
-            <p>
-              Эти настройки влияют только на новые события и не меняют схему
-              данных.
-            </p>
+            <p>Эти настройки влияют только на новые события и не меняют схему данных.</p>
           </div>
           <span class="schema-safe-label"
             ><i class="pi pi-check-circle" /> Без новой версии схемы</span
@@ -1086,9 +955,7 @@ function errorMessage(cause: unknown, fallback: string) {
               />
               <span>
                 <strong>Принимать новые события</strong>
-                <small
-                  >Выключение останавливает новые trigger и wait-события.</small
-                >
+                <small>Выключение останавливает новые trigger и wait-события.</small>
               </span>
             </label>
             <label class="policy-option" for="event-policy-client-ingestible">
@@ -1112,18 +979,11 @@ function errorMessage(cause: unknown, fallback: string) {
               />
               <span>
                 <strong>Учитывать как активность</strong>
-                <small
-                  >Только новые валидные события продлевают Visit и Activity
-                  Day.</small
-                >
+                <small>Только новые валидные события продлевают Visit и Activity Day.</small>
               </span>
             </label>
           </div>
-          <label
-            v-if="canManageLifecycle"
-            class="field"
-            for="event-policy-reason"
-          >
+          <label v-if="canManageLifecycle" class="field" for="event-policy-reason">
             <span>Причина изменения</span>
             <textarea
               id="event-policy-reason"
@@ -1139,19 +999,13 @@ function errorMessage(cause: unknown, fallback: string) {
               data-test="save-policy"
               type="button"
               class="primary-button"
-              :disabled="
-                isArchived ||
-                mutationPending ||
-                !isPolicyDirty ||
-                !policyReason.trim()
-              "
+              :disabled="isArchived || mutationPending || !isPolicyDirty || !policyReason.trim()"
               @click="requestPolicyChange"
             >
-              {{ mutationPending ? "Сохраняем…" : "Сохранить правила приёма" }}
+              {{ mutationPending ? 'Сохраняем…' : 'Сохранить правила приёма' }}
             </button>
             <p v-if="isArchived">
-              Сначала восстановите событие. Восстановление не включает ingestion
-              автоматически.
+              Сначала восстановите событие. Восстановление не включает ingestion автоматически.
             </p>
           </div>
           <p v-else class="read-only-note">
@@ -1164,22 +1018,11 @@ function errorMessage(cause: unknown, fallback: string) {
           data-test="policy-conflict-server"
           role="note"
         >
-          <strong
-            >Текущие правила на сервере — v{{
-              policyConflictServer.version
-            }}</strong
-          >
+          <strong>Текущие правила на сервере — v{{ policyConflictServer.version }}</strong>
           <p>
-            Приём: {{ policyConflictServer.enabled ? "включён" : "выключен" }};
-            браузер:
-            {{
-              policyConflictServer.clientIngestible ? "разрешён" : "запрещён"
-            }}; активность:
-            {{
-              policyConflictServer.countsAsActivity
-                ? "учитывается"
-                : "не учитывается"
-            }}.
+            Приём: {{ policyConflictServer.enabled ? 'включён' : 'выключен' }}; браузер:
+            {{ policyConflictServer.clientIngestible ? 'разрешён' : 'запрещён' }}; активность:
+            {{ policyConflictServer.countsAsActivity ? 'учитывается' : 'не учитывается' }}.
           </p>
           <span>В форме выше сохранены ваши локальные значения.</span>
         </aside>
@@ -1197,8 +1040,8 @@ function errorMessage(cause: unknown, fallback: string) {
             <span>Доступ к данным события</span>
             <h2>Доступ AI</h2>
             <p>
-              Настройки определяют, какие AI-потребители могут читать это
-              событие и какие поля им доступны.
+              Настройки определяют, какие AI-потребители могут читать это событие и какие поля им
+              доступны.
             </p>
           </div>
           <span class="schema-safe-label">
@@ -1222,14 +1065,9 @@ function errorMessage(cause: unknown, fallback: string) {
       >
         <div class="section-heading">
           <div>
-            <span
-              >Опубликованная версия
-              {{ definition.currentSchema.revisionNumber }}</span
-            >
+            <span>Опубликованная версия {{ definition.currentSchema.revisionNumber }}</span>
             <h2>Схема данных</h2>
-            <p>
-              Текущая структура данных события. Номер версии назначает Retenive.
-            </p>
+            <p>Текущая структура данных события. Номер версии назначает Retenive.</p>
           </div>
           <EventDefinitionHistory
             :project-id="definition.projectId"
@@ -1263,9 +1101,7 @@ function errorMessage(cause: unknown, fallback: string) {
             <p>Сценарии, ожидания и черновики, связанные с этим событием.</p>
           </div>
         </div>
-        <p v-if="usageLoading" class="panel-state" aria-live="polite">
-          Загружаем сведения…
-        </p>
+        <p v-if="usageLoading" class="panel-state" aria-live="polite">Загружаем сведения…</p>
         <p v-else-if="usageError" class="inline-message error" role="alert">
           {{ usageError }}
         </p>
@@ -1288,7 +1124,7 @@ function errorMessage(cause: unknown, fallback: string) {
               ><span>опубликованных ревизий</span>
             </div>
             <div>
-              <strong>{{ usage.eventLogs.exists ? "Есть" : "Нет" }}</strong
+              <strong>{{ usage.eventLogs.exists ? 'Есть' : 'Нет' }}</strong
               ><span>Event Logs</span>
             </div>
             <div>
@@ -1296,9 +1132,9 @@ function errorMessage(cause: unknown, fallback: string) {
                 {{
                   usage.eventQueryPolicy?.currentGrantEnabled
                     ? usage.eventQueryPolicy.currentConversationGrantEnabled
-                      ? "AI + Chat/Voice"
-                      : "Только AI"
-                    : "Выключено"
+                      ? 'AI + Chat/Voice'
+                      : 'Только AI'
+                    : 'Выключено'
                 }}
               </strong>
               <span>текущий доступ AI</span>
@@ -1315,10 +1151,7 @@ function errorMessage(cause: unknown, fallback: string) {
             class="dependency-list"
             aria-label="Сценарии, использующие событие"
           >
-            <li
-              v-for="scenario in usage.scenarios.items"
-              :key="scenario.scenarioId"
-            >
+            <li v-for="scenario in usage.scenarios.items" :key="scenario.scenarioId">
               <router-link
                 :to="{
                   name: 'scenario-edit',
@@ -1326,9 +1159,7 @@ function errorMessage(cause: unknown, fallback: string) {
                 }"
                 >{{ scenario.name }}</router-link
               >
-              <span
-                >{{ scenario.status }} · {{ scenario.usages.join(", ") }}</span
-              >
+              <span>{{ scenario.status }} · {{ scenario.usages.join(', ') }}</span>
             </li>
           </ul>
           <router-link
@@ -1348,9 +1179,9 @@ function errorMessage(cause: unknown, fallback: string) {
       :style="{ width: 'min(540px, 94vw)' }"
     >
       <p>
-        Новые события <strong>{{ definition?.code }}</strong> перестанут
-        приниматься и запускать или продвигать сценарии. Изменение действует
-        только на будущий приём; существующие данные и определение сохранятся.
+        Новые события <strong>{{ definition?.code }}</strong> перестанут приниматься и запускать или
+        продвигать сценарии. Изменение действует только на будущий приём; существующие данные и
+        определение сохранятся.
       </p>
       <p v-if="usage">
         <strong
@@ -1359,11 +1190,7 @@ function errorMessage(cause: unknown, fallback: string) {
         >
       </p>
       <template #footer>
-        <button
-          type="button"
-          class="secondary-button"
-          @click="disableDialogVisible = false"
-        >
+        <button type="button" class="secondary-button" @click="disableDialogVisible = false">
           Отмена
         </button>
         <button
@@ -1384,17 +1211,13 @@ function errorMessage(cause: unknown, fallback: string) {
       :style="{ width: 'min(580px, 94vw)' }"
     >
       <p>
-        Событие исчезнет из активного каталога, приём новых событий будет
-        выключен. Event Logs и история схемы сохранятся.
+        Событие исчезнет из активного каталога, приём новых событий будет выключен. Event Logs и
+        история схемы сохранятся.
       </p>
-      <p
-        v-if="
-          usage?.archiveEffects?.includes('EVENT_QUERY_ACCESS_WILL_BE_REVOKED')
-        "
-      >
+      <p v-if="usage?.archiveEffects?.includes('EVENT_QUERY_ACCESS_WILL_BE_REVOKED')">
         <strong>
-          Текущий доступ AI и Chat/Voice будет отозван атомарно. Сохранённая
-          конфигурация останется доступна только для чтения.
+          Текущий доступ AI и Chat/Voice будет отозван атомарно. Сохранённая конфигурация останется
+          доступна только для чтения.
         </strong>
       </p>
       <ul v-if="usage && !usage.canArchive" class="blocker-list" role="alert">
@@ -1416,19 +1239,10 @@ function errorMessage(cause: unknown, fallback: string) {
       </router-link>
       <label class="field" for="event-archive-reason"
         ><span>Причина <small>необязательно</small></span
-        ><textarea
-          id="event-archive-reason"
-          v-model="archiveReason"
-          rows="3"
-          maxlength="500"
-        />
+        ><textarea id="event-archive-reason" v-model="archiveReason" rows="3" maxlength="500" />
       </label>
       <template #footer>
-        <button
-          type="button"
-          class="secondary-button"
-          @click="archiveDialogVisible = false"
-        >
+        <button type="button" class="secondary-button" @click="archiveDialogVisible = false">
           Отмена
         </button>
         <button
@@ -1449,8 +1263,8 @@ function errorMessage(cause: unknown, fallback: string) {
       :style="{ width: 'min(600px, 94vw)' }"
     >
       <p>
-        Stable identity, черновики и все ревизии схемы будут физически удалены.
-        Это действие нельзя отменить.
+        Stable identity, черновики и все ревизии схемы будут физически удалены. Это действие нельзя
+        отменить.
       </p>
       <ul v-if="usage && !usage.canDelete" class="blocker-list" role="alert">
         <li v-for="blocker in usage.deleteBlockers" :key="blocker">
@@ -1470,17 +1284,10 @@ function errorMessage(cause: unknown, fallback: string) {
       <label class="field" for="event-delete-confirmation"
         ><span
           >Введите код <code>{{ definition?.code }}</code></span
-        ><input
-          id="event-delete-confirmation"
-          v-model="deleteConfirmation"
-          autocomplete="off"
+        ><input id="event-delete-confirmation" v-model="deleteConfirmation" autocomplete="off"
       /></label>
       <template #footer>
-        <button
-          type="button"
-          class="secondary-button"
-          @click="deleteDialogVisible = false"
-        >
+        <button type="button" class="secondary-button" @click="deleteDialogVisible = false">
           Отмена
         </button>
         <button
@@ -1613,11 +1420,7 @@ function errorMessage(cause: unknown, fallback: string) {
   gap: 13px;
   min-width: 0;
   padding: 16px 18px;
-  border-color: color-mix(
-    in srgb,
-    var(--status-accent) 35%,
-    var(--border-default)
-  );
+  border-color: color-mix(in srgb, var(--status-accent) 35%, var(--border-default));
   background: var(--status-accent-soft);
 }
 .producer-contract > i {

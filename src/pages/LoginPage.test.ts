@@ -1,14 +1,14 @@
-import { flushPromises, mount } from "@vue/test-utils";
-import { createPinia, setActivePinia } from "pinia";
-import { createMemoryHistory, createRouter } from "vue-router";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { authApi } from "@/features/auth/auth.api";
-import { ApiError } from "@/shared/api/http/api-error";
-import LoginPage from "./LoginPage.vue";
+import { flushPromises, mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
+import { createMemoryHistory, createRouter } from 'vue-router';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { authApi } from '@/features/auth/auth.api';
+import { ApiError } from '@/shared/api/http/api-error';
+import LoginPage from './LoginPage.vue';
 
-vi.mock("@/features/auth/auth.api", () => ({
+vi.mock('@/features/auth/auth.api', () => ({
   authApi: {
-    mode: "api",
+    mode: 'api',
     cancelMfa: vi.fn(),
     login: vi.fn(),
     restore: vi.fn(),
@@ -21,36 +21,36 @@ vi.mock("@/features/auth/auth.api", () => ({
 
 const InputTextStub = {
   inheritAttrs: false,
-  props: ["id", "modelValue", "type", "autocomplete"],
-  emits: ["update:modelValue"],
+  props: ['id', 'modelValue', 'type', 'autocomplete'],
+  emits: ['update:modelValue'],
   template:
     '<input v-bind="$attrs" :id="id" :type="type" :autocomplete="autocomplete" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)">',
 };
 
-async function mountPage(location = "/login") {
+async function mountPage(location = '/login') {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
-      { path: "/login", name: "login", component: LoginPage },
+      { path: '/login', name: 'login', component: LoginPage },
       {
-        path: "/forgot-password",
-        name: "forgot-password",
-        component: { template: "<div>Recovery</div>" },
+        path: '/forgot-password',
+        name: 'forgot-password',
+        component: { template: '<div>Recovery</div>' },
       },
       {
-        path: "/password/setup",
-        name: "password-setup",
-        component: { template: "<div>Setup</div>" },
+        path: '/password/setup',
+        name: 'password-setup',
+        component: { template: '<div>Setup</div>' },
       },
       {
-        path: "/overview",
-        name: "overview",
-        component: { template: "<div>Overview</div>" },
+        path: '/overview',
+        name: 'overview',
+        component: { template: '<div>Overview</div>' },
       },
       {
-        path: "/platform/cms-users",
-        name: "platform-cms-users",
-        component: { template: "<div>CMS Users</div>" },
+        path: '/platform/cms-users',
+        name: 'platform-cms-users',
+        component: { template: '<div>CMS Users</div>' },
       },
     ],
   });
@@ -63,7 +63,7 @@ async function mountPage(location = "/login") {
       stubs: {
         InputText: InputTextStub,
         Button: {
-          props: ["label", "disabled", "loading"],
+          props: ['label', 'disabled', 'loading'],
           template:
             '<button v-bind="$attrs" :disabled="disabled || loading">{{ label }}<slot /></button>',
         },
@@ -76,7 +76,7 @@ async function mountPage(location = "/login") {
   return { router, wrapper };
 }
 
-describe("CMS User login page", () => {
+describe('CMS User login page', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
@@ -84,175 +84,147 @@ describe("CMS User login page", () => {
 
   afterEach(() => {
     vi.useRealTimers();
-    document.body.innerHTML = "";
+    document.body.innerHTML = '';
   });
 
-  it("routes Initial Access to mandatory password setup without entering the CMS", async () => {
+  it('routes Initial Access to mandatory password setup without entering the CMS', async () => {
     vi.mocked(authApi.login).mockResolvedValue({
-      kind: "PASSWORD_SETUP_REQUIRED",
-      setupToken: "lps_setup-secret",
-      expiresAt: "2026-07-21T10:10:00.000Z",
+      kind: 'PASSWORD_SETUP_REQUIRED',
+      setupToken: 'lps_setup-secret',
+      expiresAt: '2026-07-21T10:10:00.000Z',
     });
     const { router, wrapper } = await mountPage();
-    await wrapper.get("#login").setValue("operator@example.com");
-    await wrapper.get("#password").setValue("lia_initial-secret");
+    await wrapper.get('#login').setValue('operator@example.com');
+    await wrapper.get('#password').setValue('lia_initial-secret');
 
-    expect(wrapper.get("#login").attributes("autocomplete")).toBe("username");
-    expect(wrapper.get("#password").attributes("autocomplete")).toBe(
-      "current-password",
-    );
-    expect(wrapper.get("#password").attributes("onpaste")).toBeUndefined();
+    expect(wrapper.get('#login').attributes('autocomplete')).toBe('username');
+    expect(wrapper.get('#password').attributes('autocomplete')).toBe('current-password');
+    expect(wrapper.get('#password').attributes('onpaste')).toBeUndefined();
 
-    await wrapper.get("form").trigger("submit");
+    await wrapper.get('form').trigger('submit');
     await flushPromises();
 
-    expect(router.currentRoute.value.name).toBe("password-setup");
+    expect(router.currentRoute.value.name).toBe('password-setup');
   });
 
-  it("uses neutral copy for a CMS User who may not have a Project Membership", async () => {
+  it('uses neutral copy for a CMS User who may not have a Project Membership', async () => {
     const { wrapper } = await mountPage();
 
-    expect(wrapper.text()).toContain(
-      "После входа мы откроем доступное вам рабочее пространство.",
-    );
-    expect(wrapper.text()).not.toContain(
-      "Доступ проверяется по участникам проекта.",
-    );
+    expect(wrapper.text()).toContain('После входа мы откроем доступное вам рабочее пространство.');
+    expect(wrapper.text()).not.toContain('Доступ проверяется по участникам проекта.');
   });
 
-  it("opens the platform workspace when the authenticated operator has no project", async () => {
+  it('opens the platform workspace when the authenticated operator has no project', async () => {
     vi.mocked(authApi.login).mockResolvedValue({
-      kind: "AUTHENTICATED",
+      kind: 'AUTHENTICATED',
       context: {
         user: {
-          id: "operator-1",
-          email: "operator@example.com",
-          name: "Operator",
-          platformPermissionCodes: ["platform.cms_users.read"],
+          id: 'operator-1',
+          email: 'operator@example.com',
+          name: 'Operator',
+          platformPermissionCodes: ['platform.cms_users.read'],
         },
         projects: [],
         capabilities: { supportEnabled: true },
       },
     });
     const { router, wrapper } = await mountPage();
-    await wrapper.get("#login").setValue("operator@example.com");
-    await wrapper.get("#password").setValue("permanent passphrase");
+    await wrapper.get('#login').setValue('operator@example.com');
+    await wrapper.get('#password').setValue('permanent passphrase');
 
-    await wrapper.get("form").trigger("submit");
+    await wrapper.get('form').trigger('submit');
     await flushPromises();
 
-    expect(router.currentRoute.value.name).toBe("platform-cms-users");
+    expect(router.currentRoute.value.name).toBe('platform-cms-users');
   });
 
-  it("submits the primary login form when Enter is pressed in a field", async () => {
+  it('submits the primary login form when Enter is pressed in a field', async () => {
     vi.mocked(authApi.login).mockResolvedValue({
-      kind: "AUTHENTICATED",
+      kind: 'AUTHENTICATED',
       context: {
         user: {
-          id: "operator-1",
-          email: "operator@example.com",
-          name: "Operator",
-          platformPermissionCodes: ["platform.cms_users.read"],
+          id: 'operator-1',
+          email: 'operator@example.com',
+          name: 'Operator',
+          platformPermissionCodes: ['platform.cms_users.read'],
         },
         projects: [],
         capabilities: { supportEnabled: true },
       },
     });
     const { wrapper } = await mountPage();
-    await wrapper.get("#login").setValue("operator@example.com");
-    await wrapper.get("#password").setValue("permanent passphrase");
+    await wrapper.get('#login').setValue('operator@example.com');
+    await wrapper.get('#password').setValue('permanent passphrase');
 
-    await wrapper.get("#password").trigger("keydown", { key: "Enter" });
+    await wrapper.get('#password').trigger('keydown', { key: 'Enter' });
     await flushPromises();
 
     expect(authApi.login).toHaveBeenCalledOnce();
   });
 
-  it("links to password recovery and announces a completed reset without logging in", async () => {
-    const { router, wrapper } = await mountPage("/login?passwordReset=success");
+  it('links to password recovery and announces a completed reset without logging in', async () => {
+    const { router, wrapper } = await mountPage('/login?passwordReset=success');
 
-    expect(
-      wrapper.get('[data-testid="forgot-password-link"]').attributes("href"),
-    ).toBe("/forgot-password");
-    expect(wrapper.text()).toContain(
-      "Пароль изменён. Войдите с новым паролем.",
+    expect(wrapper.get('[data-testid="forgot-password-link"]').attributes('href')).toBe(
+      '/forgot-password',
     );
-    expect(router.currentRoute.value.name).toBe("login");
+    expect(wrapper.text()).toContain('Пароль изменён. Войдите с новым паролем.');
+    expect(router.currentRoute.value.name).toBe('login');
   });
 
-  it("explains the mandatory MFA handoff after an active session loses assurance", async () => {
-    const { wrapper } = await mountPage(
-      "/login?mfa=MFA_REQUIRED&redirect=/project",
-    );
+  it('explains the mandatory MFA handoff after an active session loses assurance', async () => {
+    const { wrapper } = await mountPage('/login?mfa=MFA_REQUIRED&redirect=/project');
 
     expect(wrapper.text()).toContain(
-      "Для продолжения войдите снова: система переведёт вас к обязательной проверке MFA.",
+      'Для продолжения войдите снова: система переведёт вас к обязательной проверке MFA.',
     );
   });
 
-  it("announces a generic authentication error and focuses it", async () => {
+  it('announces a generic authentication error and focuses it', async () => {
     vi.mocked(authApi.login).mockRejectedValue(
-      new ApiError(
-        401,
-        "Authentication failed",
-        undefined,
-        undefined,
-        "AUTHENTICATION_FAILED",
-      ),
+      new ApiError(401, 'Authentication failed', undefined, undefined, 'AUTHENTICATION_FAILED'),
     );
     const { wrapper } = await mountPage();
-    await wrapper.get("#login").setValue("operator@example.com");
-    await wrapper.get("#password").setValue("wrong secret");
+    await wrapper.get('#login').setValue('operator@example.com');
+    await wrapper.get('#password').setValue('wrong secret');
 
-    await wrapper.get("form").trigger("submit");
+    await wrapper.get('form').trigger('submit');
     await flushPromises();
 
-    const alertContainer = wrapper.get("#login-error");
-    expect(alertContainer.get('[role="alert"]').attributes("aria-live")).toBe(
-      "assertive",
-    );
-    expect(alertContainer.text()).toBe("Неверный email или пароль.");
+    const alertContainer = wrapper.get('#login-error');
+    expect(alertContainer.get('[role="alert"]').attributes('aria-live')).toBe('assertive');
+    expect(alertContainer.text()).toBe('Неверный email или пароль.');
     expect(document.activeElement).toBe(alertContainer.element);
-    expect(wrapper.get("#login").attributes("aria-invalid")).toBe("true");
-    expect(wrapper.get("#password").attributes("aria-describedby")).toContain(
-      "login-error",
-    );
+    expect(wrapper.get('#login').attributes('aria-invalid')).toBe('true');
+    expect(wrapper.get('#password').attributes('aria-describedby')).toContain('login-error');
   });
 
-  it("blocks retries for the bounded Retry-After countdown", async () => {
+  it('blocks retries for the bounded Retry-After countdown', async () => {
     vi.useFakeTimers();
     vi.mocked(authApi.login).mockRejectedValue(
       new ApiError(
         429,
-        "Authentication unavailable",
+        'Authentication unavailable',
         { retryAfterSeconds: 2 },
         undefined,
-        "RATE_LIMITED",
+        'RATE_LIMITED',
         2,
       ),
     );
     const { wrapper } = await mountPage();
-    await wrapper.get("#login").setValue("operator@example.com");
-    await wrapper.get("#password").setValue("wrong secret");
+    await wrapper.get('#login').setValue('operator@example.com');
+    await wrapper.get('#password').setValue('wrong secret');
 
-    await wrapper.get("form").trigger("submit");
+    await wrapper.get('form').trigger('submit');
     await flushPromises();
 
-    expect(wrapper.get("#login-error").text()).toContain(
-      "Повторите через 2 сек.",
-    );
-    expect(
-      wrapper.get('button[type="submit"]').attributes("disabled"),
-    ).toBeDefined();
+    expect(wrapper.get('#login-error').text()).toContain('Повторите через 2 сек.');
+    expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeDefined();
 
     await vi.advanceTimersByTimeAsync(1_000);
-    expect(wrapper.get("#login-error").text()).toContain(
-      "Повторите через 1 сек.",
-    );
+    expect(wrapper.get('#login-error').text()).toContain('Повторите через 1 сек.');
 
     await vi.advanceTimersByTimeAsync(1_000);
-    expect(
-      wrapper.get('button[type="submit"]').attributes("disabled"),
-    ).toBeUndefined();
+    expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeUndefined();
   });
 });

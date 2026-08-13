@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { cmsUserDetailRoute } from "@/features/cms-user-management/model/cms-user-route";
-import TechnicalIdentifier from "@/shared/ui/TechnicalIdentifier.vue";
-import { presentAnalysisResult } from "../model/project-ai-analysis-presentation";
+import { computed } from 'vue';
+import { cmsUserDetailRoute } from '@/features/cms-user-management/model/cms-user-route';
+import TechnicalIdentifier from '@/shared/ui/TechnicalIdentifier.vue';
+import { presentAnalysisResult } from '../model/project-ai-analysis-presentation';
 
 const props = withDefaults(
   defineProps<{
@@ -11,41 +11,35 @@ const props = withDefaults(
     canReadCmsUsers?: boolean;
     projectId?: string;
   }>(),
-  { canReadCost: false },
+  { canReadCost: false, projectId: undefined },
 );
 const view = computed(() => presentAnalysisResult(props.result));
 
-const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
-  dateStyle: "medium",
-  timeStyle: "short",
+const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
 });
 
 function formatDate(value: string): string {
   const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime())
-    ? "Некорректная дата"
-    : dateFormatter.format(parsed);
+  return Number.isNaN(parsed.getTime()) ? 'Некорректная дата' : dateFormatter.format(parsed);
 }
 </script>
 
 <template>
   <section class="result-view">
     <div v-if="view.clarification" class="clarification">
-      <div class="result-label">
-        <i class="pi pi-question-circle" /> Что требовалось уточнить
-      </div>
+      <div class="result-label"><i class="pi pi-question-circle" /> Что требовалось уточнить</div>
       <p>{{ view.clarification.question }}</p>
       <div class="clarification-candidates" aria-label="Варианты определения">
-        <code
-          v-for="candidate in view.clarification.candidates"
-          :key="candidate"
-          >{{ candidate }}</code
-        >
+        <code v-for="candidate in view.clarification.candidates" :key="candidate">{{
+          candidate
+        }}</code>
       </div>
       <small>
-        Этот запуск уже завершён. Новые запросы Retenive сначала попробует разрешить
-        такую неоднозначность сама; для повторения старого запуска добавьте
-        подходящий код определения в новый запрос.
+        Этот запуск уже завершён. Новые запросы Retenive сначала попробует разрешить такую
+        неоднозначность сама; для повторения старого запуска добавьте подходящий код определения в
+        новый запрос.
       </small>
     </div>
 
@@ -55,9 +49,7 @@ function formatDate(value: string): string {
     </div>
 
     <div v-if="view.scope || view.time" class="interpretation">
-      <span v-if="view.scope"
-        ><small>Интерпретация области</small>{{ view.scope }}</span
-      >
+      <span v-if="view.scope"><small>Интерпретация области</small>{{ view.scope }}</span>
       <span v-if="view.time"
         ><small>Бизнес-период</small>{{ formatDate(view.time.from) }} —
         {{ formatDate(view.time.to) }}
@@ -77,31 +69,22 @@ function formatDate(value: string): string {
         <tbody>
           <tr v-for="(row, rowIndex) in view.table.rows" :key="rowIndex">
             <td v-for="(cell, cellIndex) in row" :key="cellIndex">
-              {{ cell ?? "—" }}
+              {{ cell ?? '—' }}
             </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <div
-      v-if="view.completeness || view.receiptOrdinals.length"
-      class="evidence-summary"
-    >
-      <span v-if="view.completeness"
-        ><small>Полнота результата</small>{{ view.completeness }}</span
-      >
+    <div v-if="view.completeness || view.receiptOrdinals.length" class="evidence-summary">
+      <span v-if="view.completeness"><small>Полнота результата</small>{{ view.completeness }}</span>
       <span v-if="view.receiptOrdinals.length"
-        ><small>Запросы-основания</small>#{{
-          view.receiptOrdinals.join(", #")
-        }}</span
+        ><small>Запросы-основания</small>#{{ view.receiptOrdinals.join(', #') }}</span
       >
     </div>
 
     <div v-if="view.definitions.length" class="definitions">
-      <div class="result-section-title">
-        <i class="pi pi-book" /> Использованные определения
-      </div>
+      <div class="result-section-title"><i class="pi pi-book" /> Использованные определения</div>
       <article
         v-for="definition in view.definitions"
         :key="`${definition.kind}:${definition.eventCode}:${definition.code}`"
@@ -110,9 +93,7 @@ function formatDate(value: string): string {
           <strong>{{ definition.code }}</strong>
           <small
             >{{ definition.kind
-            }}<template v-if="definition.eventCode">
-              · {{ definition.eventCode }}</template
-            ></small
+            }}<template v-if="definition.eventCode"> · {{ definition.eventCode }}</template></small
           >
         </span>
         <p>{{ definition.description }}</p>
@@ -129,23 +110,13 @@ function formatDate(value: string): string {
           v-if="view.actors?.createdByCmsUserId"
           label="Создал администратор"
           :value="view.actors.createdByCmsUserId"
-          :to="
-            cmsUserDetailRoute(
-              view.actors.createdByCmsUserId,
-              Boolean(canReadCmsUsers),
-            )
-          "
+          :to="cmsUserDetailRoute(view.actors.createdByCmsUserId, Boolean(canReadCmsUsers))"
         />
         <TechnicalIdentifier
           v-if="canReadCost && view.actors?.costAttributedToCmsUserId"
           label="Расход администратора"
           :value="view.actors.costAttributedToCmsUserId"
-          :to="
-            cmsUserDetailRoute(
-              view.actors.costAttributedToCmsUserId,
-              Boolean(canReadCmsUsers),
-            )
-          "
+          :to="cmsUserDetailRoute(view.actors.costAttributedToCmsUserId, Boolean(canReadCmsUsers))"
         />
         <TechnicalIdentifier
           v-if="view.provenance?.catalogRevisionId"
@@ -184,19 +155,15 @@ function formatDate(value: string): string {
       >
         <span
           ><strong>Запрос #{{ receipt.ordinal }}</strong>
-          {{ receipt.complete ? "полный" : "неполный"
-          }}{{ receipt.truncated ? " · усечён" : "" }}</span
+          {{ receipt.complete ? 'полный' : 'неполный'
+          }}{{ receipt.truncated ? ' · усечён' : '' }}</span
         >
         <TechnicalIdentifier label="Query hash" :value="receipt.queryHash" />
       </div>
     </details>
 
     <div v-if="view.limitations.length" class="limitations">
-      <div
-        v-for="limitation in view.limitations"
-        :key="limitation.code"
-        class="limitation"
-      >
+      <div v-for="limitation in view.limitations" :key="limitation.code" class="limitation">
         <i class="pi pi-exclamation-triangle" />
         <span>{{ limitation.message }}</span>
       </div>

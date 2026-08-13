@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
-import { notificationDestinationsApi } from "./notification-destinations.api";
+import { computed, onMounted, ref, watch } from 'vue';
+import { notificationDestinationsApi } from './notification-destinations.api';
 import type {
   NotificationDestinationResponseDto,
   TelegramBindingChallengeResponseDto,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
-import { formatAuditActor } from "@/shared/lib/format";
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
+import { formatAuditActor } from '@/shared/lib/format';
 
 const props = defineProps<{
   projectId: string;
@@ -18,47 +18,37 @@ const destination = ref<NotificationDestinationResponseDto | null>(null);
 const challenge = ref<TelegramBindingChallengeResponseDto | null>(null);
 const loading = ref(true);
 const pending = ref(false);
-const error = ref("");
-const success = ref("");
-const displayName = ref("Служебные уведомления");
-const botToken = ref("");
-const createRetryKey = ref("");
+const error = ref('');
+const success = ref('');
+const displayName = ref('Служебные уведомления');
+const botToken = ref('');
+const createRetryKey = ref('');
 const testRetry = ref<{ signature: string; key: string } | null>(null);
 let epoch = 0;
 
 const statusView = computed(() => {
   const current = destination.value;
-  if (!current) return { label: "Не подключено", tone: "EMPTY" };
-  if (current.status === "DISABLED")
-    return { label: "Отключено", tone: "DISABLED" };
-  if (
-    current.status === "INVALID" ||
-    current.telegramWebhookSetupStatus === "FAILED"
-  ) {
+  if (!current) return { label: 'Не подключено', tone: 'EMPTY' };
+  if (current.status === 'DISABLED') return { label: 'Отключено', tone: 'DISABLED' };
+  if (current.status === 'INVALID' || current.telegramWebhookSetupStatus === 'FAILED') {
     return {
-      label:
-        current.status === "INVALID"
-          ? "Требуется переподключение"
-          : "Webhook не подключён",
-      tone: "FAILED",
+      label: current.status === 'INVALID' ? 'Требуется переподключение' : 'Webhook не подключён',
+      tone: 'FAILED',
     };
   }
-  if (current.telegramWebhookSetupStatus !== "SUCCEEDED")
-    return { label: "Регистрируем webhook", tone: "PROCESSING" };
-  if (current.telegramInstallationStatus === "PENDING_BINDING")
-    return { label: "Ожидает привязки чата", tone: "PENDING_TEST" };
-  if (current.status === "ACTIVE")
-    return { label: "Подключено", tone: "ACTIVE" };
-  return { label: "Требуется проверка", tone: "PENDING_TEST" };
+  if (current.telegramWebhookSetupStatus !== 'SUCCEEDED')
+    return { label: 'Регистрируем webhook', tone: 'PROCESSING' };
+  if (current.telegramInstallationStatus === 'PENDING_BINDING')
+    return { label: 'Ожидает привязки чата', tone: 'PENDING_TEST' };
+  if (current.status === 'ACTIVE') return { label: 'Подключено', tone: 'ACTIVE' };
+  return { label: 'Требуется проверка', tone: 'PENDING_TEST' };
 });
 
-const setupReady = computed(
-  () => destination.value?.telegramWebhookSetupStatus === "SUCCEEDED",
-);
+const setupReady = computed(() => destination.value?.telegramWebhookSetupStatus === 'SUCCEEDED');
 
 const isBound = computed(
   () =>
-    destination.value?.telegramInstallationStatus === "BOUND" &&
+    destination.value?.telegramInstallationStatus === 'BOUND' &&
     setupReady.value &&
     Boolean(destination.value.destinationChatId),
 );
@@ -66,11 +56,9 @@ const isBound = computed(
 const readyToActivate = computed(
   () =>
     isBound.value &&
-    destination.value?.testedSecretRevision ===
-      destination.value?.secretRevision &&
-    destination.value?.testedRoutingRevision ===
-      destination.value?.routingRevision &&
-    destination.value?.status !== "ACTIVE",
+    destination.value?.testedSecretRevision === destination.value?.secretRevision &&
+    destination.value?.testedRoutingRevision === destination.value?.routingRevision &&
+    destination.value?.status !== 'ACTIVE',
 );
 
 function currentOperation(): { projectId: string; epoch: number } | null {
@@ -88,13 +76,13 @@ function belongsToCurrentProject(
   return (
     isCurrent(operation) &&
     current.projectId === operation.projectId &&
-    current.channel === "TELEGRAM_OPERATIONAL"
+    current.channel === 'TELEGRAM_OPERATIONAL'
   );
 }
 
 function clearFeedback(): void {
-  error.value = "";
-  success.value = "";
+  error.value = '';
+  success.value = '';
 }
 
 function durableTestKey(id: string, version: number): string {
@@ -106,33 +94,31 @@ function durableTestKey(id: string, version: number): string {
 }
 
 function terminal(status: string): boolean {
-  return ["SUCCEEDED", "FAILED", "OUTCOME_UNKNOWN"].includes(status);
+  return ['SUCCEEDED', 'FAILED', 'OUTCOME_UNKNOWN'].includes(status);
 }
 
 function formatTimestamp(value: string | null | undefined): string {
-  if (!value) return "—";
+  if (!value) return '—';
   const timestamp = new Date(value);
-  return Number.isNaN(timestamp.getTime())
-    ? "—"
-    : timestamp.toLocaleString("ru-RU");
+  return Number.isNaN(timestamp.getTime()) ? '—' : timestamp.toLocaleString('ru-RU');
 }
 
 function failureLabel(category: string | null): string {
   switch (category) {
     case null:
-      return "Нет";
-    case "TELEGRAM_BOT_TOKEN_INVALID":
-      return "Token бота недействителен";
-    case "TELEGRAM_DESTINATION_UNAVAILABLE":
-      return "Чат недоступен или бот заблокирован";
-    case "TELEGRAM_DELIVERY_EXHAUSTED":
-      return "Лимит повторных попыток исчерпан";
-    case "TELEGRAM_SECRET_UNAVAILABLE":
-      return "Credential недоступен";
-    case "TELEGRAM_WEBHOOK_CONFIGURATION_FAILED":
-      return "Не удалось настроить webhook";
+      return 'Нет';
+    case 'TELEGRAM_BOT_TOKEN_INVALID':
+      return 'Token бота недействителен';
+    case 'TELEGRAM_DESTINATION_UNAVAILABLE':
+      return 'Чат недоступен или бот заблокирован';
+    case 'TELEGRAM_DELIVERY_EXHAUSTED':
+      return 'Лимит повторных попыток исчерпан';
+    case 'TELEGRAM_SECRET_UNAVAILABLE':
+      return 'Credential недоступен';
+    case 'TELEGRAM_WEBHOOK_CONFIGURATION_FAILED':
+      return 'Не удалось настроить webhook';
     default:
-      return "Требуется проверка подключения";
+      return 'Требуется проверка подключения';
   }
 }
 
@@ -144,25 +130,20 @@ async function load(): Promise<void> {
     return;
   }
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
-    const response = await notificationDestinationsApi.list(
-      operation.projectId,
-    );
+    const response = await notificationDestinationsApi.list(operation.projectId);
     const loadedDestination =
       response.items.find(
         ({ channel, projectId }) =>
-          channel === "TELEGRAM_OPERATIONAL" &&
-          projectId === operation.projectId,
+          channel === 'TELEGRAM_OPERATIONAL' && projectId === operation.projectId,
       ) ?? null;
     if (!isCurrent(operation)) return;
     destination.value = loadedDestination;
-    displayName.value =
-      destination.value?.displayName ?? "Служебные уведомления";
+    displayName.value = destination.value?.displayName ?? 'Служебные уведомления';
     if (!setupReady.value || isBound.value) challenge.value = null;
   } catch {
-    if (isCurrent(operation))
-      error.value = "Не удалось загрузить служебный Telegram.";
+    if (isCurrent(operation)) error.value = 'Не удалось загрузить служебный Telegram.';
   } finally {
     if (isCurrent(operation)) loading.value = false;
   }
@@ -185,12 +166,12 @@ async function create(): Promise<void> {
   const name = displayName.value.trim();
   if (!operation || !props.canManage || pending.value) return;
   if (!token || !name) {
-    error.value = "Укажите название и token служебного Telegram-бота.";
+    error.value = 'Укажите название и token служебного Telegram-бота.';
     return;
   }
   clearFeedback();
   pending.value = true;
-  botToken.value = "";
+  botToken.value = '';
   try {
     const key = createRetryKey.value || crypto.randomUUID();
     createRetryKey.value = key;
@@ -200,15 +181,15 @@ async function create(): Promise<void> {
       key,
     );
     if (!belongsToCurrentProject(operation, created)) return;
-    createRetryKey.value = "";
+    createRetryKey.value = '';
     destination.value = created;
     success.value =
-      "Бот проверен. Retenive регистрирует защищённый webhook — обновите статус через несколько секунд.";
+      'Бот проверен. Retenive регистрирует защищённый webhook — обновите статус через несколько секунд.';
   } catch (cause) {
     if (isCurrent(operation)) error.value = safeError(cause);
   } finally {
     if (isCurrent(operation)) {
-      botToken.value = "";
+      botToken.value = '';
       await load();
       pending.value = false;
     }
@@ -232,7 +213,7 @@ async function createChallenge(): Promise<void> {
     const issuedChallenge = await requestChallenge(operation, current);
     if (!isCurrent(operation)) return;
     challenge.value = issuedChallenge;
-    success.value = "Новая команда действует 5 минут.";
+    success.value = 'Новая команда действует 5 минут.';
   } catch (cause) {
     if (isCurrent(operation)) error.value = safeError(cause);
   } finally {
@@ -247,14 +228,12 @@ async function refreshBinding(): Promise<void> {
   await load();
   if (!isCurrent(operation)) return;
   if (!setupReady.value) {
-    success.value =
-      "Webhook ещё регистрируется. Повторите проверку через несколько секунд.";
+    success.value = 'Webhook ещё регистрируется. Повторите проверку через несколько секунд.';
   } else if (isBound.value) {
     challenge.value = null;
-    success.value = "Telegram-чат привязан. Выполните тестовое уведомление.";
+    success.value = 'Telegram-чат привязан. Выполните тестовое уведомление.';
   } else {
-    success.value =
-      "Команда пока не получена. Проверьте чат или выпустите новую.";
+    success.value = 'Команда пока не получена. Проверьте чат или выпустите новую.';
   }
 }
 
@@ -269,11 +248,7 @@ async function awaitTest(
     current.version,
     key,
   );
-  for (
-    let attempt = 0;
-    attempt < 20 && !terminal(result.status);
-    attempt += 1
-  ) {
+  for (let attempt = 0; attempt < 20 && !terminal(result.status); attempt += 1) {
     await new Promise((resolve) => window.setTimeout(resolve, 500));
     if (!isCurrent(operation)) return result;
     result = await notificationDestinationsApi.testOperationalTelegram(
@@ -301,26 +276,18 @@ async function testCurrent(): Promise<void> {
   clearFeedback();
   pending.value = true;
   try {
-    const result = await awaitTest(
-      operation,
-      current,
-      durableTestKey(current.id, current.version),
-    );
+    const result = await awaitTest(operation, current, durableTestKey(current.id, current.version));
     if (!isCurrent(operation)) return;
     if (terminal(result.status)) testRetry.value = null;
-    if (result.status === "SUCCEEDED") {
-      success.value =
-        "Тестовое сообщение отправлено. Интеграцию можно активировать.";
-    } else if (
-      ["PENDING", "PROCESSING", "RETRY_WAIT"].includes(result.status)
-    ) {
-      success.value =
-        "Проверка ещё выполняется. Нажмите «Проверить», чтобы обновить статус.";
+    if (result.status === 'SUCCEEDED') {
+      success.value = 'Тестовое сообщение отправлено. Интеграцию можно активировать.';
+    } else if (['PENDING', 'PROCESSING', 'RETRY_WAIT'].includes(result.status)) {
+      success.value = 'Проверка ещё выполняется. Нажмите «Проверить», чтобы обновить статус.';
     } else {
       error.value =
-        result.status === "OUTCOME_UNKNOWN"
-          ? "Telegram не подтвердил результат. Повторите проверку позже."
-          : "Telegram отклонил тестовое сообщение.";
+        result.status === 'OUTCOME_UNKNOWN'
+          ? 'Telegram не подтвердил результат. Повторите проверку позже.'
+          : 'Telegram отклонил тестовое сообщение.';
     }
   } catch (cause) {
     if (isCurrent(operation)) error.value = safeError(cause);
@@ -332,7 +299,7 @@ async function testCurrent(): Promise<void> {
   }
 }
 
-async function updateStatus(status: "ACTIVE" | "DISABLED"): Promise<void> {
+async function updateStatus(status: 'ACTIVE' | 'DISABLED'): Promise<void> {
   const current = destination.value;
   const operation = currentOperation();
   if (
@@ -344,7 +311,7 @@ async function updateStatus(status: "ACTIVE" | "DISABLED"): Promise<void> {
   )
     return;
   if (
-    status === "DISABLED" &&
+    status === 'DISABLED' &&
     !window.confirm(`Отключить служебный Telegram «${current.displayName}»?`)
   )
     return;
@@ -359,9 +326,9 @@ async function updateStatus(status: "ACTIVE" | "DISABLED"): Promise<void> {
     if (!belongsToCurrentProject(operation, updated)) return;
     destination.value = updated;
     success.value =
-      status === "ACTIVE"
-        ? "Служебные Telegram-уведомления включены."
-        : "Служебные Telegram-уведомления отключены.";
+      status === 'ACTIVE'
+        ? 'Служебные Telegram-уведомления включены.'
+        : 'Служебные Telegram-уведомления отключены.';
   } catch (cause) {
     if (isCurrent(operation)) error.value = safeError(cause);
   } finally {
@@ -382,15 +349,10 @@ async function rotate(): Promise<void> {
     !token
   )
     return;
-  if (
-    !window.confirm(
-      "Заменить token? Чат потребуется привязать и проверить заново.",
-    )
-  )
-    return;
+  if (!window.confirm('Заменить token? Чат потребуется привязать и проверить заново.')) return;
   clearFeedback();
   pending.value = true;
-  botToken.value = "";
+  botToken.value = '';
   try {
     const rotated = await notificationDestinationsApi.updateOperationalTelegram(
       operation.projectId,
@@ -401,14 +363,14 @@ async function rotate(): Promise<void> {
     destination.value = rotated;
     challenge.value = null;
     success.value =
-      rotated.telegramWebhookSetupStatus === "SUCCEEDED"
-        ? "Новый бот проверен. Получите новую команду привязки."
-        : "Новый бот проверен. Retenive регистрирует защищённый webhook — обновите статус через несколько секунд.";
+      rotated.telegramWebhookSetupStatus === 'SUCCEEDED'
+        ? 'Новый бот проверен. Получите новую команду привязки.'
+        : 'Новый бот проверен. Retenive регистрирует защищённый webhook — обновите статус через несколько секунд.';
   } catch (cause) {
     if (isCurrent(operation)) error.value = safeError(cause);
   } finally {
     if (isCurrent(operation)) {
-      botToken.value = "";
+      botToken.value = '';
       await load();
       pending.value = false;
     }
@@ -417,21 +379,19 @@ async function rotate(): Promise<void> {
 
 function safeError(cause: unknown): string {
   const apiError = normalizeApiError(cause);
-  if (apiError.code === "NOTIFICATION_DESTINATION_VERSION_CONFLICT") {
+  if (apiError.code === 'NOTIFICATION_DESTINATION_VERSION_CONFLICT') {
     void load();
-    return "Настройки изменились в другой вкладке. Данные обновлены.";
+    return 'Настройки изменились в другой вкладке. Данные обновлены.';
   }
-  if (apiError.code === "TELEGRAM_BOT_TOKEN_INVALID")
-    return "Telegram отклонил token бота.";
-  if (apiError.code === "TELEGRAM_DESTINATION_BINDING_REQUIRED")
-    return "Сначала привяжите Telegram-чат.";
-  if (apiError.code === "TELEGRAM_DESTINATION_TEST_REQUIRED")
-    return "Сначала привяжите чат и выполните успешную проверку.";
-  if (apiError.code === "TELEGRAM_WEBHOOK_SETUP_PENDING")
-    return "Webhook ещё регистрируется. Обновите статус через несколько секунд.";
-  if (apiError.status === 403)
-    return "Недостаточно прав для изменения интеграции.";
-  return "Не удалось изменить служебный Telegram. Повторите попытку.";
+  if (apiError.code === 'TELEGRAM_BOT_TOKEN_INVALID') return 'Telegram отклонил token бота.';
+  if (apiError.code === 'TELEGRAM_DESTINATION_BINDING_REQUIRED')
+    return 'Сначала привяжите Telegram-чат.';
+  if (apiError.code === 'TELEGRAM_DESTINATION_TEST_REQUIRED')
+    return 'Сначала привяжите чат и выполните успешную проверку.';
+  if (apiError.code === 'TELEGRAM_WEBHOOK_SETUP_PENDING')
+    return 'Webhook ещё регистрируется. Обновите статус через несколько секунд.';
+  if (apiError.status === 403) return 'Недостаточно прав для изменения интеграции.';
+  return 'Не удалось изменить служебный Telegram. Повторите попытку.';
 }
 
 watch(
@@ -440,15 +400,15 @@ watch(
     epoch += 1;
     destination.value = null;
     challenge.value = null;
-    botToken.value = "";
-    createRetryKey.value = "";
+    botToken.value = '';
+    createRetryKey.value = '';
     testRetry.value = null;
     pending.value = false;
     clearFeedback();
     if (props.canRead) void load();
     else loading.value = false;
   },
-  { flush: "sync" },
+  { flush: 'sync' },
 );
 
 onMounted(load);
@@ -467,8 +427,7 @@ onMounted(load);
       <div class="card-title">
         <h2 id="telegram-operational-title">Telegram для команды</h2>
         <p>
-          Отправляет эскалации обращений в служебный чат команды и не пишет
-          пользователям продукта.
+          Отправляет эскалации обращений в служебный чат команды и не пишет пользователям продукта.
         </p>
       </div>
       <span class="status" :data-status="statusView.tone">
@@ -486,17 +445,17 @@ onMounted(load);
       <dl class="facts">
         <div>
           <dt>Бот</dt>
-          <dd>@{{ destination.botUsername ?? "—" }}</dd>
+          <dd>@{{ destination.botUsername ?? '—' }}</dd>
         </div>
         <div data-field="telegram-bot-id">
           <dt>ID бота в Telegram</dt>
           <dd>
-            <code>{{ destination.telegramBotId ?? "—" }}</code>
+            <code>{{ destination.telegramBotId ?? '—' }}</code>
           </dd>
         </div>
         <div>
           <dt>Чат</dt>
-          <dd>{{ destination.destinationTitle ?? "Не привязан" }}</dd>
+          <dd>{{ destination.destinationTitle ?? 'Не привязан' }}</dd>
         </div>
         <div>
           <dt>Идентификатор секрета</dt>
@@ -515,12 +474,7 @@ onMounted(load);
         <div data-field="telegram-updated-by">
           <dt>Последнее изменение</dt>
           <dd>
-            {{
-              formatAuditActor(
-                destination.updatedByActorType,
-                destination.updatedByActorId,
-              )
-            }}
+            {{ formatAuditActor(destination.updatedByActorType, destination.updatedByActorId) }}
           </dd>
         </div>
         <div data-field="telegram-updated-at">
@@ -535,16 +489,11 @@ onMounted(load);
         data-state="binding-challenge"
       >
         <strong>Привязка чата</strong>
-        <p>
-          Добавьте @{{ challenge.botUsername }} в нужный чат и отправьте
-          команду:
-        </p>
+        <p>Добавьте @{{ challenge.botUsername }} в нужный чат и отправьте команду:</p>
         <code>{{ challenge.command }}</code>
         <small
           >Команда одноразовая и действует до
-          {{
-            new Date(challenge.expiresAt).toLocaleTimeString("ru-RU")
-          }}.</small
+          {{ new Date(challenge.expiresAt).toLocaleTimeString('ru-RU') }}.</small
         >
       </div>
 
@@ -556,8 +505,8 @@ onMounted(load);
       >
         <strong>Регистрируем защищённый webhook</strong>
         <p>
-          Настройка выполняется в фоне и безопасно повторится при временной
-          ошибке Telegram. Token повторно вводить не нужно.
+          Настройка выполняется в фоне и безопасно повторится при временной ошибке Telegram. Token
+          повторно вводить не нужно.
         </p>
       </div>
 
@@ -569,9 +518,7 @@ onMounted(load);
           :disabled="pending"
           @click="createChallenge"
         >
-          {{
-            challenge ? "Выпустить новую команду" : "Получить команду привязки"
-          }}
+          {{ challenge ? 'Выпустить новую команду' : 'Получить команду привязки' }}
         </button>
         <button
           v-if="!isBound"
@@ -581,7 +528,7 @@ onMounted(load);
           :disabled="pending"
           @click="refreshBinding"
         >
-          {{ setupReady ? "Проверить привязку" : "Обновить статус" }}
+          {{ setupReady ? 'Проверить привязку' : 'Обновить статус' }}
         </button>
         <button
           v-if="isBound && !readyToActivate"
@@ -632,15 +579,11 @@ onMounted(load);
           />
         </label>
         <small
-          >После замены бот и чат будут проверены заново. Токен очистится сразу
-          после отправки.</small
+          >После замены бот и чат будут проверены заново. Токен очистится сразу после
+          отправки.</small
         >
         <div class="form-actions">
-          <button
-            type="submit"
-            class="secondary"
-            :disabled="pending || !botToken.trim()"
-          >
+          <button type="submit" class="secondary" :disabled="pending || !botToken.trim()">
             Заменить токен
           </button>
         </div>
@@ -676,22 +619,17 @@ onMounted(load);
         />
       </label>
       <small
-        >Скопируйте токен из BotFather. Retenive проверит бота и выдаст команду
-        привязки чата.</small
+        >Скопируйте токен из BotFather. Retenive проверит бота и выдаст команду привязки
+        чата.</small
       >
       <div class="form-actions">
-        <button
-          type="submit"
-          :disabled="pending || !displayName.trim() || !botToken.trim()"
-        >
+        <button type="submit" :disabled="pending || !displayName.trim() || !botToken.trim()">
           Подключить и проверить
         </button>
       </div>
     </form>
 
-    <p v-else class="read-only-note">
-      У вас есть доступ только для просмотра интеграций.
-    </p>
+    <p v-else class="read-only-note">У вас есть доступ только для просмотра интеграций.</p>
   </section>
 </template>
 

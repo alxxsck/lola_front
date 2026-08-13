@@ -2,16 +2,15 @@ import type {
   ReplyTranslationPreviewModel,
   RequestedMessageTranslation,
   TranslatedMessageContent,
-} from "@/features/conversation-translation/model/translation-presentation";
-import type { ConversationAISuspensionEntry } from "@/features/conversation-ai-suspension/model/conversation-ai-suspension.store";
+} from '@/features/conversation-translation/model/translation-presentation';
+import type { ConversationAISuspensionEntry } from '@/features/conversation-ai-suspension/model/conversation-ai-suspension.store';
 
-export type ConversationSurfacePlacement = "INBOUND" | "OUTBOUND" | "NEUTRAL";
-export type ConversationSurfaceTone =
-  "DEFAULT" | "ASSISTANT" | "AUTOMATION" | "SYSTEM";
+export type ConversationSurfacePlacement = 'INBOUND' | 'OUTBOUND' | 'NEUTRAL';
+export type ConversationSurfaceTone = 'DEFAULT' | 'ASSISTANT' | 'AUTOMATION' | 'SYSTEM';
 
 export interface ConversationSurfaceStatus {
   label: string;
-  tone: "NEUTRAL" | "SUCCESS" | "WARNING" | "DANGER";
+  tone: 'NEUTRAL' | 'SUCCESS' | 'WARNING' | 'DANGER';
 }
 
 export interface ConversationSurfaceDeliveryStatus extends ConversationSurfaceStatus {
@@ -50,7 +49,7 @@ export interface ConversationSurfaceMessage {
   };
   knowledgeProvenance?: {
     revisionNumber: number;
-    mode: "QUOTE" | "LINK";
+    mode: 'QUOTE' | 'LINK';
     edited: boolean;
   };
 }
@@ -70,14 +69,7 @@ export interface ConversationSurfaceAttachments {
     contentType: string;
     sizeBytes: number;
     state:
-      | "QUEUED"
-      | "UPLOADING"
-      | "SCANNING"
-      | "READY"
-      | "REJECTED"
-      | "FAILED"
-      | "EXPIRED"
-      | "REVOKED";
+      'QUEUED' | 'UPLOADING' | 'SCANNING' | 'READY' | 'REJECTED' | 'FAILED' | 'EXPIRED' | 'REVOKED';
     canAttach: boolean;
     failureCode: string | null;
     canRetry: boolean;
@@ -97,7 +89,7 @@ export interface ConversationSurfaceHistory {
 
 export interface ConversationSurfaceTranslation {
   available: boolean;
-  mode: "ORIGINAL" | "TRANSLATED";
+  mode: 'ORIGINAL' | 'TRANSLATED';
   changing: boolean;
   workingLocaleLabel: string;
   loading: boolean;
@@ -122,13 +114,13 @@ export interface ConversationSurfaceCollaborator {
 }
 
 export interface ConversationSurfaceCollaboration {
-  availability?: "READY" | "DEGRADED";
+  availability?: 'READY' | 'DEGRADED';
   viewers: ConversationSurfaceCollaborator[];
   typers: ConversationSurfaceCollaborator[];
   collision:
-    | { state: "NOT_ARMED" | "CLEAR" }
+    | { state: 'NOT_ARMED' | 'CLEAR' }
     | {
-        state: "OTHER_OPERATOR_REPLIED";
+        state: 'OTHER_OPERATOR_REPLIED';
         observedMessageOrdinal: number;
         messageId: string;
         messageOrdinal: number;
@@ -145,7 +137,7 @@ export interface ConversationSurfaceInternalNotes {
   items: Array<{
     id: string;
     body: string | null;
-    lifecycle: "ACTIVE" | "TOMBSTONED" | "PURGED";
+    lifecycle: 'ACTIVE' | 'TOMBSTONED' | 'PURGED';
     creatorName: string;
     updatedAt: string;
   }>;
@@ -161,7 +153,7 @@ export interface ConversationSurfaceReplyPreview {
 }
 
 export interface ConversationSurfaceActionCapability {
-  visibility: "ENABLED" | "DISABLED" | "HIDDEN";
+  visibility: 'ENABLED' | 'DISABLED' | 'HIDDEN';
   reason?: string;
 }
 
@@ -177,15 +169,15 @@ export interface ConversationSurfaceComposerActions {
 }
 
 export type ConversationSurfaceComposerAction =
-  | "ATTACHMENT"
-  | "CREATE_TICKET"
-  | "CLASSIFY_CASE"
-  | "INTERNAL_NOTES"
-  | "KNOWLEDGE"
-  | "REMOVE_KNOWLEDGE"
-  | "TEMPLATES"
-  | "IMPROVE_WITH_AI"
-  | "SEND_WITHOUT_TRANSLATION";
+  | 'ATTACHMENT'
+  | 'CREATE_TICKET'
+  | 'CLASSIFY_CASE'
+  | 'INTERNAL_NOTES'
+  | 'KNOWLEDGE'
+  | 'REMOVE_KNOWLEDGE'
+  | 'TEMPLATES'
+  | 'IMPROVE_WITH_AI'
+  | 'SEND_WITHOUT_TRANSLATION';
 
 export interface ConversationSurfaceTranslationAssist {
   targetLocale: string | null;
@@ -194,16 +186,16 @@ export interface ConversationSurfaceTranslationAssist {
 }
 
 export interface ConversationSurfaceComposerOutcome {
-  state: "CHECKING_OUTCOME" | "RETRYABLE" | "BLOCKED";
+  state: 'CHECKING_OUTCOME' | 'RETRYABLE' | 'BLOCKED';
   label: string;
   action?: {
-    kind: "CHECK" | "DISCARD";
+    kind: 'CHECK' | 'DISCARD';
     label: string;
   };
 }
 
 interface ConversationSurfaceComposerBase {
-  visibility: "ENABLED" | "DISABLED" | "HIDDEN";
+  visibility: 'ENABLED' | 'DISABLED' | 'HIDDEN';
   scope: {
     projectId: string;
     actorId: string;
@@ -218,14 +210,14 @@ interface ConversationSurfaceComposerBase {
   knowledgeSource?: {
     title: string;
     revisionNumber: number;
-    mode: "QUOTE" | "LINK";
+    mode: 'QUOTE' | 'LINK';
     edited: boolean;
   };
   sending: boolean;
   outcome?: ConversationSurfaceComposerOutcome;
   recipientStatus: {
     label: string;
-    tone: "ONLINE" | "OFFLINE" | "NEUTRAL";
+    tone: 'ONLINE' | 'OFFLINE' | 'NEUTRAL';
   } | null;
   actions: ConversationSurfaceComposerActions;
   attachments?: ConversationSurfaceAttachments;
@@ -235,18 +227,17 @@ interface ConversationSurfaceComposerBase {
   };
 }
 
-type SourceSendCapability =
-  { kind: "SOURCE" } | { kind: "BLOCKED"; reason: string };
+type SourceSendCapability = { kind: 'SOURCE' } | { kind: 'BLOCKED'; reason: string };
 
 export type ConversationSurfaceComposer =
   | (ConversationSurfaceComposerBase & {
-      mode: "PUBLIC_REPLY";
-      sendCapability: SourceSendCapability | { kind: "TRANSLATED_PREVIEW" };
+      mode: 'PUBLIC_REPLY';
+      sendCapability: SourceSendCapability | { kind: 'TRANSLATED_PREVIEW' };
       replyPreview: ConversationSurfaceReplyPreview | null;
       translationAssist: ConversationSurfaceTranslationAssist | null;
     })
   | (ConversationSurfaceComposerBase & {
-      mode: "INTERNAL_NOTE";
+      mode: 'INTERNAL_NOTE';
       /** Exact Case-scoped target; never reuse the Conversation identity. */
       draftTargetId: string;
       sendCapability: SourceSendCapability;
@@ -256,23 +247,23 @@ export type ConversationSurfaceComposer =
 
 export type ConversationSurfaceReconcileIssue =
   | {
-      kind: "MESSAGE_ID_CONFLICT";
+      kind: 'MESSAGE_ID_CONFLICT';
       messageId: string;
     }
   | {
-      kind: "ORDINAL_COLLISION";
+      kind: 'ORDINAL_COLLISION';
       ordinal: number;
       messageIds: string[];
     }
   | {
-      kind: "ORDINAL_GAP";
+      kind: 'ORDINAL_GAP';
       afterOrdinal: number;
       beforeOrdinal: number;
     };
 
 export interface ConversationSurfaceSendRequest {
   scopeKey: string;
-  mode: ConversationSurfaceComposer["mode"];
+  mode: ConversationSurfaceComposer['mode'];
   text: string;
   attachmentIds?: string[];
   attachmentDraftKey?: string;
@@ -280,14 +271,11 @@ export interface ConversationSurfaceSendRequest {
 
 export interface ConversationSurfaceAttachmentDownloadRequest {
   attachmentId: string;
-  visibility: "PUBLIC_REPLY" | "INTERNAL_NOTE";
+  visibility: 'PUBLIC_REPLY' | 'INTERNAL_NOTE';
 }
 
-export function conversationSurfaceDraftKey(
-  composer: ConversationSurfaceComposer,
-): string {
+export function conversationSurfaceDraftKey(composer: ConversationSurfaceComposer): string {
   const { projectId, actorId, conversationId } = composer.scope;
-  const targetId =
-    composer.mode === "INTERNAL_NOTE" ? composer.draftTargetId : conversationId;
+  const targetId = composer.mode === 'INTERNAL_NOTE' ? composer.draftTargetId : conversationId;
   return `${projectId}:${actorId}:${targetId}:${composer.mode}`;
 }

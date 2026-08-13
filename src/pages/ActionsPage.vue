@@ -1,70 +1,60 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, shallowRef } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import { useToast } from "primevue/usetoast";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { repository } from "@/shared/api/repository";
-import type { ActionExecutorAdapter } from "@/shared/api/generated/models";
-import type { UiElement } from "@/shared/types/domain";
+import { computed, onMounted, ref, shallowRef } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import { useToast } from 'primevue/usetoast';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { repository } from '@/shared/api/repository';
+import type { ActionExecutorAdapter } from '@/shared/api/generated/models';
+import type { UiElement } from '@/shared/types/domain';
 import type {
   ConfigureProjectActionInput,
   ProjectAction,
-} from "@/features/project-actions/model/project-action";
-import { useProjectActionsStore } from "@/features/project-actions/model/project-actions.store";
-import ProjectActionCard from "@/features/project-actions/ui/ProjectActionCard.vue";
-import ProjectActionEditor from "@/features/project-actions/ui/ProjectActionEditor.vue";
-import AiCapabilityPreview from "@/features/project-actions/ui/AiCapabilityPreview.vue";
+} from '@/features/project-actions/model/project-action';
+import { useProjectActionsStore } from '@/features/project-actions/model/project-actions.store';
+import ProjectActionCard from '@/features/project-actions/ui/ProjectActionCard.vue';
+import ProjectActionEditor from '@/features/project-actions/ui/ProjectActionEditor.vue';
+import AiCapabilityPreview from '@/features/project-actions/ui/AiCapabilityPreview.vue';
 import {
   actionExecutorLabel,
   actionOriginLabel,
   actionRiskLabel,
   actionTypeDescription,
   actionTypeName,
-} from "@/features/project-actions/model/project-action-presentation";
+} from '@/features/project-actions/model/project-action-presentation';
 
-type ActionsView = "PROJECT" | "AI" | "SYSTEM" | "INTEGRATION";
-type SurfaceFilter = "ALL" | "SCENARIO" | "AI";
-type StatusFilter =
-  | "ALL"
-  | "SCENARIO_ENABLED"
-  | "AI_ENABLED"
-  | "DISABLED"
-  | "ARCHIVED"
-  | "ISSUES";
-type ExecutorFilter = "ALL" | ActionExecutorAdapter;
-type OriginFilter = "ALL" | "SYSTEM" | "INTEGRATION";
+type ActionsView = 'PROJECT' | 'AI' | 'SYSTEM' | 'INTEGRATION';
+type SurfaceFilter = 'ALL' | 'SCENARIO' | 'AI';
+type StatusFilter = 'ALL' | 'SCENARIO_ENABLED' | 'AI_ENABLED' | 'DISABLED' | 'ARCHIVED' | 'ISSUES';
+type ExecutorFilter = 'ALL' | ActionExecutorAdapter;
+type OriginFilter = 'ALL' | 'SYSTEM' | 'INTEGRATION';
 
 const auth = useAuthStore();
 const store = useProjectActionsStore();
 const toast = useToast();
-const view = ref<ActionsView>("PROJECT");
-const search = ref("");
-const surface = ref<SurfaceFilter>("ALL");
-const status = ref<StatusFilter>("ALL");
-const executor = ref<ExecutorFilter>("ALL");
-const origin = ref<OriginFilter>("ALL");
+const view = ref<ActionsView>('PROJECT');
+const search = ref('');
+const surface = ref<SurfaceFilter>('ALL');
+const status = ref<StatusFilter>('ALL');
+const executor = ref<ExecutorFilter>('ALL');
+const origin = ref<OriginFilter>('ALL');
 const selected = shallowRef<ProjectAction | null>(null);
 const elements = ref<UiElement[]>([]);
 const elementsLoading = ref(false);
 const elementsError = ref<string | null>(null);
 
-const projectId = computed(() => auth.project?.id ?? "");
-const effectivePermissionCodes = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
+const projectId = computed(() => auth.project?.id ?? '');
+const effectivePermissionCodes = computed(() => auth.project?.effectivePermissionCodes ?? []);
 const actions = computed(() => store.actionsForProject(projectId.value));
 const catalog = computed(() => store.catalogForProject(projectId.value));
-const loading = computed(() =>
-  Boolean(store.loadingByProject[projectId.value]),
-);
+const loading = computed(() => Boolean(store.loadingByProject[projectId.value]));
 const error = computed(() => store.errorsByProject[projectId.value] ?? null);
 const activeActions = computed(() =>
-  actions.value.filter((action) => action.lifecycle !== "ARCHIVED"),
+  actions.value.filter((action) => action.lifecycle !== 'ARCHIVED'),
 );
 const scenarioEnabledCount = computed(
   () => activeActions.value.filter((action) => action.scenarioEnabled).length,
@@ -72,9 +62,7 @@ const scenarioEnabledCount = computed(
 const aiEnabledCount = computed(
   () => activeActions.value.filter((action) => action.aiEnabled).length,
 );
-const issueCount = computed(
-  () => activeActions.value.filter(hasActionIssue).length,
-);
+const issueCount = computed(() => activeActions.value.filter(hasActionIssue).length);
 
 const filteredActions = computed(() => {
   const query = search.value.trim().toLowerCase();
@@ -82,30 +70,24 @@ const filteredActions = computed(() => {
     const revision = action.actionTypeRevision;
     const matchesSearch =
       !query ||
-      [
-        action.code,
-        revision.name,
-        revision.description,
-        action.actionType.key,
-      ].some((value) => value.toLowerCase().includes(query));
+      [action.code, revision.name, revision.description, action.actionType.key].some((value) =>
+        value.toLowerCase().includes(query),
+      );
     const matchesSurface =
-      surface.value === "ALL" ||
-      revision.supportedSurfaces.includes(surface.value);
+      surface.value === 'ALL' || revision.supportedSurfaces.includes(surface.value);
     const matchesStatus =
-      status.value === "ALL" ||
-      status.value === "ISSUES" ||
-      (status.value === "SCENARIO_ENABLED" && action.scenarioEnabled) ||
-      (status.value === "AI_ENABLED" && action.aiEnabled) ||
-      (status.value === "DISABLED" &&
+      status.value === 'ALL' ||
+      status.value === 'ISSUES' ||
+      (status.value === 'SCENARIO_ENABLED' && action.scenarioEnabled) ||
+      (status.value === 'AI_ENABLED' && action.aiEnabled) ||
+      (status.value === 'DISABLED' &&
         !action.scenarioEnabled &&
         !action.aiEnabled &&
-        action.lifecycle !== "ARCHIVED") ||
-      (status.value === "ARCHIVED" && action.lifecycle === "ARCHIVED");
-    const matchesExecutor =
-      executor.value === "ALL" || revision.executorAdapter === executor.value;
-    const matchesOrigin =
-      origin.value === "ALL" || action.actionType.origin === origin.value;
-    const matchesIssues = status.value !== "ISSUES" || hasActionIssue(action);
+        action.lifecycle !== 'ARCHIVED') ||
+      (status.value === 'ARCHIVED' && action.lifecycle === 'ARCHIVED');
+    const matchesExecutor = executor.value === 'ALL' || revision.executorAdapter === executor.value;
+    const matchesOrigin = origin.value === 'ALL' || action.actionType.origin === origin.value;
+    const matchesIssues = status.value !== 'ISSUES' || hasActionIssue(action);
     return (
       matchesSearch &&
       matchesSurface &&
@@ -122,9 +104,8 @@ const filteredAiActions = computed(() =>
 
 const visibleCatalog = computed(() =>
   catalog.value.filter((item) => {
-    if (view.value === "SYSTEM" && item.origin !== "SYSTEM") return false;
-    if (view.value === "INTEGRATION" && item.origin !== "INTEGRATION")
-      return false;
+    if (view.value === 'SYSTEM' && item.origin !== 'SYSTEM') return false;
+    if (view.value === 'INTEGRATION' && item.origin !== 'INTEGRATION') return false;
     const revision = item.activeRevision;
     if (!revision) return !search.value.trim();
     const query = search.value.trim().toLowerCase();
@@ -133,37 +114,36 @@ const visibleCatalog = computed(() =>
         [item.key, revision.name, revision.description].some((value) =>
           value.toLowerCase().includes(query),
         )) &&
-      (surface.value === "ALL" ||
-        revision.supportedSurfaces.includes(surface.value)) &&
-      (executor.value === "ALL" || revision.executorAdapter === executor.value)
+      (surface.value === 'ALL' || revision.supportedSurfaces.includes(surface.value)) &&
+      (executor.value === 'ALL' || revision.executorAdapter === executor.value)
     );
   }),
 );
 
 const surfaceOptions = [
-  { label: "Где используется: везде", value: "ALL" },
-  { label: "В сценариях", value: "SCENARIO" },
-  { label: "Помощником Retenive", value: "AI" },
+  { label: 'Где используется: везде', value: 'ALL' },
+  { label: 'В сценариях', value: 'SCENARIO' },
+  { label: 'Помощником Retenive', value: 'AI' },
 ];
 const statusOptions = [
-  { label: "Состояние: любое", value: "ALL" },
-  { label: "Доступно в сценариях", value: "SCENARIO_ENABLED" },
-  { label: "Доступно Retenive", value: "AI_ENABLED" },
-  { label: "Полностью выключено", value: "DISABLED" },
-  { label: "В архиве", value: "ARCHIVED" },
-  { label: "Требуют внимания", value: "ISSUES" },
+  { label: 'Состояние: любое', value: 'ALL' },
+  { label: 'Доступно в сценариях', value: 'SCENARIO_ENABLED' },
+  { label: 'Доступно Retenive', value: 'AI_ENABLED' },
+  { label: 'Полностью выключено', value: 'DISABLED' },
+  { label: 'В архиве', value: 'ARCHIVED' },
+  { label: 'Требуют внимания', value: 'ISSUES' },
 ];
 const executorOptions = [
-  { label: "Где выполняется: везде", value: "ALL" },
-  { label: "В приложении", value: "FRONTEND_COMMAND" },
-  { label: "На сервере", value: "SERVER_HANDLER" },
-  { label: "Эскалация обращения", value: "CASE_ESCALATION" },
-  { label: "Выведено из эксплуатации", value: "RETIRED" },
+  { label: 'Где выполняется: везде', value: 'ALL' },
+  { label: 'В приложении', value: 'FRONTEND_COMMAND' },
+  { label: 'На сервере', value: 'SERVER_HANDLER' },
+  { label: 'Эскалация обращения', value: 'CASE_ESCALATION' },
+  { label: 'Выведено из эксплуатации', value: 'RETIRED' },
 ];
 const originOptions = [
-  { label: "Источник: любой", value: "ALL" },
-  { label: "Встроенные", value: "SYSTEM" },
-  { label: "Подключённые", value: "INTEGRATION" },
+  { label: 'Источник: любой', value: 'ALL' },
+  { label: 'Встроенные', value: 'SYSTEM' },
+  { label: 'Подключённые', value: 'INTEGRATION' },
 ];
 
 onMounted(load);
@@ -198,7 +178,7 @@ async function loadElements(preserveOnError = false): Promise<void> {
     elements.value = await repository.getElements(projectId.value);
   } catch {
     if (!preserveOnError) elements.value = [];
-    elementsError.value = "Не удалось загрузить каталог интерфейса.";
+    elementsError.value = 'Не удалось загрузить каталог интерфейса.';
   } finally {
     elementsLoading.value = false;
   }
@@ -206,7 +186,7 @@ async function loadElements(preserveOnError = false): Promise<void> {
 
 async function openAction(action: ProjectAction) {
   selected.value = action;
-  if (!action.actionTypeRevision.supportedSurfaces.includes("AI")) return;
+  if (!action.actionTypeRevision.supportedSurfaces.includes('AI')) return;
   try {
     await store.loadPreview(projectId.value, action.id);
   } catch {
@@ -219,13 +199,13 @@ async function saveSelected(input: ConfigureProjectActionInput) {
   const actionId = selected.value.id;
   try {
     selected.value = await store.configure(projectId.value, actionId, input);
-    if (selected.value.actionTypeRevision.supportedSurfaces.includes("AI")) {
+    if (selected.value.actionTypeRevision.supportedSurfaces.includes('AI')) {
       await store.loadPreview(projectId.value, actionId, true);
     }
     toast.add({
-      severity: "success",
-      summary: "Действие опубликовано",
-      detail: "Новые настройки уже применены.",
+      severity: 'success',
+      summary: 'Действие опубликовано',
+      detail: 'Новые настройки уже применены.',
       life: 3500,
     });
   } catch {
@@ -238,8 +218,8 @@ async function archiveSelected() {
   try {
     selected.value = await store.archive(projectId.value, selected.value.id);
     toast.add({
-      severity: "success",
-      summary: "Действие архивировано",
+      severity: 'success',
+      summary: 'Действие архивировано',
       life: 3000,
     });
   } catch {
@@ -249,16 +229,14 @@ async function archiveSelected() {
 
 function setView(next: ActionsView) {
   view.value = next;
-  status.value = "ALL";
-  if (next === "AI") {
+  status.value = 'ALL';
+  if (next === 'AI') {
     void loadAiPreviews();
   }
 }
 
 function aiEnabledActionsForPreview(): ProjectAction[] {
-  return actions.value.filter(
-    (action) => action.lifecycle === "ACTIVE" && action.aiEnabled,
-  );
+  return actions.value.filter((action) => action.lifecycle === 'ACTIVE' && action.aiEnabled);
 }
 
 async function loadAiPreviews(force = false): Promise<void> {
@@ -271,10 +249,8 @@ async function loadAiPreviews(force = false): Promise<void> {
 
 function hasActionIssue(action: ProjectAction): boolean {
   return (
-    (action.aiEnabled &&
-      !action.actionTypeRevision.supportedSurfaces.includes("AI")) ||
-    (action.scenarioEnabled &&
-      !action.actionTypeRevision.supportedSurfaces.includes("SCENARIO")) ||
+    (action.aiEnabled && !action.actionTypeRevision.supportedSurfaces.includes('AI')) ||
+    (action.scenarioEnabled && !action.actionTypeRevision.supportedSurfaces.includes('SCENARIO')) ||
     Boolean(store.previewErrorsByAction[action.id]) ||
     Boolean(store.previewByAction[action.id]?.issues.length)
   );
@@ -282,15 +258,13 @@ function hasActionIssue(action: ProjectAction): boolean {
 
 function schemaPropertyCount(schema: Record<string, unknown>): number {
   const properties = schema.properties;
-  return properties &&
-    typeof properties === "object" &&
-    !Array.isArray(properties)
+  return properties && typeof properties === 'object' && !Array.isArray(properties)
     ? Object.keys(properties).length
     : 0;
 }
 
 function surfaceLabel(value: string): string {
-  return value === "SCENARIO" ? "В сценариях" : "Помощником Retenive";
+  return value === 'SCENARIO' ? 'В сценариях' : 'Помощником Retenive';
 }
 </script>
 
@@ -301,8 +275,8 @@ function surfaceLabel(value: string): string {
         <div class="eyebrow">Возможности проекта</div>
         <h1>Действия</h1>
         <p class="subtitle">
-          Выберите, какие действия доступны в сценариях и какие Retenive может
-          предлагать пользователям. Все изменения проверяются перед сохранением.
+          Выберите, какие действия доступны в сценариях и какие Retenive может предлагать
+          пользователям. Все изменения проверяются перед сохранением.
         </p>
       </div>
       <Button
@@ -321,8 +295,8 @@ function surfaceLabel(value: string): string {
         <div>
           <strong>Безопасность включена по умолчанию</strong>
           <p>
-            Новое действие недоступно, пока владелец проекта явно не разрешит
-            его. Доступ для сценариев и для Retenive настраивается отдельно.
+            Новое действие недоступно, пока владелец проекта явно не разрешит его. Доступ для
+            сценариев и для Retenive настраивается отдельно.
           </p>
         </div>
       </div>
@@ -343,29 +317,17 @@ function surfaceLabel(value: string): string {
     </section>
 
     <nav class="view-tabs" aria-label="Разделы каталога действий">
-      <button
-        type="button"
-        :class="{ active: view === 'PROJECT' }"
-        @click="setView('PROJECT')"
-      >
+      <button type="button" :class="{ active: view === 'PROJECT' }" @click="setView('PROJECT')">
         <i class="pi pi-sliders-h" /><span
           >Действия проекта<small>Доступность и настройки</small></span
         >
       </button>
-      <button
-        type="button"
-        :class="{ active: view === 'AI' }"
-        @click="setView('AI')"
-      >
+      <button type="button" :class="{ active: view === 'AI' }" @click="setView('AI')">
         <i class="pi pi-sparkles" /><span
           >Возможности помощника<small>Что Retenive сможет сделать</small></span
         >
       </button>
-      <button
-        type="button"
-        :class="{ active: view === 'SYSTEM' }"
-        @click="setView('SYSTEM')"
-      >
+      <button type="button" :class="{ active: view === 'SYSTEM' }" @click="setView('SYSTEM')">
         <i class="pi pi-box" /><span
           >Встроенные действия<small>Готовые возможности Retenive</small></span
         >
@@ -382,10 +344,7 @@ function surfaceLabel(value: string): string {
     </nav>
 
     <Message v-if="error" severity="error" :closable="false">
-      {{ error.message
-      }}<small v-if="error.requestId"
-        >Код обращения: {{ error.requestId }}</small
-      >
+      {{ error.message }}<small v-if="error.requestId">Код обращения: {{ error.requestId }}</small>
       <Button label="Повторить" size="small" text @click="refresh" />
     </Message>
 
@@ -434,9 +393,9 @@ function surfaceLabel(value: string): string {
           />
         </div>
         <span class="result-count">{{
-          view === "PROJECT"
+          view === 'PROJECT'
             ? filteredActions.length
-            : view === "AI"
+            : view === 'AI'
               ? filteredAiActions.length
               : visibleCatalog.length
         }}</span>
@@ -446,10 +405,10 @@ function surfaceLabel(value: string): string {
         <div v-for="index in 6" :key="index" class="skeleton-card">
           <Skeleton width="44px" height="44px" border-radius="13px" />
           <div>
-            <Skeleton width="65%" height="16px" /><Skeleton
-              width="92%"
-              height="11px"
-            /><Skeleton width="80%" height="70px" />
+            <Skeleton width="65%" height="16px" /><Skeleton width="92%" height="11px" /><Skeleton
+              width="80%"
+              height="70px"
+            />
           </div>
         </div>
       </div>
@@ -471,11 +430,7 @@ function surfaceLabel(value: string): string {
 
       <template v-else-if="view === 'AI'">
         <div v-if="filteredAiActions.length" class="ai-capability-list">
-          <article
-            v-for="action in filteredAiActions"
-            :key="action.id"
-            class="ai-capability-card"
-          >
+          <article v-for="action in filteredAiActions" :key="action.id" class="ai-capability-card">
             <ProjectActionCard :action="action" @select="openAction" />
             <AiCapabilityPreview
               :preview="store.previewByAction[action.id]"
@@ -490,25 +445,18 @@ function surfaceLabel(value: string): string {
             >Для Retenive пока не разрешено ни одного действия</strong
           >
           <p>
-            Откройте нужное действие, включите «Разрешить помощнику Retenive»,
-            добавьте понятную подсказку и сохраните изменения.
+            Откройте нужное действие, включите «Разрешить помощнику Retenive», добавьте понятную
+            подсказку и сохраните изменения.
           </p>
         </div>
       </template>
 
       <template v-else>
         <div v-if="visibleCatalog.length" class="catalog-list">
-          <article
-            v-for="item in visibleCatalog"
-            :key="item.id"
-            class="type-card"
-          >
+          <article v-for="item in visibleCatalog" :key="item.id" class="type-card">
             <div class="type-heading">
               <span class="type-icon"
-                ><i
-                  :class="
-                    item.origin === 'SYSTEM' ? 'pi pi-box' : 'pi pi-link'
-                  "
+                ><i :class="item.origin === 'SYSTEM' ? 'pi pi-box' : 'pi pi-link'"
               /></span>
               <div>
                 <span class="type-tags"
@@ -518,44 +466,26 @@ function surfaceLabel(value: string): string {
                   ></span
                 >
                 <h3>
-                  {{
-                    actionTypeName(
-                      item.key,
-                      item.activeRevision?.name ?? item.key,
-                    )
-                  }}
+                  {{ actionTypeName(item.key, item.activeRevision?.name ?? item.key) }}
                 </h3>
               </div>
-              <span v-if="!item.activeRevision" class="inactive"
-                >Пока недоступно</span
-              >
+              <span v-if="!item.activeRevision" class="inactive">Пока недоступно</span>
             </div>
             <template v-if="item.activeRevision">
               <p>
-                {{
-                  actionTypeDescription(
-                    item.key,
-                    item.activeRevision.description,
-                  )
-                }}
+                {{ actionTypeDescription(item.key, item.activeRevision.description) }}
               </p>
               <dl>
                 <div>
                   <dt>Можно использовать</dt>
                   <dd>
-                    {{
-                      item.activeRevision.supportedSurfaces
-                        .map(surfaceLabel)
-                        .join(" · ")
-                    }}
+                    {{ item.activeRevision.supportedSurfaces.map(surfaceLabel).join(' · ') }}
                   </dd>
                 </div>
                 <div>
                   <dt>Где выполняется</dt>
                   <dd>
-                    {{
-                      actionExecutorLabel(item.activeRevision.executorAdapter)
-                    }}
+                    {{ actionExecutorLabel(item.activeRevision.executorAdapter) }}
                   </dd>
                 </div>
                 <div>
@@ -567,64 +497,43 @@ function surfaceLabel(value: string): string {
                   <dd>
                     {{
                       item.activeRevision.multipleInstances
-                        ? "Можно добавить несколько"
-                        : "Одно действие на проект"
+                        ? 'Можно добавить несколько'
+                        : 'Одно действие на проект'
                     }}
                   </dd>
                 </div>
               </dl>
               <div class="schema-summary">
-                <span
-                  ><i class="pi pi-lock" /> Основные правила защищены от
-                  изменений</span
-                ><span
-                  >Параметров:
-                  {{
-                    schemaPropertyCount(item.activeRevision.inputSchema)
-                  }}</span
-                >
+                <span><i class="pi pi-lock" /> Основные правила защищены от изменений</span
+                ><span>Параметров: {{ schemaPropertyCount(item.activeRevision.inputSchema) }}</span>
               </div>
               <details class="contract-schemas">
                 <summary>Технические сведения для разработчика</summary>
                 <div>
                   <strong>Внутренний код: {{ item.key }}</strong>
-                  <pre>{{
-                    JSON.stringify(item.activeRevision.inputSchema, null, 2)
-                  }}</pre>
+                  <pre>{{ JSON.stringify(item.activeRevision.inputSchema, null, 2) }}</pre>
                 </div>
                 <div>
                   <strong>Настройки проекта</strong>
-                  <pre>{{
-                    JSON.stringify(
-                      item.activeRevision.projectConfigSchema,
-                      null,
-                      2,
-                    )
-                  }}</pre>
+                  <pre>{{ JSON.stringify(item.activeRevision.projectConfigSchema, null, 2) }}</pre>
                 </div>
                 <div>
                   <strong>Результат выполнения</strong>
-                  <pre>{{
-                    JSON.stringify(item.activeRevision.resultSchema, null, 2)
-                  }}</pre>
+                  <pre>{{ JSON.stringify(item.activeRevision.resultSchema, null, 2) }}</pre>
                 </div>
               </details>
             </template>
           </article>
         </div>
         <div v-else class="empty">
-          <i
-            :class="view === 'INTEGRATION' ? 'pi pi-link' : 'pi pi-search'"
-          /><strong>{{
-            view === "INTEGRATION"
-              ? "Подключённых действий пока нет"
-              : "Типы действий не найдены"
+          <i :class="view === 'INTEGRATION' ? 'pi pi-link' : 'pi pi-search'" /><strong>{{
+            view === 'INTEGRATION' ? 'Подключённых действий пока нет' : 'Типы действий не найдены'
           }}</strong>
           <p>
             {{
-              view === "INTEGRATION"
-                ? "Действие появится здесь после того, как разработчик добавит его на сервере проекта."
-                : "Измените фильтры каталога."
+              view === 'INTEGRATION'
+                ? 'Действие появится здесь после того, как разработчик добавит его на сервере проекта.'
+                : 'Измените фильтры каталога.'
             }}
           </p>
         </div>
@@ -635,9 +544,7 @@ function surfaceLabel(value: string): string {
       :visible="Boolean(selected)"
       modal
       :header="
-        selected
-          ? actionTypeName(selected.code, selected.actionTypeRevision.name)
-          : 'Действие'
+        selected ? actionTypeName(selected.code, selected.actionTypeRevision.name) : 'Действие'
       "
       class="project-action-dialog"
       :style="{
@@ -759,8 +666,7 @@ function surfaceLabel(value: string): string {
 .view-tabs button.active {
   color: var(--text-primary);
   background: var(--status-accent-soft);
-  box-shadow: inset 0 0 0 1px
-    color-mix(in srgb, var(--action-primary) 35%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--action-primary) 35%, transparent);
 }
 .view-tabs button > i {
   display: inline-grid;

@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, reactive, ref } from "vue";
-import Message from "primevue/message";
-import { ApiError } from "@/shared/api/http/api-error";
+import { computed, nextTick, onMounted, reactive, ref } from 'vue';
+import Message from 'primevue/message';
+import { ApiError } from '@/shared/api/http/api-error';
 import {
   scenarioAuthoringRepository,
   type ConditionCatalogResponseDtoAudience,
   type SegmentDetailResponseDto,
   type SegmentSummaryResponseDto,
-} from "@/shared/api/repository/scenario-authoring";
+} from '@/shared/api/repository/scenario-authoring';
 import {
   createAudienceDraft,
   deserializeAudience,
@@ -16,8 +16,8 @@ import {
   summarizeAudience,
   type AudienceDomainContext,
   type AudienceDraft,
-} from "../model";
-import AudienceRuleBuilder from "./AudienceRuleBuilder.vue";
+} from '../model';
+import AudienceRuleBuilder from './AudienceRuleBuilder.vue';
 
 const props = defineProps<{
   projectId: string;
@@ -25,15 +25,15 @@ const props = defineProps<{
   readonly?: boolean;
   refreshCatalog?: () => Promise<ConditionCatalogResponseDtoAudience>;
   demo?: boolean;
-  initialAction?: "create" | "detail" | "revision" | "exact";
+  initialAction?: 'create' | 'detail' | 'revision' | 'exact';
   initialSegmentId?: string;
   initialSegmentRevisionId?: string;
 }>();
 const emit = defineEmits<{ changed: []; published: [segmentId: string] }>();
 const loading = ref(false);
-const error = ref("");
-const notice = ref("");
-const query = ref("");
+const error = ref('');
+const notice = ref('');
+const query = ref('');
 const appliedQuery = ref<string | undefined>();
 const includeArchived = ref(false);
 const items = ref<SegmentSummaryResponseDto[]>([]);
@@ -42,22 +42,18 @@ const detail = ref<SegmentDetailResponseDto | null>(null);
 const detailLoading = ref(false);
 const editorOpen = ref(false);
 const editorDirty = ref(false);
-const editorBaseline = ref("");
+const editorBaseline = ref('');
 const saving = ref(false);
-const evaluationUserId = ref("");
+const evaluationUserId = ref('');
 const evaluationPending = ref(false);
-const evaluationResult = ref("");
-const recoveryKind = ref<"catalog" | "head" | null>(null);
+const evaluationResult = ref('');
+const recoveryKind = ref<'catalog' | 'head' | null>(null);
 const pendingHeadRevisionId = ref<string | null>(null);
 const pendingHeadDetail = ref<SegmentDetailResponseDto | null>(null);
-const localConflictSnapshot = ref("");
+const localConflictSnapshot = ref('');
 const localConflictCopied = ref(false);
 const audienceBuilder = ref<{
-  focusIssue: (issue: {
-    nodeId?: string;
-    fieldPath?: string;
-    message?: string;
-  }) => void;
+  focusIssue: (issue: { nodeId?: string; fieldPath?: string; message?: string }) => void;
 } | null>(null);
 const editorDialog = ref<HTMLElement | null>(null);
 const detailDialog = ref<HTMLElement | null>(null);
@@ -68,21 +64,17 @@ const draft = ref<AudienceDraft>(createAudienceDraft());
 const form = reactive({
   segmentId: null as string | null,
   expectedCurrentRevisionId: null as string | null,
-  key: "",
-  name: "",
-  description: "",
+  key: '',
+  name: '',
+  description: '',
 });
 const segmentContext = computed<AudienceDomainContext>(() => ({
   catalog: props.catalog,
   segments: [],
   allowSegments: false,
 }));
-const summary = computed(() =>
-  summarizeAudience(draft.value, segmentContext.value),
-);
-const serialization = computed(() =>
-  serializeAudienceDraft(draft.value, segmentContext.value),
-);
+const summary = computed(() => summarizeAudience(draft.value, segmentContext.value));
+const serialization = computed(() => serializeAudienceDraft(draft.value, segmentContext.value));
 const canPublish = computed(
   () =>
     !props.readonly &&
@@ -110,44 +102,45 @@ const detailRevisionView = computed(() => {
 
 const demoRule = {
   version: 2,
-  freshness: { mode: "USE_LAST_KNOWN" },
+  freshness: { mode: 'USE_LAST_KNOWN' },
   root: {
-    kind: "all",
+    kind: 'all',
     children: [
       {
-        kind: "profileAttribute",
-        definitionId: "attr-tier",
-        operator: "eq",
-        value: "gold",
+        kind: 'profileAttribute',
+        definitionId: 'attr-tier',
+        operator: 'eq',
+        value: 'gold',
       },
     ],
   },
 } as const;
 const demoSummary: SegmentSummaryResponseDto = {
-  segmentId: "segment-gold",
-  key: "gold_customers",
-  name: "Gold customers",
-  description: "Пользователи с уровнем лояльности gold.",
-  status: "ACTIVE",
+  segmentId: 'segment-gold',
+  key: 'gold_customers',
+  name: 'Gold customers',
+  description: 'Пользователи с уровнем лояльности gold.',
+  status: 'ACTIVE',
   currentRevision: {
-    segmentRevisionId: "segment-gold-r2",
+    segmentRevisionId: 'segment-gold-r2',
     revision: 2,
-    catalogRevision: "demo-audience-v2",
-    contentHash: "5ea7c0ffee",
-    publishedAt: "2026-07-18T10:00:00.000Z",
+    catalogRevision: 'demo-audience-v2',
+    contentHash: '5ea7c0ffee',
+    publishedAt: '2026-07-18T10:00:00.000Z',
   },
 };
 
 onMounted(async () => {
   await searchSegments();
-  if (props.initialAction === "create") createSegment();
+  if (props.initialAction === 'create') createSegment();
   else if (props.initialSegmentId) {
-    const target = items.value.find(
-      (item) => item.segmentId === props.initialSegmentId,
-    ) ?? { ...demoSummary, segmentId: props.initialSegmentId };
+    const target = items.value.find((item) => item.segmentId === props.initialSegmentId) ?? {
+      ...demoSummary,
+      segmentId: props.initialSegmentId,
+    };
     await openDetail(target);
     if (
-      props.initialAction === "exact" &&
+      props.initialAction === 'exact' &&
       props.initialSegmentRevisionId &&
       detail.value &&
       !props.demo
@@ -159,70 +152,56 @@ onMounted(async () => {
       );
       detail.value = { ...detail.value, currentRevision: revision };
     }
-    if (props.initialAction === "revision") editCurrentRevision();
+    if (props.initialAction === 'revision') editCurrentRevision();
   }
 });
 
 function message(cause: unknown, fallback: string) {
-  if (!(cause instanceof ApiError))
-    return cause instanceof Error ? cause.message : fallback;
+  if (!(cause instanceof ApiError)) return cause instanceof Error ? cause.message : fallback;
   const messages: Record<string, string> = {
     AUDIENCE_CATALOG_REVISION_STALE:
-      "Доступные поля изменились. Обновите их список ниже: черновик останется в редакторе.",
+      'Доступные поля изменились. Обновите их список ниже: черновик останется в редакторе.',
     SEGMENT_REVISION_CONFLICT:
-      "Другой администратор уже опубликовал новую версию. Загрузите её ниже — ваш черновик останется в редакторе.",
-    SEGMENT_KEY_CONFLICT:
-      "Такой ключ сегмента уже используется в проекте. Выберите другой ключ.",
+      'Другой администратор уже опубликовал новую версию. Загрузите её ниже — ваш черновик останется в редакторе.',
+    SEGMENT_KEY_CONFLICT: 'Такой ключ сегмента уже используется в проекте. Выберите другой ключ.',
     SEGMENT_ARCHIVED:
-      "Сегмент уже архивирован. Его опубликованные версии доступны в истории и в использующих их сценариях.",
+      'Сегмент уже архивирован. Его опубликованные версии доступны в истории и в использующих их сценариях.',
     SEGMENT_RULE_INVALID:
-      "Сервер отклонил правило сегмента. Перейдите к отмеченному условию и исправьте его.",
-    PROJECT_RESOURCE_NOT_FOUND:
-      "Сегмент недоступен в текущем проекте или у вас нет доступа.",
+      'Сервер отклонил правило сегмента. Перейдите к отмеченному условию и исправьте его.',
+    PROJECT_RESOURCE_NOT_FOUND: 'Сегмент недоступен в текущем проекте или у вас нет доступа.',
   };
-  return (
-    (cause.code ? messages[cause.code] : undefined) ?? cause.message ?? fallback
-  );
+  return (cause.code ? messages[cause.code] : undefined) ?? cause.message ?? fallback;
 }
 
 async function searchSegments(append = false) {
   const request = ++searchSequence;
-  const requestQuery = append
-    ? appliedQuery.value
-    : query.value.trim() || undefined;
+  const requestQuery = append ? appliedQuery.value : query.value.trim() || undefined;
   const requestCursor = append ? (nextCursor.value ?? undefined) : undefined;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     if (props.demo) {
       const normalized = requestQuery?.toLowerCase();
       items.value =
-        !normalized ||
-        `${demoSummary.name} ${demoSummary.key}`
-          .toLowerCase()
-          .includes(normalized)
+        !normalized || `${demoSummary.name} ${demoSummary.key}`.toLowerCase().includes(normalized)
           ? [demoSummary]
           : [];
       appliedQuery.value = requestQuery;
       nextCursor.value = null;
       return;
     }
-    const response = await scenarioAuthoringRepository.searchSegments(
-      props.projectId,
-      {
-        query: requestQuery,
-        limit: 25,
-        includeArchived: includeArchived.value,
-        cursor: requestCursor,
-      },
-    );
+    const response = await scenarioAuthoringRepository.searchSegments(props.projectId, {
+      query: requestQuery,
+      limit: 25,
+      includeArchived: includeArchived.value,
+      cursor: requestCursor,
+    });
     if (request !== searchSequence) return;
     items.value = append ? [...items.value, ...response.items] : response.items;
     if (!append) appliedQuery.value = requestQuery;
     nextCursor.value = response.nextCursor ?? null;
   } catch (cause) {
-    if (request === searchSequence)
-      error.value = message(cause, "Не удалось загрузить сегменты");
+    if (request === searchSequence) error.value = message(cause, 'Не удалось загрузить сегменты');
   } finally {
     if (request === searchSequence) loading.value = false;
   }
@@ -230,12 +209,9 @@ async function searchSegments(append = false) {
 
 async function openDetail(segment: SegmentSummaryResponseDto) {
   const request = ++detailSequence;
-  dialogOpener =
-    document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
+  dialogOpener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   detailLoading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const response = props.demo
       ? ({
@@ -243,18 +219,12 @@ async function openDetail(segment: SegmentSummaryResponseDto) {
           revisions: [demoSummary.currentRevision!],
           currentRevision: { ...demoSummary.currentRevision!, rule: demoRule },
         } as unknown as SegmentDetailResponseDto)
-      : await scenarioAuthoringRepository.getSegment(
-          props.projectId,
-          segment.segmentId,
-        );
+      : await scenarioAuthoringRepository.getSegment(props.projectId, segment.segmentId);
     if (request !== detailSequence) return;
     detail.value = response;
-    void nextTick(() =>
-      detailDialog.value?.querySelector<HTMLElement>("button")?.focus(),
-    );
+    void nextTick(() => detailDialog.value?.querySelector<HTMLElement>('button')?.focus());
   } catch (cause) {
-    if (request === detailSequence)
-      error.value = message(cause, "Не удалось открыть сегмент");
+    if (request === detailSequence) error.value = message(cause, 'Не удалось открыть сегмент');
   } finally {
     if (request === detailSequence) detailLoading.value = false;
   }
@@ -262,15 +232,12 @@ async function openDetail(segment: SegmentSummaryResponseDto) {
 
 function createSegment() {
   if (props.readonly) return;
-  dialogOpener =
-    document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
+  dialogOpener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   form.segmentId = null;
   form.expectedCurrentRevisionId = null;
-  form.key = "";
-  form.name = "";
-  form.description = "";
+  form.key = '';
+  form.name = '';
+  form.description = '';
   draft.value = createAudienceDraft();
   editorBaseline.value = editorSnapshot();
   editorOpen.value = true;
@@ -289,11 +256,8 @@ function editCurrentRevision() {
   form.expectedCurrentRevisionId = segment.currentRevision.segmentRevisionId;
   form.key = segment.key;
   form.name = segment.name;
-  form.description = segment.description ?? "";
-  draft.value = deserializeAudience(
-    segment.currentRevision.rule,
-    segmentContext.value,
-  ).draft;
+  form.description = segment.description ?? '';
+  draft.value = deserializeAudience(segment.currentRevision.rule, segmentContext.value).draft;
   editorBaseline.value = editorSnapshot();
   detail.value = null;
   editorOpen.value = true;
@@ -311,9 +275,7 @@ function editorSnapshot() {
 function closeEditor() {
   if (
     (editorDirty.value || editorSnapshot() !== editorBaseline.value) &&
-    !window.confirm(
-      "Закрыть редактор и потерять неопубликованные изменения сегмента?",
-    )
+    !window.confirm('Закрыть редактор и потерять неопубликованные изменения сегмента?')
   )
     return;
   editorOpen.value = false;
@@ -325,7 +287,7 @@ function closeEditor() {
 async function publish() {
   if (!canPublish.value || !serialization.value.ok) return;
   saving.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const payload = {
       catalogRevision: props.catalog.revision,
@@ -338,11 +300,11 @@ async function publish() {
     if (props.demo) {
       const segmentId = form.segmentId ?? `segment-${form.key}`;
       notice.value = form.segmentId
-        ? "Новая версия сегмента опубликована."
-        : "Сегмент создан и опубликован.";
+        ? 'Новая версия сегмента опубликована.'
+        : 'Сегмент создан и опубликован.';
       editorOpen.value = false;
       editorDirty.value = false;
-      emit("published", segmentId);
+      emit('published', segmentId);
       return;
     }
     const response = form.segmentId
@@ -351,56 +313,49 @@ async function publish() {
           form.segmentId,
           payload,
         )
-      : await scenarioAuthoringRepository.createSegment(
-          props.projectId,
-          payload,
-        );
+      : await scenarioAuthoringRepository.createSegment(props.projectId, payload);
     notice.value = form.segmentId
-      ? "Новая версия сегмента опубликована."
-      : "Сегмент создан и опубликован.";
+      ? 'Новая версия сегмента опубликована.'
+      : 'Сегмент создан и опубликован.';
     editorOpen.value = false;
     detail.value = null;
     editorDirty.value = false;
-    emit("changed");
-    emit("published", response.segmentId);
+    emit('changed');
+    emit('published', response.segmentId);
     await searchSegments();
   } catch (cause) {
-    error.value = message(cause, "Не удалось опубликовать сегмент");
-    if (
-      cause instanceof ApiError &&
-      cause.code === "AUDIENCE_CATALOG_REVISION_STALE"
-    )
-      recoveryKind.value = "catalog";
-    if (cause instanceof ApiError && cause.code === "SEGMENT_REVISION_CONFLICT")
-      recoveryKind.value = "head";
-    if (cause instanceof ApiError && cause.code === "SEGMENT_REVISION_CONFLICT")
+    error.value = message(cause, 'Не удалось опубликовать сегмент');
+    if (cause instanceof ApiError && cause.code === 'AUDIENCE_CATALOG_REVISION_STALE')
+      recoveryKind.value = 'catalog';
+    if (cause instanceof ApiError && cause.code === 'SEGMENT_REVISION_CONFLICT')
+      recoveryKind.value = 'head';
+    if (cause instanceof ApiError && cause.code === 'SEGMENT_REVISION_CONFLICT')
       localConflictSnapshot.value = editorSnapshot();
-    if (cause instanceof ApiError && cause.code === "SEGMENT_REVISION_CONFLICT")
+    if (cause instanceof ApiError && cause.code === 'SEGMENT_REVISION_CONFLICT')
       localConflictCopied.value = false;
     if (
       cause instanceof ApiError &&
-      cause.code === "SEGMENT_RULE_INVALID" &&
+      cause.code === 'SEGMENT_RULE_INVALID' &&
       serialization.value.ok
     ) {
       const details =
-        cause.details && typeof cause.details === "object"
+        cause.details && typeof cause.details === 'object'
           ? (cause.details as { issues?: unknown; details?: unknown })
           : null;
       const nested =
-        details?.details && typeof details.details === "object"
+        details?.details && typeof details.details === 'object'
           ? (details.details as { issues?: unknown })
           : null;
       const rawIssues = details?.issues ?? nested?.issues;
       const issues = Array.isArray(rawIssues)
-        ? rawIssues.filter(
-            (issue): issue is { code: string; message: string; path: string } =>
-              Boolean(
-                issue &&
-                typeof issue === "object" &&
-                "code" in issue &&
-                "message" in issue &&
-                "path" in issue,
-              ),
+        ? rawIssues.filter((issue): issue is { code: string; message: string; path: string } =>
+            Boolean(
+              issue &&
+              typeof issue === 'object' &&
+              'code' in issue &&
+              'message' in issue &&
+              'path' in issue,
+            ),
           )
         : [];
       const first = mapAudienceIssues(issues, serialization.value.pathIndex)[0];
@@ -417,28 +372,24 @@ async function publish() {
 async function evaluateOneUser() {
   if (!serialization.value.ok || !evaluationUserId.value.trim()) return;
   evaluationPending.value = true;
-  evaluationResult.value = "";
+  evaluationResult.value = '';
   try {
     if (props.demo)
       evaluationResult.value =
-        "Подходит · профиль версии 1 · использованы последние известные данные";
+        'Подходит · профиль версии 1 · использованы последние известные данные';
     else {
-      const response =
-        await scenarioAuthoringRepository.evaluateAudienceForUser(
-          props.projectId,
-          evaluationUserId.value.trim(),
-          props.catalog.revision,
-          serialization.value.value,
-        );
+      const response = await scenarioAuthoringRepository.evaluateAudienceForUser(
+        props.projectId,
+        evaluationUserId.value.trim(),
+        props.catalog.revision,
+        serialization.value.value,
+      );
       evaluationResult.value = response.valid
-        ? `${truthLabel(response.truth ?? (response.matched ? "MATCH" : "NO_MATCH"))} · профиль версии ${response.profileVersion ?? "—"} · ${freshnessLabel(response.freshness?.mode)}`
-        : `Правило нужно исправить · ${response.issues.map((issue) => issue.message).join("; ")}`;
+        ? `${truthLabel(response.truth ?? (response.matched ? 'MATCH' : 'NO_MATCH'))} · профиль версии ${response.profileVersion ?? '—'} · ${freshnessLabel(response.freshness?.mode)}`
+        : `Правило нужно исправить · ${response.issues.map((issue) => issue.message).join('; ')}`;
     }
   } catch (cause) {
-    evaluationResult.value = message(
-      cause,
-      "Не удалось проверить пользователя",
-    );
+    evaluationResult.value = message(cause, 'Не удалось проверить пользователя');
   } finally {
     evaluationPending.value = false;
   }
@@ -448,34 +399,25 @@ async function recoverEditor() {
   const recovery = recoveryKind.value;
   if (!recovery) return;
   saving.value = true;
-  error.value = "";
+  error.value = '';
   try {
-    if (recovery === "catalog") {
+    if (recovery === 'catalog') {
       if (!props.refreshCatalog)
-        throw new Error(
-          "Обновить список полей можно только после перезагрузки страницы.",
-        );
+        throw new Error('Обновить список полей можно только после перезагрузки страницы.');
       await props.refreshCatalog();
       notice.value =
-        "Список доступных полей обновлён. Черновик сохранён — проверьте отмеченные условия и повторите публикацию.";
+        'Список доступных полей обновлён. Черновик сохранён — проверьте отмеченные условия и повторите публикацию.';
     } else if (form.segmentId) {
-      const latest = await scenarioAuthoringRepository.getSegment(
-        props.projectId,
-        form.segmentId,
-      );
-      pendingHeadRevisionId.value =
-        latest.currentRevision?.segmentRevisionId ?? null;
+      const latest = await scenarioAuthoringRepository.getSegment(props.projectId, form.segmentId);
+      pendingHeadRevisionId.value = latest.currentRevision?.segmentRevisionId ?? null;
       pendingHeadDetail.value = latest;
       notice.value =
-        "Другой администратор опубликовал новую версию. Сравните изменения и решите, загружать ли её в редактор.";
+        'Другой администратор опубликовал новую версию. Сравните изменения и решите, загружать ли её в редактор.';
       return;
     }
     recoveryKind.value = null;
   } catch (cause) {
-    error.value = message(
-      cause,
-      "Не удалось обновить данные для повторной публикации",
-    );
+    error.value = message(cause, 'Не удалось обновить данные для повторной публикации');
   } finally {
     saving.value = false;
   }
@@ -486,7 +428,7 @@ function acceptHeadRecovery() {
   if (!pendingHeadRevisionId.value || !latest?.currentRevision) return;
   if (!localConflictCopied.value) {
     error.value =
-      "Сначала скопируйте черновик: загрузка последней версии заменит условия в редакторе.";
+      'Сначала скопируйте черновик: загрузка последней версии заменит условия в редакторе.';
     return;
   }
   if (
@@ -497,20 +439,16 @@ function acceptHeadRecovery() {
     return;
   form.expectedCurrentRevisionId = pendingHeadRevisionId.value;
   form.name = latest.name;
-  form.description = latest.description ?? "";
-  draft.value = deserializeAudience(
-    latest.currentRevision.rule,
-    segmentContext.value,
-  ).draft;
+  form.description = latest.description ?? '';
+  draft.value = deserializeAudience(latest.currentRevision.rule, segmentContext.value).draft;
   editorBaseline.value = editorSnapshot();
   editorDirty.value = false;
   pendingHeadRevisionId.value = null;
   pendingHeadDetail.value = null;
-  localConflictSnapshot.value = "";
+  localConflictSnapshot.value = '';
   localConflictCopied.value = false;
   recoveryKind.value = null;
-  notice.value =
-    "Последняя версия загружена. Проверьте черновик и повторите публикацию.";
+  notice.value = 'Последняя версия загружена. Проверьте черновик и повторите публикацию.';
 }
 
 async function copySegmentConflictDraft() {
@@ -518,22 +456,22 @@ async function copySegmentConflictDraft() {
   await navigator.clipboard.writeText(localConflictSnapshot.value);
   localConflictCopied.value = true;
   notice.value =
-    "Черновик скопирован. Теперь можно загрузить последнюю версию и перенести нужные изменения вручную.";
+    'Черновик скопирован. Теперь можно загрузить последнюю версию и перенести нужные изменения вручную.';
 }
 
 function date(value: string) {
-  return new Intl.DateTimeFormat("ru-RU", {
-    dateStyle: "medium",
-    timeStyle: "short",
+  return new Intl.DateTimeFormat('ru-RU', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
   }).format(new Date(value));
 }
 
 function truthLabel(value: string) {
   return (
     {
-      MATCH: "Подходит",
-      NO_MATCH: "Не подходит",
-      UNKNOWN: "Недостаточно данных",
+      MATCH: 'Подходит',
+      NO_MATCH: 'Не подходит',
+      UNKNOWN: 'Недостаточно данных',
     }[value] ?? value
   );
 }
@@ -541,10 +479,10 @@ function truthLabel(value: string) {
 function freshnessLabel(value: string | undefined) {
   return (
     {
-      USE_LAST_KNOWN: "последние известные данные",
-      REQUIRE_FRESH: "только свежие данные",
-      DISABLED: "без проверки свежести",
-    }[value ?? ""] ?? "свежесть данных не указана"
+      USE_LAST_KNOWN: 'последние известные данные',
+      REQUIRE_FRESH: 'только свежие данные',
+      DISABLED: 'без проверки свежести',
+    }[value ?? ''] ?? 'свежесть данных не указана'
   );
 }
 
@@ -581,8 +519,8 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
         <span class="eyebrow">Переиспользуемые аудитории</span>
         <h3 id="segment-title">Сегменты проекта</h3>
         <p>
-          Сегмент — сохранённая группа пользователей. После публикации изменения
-          создают новую версию, а сценарии продолжают использовать выбранную.
+          Сегмент — сохранённая группа пользователей. После публикации изменения создают новую
+          версию, а сценарии продолжают использовать выбранную.
         </p>
       </div>
       <button
@@ -596,23 +534,15 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
       </button>
     </header>
     <Message v-if="readonly" severity="info" :closable="false"
-      >Режим просмотра: создавать версии и архивировать сегменты могут только
-      владельцы и администраторы.</Message
+      >Режим просмотра: создавать версии и архивировать сегменты могут только владельцы и
+      администраторы.</Message
     >
-    <Message v-if="error" severity="error" :closable="false">{{
-      error
-    }}</Message
-    ><Message v-if="notice" severity="success" :closable="false">{{
-      notice
-    }}</Message>
+    <Message v-if="error" severity="error" :closable="false">{{ error }}</Message
+    ><Message v-if="notice" severity="success" :closable="false">{{ notice }}</Message>
     <div v-if="recoveryKind" class="recovery" role="alert">
       <span>Неопубликованный черновик сохранён в редакторе.</span
       ><button type="button" :disabled="saving" @click="recoverEditor">
-        {{
-          recoveryKind === "catalog"
-            ? "Обновить список полей"
-            : "Загрузить новую версию"
-        }}
+        {{ recoveryKind === 'catalog' ? 'Обновить список полей' : 'Загрузить новую версию' }}
       </button>
       <button
         v-if="recoveryKind === 'head' && pendingHeadRevisionId"
@@ -628,23 +558,18 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
         @click="copySegmentConflictDraft"
       >
         {{
-          localConflictCopied
-            ? "Локальный черновик скопирован"
-            : "Скопировать локальный черновик"
+          localConflictCopied ? 'Локальный черновик скопирован' : 'Скопировать локальный черновик'
         }}
       </button>
       <div v-if="pendingHeadDetail" class="head-comparison">
-        <strong
-          >Последняя опубликованная версия · {{ pendingHeadDetail.name }}</strong
-        >
+        <strong>Последняя опубликованная версия · {{ pendingHeadDetail.name }}</strong>
         <span>{{ pendingHeadSummary?.text }}</span>
-        <small>{{ pendingHeadDetail.description || "Без описания" }}</small>
+        <small>{{ pendingHeadDetail.description || 'Без описания' }}</small>
       </div>
     </div>
     <form class="search" @submit.prevent="searchSegments()">
       <label
-        ><span class="sr-only">Поиск сегментов</span
-        ><i class="pi pi-search" /><input
+        ><span class="sr-only">Поиск сегментов</span><i class="pi pi-search" /><input
           v-model="query"
           aria-label="Поиск сегментов"
           placeholder="Название или ключ"
@@ -652,19 +577,13 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
       >
     </form>
     <label class="archive-toggle"
-      ><input
-        v-model="includeArchived"
-        type="checkbox"
-        @change="searchSegments()"
-      />Показывать архивные сегменты</label
+      ><input v-model="includeArchived" type="checkbox" @change="searchSegments()" />Показывать
+      архивные сегменты</label
     >
     <div v-if="loading && !items.length" class="empty">Загружаем сегменты…</div>
     <div v-else-if="!items.length" class="empty">
       <i class="pi pi-users" /><strong>Сегментов пока нет</strong
-      ><span
-        >Создайте первый, чтобы переиспользовать одну аудиторию в нескольких
-        сценариях.</span
-      >
+      ><span>Создайте первый, чтобы переиспользовать одну аудиторию в нескольких сценариях.</span>
     </div>
     <ul v-else class="segments">
       <li v-for="segment in items" :key="segment.segmentId">
@@ -675,7 +594,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
           @click="openDetail(segment)"
         >
           <span class="status" :class="segment.status.toLowerCase()">{{
-            segment.status === "ACTIVE" ? "Активен" : "Архив"
+            segment.status === 'ACTIVE' ? 'Активен' : 'Архив'
           }}</span
           ><strong>{{ segment.name }}</strong
           ><code>{{ segment.key }}</code
@@ -714,7 +633,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
         <header>
           <div>
             <span>Сегмент</span>
-            <h3 id="segment-detail-title">{{ detail?.name ?? "Загрузка…" }}</h3>
+            <h3 id="segment-detail-title">{{ detail?.name ?? 'Загрузка…' }}</h3>
             <code v-if="detail">{{ detail.key }}</code>
           </div>
           <button
@@ -727,7 +646,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
           </button>
         </header>
         <template v-if="detail"
-          ><p>{{ detail.description || "Описание не задано." }}</p>
+          ><p>{{ detail.description || 'Описание не задано.' }}</p>
           <div class="detail-actions">
             <button
               v-if="detail.status === 'ACTIVE' && !readonly"
@@ -737,33 +656,22 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
             >
               <i class="pi pi-plus" /> Новая версия
             </button>
-            <p
-              v-if="detail.status === 'ACTIVE' && !readonly"
-              class="archive-note"
-            >
-              <i class="pi pi-info-circle" /> Сегмент пока нельзя архивировать:
-              Retenive ещё не умеет проверять, используется ли он в сценариях.
+            <p v-if="detail.status === 'ACTIVE' && !readonly" class="archive-note">
+              <i class="pi pi-info-circle" /> Сегмент пока нельзя архивировать: Retenive ещё не
+              умеет проверять, используется ли он в сценариях.
             </p>
           </div>
           <section>
             <h4>
-              {{
-                initialAction === "exact"
-                  ? "Выбранная опубликованная версия"
-                  : "Текущая версия"
-              }}
+              {{ initialAction === 'exact' ? 'Выбранная опубликованная версия' : 'Текущая версия' }}
             </h4>
             <div v-if="detail.currentRevision" class="revision current">
               <strong>Версия {{ detail.currentRevision.revision }}</strong
               ><span>{{ date(detail.currentRevision.publishedAt) }}</span>
             </div>
-            <div
-              v-if="detailRevisionView"
-              class="revision-evidence surface-soft"
-            >
+            <div v-if="detailRevisionView" class="revision-evidence surface-soft">
               <strong>{{ detailRevisionView.summary.text }}</strong>
-              <span
-                >{{ freshnessLabel(detailRevisionView.freshness?.mode) }}</span
+              <span>{{ freshnessLabel(detailRevisionView.freshness?.mode) }}</span
               ><span v-if="detailRevisionView.issues.length" class="danger-copy"
                 >Некоторые условия нужно проверить</span
               >
@@ -795,8 +703,8 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
               </li>
             </ol>
             <small
-              >История доступна только для чтения: новая публикация создаёт
-              следующую версию и не изменяет предыдущие.</small
+              >История доступна только для чтения: новая публикация создаёт следующую версию и не
+              изменяет предыдущие.</small
             >
           </section></template
         >
@@ -817,13 +725,13 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
           <div>
             <span>Версия сегмента</span>
             <h3 id="segment-editor-title">
-              {{ form.segmentId ? "Новая версия сегмента" : "Новый сегмент" }}
+              {{ form.segmentId ? 'Новая версия сегмента' : 'Новый сегмент' }}
             </h3>
             <p>
               {{
                 form.segmentId
-                  ? "Вы создаёте новую версию. Опубликованная останется без изменений."
-                  : "Ключ сегмента и первая версия будут созданы после публикации."
+                  ? 'Вы создаёте новую версию. Опубликованная останется без изменений.'
+                  : 'Ключ сегмента и первая версия будут созданы после публикации.'
               }}
             </p>
           </div>
@@ -852,9 +760,8 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
               maxlength="64"
               placeholder="russian_vip"
             /><small
-              >Начните с латинской буквы. Можно использовать латинские буквы,
-              цифры, дефис и нижнее подчёркивание. После создания ключ нельзя
-              изменить.</small
+              >Начните с латинской буквы. Можно использовать латинские буквы, цифры, дефис и нижнее
+              подчёркивание. После создания ключ нельзя изменить.</small
             ></label
           ><label class="wide"
             ><span>Описание</span
@@ -876,8 +783,8 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
           <div>
             <strong>Проверить одного пользователя</strong
             ><small
-              >Retenive покажет, подходит ли пользователь и насколько свежие данные
-              использовались. Это не подсчёт всей аудитории.</small
+              >Retenive покажет, подходит ли пользователь и насколько свежие данные использовались.
+              Это не подсчёт всей аудитории.</small
             >
           </div>
           <input
@@ -887,20 +794,17 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
           /><button
             type="button"
             class="secondary"
-            :disabled="
-              !serialization.ok || !evaluationUserId.trim() || evaluationPending
-            "
+            :disabled="!serialization.ok || !evaluationUserId.trim() || evaluationPending"
             @click="evaluateOneUser"
           >
-            {{ evaluationPending ? "Проверяем…" : "Проверить" }}</button
+            {{ evaluationPending ? 'Проверяем…' : 'Проверить' }}</button
           ><span v-if="evaluationResult">{{ evaluationResult }}</span>
         </section>
         <footer>
           <div>
             <strong>{{ summary.text }}</strong>
           </div>
-          <button type="button" class="secondary" @click="closeEditor">
-            Отмена</button
+          <button type="button" class="secondary" @click="closeEditor">Отмена</button
           ><button
             type="button"
             class="primary"
@@ -908,7 +812,7 @@ function trapFocus(event: KeyboardEvent, container: HTMLElement | null) {
             :disabled="!canPublish"
             @click="publish"
           >
-            {{ saving ? "Публикуем…" : "Опубликовать" }}
+            {{ saving ? 'Публикуем…' : 'Опубликовать' }}
           </button>
         </footer>
       </section>

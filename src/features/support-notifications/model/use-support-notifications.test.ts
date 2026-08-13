@@ -1,65 +1,65 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { SupportNotificationsSource } from "../api/support-notifications-source";
-import type { BrowserPushAdapter, BrowserPushState } from "./browser-push-adapter";
-import { createSupportNotificationsController } from "./use-support-notifications";
-import { writeStoredBrowserPushRegistration } from "./browser-push-registration-store";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { SupportNotificationsSource } from '../api/support-notifications-source';
+import type { BrowserPushAdapter, BrowserPushState } from './browser-push-adapter';
+import { createSupportNotificationsController } from './use-support-notifications';
+import { writeStoredBrowserPushRegistration } from './browser-push-registration-store';
 
 beforeEach(() => localStorage.clear());
 
 function setup() {
   const source: SupportNotificationsSource = {
     readConfiguration: vi.fn().mockResolvedValue({
-      evaluatedAt: "2026-08-09T10:00:00.000Z",
+      evaluatedAt: '2026-08-09T10:00:00.000Z',
       activeSubscriptionCount: 0,
       capabilities: {
-        assignedToMe: "AVAILABLE",
-        attention: "AVAILABLE",
-        deviceRegistration: "AVAILABLE",
-        deepLinkResolve: "AVAILABLE",
+        assignedToMe: 'AVAILABLE',
+        attention: 'AVAILABLE',
+        deviceRegistration: 'AVAILABLE',
+        deepLinkResolve: 'AVAILABLE',
       },
-      applicationServerKey: "public-key",
-      applicationServerKeyRevision: "fedcba9876543210",
+      applicationServerKey: 'public-key',
+      applicationServerKeyRevision: 'fedcba9876543210',
     }),
     readPreferences: vi.fn().mockResolvedValue([
       {
-        topic: "SUPPORT_CASE_ATTENTION",
-        channel: "BROWSER_PUSH",
+        topic: 'SUPPORT_CASE_ATTENTION',
+        channel: 'BROWSER_PUSH',
         subscribed: false,
-        source: "DEFAULT",
+        source: 'DEFAULT',
         version: null,
       },
       {
-        topic: "SUPPORT_CASE_ASSIGNED_TO_ME",
-        channel: "BROWSER_PUSH",
+        topic: 'SUPPORT_CASE_ASSIGNED_TO_ME',
+        channel: 'BROWSER_PUSH',
         subscribed: true,
-        source: "DEFAULT",
+        source: 'DEFAULT',
         version: null,
       },
     ]),
     updatePreference: vi.fn().mockImplementation(async (_projectId, input) => [
       {
         topic: input.topic,
-        channel: "BROWSER_PUSH",
+        channel: 'BROWSER_PUSH',
         subscribed: input.subscribed,
-        source: "EXPLICIT",
+        source: 'EXPLICIT',
         version: 1,
       },
     ]),
     listDevices: vi.fn().mockResolvedValue([]),
     registerDevice: vi.fn().mockResolvedValue({
-      id: "00000000-0000-4000-8000-000000000027",
-      userAgentClass: "Chrome · macOS",
-      status: "ACTIVE",
+      id: '00000000-0000-4000-8000-000000000027',
+      userAgentClass: 'Chrome · macOS',
+      status: 'ACTIVE',
       version: 1,
-      createdAt: "2026-08-09T10:00:00.000Z",
-      lastSeenAt: "2026-08-09T10:00:00.000Z",
+      createdAt: '2026-08-09T10:00:00.000Z',
+      lastSeenAt: '2026-08-09T10:00:00.000Z',
       revokedAt: null,
     }),
     revokeDevice: vi.fn(),
     resolveDeepLink: vi.fn(),
   };
   let nextBrowserState: BrowserPushState = {
-    permission: "DEFAULT",
+    permission: 'DEFAULT',
     locallySubscribed: false,
     requiresInstalledApp: false,
     endpoint: null,
@@ -69,21 +69,21 @@ function setup() {
     state: vi.fn(async () => nextBrowserState),
     subscribe: vi.fn(async (publicKey) => {
       nextBrowserState = {
-        permission: "GRANTED",
+        permission: 'GRANTED',
         locallySubscribed: true,
         requiresInstalledApp: false,
-        endpoint: "https://push.example.test/device",
+        endpoint: 'https://push.example.test/device',
         applicationServerKey: publicKey,
       };
       return {
-        endpoint: "https://push.example.test/device",
-        p256dh: "p256dh-material",
-        auth: "auth-material",
+        endpoint: 'https://push.example.test/device',
+        p256dh: 'p256dh-material',
+        auth: 'auth-material',
       };
     }),
     unsubscribe: vi.fn(async () => {
       nextBrowserState = {
-        permission: "GRANTED",
+        permission: 'GRANTED',
         locallySubscribed: false,
         requiresInstalledApp: false,
         endpoint: null,
@@ -92,8 +92,8 @@ function setup() {
     }),
   };
   const context = {
-    projectId: vi.fn(() => "project-1" as string | undefined),
-    actorId: vi.fn(() => "operator-1" as string | undefined),
+    projectId: vi.fn(() => 'project-1' as string | undefined),
+    actorId: vi.fn(() => 'operator-1' as string | undefined),
     canRead: vi.fn(() => true),
     onForbidden: vi.fn(),
   };
@@ -108,42 +108,40 @@ function setup() {
   };
 }
 
-describe("createSupportNotificationsController", () => {
-  it("keeps browser permission, preference and backend device as separate state", async () => {
+describe('createSupportNotificationsController', () => {
+  it('keeps browser permission, preference and backend device as separate state', async () => {
     const { controller } = setup();
     await controller.load();
 
-    expect(controller.preference("SUPPORT_CASE_ASSIGNED_TO_ME")?.subscribed).toBe(true);
-    expect(controller.browserState.value.permission).toBe("DEFAULT");
+    expect(controller.preference('SUPPORT_CASE_ASSIGNED_TO_ME')?.subscribed).toBe(true);
+    expect(controller.browserState.value.permission).toBe('DEFAULT');
     expect(controller.browserReady.value).toBe(false);
   });
 
-  it("registers only from an explicit connect command and sends an idempotency key", async () => {
+  it('registers only from an explicit connect command and sends an idempotency key', async () => {
     const { controller, source, browser } = setup();
     await controller.load();
     await controller.connectBrowser();
 
-    expect(browser.subscribe).toHaveBeenCalledWith("public-key");
+    expect(browser.subscribe).toHaveBeenCalledWith('public-key');
     expect(source.registerDevice).toHaveBeenCalledWith(
       expect.objectContaining({
-        endpoint: "https://push.example.test/device",
+        endpoint: 'https://push.example.test/device',
         idempotencyKey: expect.any(String),
       }),
       expect.anything(),
     );
   });
 
-  it("recognizes the exact active browser registration immediately after connect", async () => {
+  it('recognizes the exact active browser registration immediately after connect', async () => {
     const { controller, source, browser, context } = setup();
     const registered = await vi.mocked(source.registerDevice).getMockImplementation()!({
-      endpoint: "unused",
-      p256dh: "unused",
-      auth: "unused",
-      idempotencyKey: "unused",
+      endpoint: 'unused',
+      p256dh: 'unused',
+      auth: 'unused',
+      idempotencyKey: 'unused',
     });
-    vi.mocked(source.listDevices)
-      .mockResolvedValueOnce([])
-      .mockResolvedValue([registered]);
+    vi.mocked(source.listDevices).mockResolvedValueOnce([]).mockResolvedValue([registered]);
 
     await controller.load();
     expect(controller.currentDeviceId.value).toBeNull();
@@ -159,38 +157,38 @@ describe("createSupportNotificationsController", () => {
     expect(reloaded.browserReady.value).toBe(true);
   });
 
-  it("does not allow opt-in through a DISABLE_ONLY capability", async () => {
+  it('does not allow opt-in through a DISABLE_ONLY capability', async () => {
     const { controller, source } = setup();
     vi.mocked(source.readConfiguration).mockResolvedValueOnce({
-      ...(await vi.mocked(source.readConfiguration)("project-1")),
+      ...(await vi.mocked(source.readConfiguration)('project-1')),
       capabilities: {
-        newCases: "UNAVAILABLE",
-        assignedToMe: "DISABLE_ONLY",
-        attention: "UNAVAILABLE",
-        deviceRegistration: "UNAVAILABLE",
-        deepLinkResolve: "UNAVAILABLE",
+        newCases: 'UNAVAILABLE',
+        assignedToMe: 'DISABLE_ONLY',
+        attention: 'UNAVAILABLE',
+        deviceRegistration: 'UNAVAILABLE',
+        deepLinkResolve: 'UNAVAILABLE',
       },
     });
     await controller.load();
 
-    expect(controller.canSet("SUPPORT_CASE_ASSIGNED_TO_ME", true)).toBe(false);
-    expect(controller.canSet("SUPPORT_CASE_ASSIGNED_TO_ME", false)).toBe(true);
-    expect(controller.canSet("SUPPORT_CASE_ATTENTION", false)).toBe(false);
+    expect(controller.canSet('SUPPORT_CASE_ASSIGNED_TO_ME', true)).toBe(false);
+    expect(controller.canSet('SUPPORT_CASE_ASSIGNED_TO_ME', false)).toBe(true);
+    expect(controller.canSet('SUPPORT_CASE_ATTENTION', false)).toBe(false);
   });
 
-  it("merges a partial preference receipt without dropping the other topic", async () => {
+  it('merges a partial preference receipt without dropping the other topic', async () => {
     const { controller } = setup();
     await controller.load();
 
-    await controller.setPreference("SUPPORT_CASE_ATTENTION", true);
+    await controller.setPreference('SUPPORT_CASE_ATTENTION', true);
 
-    expect(controller.preference("SUPPORT_CASE_ATTENTION")?.subscribed).toBe(true);
-    expect(controller.preference("SUPPORT_CASE_ASSIGNED_TO_ME")?.subscribed).toBe(true);
+    expect(controller.preference('SUPPORT_CASE_ATTENTION')?.subscribed).toBe(true);
+    expect(controller.preference('SUPPORT_CASE_ASSIGNED_TO_ME')?.subscribed).toBe(true);
   });
 
-  it("replays an ambiguous registration with the same idempotency key", async () => {
+  it('replays an ambiguous registration with the same idempotency key', async () => {
     const { controller, source } = setup();
-    vi.mocked(source.registerDevice).mockRejectedValueOnce(new Error("timeout"));
+    vi.mocked(source.registerDevice).mockRejectedValueOnce(new Error('timeout'));
     await controller.load();
 
     await controller.connectBrowser();
@@ -201,15 +199,15 @@ describe("createSupportNotificationsController", () => {
     expect(calls[1]?.[0].idempotencyKey).toBe(calls[0]?.[0].idempotencyKey);
   });
 
-  it("starts a clean registration intent after the actor or Project scope changes", async () => {
+  it('starts a clean registration intent after the actor or Project scope changes', async () => {
     const { controller, source, browser, context } = setup();
     const registered = {
-      id: "00000000-0000-4000-8000-000000000028",
-      userAgentClass: "Chrome · macOS",
-      status: "ACTIVE" as const,
+      id: '00000000-0000-4000-8000-000000000028',
+      userAgentClass: 'Chrome · macOS',
+      status: 'ACTIVE' as const,
       version: 1,
-      createdAt: "2026-08-09T10:00:00.000Z",
-      lastSeenAt: "2026-08-09T10:00:00.000Z",
+      createdAt: '2026-08-09T10:00:00.000Z',
+      lastSeenAt: '2026-08-09T10:00:00.000Z',
       revokedAt: null,
     };
     let resolveOld!: (value: typeof registered) => void;
@@ -223,8 +221,8 @@ describe("createSupportNotificationsController", () => {
     await vi.waitFor(() => expect(source.registerDevice).toHaveBeenCalledOnce());
     const oldIdempotencyKey = vi.mocked(source.registerDevice).mock.calls[0]?.[0].idempotencyKey;
 
-    context.projectId.mockReturnValue("project-2");
-    context.actorId.mockReturnValue("operator-2");
+    context.projectId.mockReturnValue('project-2');
+    context.actorId.mockReturnValue('operator-2');
     await controller.load();
     expect(controller.deviceBusy.value).toBe(false);
     expect(browser.unsubscribe).toHaveBeenCalledOnce();
@@ -241,44 +239,42 @@ describe("createSupportNotificationsController", () => {
     expect(controller.currentDeviceId.value).toBe(registered.id);
   });
 
-  it("reconnects a revoked current device when PushManager reuses the same endpoint", async () => {
+  it('reconnects a revoked current device when PushManager reuses the same endpoint', async () => {
     const { controller, source, setBrowserState } = setup();
     const active = {
-      id: "00000000-0000-4000-8000-000000000027",
-      userAgentClass: "Chrome · macOS",
-      status: "ACTIVE" as const,
+      id: '00000000-0000-4000-8000-000000000027',
+      userAgentClass: 'Chrome · macOS',
+      status: 'ACTIVE' as const,
       version: 4,
-      createdAt: "2026-08-08T10:00:00.000Z",
-      lastSeenAt: "2026-08-09T09:00:00.000Z",
+      createdAt: '2026-08-08T10:00:00.000Z',
+      lastSeenAt: '2026-08-09T09:00:00.000Z',
       revokedAt: null,
     };
     const revoked = {
       ...active,
-      status: "REVOKED" as const,
+      status: 'REVOKED' as const,
       version: 5,
-      revokedAt: "2026-08-09T10:00:00.000Z",
+      revokedAt: '2026-08-09T10:00:00.000Z',
     };
     const reactivated = {
       ...active,
       version: 6,
-      lastSeenAt: "2026-08-09T10:01:00.000Z",
+      lastSeenAt: '2026-08-09T10:01:00.000Z',
     };
-    writeStoredBrowserPushRegistration("operator-1", {
+    writeStoredBrowserPushRegistration('operator-1', {
       deviceId: active.id,
-      endpoint: "https://push.example.test/device",
-      applicationServerKey: "public-key",
-      applicationServerKeyRevision: "fedcba9876543210",
+      endpoint: 'https://push.example.test/device',
+      applicationServerKey: 'public-key',
+      applicationServerKeyRevision: 'fedcba9876543210',
     });
     setBrowserState({
-      permission: "GRANTED",
+      permission: 'GRANTED',
       locallySubscribed: true,
       requiresInstalledApp: false,
-      endpoint: "https://push.example.test/device",
-      applicationServerKey: "public-key",
+      endpoint: 'https://push.example.test/device',
+      applicationServerKey: 'public-key',
     });
-    vi.mocked(source.listDevices)
-      .mockResolvedValueOnce([active])
-      .mockResolvedValue([reactivated]);
+    vi.mocked(source.listDevices).mockResolvedValueOnce([active]).mockResolvedValue([reactivated]);
     vi.mocked(source.revokeDevice).mockResolvedValue(revoked);
     vi.mocked(source.registerDevice).mockResolvedValue(reactivated);
     await controller.load();
@@ -291,7 +287,7 @@ describe("createSupportNotificationsController", () => {
 
     expect(source.registerDevice).toHaveBeenCalledWith(
       expect.objectContaining({
-        endpoint: "https://push.example.test/device",
+        endpoint: 'https://push.example.test/device',
         expectedVersion: revoked.version,
       }),
       expect.anything(),
@@ -300,39 +296,37 @@ describe("createSupportNotificationsController", () => {
     expect(controller.browserReady.value).toBe(true);
   });
 
-  it("keeps a server-revoked device inactive until an explicit reconnect", async () => {
+  it('keeps a server-revoked device inactive until an explicit reconnect', async () => {
     const { controller, source, setBrowserState } = setup();
     const revoked = {
-      id: "00000000-0000-4000-8000-000000000027",
-      userAgentClass: "Chrome · macOS",
-      status: "REVOKED" as const,
+      id: '00000000-0000-4000-8000-000000000027',
+      userAgentClass: 'Chrome · macOS',
+      status: 'REVOKED' as const,
       version: 5,
-      createdAt: "2026-08-08T10:00:00.000Z",
-      lastSeenAt: "2026-08-09T09:00:00.000Z",
-      revokedAt: "2026-08-09T10:00:00.000Z",
+      createdAt: '2026-08-08T10:00:00.000Z',
+      lastSeenAt: '2026-08-09T09:00:00.000Z',
+      revokedAt: '2026-08-09T10:00:00.000Z',
     };
     const reactivated = {
       ...revoked,
-      status: "ACTIVE" as const,
+      status: 'ACTIVE' as const,
       version: 6,
       revokedAt: null,
     };
-    writeStoredBrowserPushRegistration("operator-1", {
+    writeStoredBrowserPushRegistration('operator-1', {
       deviceId: revoked.id,
-      endpoint: "https://push.example.test/device",
-      applicationServerKey: "public-key",
-      applicationServerKeyRevision: "fedcba9876543210",
+      endpoint: 'https://push.example.test/device',
+      applicationServerKey: 'public-key',
+      applicationServerKeyRevision: 'fedcba9876543210',
     });
     setBrowserState({
-      permission: "GRANTED",
+      permission: 'GRANTED',
       locallySubscribed: true,
       requiresInstalledApp: false,
-      endpoint: "https://push.example.test/device",
-      applicationServerKey: "public-key",
+      endpoint: 'https://push.example.test/device',
+      applicationServerKey: 'public-key',
     });
-    vi.mocked(source.listDevices)
-      .mockResolvedValueOnce([revoked])
-      .mockResolvedValue([reactivated]);
+    vi.mocked(source.listDevices).mockResolvedValueOnce([revoked]).mockResolvedValue([reactivated]);
     vi.mocked(source.registerDevice).mockResolvedValue(reactivated);
 
     await controller.load();
@@ -350,46 +344,44 @@ describe("createSupportNotificationsController", () => {
     expect(controller.currentDeviceId.value).toBe(reactivated.id);
   });
 
-  it("restores a browser subscription for the same actor after logout", async () => {
+  it('restores a browser subscription for the same actor after logout', async () => {
     const { controller, source, browser, setBrowserState } = setup();
     const revoked = {
-      id: "00000000-0000-4000-8000-000000000027",
-      userAgentClass: "Chrome · macOS",
-      status: "REVOKED" as const,
+      id: '00000000-0000-4000-8000-000000000027',
+      userAgentClass: 'Chrome · macOS',
+      status: 'REVOKED' as const,
       version: 5,
-      createdAt: "2026-08-08T10:00:00.000Z",
-      lastSeenAt: "2026-08-09T09:00:00.000Z",
-      revokedAt: "2026-08-09T10:00:00.000Z",
+      createdAt: '2026-08-08T10:00:00.000Z',
+      lastSeenAt: '2026-08-09T09:00:00.000Z',
+      revokedAt: '2026-08-09T10:00:00.000Z',
     };
     const resumed = {
       ...revoked,
-      status: "ACTIVE" as const,
+      status: 'ACTIVE' as const,
       version: 6,
       revokedAt: null,
     };
-    writeStoredBrowserPushRegistration("operator-1", {
+    writeStoredBrowserPushRegistration('operator-1', {
       deviceId: revoked.id,
-      endpoint: "https://push.example.test/device",
-      applicationServerKey: "public-key",
-      applicationServerKeyRevision: "fedcba9876543210",
+      endpoint: 'https://push.example.test/device',
+      applicationServerKey: 'public-key',
+      applicationServerKeyRevision: 'fedcba9876543210',
       resumeAfterLogin: true,
     });
     setBrowserState({
-      permission: "GRANTED",
+      permission: 'GRANTED',
       locallySubscribed: true,
       requiresInstalledApp: false,
-      endpoint: "https://push.example.test/device",
-      applicationServerKey: "public-key",
+      endpoint: 'https://push.example.test/device',
+      applicationServerKey: 'public-key',
     });
-    vi.mocked(source.listDevices)
-      .mockResolvedValueOnce([revoked])
-      .mockResolvedValue([resumed]);
+    vi.mocked(source.listDevices).mockResolvedValueOnce([revoked]).mockResolvedValue([resumed]);
     vi.mocked(source.registerDevice).mockResolvedValue(resumed);
 
     await controller.load();
 
     expect(browser.unsubscribe).not.toHaveBeenCalled();
-    expect(browser.subscribe).toHaveBeenCalledWith("public-key");
+    expect(browser.subscribe).toHaveBeenCalledWith('public-key');
     expect(source.registerDevice).toHaveBeenCalledWith(
       expect.objectContaining({ expectedVersion: revoked.version }),
       expect.anything(),
@@ -398,24 +390,24 @@ describe("createSupportNotificationsController", () => {
     expect(controller.browserReady.value).toBe(true);
   });
 
-  it("rotates a stale browser registration and retires the old active device", async () => {
+  it('rotates a stale browser registration and retires the old active device', async () => {
     const { controller, source, setBrowserState } = setup();
     const oldDevice = {
-      id: "00000000-0000-4000-8000-000000000026",
-      userAgentClass: "Chrome · macOS",
-      status: "ACTIVE" as const,
+      id: '00000000-0000-4000-8000-000000000026',
+      userAgentClass: 'Chrome · macOS',
+      status: 'ACTIVE' as const,
       version: 3,
-      createdAt: "2026-08-08T10:00:00.000Z",
-      lastSeenAt: "2026-08-09T09:00:00.000Z",
+      createdAt: '2026-08-08T10:00:00.000Z',
+      lastSeenAt: '2026-08-09T09:00:00.000Z',
       revokedAt: null,
     };
     const newDevice = {
-      id: "00000000-0000-4000-8000-000000000027",
-      userAgentClass: "Chrome · macOS",
-      status: "ACTIVE" as const,
+      id: '00000000-0000-4000-8000-000000000027',
+      userAgentClass: 'Chrome · macOS',
+      status: 'ACTIVE' as const,
       version: 1,
-      createdAt: "2026-08-09T10:00:00.000Z",
-      lastSeenAt: "2026-08-09T10:00:00.000Z",
+      createdAt: '2026-08-09T10:00:00.000Z',
+      lastSeenAt: '2026-08-09T10:00:00.000Z',
       revokedAt: null,
     };
     vi.mocked(source.listDevices)
@@ -423,58 +415,55 @@ describe("createSupportNotificationsController", () => {
       .mockResolvedValueOnce([oldDevice, newDevice]);
     vi.mocked(source.revokeDevice).mockResolvedValue({
       ...oldDevice,
-      status: "REVOKED",
+      status: 'REVOKED',
       version: 4,
-      revokedAt: "2026-08-09T10:01:00.000Z",
+      revokedAt: '2026-08-09T10:01:00.000Z',
     });
-    writeStoredBrowserPushRegistration("operator-1", {
+    writeStoredBrowserPushRegistration('operator-1', {
       deviceId: oldDevice.id,
-      endpoint: "https://push.example.test/old",
-      applicationServerKey: "old-key",
-      applicationServerKeyRevision: "old-revision",
+      endpoint: 'https://push.example.test/old',
+      applicationServerKey: 'old-key',
+      applicationServerKeyRevision: 'old-revision',
     });
     setBrowserState({
-      permission: "GRANTED",
+      permission: 'GRANTED',
       locallySubscribed: true,
       requiresInstalledApp: false,
-      endpoint: "https://push.example.test/rotated",
-      applicationServerKey: "public-key",
+      endpoint: 'https://push.example.test/rotated',
+      applicationServerKey: 'public-key',
     });
 
     await controller.load();
 
-    expect(source.revokeDevice).toHaveBeenCalledWith(
-      oldDevice,
-      expect.any(String),
-    );
+    expect(source.revokeDevice).toHaveBeenCalledWith(oldDevice, expect.any(String));
     expect(source.registerDevice).toHaveBeenCalledOnce();
   });
 
-  it("version-updates a same-endpoint VAPID rotation without retiring it first", async () => {
+  it('version-updates a same-endpoint VAPID rotation without retiring it first', async () => {
     const { controller, source, setBrowserState } = setup();
     const currentDevice = {
-      id: "00000000-0000-4000-8000-000000000026",
-      userAgentClass: "Chrome · macOS",
-      status: "ACTIVE" as const,
+      id: '00000000-0000-4000-8000-000000000026',
+      userAgentClass: 'Chrome · macOS',
+      status: 'ACTIVE' as const,
       version: 7,
-      createdAt: "2026-08-08T10:00:00.000Z",
-      lastSeenAt: "2026-08-09T09:00:00.000Z",
+      createdAt: '2026-08-08T10:00:00.000Z',
+      lastSeenAt: '2026-08-09T09:00:00.000Z',
       revokedAt: null,
     };
     vi.mocked(source.listDevices).mockResolvedValue([currentDevice]);
     vi.mocked(source.registerDevice).mockResolvedValue({ ...currentDevice, version: 8 });
-    writeStoredBrowserPushRegistration("operator-1", {
+    writeStoredBrowserPushRegistration('operator-1', {
       deviceId: currentDevice.id,
-      endpoint: "https://push.example.test/device",
-      applicationServerKey: "public-key",
-      applicationServerKeyRevision: "old-revision",
+      endpoint: 'https://push.example.test/device',
+      applicationServerKey: 'public-key',
+      applicationServerKeyRevision: 'old-revision',
     });
     setBrowserState({
-      permission: "GRANTED",
+      permission: 'GRANTED',
       locallySubscribed: true,
       requiresInstalledApp: false,
-      endpoint: "https://push.example.test/device",
-      applicationServerKey: "public-key",
+      endpoint: 'https://push.example.test/device',
+      applicationServerKey: 'public-key',
     });
 
     await controller.load();
@@ -486,29 +475,31 @@ describe("createSupportNotificationsController", () => {
     );
   });
 
-  it("does not publish an old actor response after an in-place session change", async () => {
+  it('does not publish an old actor response after an in-place session change', async () => {
     const { controller, source, context } = setup();
-    let resolveOld!: (value: Awaited<ReturnType<SupportNotificationsSource["readConfiguration"]>>) => void;
-    const oldConfiguration = new Promise<Awaited<ReturnType<SupportNotificationsSource["readConfiguration"]>>>(
-      (resolve) => (resolveOld = resolve),
-    );
-    const readyConfiguration = await vi.mocked(source.readConfiguration)("project-1");
+    let resolveOld!: (
+      value: Awaited<ReturnType<SupportNotificationsSource['readConfiguration']>>,
+    ) => void;
+    const oldConfiguration = new Promise<
+      Awaited<ReturnType<SupportNotificationsSource['readConfiguration']>>
+    >((resolve) => (resolveOld = resolve));
+    const readyConfiguration = await vi.mocked(source.readConfiguration)('project-1');
     vi.mocked(source.readConfiguration)
       .mockReturnValueOnce(oldConfiguration)
       .mockResolvedValueOnce({
         ...readyConfiguration,
-        evaluatedAt: "2026-08-09T11:00:00.000Z",
+        evaluatedAt: '2026-08-09T11:00:00.000Z',
       });
 
     const stale = controller.load();
-    context.actorId.mockReturnValue("operator-2");
+    context.actorId.mockReturnValue('operator-2');
     await controller.load();
     resolveOld({
       ...readyConfiguration,
-      evaluatedAt: "2026-08-09T09:00:00.000Z",
+      evaluatedAt: '2026-08-09T09:00:00.000Z',
     });
     await stale;
 
-    expect(controller.configuration.value?.evaluatedAt).toBe("2026-08-09T11:00:00.000Z");
+    expect(controller.configuration.value?.evaluatedAt).toBe('2026-08-09T11:00:00.000Z');
   });
 });

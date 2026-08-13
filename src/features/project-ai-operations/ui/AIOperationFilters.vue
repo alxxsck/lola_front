@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from "vue";
-import Button from "primevue/button";
-import DatePicker from "primevue/datepicker";
-import InputText from "primevue/inputtext";
-import Select from "primevue/select";
-import EventDefinitionSelect from "@/features/events/EventDefinitionSelect.vue";
-import type { AiOperationsListParams } from "@/shared/api/generated/models";
-import AIFilterToggle from "@/shared/ui/AIFilterToggle.vue";
+import { computed, reactive, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import DatePicker from 'primevue/datepicker';
+import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
+import EventDefinitionSelect from '@/features/events/EventDefinitionSelect.vue';
+import type { AiOperationsListParams } from '@/shared/api/generated/models';
+import AIFilterToggle from '@/shared/ui/AIFilterToggle.vue';
 
-export type AIOperationFiltersModel = Omit<
-  AiOperationsListParams,
-  "cursor" | "limit"
->;
+export type AIOperationFiltersModel = Omit<AiOperationsListParams, 'cursor' | 'limit'>;
 
 const props = defineProps<{
   modelValue: AIOperationFiltersModel;
@@ -20,7 +17,7 @@ const props = defineProps<{
   projectId?: string;
 }>();
 const emit = defineEmits<{
-  "update:modelValue": [value: AIOperationFiltersModel];
+  'update:modelValue': [value: AIOperationFiltersModel];
   apply: [];
 }>();
 const mobileExpanded = ref(false);
@@ -29,59 +26,59 @@ const draft = reactive({
   status: props.modelValue.status ?? null,
   category: props.modelValue.category ?? null,
   initiatorType: props.modelValue.initiatorType ?? null,
-  initiatorCmsUserId: props.modelValue.initiatorCmsUserId ?? "",
-  initiatorEndUserId: props.modelValue.initiatorEndUserId ?? "",
-  authorizedByCmsUserId: props.modelValue.authorizedByCmsUserId ?? "",
+  initiatorCmsUserId: props.modelValue.initiatorCmsUserId ?? '',
+  initiatorEndUserId: props.modelValue.initiatorEndUserId ?? '',
+  authorizedByCmsUserId: props.modelValue.authorizedByCmsUserId ?? '',
   chargedAccount: props.modelValue.chargedAccount ?? null,
-  responsibleCmsUserId: props.modelValue.responsibleCmsUserId ?? "",
-  chargedEndUserId: props.modelValue.chargedEndUserId ?? "",
-  subjectEndUserId: props.modelValue.subjectEndUserId ?? "",
+  responsibleCmsUserId: props.modelValue.responsibleCmsUserId ?? '',
+  chargedEndUserId: props.modelValue.chargedEndUserId ?? '',
+  subjectEndUserId: props.modelValue.subjectEndUserId ?? '',
   subjectRole: props.modelValue.subjectRole ?? null,
-  eventCode: props.modelValue.eventCode ?? "",
-  sourceKind: props.modelValue.sourceKind ?? "",
-  sourceId: props.modelValue.sourceId ?? "",
-  provider: props.modelValue.provider ?? "",
-  providerResponseId: props.modelValue.providerResponseId ?? "",
+  eventCode: props.modelValue.eventCode ?? '',
+  sourceKind: props.modelValue.sourceKind ?? '',
+  sourceId: props.modelValue.sourceId ?? '',
+  provider: props.modelValue.provider ?? '',
+  providerResponseId: props.modelValue.providerResponseId ?? '',
   occurredFrom: parseDate(props.modelValue.occurredFrom),
   occurredTo: parseDate(props.modelValue.occurredTo),
 });
 
 const statusOptions = [
-  { label: "Все статусы", value: null },
-  { label: "Запущено", value: "STARTED" },
-  { label: "Выполняется", value: "RUNNING" },
-  { label: "Завершено", value: "SUCCEEDED" },
-  { label: "Ошибка", value: "FAILED" },
-  { label: "Отменено", value: "CANCELLED" },
+  { label: 'Все статусы', value: null },
+  { label: 'Запущено', value: 'STARTED' },
+  { label: 'Выполняется', value: 'RUNNING' },
+  { label: 'Завершено', value: 'SUCCEEDED' },
+  { label: 'Ошибка', value: 'FAILED' },
+  { label: 'Отменено', value: 'CANCELLED' },
 ];
 const categoryOptions = [
-  { label: "Все категории", value: null },
-  { label: "AI-анализ", value: "AI_ANALYSIS" },
-  { label: "Чат", value: "CHAT" },
-  { label: "Голос", value: "VOICE" },
-  { label: "Речь", value: "SPEECH" },
-  { label: "Память", value: "MEMORY" },
-  { label: "AI-проверка", value: "AI_REVIEW" },
-  { label: "Анализ обращения", value: "CASE_INTELLIGENCE" },
-  { label: "Системная операция", value: "PROJECT_OVERHEAD" },
+  { label: 'Все категории', value: null },
+  { label: 'AI-анализ', value: 'AI_ANALYSIS' },
+  { label: 'Чат', value: 'CHAT' },
+  { label: 'Голос', value: 'VOICE' },
+  { label: 'Речь', value: 'SPEECH' },
+  { label: 'Память', value: 'MEMORY' },
+  { label: 'AI-проверка', value: 'AI_REVIEW' },
+  { label: 'Анализ обращения', value: 'CASE_INTELLIGENCE' },
+  { label: 'Системная операция', value: 'PROJECT_OVERHEAD' },
 ];
 const actorOptions = [
-  { label: "Любой инициатор", value: null },
-  { label: "Администратор", value: "CMS_USER" },
-  { label: "Пользователь", value: "END_USER" },
-  { label: "Система", value: "SYSTEM" },
+  { label: 'Любой инициатор', value: null },
+  { label: 'Администратор', value: 'CMS_USER' },
+  { label: 'Пользователь', value: 'END_USER' },
+  { label: 'Система', value: 'SYSTEM' },
 ];
 const accountOptions = [
-  { label: "Любой источник расходов", value: null },
-  { label: "Бюджет проекта", value: "PROJECT_BUDGET" },
-  { label: "AI-лимит пользователя", value: "END_USER_ALLOWANCE" },
-  { label: "Системные расходы", value: "PROJECT_OVERHEAD" },
+  { label: 'Любой источник расходов', value: null },
+  { label: 'Бюджет проекта', value: 'PROJECT_BUDGET' },
+  { label: 'AI-лимит пользователя', value: 'END_USER_ALLOWANCE' },
+  { label: 'Системные расходы', value: 'PROJECT_OVERHEAD' },
 ];
 const subjectRoleOptions = [
-  { label: "Любая роль в данных", value: null },
-  { label: "В области анализа", value: "SCOPE_MEMBER" },
-  { label: "Источник данных", value: "DATA_CONTRIBUTOR" },
-  { label: "Прямой субъект", value: "DIRECT_SUBJECT" },
+  { label: 'Любая роль в данных', value: null },
+  { label: 'В области анализа', value: 'SCOPE_MEMBER' },
+  { label: 'Источник данных', value: 'DATA_CONTRIBUTOR' },
+  { label: 'Прямой субъект', value: 'DIRECT_SUBJECT' },
 ];
 const advancedFilterCount = computed(
   () =>
@@ -91,7 +88,7 @@ const advancedFilterCount = computed(
       draft.authorizedByCmsUserId,
       draft.responsibleCmsUserId,
       draft.chargedEndUserId,
-      props.canReadSubjects ? draft.subjectEndUserId : "",
+      props.canReadSubjects ? draft.subjectEndUserId : '',
       props.canReadSubjects ? draft.subjectRole : null,
       draft.eventCode,
       draft.sourceKind,
@@ -108,19 +105,19 @@ watch(
       status: value.status ?? null,
       category: value.category ?? null,
       initiatorType: value.initiatorType ?? null,
-      initiatorCmsUserId: value.initiatorCmsUserId ?? "",
-      initiatorEndUserId: value.initiatorEndUserId ?? "",
-      authorizedByCmsUserId: value.authorizedByCmsUserId ?? "",
+      initiatorCmsUserId: value.initiatorCmsUserId ?? '',
+      initiatorEndUserId: value.initiatorEndUserId ?? '',
+      authorizedByCmsUserId: value.authorizedByCmsUserId ?? '',
       chargedAccount: value.chargedAccount ?? null,
-      responsibleCmsUserId: value.responsibleCmsUserId ?? "",
-      chargedEndUserId: value.chargedEndUserId ?? "",
-      subjectEndUserId: value.subjectEndUserId ?? "",
+      responsibleCmsUserId: value.responsibleCmsUserId ?? '',
+      chargedEndUserId: value.chargedEndUserId ?? '',
+      subjectEndUserId: value.subjectEndUserId ?? '',
       subjectRole: value.subjectRole ?? null,
-      eventCode: value.eventCode ?? "",
-      sourceKind: value.sourceKind ?? "",
-      sourceId: value.sourceId ?? "",
-      provider: value.provider ?? "",
-      providerResponseId: value.providerResponseId ?? "",
+      eventCode: value.eventCode ?? '',
+      sourceKind: value.sourceKind ?? '',
+      sourceId: value.sourceId ?? '',
+      provider: value.provider ?? '',
+      providerResponseId: value.providerResponseId ?? '',
       occurredFrom: parseDate(value.occurredFrom),
       occurredTo: parseDate(value.occurredTo),
     });
@@ -129,7 +126,7 @@ watch(
 );
 
 function apply(): void {
-  emit("update:modelValue", {
+  emit('update:modelValue', {
     ...(draft.status ? { status: draft.status } : {}),
     ...(draft.category ? { category: draft.category } : {}),
     ...(draft.initiatorType ? { initiatorType: draft.initiatorType } : {}),
@@ -152,28 +149,18 @@ function apply(): void {
     ...(props.canReadSubjects && trimmed(draft.subjectEndUserId)
       ? { subjectEndUserId: trimmed(draft.subjectEndUserId) }
       : {}),
-    ...(props.canReadSubjects && draft.subjectRole
-      ? { subjectRole: draft.subjectRole }
-      : {}),
-    ...(trimmed(draft.eventCode)
-      ? { eventCode: trimmed(draft.eventCode) }
-      : {}),
-    ...(trimmed(draft.sourceKind)
-      ? { sourceKind: trimmed(draft.sourceKind) }
-      : {}),
+    ...(props.canReadSubjects && draft.subjectRole ? { subjectRole: draft.subjectRole } : {}),
+    ...(trimmed(draft.eventCode) ? { eventCode: trimmed(draft.eventCode) } : {}),
+    ...(trimmed(draft.sourceKind) ? { sourceKind: trimmed(draft.sourceKind) } : {}),
     ...(trimmed(draft.sourceId) ? { sourceId: trimmed(draft.sourceId) } : {}),
     ...(trimmed(draft.provider) ? { provider: trimmed(draft.provider) } : {}),
     ...(trimmed(draft.providerResponseId)
       ? { providerResponseId: trimmed(draft.providerResponseId) }
       : {}),
-    ...(draft.occurredFrom
-      ? { occurredFrom: startOfDay(draft.occurredFrom).toISOString() }
-      : {}),
-    ...(draft.occurredTo
-      ? { occurredTo: nextDay(draft.occurredTo).toISOString() }
-      : {}),
+    ...(draft.occurredFrom ? { occurredFrom: startOfDay(draft.occurredFrom).toISOString() } : {}),
+    ...(draft.occurredTo ? { occurredTo: nextDay(draft.occurredTo).toISOString() } : {}),
   });
-  emit("apply");
+  emit('apply');
 }
 
 function reset(): void {
@@ -181,19 +168,19 @@ function reset(): void {
     status: null,
     category: null,
     initiatorType: null,
-    initiatorCmsUserId: "",
-    initiatorEndUserId: "",
-    authorizedByCmsUserId: "",
+    initiatorCmsUserId: '',
+    initiatorEndUserId: '',
+    authorizedByCmsUserId: '',
     chargedAccount: null,
-    responsibleCmsUserId: "",
-    chargedEndUserId: "",
-    subjectEndUserId: "",
+    responsibleCmsUserId: '',
+    chargedEndUserId: '',
+    subjectEndUserId: '',
     subjectRole: null,
-    eventCode: "",
-    sourceKind: "",
-    sourceId: "",
-    provider: "",
-    providerResponseId: "",
+    eventCode: '',
+    sourceKind: '',
+    sourceId: '',
+    provider: '',
+    providerResponseId: '',
     occurredFrom: null,
     occurredTo: null,
   });
@@ -377,19 +364,8 @@ function nextDay(value: Date): Date {
       </div>
     </details>
     <div class="filter-actions">
-      <Button
-        type="button"
-        label="Сбросить"
-        severity="secondary"
-        text
-        @click="reset"
-      />
-      <Button
-        type="submit"
-        label="Применить"
-        icon="pi pi-filter"
-        :loading="loading"
-      />
+      <Button type="button" label="Сбросить" severity="secondary" text @click="reset" />
+      <Button type="submit" label="Применить" icon="pi pi-filter" :loading="loading" />
     </div>
   </form>
 </template>

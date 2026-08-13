@@ -1,14 +1,14 @@
-import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import InitialAccessSecretDialog from './InitialAccessSecretDialog.vue'
+import { mount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import InitialAccessSecretDialog from './InitialAccessSecretDialog.vue';
 
 describe('one-time Initial Access Secret dialog', () => {
   beforeEach(() => {
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
       value: { writeText: vi.fn().mockResolvedValue(undefined) },
-    })
-  })
+    });
+  });
 
   it('copies the secret, requires acknowledgement and removes it after closing', async () => {
     const wrapper = mount(InitialAccessSecretDialog, {
@@ -27,23 +27,23 @@ describe('one-time Initial Access Secret dialog', () => {
           },
         },
       },
-    })
+    });
 
-    expect(wrapper.text()).toContain('lia_one-time-secret')
-    await wrapper.get('[data-testid="copy-secret"]').trigger('click')
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('lia_one-time-secret')
-    expect(wrapper.text()).toContain('Секрет скопирован')
+    expect(wrapper.text()).toContain('lia_one-time-secret');
+    await wrapper.get('[data-testid="copy-secret"]').trigger('click');
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('lia_one-time-secret');
+    expect(wrapper.text()).toContain('Секрет скопирован');
 
-    const close = wrapper.get('[data-testid="acknowledge-secret"]')
-    expect(close.attributes('disabled')).toBeDefined()
-    await wrapper.get('input[type="checkbox"]').setValue(true)
-    await close.trigger('click')
+    const close = wrapper.get('[data-testid="acknowledge-secret"]');
+    expect(close.attributes('disabled')).toBeDefined();
+    await wrapper.get('input[type="checkbox"]').setValue(true);
+    await close.trigger('click');
 
-    expect(wrapper.emitted('acknowledged')).toHaveLength(1)
-  })
+    expect(wrapper.emitted('acknowledged')).toHaveLength(1);
+  });
 
   it('keeps a selectable secret and safe copy failure message', async () => {
-    vi.mocked(navigator.clipboard.writeText).mockRejectedValue(new Error('denied'))
+    vi.mocked(navigator.clipboard.writeText).mockRejectedValue(new Error('denied'));
     const wrapper = mount(InitialAccessSecretDialog, {
       props: {
         secret: 'lia_manual-copy',
@@ -60,12 +60,12 @@ describe('one-time Initial Access Secret dialog', () => {
           },
         },
       },
-    })
+    });
 
-    await wrapper.get('[data-testid="copy-secret"]').trigger('click')
+    await wrapper.get('[data-testid="copy-secret"]').trigger('click');
 
-    expect(wrapper.get('[data-testid="secret-value"]').attributes('tabindex')).toBe('0')
-    expect(wrapper.text()).toContain('Выделите и скопируйте секрет вручную')
-    expect(wrapper.text()).not.toContain('denied')
-  })
-})
+    expect(wrapper.get('[data-testid="secret-value"]').attributes('tabindex')).toBe('0');
+    expect(wrapper.text()).toContain('Выделите и скопируйте секрет вручную');
+    expect(wrapper.text()).not.toContain('denied');
+  });
+});

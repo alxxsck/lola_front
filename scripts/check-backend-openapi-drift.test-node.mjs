@@ -1,41 +1,35 @@
-import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { spawn } from "node:child_process";
-import process from "node:process";
-import test from "node:test";
-import { fileURLToPath } from "node:url";
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { spawn } from 'node:child_process';
+import process from 'node:process';
+import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
-const repositoryRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-);
-const checker = path.join(
-  repositoryRoot,
-  "scripts/check-backend-openapi-drift.mjs",
-);
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const checker = path.join(repositoryRoot, 'scripts/check-backend-openapi-drift.mjs');
 
 const baseDocument = {
-  openapi: "3.0.0",
+  openapi: '3.0.0',
   paths: {
-    "/api/v1/auth/login": {
-      post: { operationId: "InitialAccess_login" },
+    '/api/v1/auth/login': {
+      post: { operationId: 'InitialAccess_login' },
     },
   },
-  components: { schemas: { Login: { type: "object" } } },
+  components: { schemas: { Login: { type: 'object' } } },
 };
 
 function digest(content) {
-  return createHash("sha256").update(content).digest("hex");
+  return createHash('sha256').update(content).digest('hex');
 }
 
 async function fixture(snapshotDocument = baseDocument) {
-  const root = await mkdtemp(path.join(tmpdir(), "retenive-openapi-drift-"));
-  const snapshot = path.join(root, "retenive-backend.json");
-  const metadata = path.join(root, "retenive-backend.contract.json");
-  const backendDocumentPath = path.join(root, "backend-openapi.json");
+  const root = await mkdtemp(path.join(tmpdir(), 'retenive-openapi-drift-'));
+  const snapshot = path.join(root, 'retenive-backend.json');
+  const metadata = path.join(root, 'retenive-backend.contract.json');
+  const backendDocumentPath = path.join(root, 'backend-openapi.json');
   const snapshotContent = `${JSON.stringify(snapshotDocument, null, 2)}\n`;
   await writeFile(snapshot, snapshotContent);
   await writeFile(
@@ -44,7 +38,7 @@ async function fixture(snapshotDocument = baseDocument) {
       {
         schemaVersion: 1,
         backend: {
-          repository: "alxxsck/lola_back",
+          repository: 'alxxsck/lola_back',
         },
         artifact: path.basename(snapshot),
         contractRevision: `sha256:${digest(snapshotContent)}`,
@@ -54,10 +48,7 @@ async function fixture(snapshotDocument = baseDocument) {
       2,
     )}\n`,
   );
-  await writeFile(
-    backendDocumentPath,
-    `${JSON.stringify(snapshotDocument, null, 2)}\n`,
-  );
+  await writeFile(backendDocumentPath, `${JSON.stringify(snapshotDocument, null, 2)}\n`);
   return { backendDocumentPath, metadata, root, snapshot };
 }
 
@@ -75,33 +66,31 @@ function runChecker({
       process.execPath,
       [
         checker,
-        "--snapshot",
+        '--snapshot',
         snapshot,
-        "--metadata",
+        '--metadata',
         metadata,
-        ...(backendDocumentPath
-          ? ["--backend-document", backendDocumentPath]
-          : []),
-        ...(backendDirectory ? ["--backend-directory", backendDirectory] : []),
-        ...(backendRef ? ["--backend-ref", backendRef] : []),
-        ...(write ? ["--write"] : []),
+        ...(backendDocumentPath ? ['--backend-document', backendDocumentPath] : []),
+        ...(backendDirectory ? ['--backend-directory', backendDirectory] : []),
+        ...(backendRef ? ['--backend-ref', backendRef] : []),
+        ...(write ? ['--write'] : []),
       ],
       {
         cwd: cwd ?? repositoryRoot,
-        env: { ...process.env, RETENIVE_BACKEND_DIR: "" },
-        stdio: ["ignore", "pipe", "pipe"],
+        env: { ...process.env, RETENIVE_BACKEND_DIR: '' },
+        stdio: ['ignore', 'pipe', 'pipe'],
       },
     );
-    let stdout = "";
-    let stderr = "";
-    child.stdout.on("data", (chunk) => {
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (chunk) => {
       stdout += chunk;
     });
-    child.stderr.on("data", (chunk) => {
+    child.stderr.on('data', (chunk) => {
       stderr += chunk;
     });
-    child.on("error", reject);
-    child.on("exit", (code) => resolve({ code, stderr, stdout }));
+    child.on('error', reject);
+    child.on('exit', (code) => resolve({ code, stderr, stdout }));
   });
 }
 
@@ -110,23 +99,23 @@ function runCommand(command, args, cwd) {
     const child = spawn(command, args, {
       cwd,
       env: process.env,
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
-    let stderr = "";
-    child.stderr.on("data", (chunk) => {
+    let stderr = '';
+    child.stderr.on('data', (chunk) => {
       stderr += chunk;
     });
-    child.on("error", reject);
-    child.on("exit", (code) => {
+    child.on('error', reject);
+    child.on('exit', (code) => {
       if (code === 0) resolve();
       else reject(new Error(`${command} failed: ${stderr}`));
     });
   });
 }
 
-test("standalone check verifies the committed artifact without a sibling backend", async () => {
+test('standalone check verifies the committed artifact without a sibling backend', async () => {
   const paths = await fixture();
-  const unrelatedCwd = await mkdtemp(path.join(tmpdir(), "retenive-standalone-"));
+  const unrelatedCwd = await mkdtemp(path.join(tmpdir(), 'retenive-standalone-'));
   try {
     const result = await runChecker({
       ...paths,
@@ -141,12 +130,9 @@ test("standalone check verifies the committed artifact without a sibling backend
   }
 });
 
-test("committed contract metadata pins every exact Backend source revision", async () => {
+test('committed contract metadata pins every exact Backend source revision', async () => {
   const metadata = JSON.parse(
-    await readFile(
-      path.join(repositoryRoot, "openapi/retenive-backend.contract.json"),
-      "utf8",
-    ),
+    await readFile(path.join(repositoryRoot, 'openapi/retenive-backend.contract.json'), 'utf8'),
   );
 
   if (metadata.backendSourceRevision) {
@@ -154,36 +140,32 @@ test("committed contract metadata pins every exact Backend source revision", asy
     return;
   }
   assert.match(metadata.composedBackendSources?.base, /^[0-9a-f]{40}$/u);
-  assert.match(
-    metadata.composedBackendSources?.caseIntelligence,
-    /^[0-9a-f]{40}$/u,
-  );
+  assert.match(metadata.composedBackendSources?.caseIntelligence, /^[0-9a-f]{40}$/u);
 });
 
-test("explicit Backend export regenerates Prisma Client before compiling", async () => {
-  const source = await readFile(checker, "utf8");
-  const generation = source.indexOf('["run", "prisma:generate"]');
-  const build = source.indexOf('["run", "build"]');
+test('explicit Backend export regenerates Prisma Client before compiling', async () => {
+  const source = await readFile(checker, 'utf8');
+  const generation = source.search(
+    /await run\(\s*npm,\s*\[\s*['"]run['"]\s*,\s*['"]prisma:generate['"]\s*\]/u,
+  );
+  const build = source.search(/await run\(\s*npm,\s*\[\s*['"]run['"]\s*,\s*['"]build['"]\s*\]/u);
 
   assert.notEqual(generation, -1);
   assert.notEqual(build, -1);
   assert.ok(generation < build);
 });
 
-test("directory write resolves and persists the verified Backend HEAD", async () => {
-  const source = await readFile(checker, "utf8");
+test('directory write resolves and persists the verified Backend HEAD', async () => {
+  const source = await readFile(checker, 'utf8');
 
-  assert.match(
-    source,
-    /backendSourceRevision = await assertRequestedBackendRevision/u,
-  );
+  assert.match(source, /backendSourceRevision = await assertRequestedBackendRevision/u);
   assert.match(source, /\{ backendSourceRevision \}/u);
   assert.match(source, /delete baseMetadata\.composedBackendSources/u);
 });
 
-test("standalone check fails when contract metadata is missing", async () => {
+test('standalone check fails when contract metadata is missing', async () => {
   const paths = await fixture();
-  const missingMetadata = path.join(paths.root, "missing-contract.json");
+  const missingMetadata = path.join(paths.root, 'missing-contract.json');
   try {
     const result = await runChecker({ ...paths, metadata: missingMetadata });
     assert.equal(result.code, 1);
@@ -193,12 +175,9 @@ test("standalone check fails when contract metadata is missing", async () => {
   }
 });
 
-test("standalone check fails when the committed artifact digest drifts", async () => {
+test('standalone check fails when the committed artifact digest drifts', async () => {
   const paths = await fixture();
-  await writeFile(
-    paths.snapshot,
-    `${JSON.stringify({ ...baseDocument, info: {} })}\n`,
-  );
+  await writeFile(paths.snapshot, `${JSON.stringify({ ...baseDocument, info: {} })}\n`);
   try {
     const result = await runChecker(paths);
     assert.equal(result.code, 1);
@@ -208,10 +187,10 @@ test("standalone check fails when the committed artifact digest drifts", async (
   }
 });
 
-test("standalone check rejects contractRevision that is not the artifact content address", async () => {
+test('standalone check rejects contractRevision that is not the artifact content address', async () => {
   const paths = await fixture();
-  const metadata = JSON.parse(await readFile(paths.metadata, "utf8"));
-  metadata.contractRevision = `sha256:${"0".repeat(64)}`;
+  const metadata = JSON.parse(await readFile(paths.metadata, 'utf8'));
+  metadata.contractRevision = `sha256:${'0'.repeat(64)}`;
   await writeFile(paths.metadata, `${JSON.stringify(metadata, null, 2)}\n`);
   try {
     const result = await runChecker({
@@ -225,7 +204,7 @@ test("standalone check rejects contractRevision that is not the artifact content
   }
 });
 
-test("explicit backend input is compared independent of object key order", async () => {
+test('explicit backend input is compared independent of object key order', async () => {
   const paths = await fixture();
   await writeFile(
     paths.backendDocumentPath,
@@ -244,28 +223,25 @@ test("explicit backend input is compared independent of object key order", async
   }
 });
 
-test("explicit backend drift fails and leaves the committed artifact untouched", async () => {
+test('explicit backend drift fails and leaves the committed artifact untouched', async () => {
   const paths = await fixture();
   const changed = JSON.parse(JSON.stringify(baseDocument));
-  changed.paths["/api/v1/auth/mfa"] = {
-    post: { operationId: "IamMfa_login" },
+  changed.paths['/api/v1/auth/mfa'] = {
+    post: { operationId: 'IamMfa_login' },
   };
-  await writeFile(
-    paths.backendDocumentPath,
-    `${JSON.stringify(changed, null, 2)}\n`,
-  );
-  const before = await readFile(paths.snapshot, "utf8");
+  await writeFile(paths.backendDocumentPath, `${JSON.stringify(changed, null, 2)}\n`);
+  const before = await readFile(paths.snapshot, 'utf8');
   try {
     const result = await runChecker(paths);
     assert.equal(result.code, 1);
     assert.match(result.stderr, /does not match the explicit Backend input/);
-    assert.equal(await readFile(paths.snapshot, "utf8"), before);
+    assert.equal(await readFile(paths.snapshot, 'utf8'), before);
   } finally {
     await rm(paths.root, { recursive: true, force: true });
   }
 });
 
-test("write mode requires an explicit backend source", async () => {
+test('write mode requires an explicit backend source', async () => {
   const paths = await fixture();
   try {
     const result = await runChecker({
@@ -280,34 +256,24 @@ test("write mode requires an explicit backend source", async () => {
   }
 });
 
-test("write mode updates the artifact and digest and removes stale source revision", async () => {
+test('write mode updates the artifact and digest and removes stale source revision', async () => {
   const paths = await fixture();
   const changed = JSON.parse(JSON.stringify(baseDocument));
-  changed.paths["/api/v1/auth/mfa"] = {
-    post: { operationId: "IamMfa_login" },
+  changed.paths['/api/v1/auth/mfa'] = {
+    post: { operationId: 'IamMfa_login' },
   };
-  const staleMetadata = JSON.parse(await readFile(paths.metadata, "utf8"));
-  staleMetadata.backendSourceRevision =
-    "0123456789abcdef0123456789abcdef01234567";
-  await writeFile(
-    paths.metadata,
-    `${JSON.stringify(staleMetadata, null, 2)}\n`,
-  );
-  await writeFile(
-    paths.backendDocumentPath,
-    `${JSON.stringify(changed, null, 2)}\n`,
-  );
+  const staleMetadata = JSON.parse(await readFile(paths.metadata, 'utf8'));
+  staleMetadata.backendSourceRevision = '0123456789abcdef0123456789abcdef01234567';
+  await writeFile(paths.metadata, `${JSON.stringify(staleMetadata, null, 2)}\n`);
+  await writeFile(paths.backendDocumentPath, `${JSON.stringify(changed, null, 2)}\n`);
   try {
     const result = await runChecker({
       ...paths,
       write: true,
     });
     assert.equal(result.code, 0, result.stderr);
-    assert.deepEqual(
-      JSON.parse(await readFile(paths.snapshot, "utf8")),
-      changed,
-    );
-    const metadata = JSON.parse(await readFile(paths.metadata, "utf8"));
+    assert.deepEqual(JSON.parse(await readFile(paths.snapshot, 'utf8')), changed);
+    const metadata = JSON.parse(await readFile(paths.metadata, 'utf8'));
     assert.equal(metadata.sha256, digest(await readFile(paths.snapshot)));
     assert.equal(metadata.contractRevision, `sha256:${metadata.sha256}`);
     assert.equal(metadata.backendSourceRevision, undefined);
@@ -316,12 +282,12 @@ test("write mode updates the artifact and digest and removes stale source revisi
   }
 });
 
-test("write mode rejects a source revision that cannot be verified against a backend checkout", async () => {
+test('write mode rejects a source revision that cannot be verified against a backend checkout', async () => {
   const paths = await fixture();
   try {
     const result = await runChecker({
       ...paths,
-      backendRef: "0123456789abcdef0123456789abcdef01234567",
+      backendRef: '0123456789abcdef0123456789abcdef01234567',
       write: true,
     });
     assert.equal(result.code, 1);
@@ -331,33 +297,21 @@ test("write mode rejects a source revision that cannot be verified against a bac
   }
 });
 
-test("write mode rejects a source revision that differs from backend HEAD", async () => {
+test('write mode rejects a source revision that differs from backend HEAD', async () => {
   const paths = await fixture();
-  const backendDirectory = path.join(paths.root, "backend");
-  await runCommand("git", ["init", backendDirectory], paths.root);
-  await runCommand(
-    "git",
-    ["config", "user.email", "contract-test@example.com"],
-    backendDirectory,
-  );
-  await runCommand(
-    "git",
-    ["config", "user.name", "Contract Test"],
-    backendDirectory,
-  );
-  await writeFile(path.join(backendDirectory, "marker"), "contract source\n");
-  await runCommand("git", ["add", "marker"], backendDirectory);
-  await runCommand(
-    "git",
-    ["commit", "-m", "contract source"],
-    backendDirectory,
-  );
+  const backendDirectory = path.join(paths.root, 'backend');
+  await runCommand('git', ['init', backendDirectory], paths.root);
+  await runCommand('git', ['config', 'user.email', 'contract-test@example.com'], backendDirectory);
+  await runCommand('git', ['config', 'user.name', 'Contract Test'], backendDirectory);
+  await writeFile(path.join(backendDirectory, 'marker'), 'contract source\n');
+  await runCommand('git', ['add', 'marker'], backendDirectory);
+  await runCommand('git', ['commit', '-m', 'contract source'], backendDirectory);
   try {
     const result = await runChecker({
       ...paths,
       backendDirectory,
       backendDocumentPath: undefined,
-      backendRef: "0000000000000000000000000000000000000000",
+      backendRef: '0000000000000000000000000000000000000000',
       write: true,
     });
     assert.equal(result.code, 1);
@@ -367,24 +321,16 @@ test("write mode rejects a source revision that differs from backend HEAD", asyn
   }
 });
 
-test("explicit Backend export rejects tracked worktree changes", async () => {
+test('explicit Backend export rejects tracked worktree changes', async () => {
   const paths = await fixture();
-  const backendDirectory = path.join(paths.root, "backend");
-  await runCommand("git", ["init", backendDirectory], paths.root);
-  await runCommand(
-    "git",
-    ["config", "user.email", "contract-test@example.com"],
-    backendDirectory,
-  );
-  await runCommand(
-    "git",
-    ["config", "user.name", "Contract Test"],
-    backendDirectory,
-  );
-  await writeFile(path.join(backendDirectory, "marker"), "committed\n");
-  await runCommand("git", ["add", "marker"], backendDirectory);
-  await runCommand("git", ["commit", "-m", "contract source"], backendDirectory);
-  await writeFile(path.join(backendDirectory, "marker"), "uncommitted\n");
+  const backendDirectory = path.join(paths.root, 'backend');
+  await runCommand('git', ['init', backendDirectory], paths.root);
+  await runCommand('git', ['config', 'user.email', 'contract-test@example.com'], backendDirectory);
+  await runCommand('git', ['config', 'user.name', 'Contract Test'], backendDirectory);
+  await writeFile(path.join(backendDirectory, 'marker'), 'committed\n');
+  await runCommand('git', ['add', 'marker'], backendDirectory);
+  await runCommand('git', ['commit', '-m', 'contract source'], backendDirectory);
+  await writeFile(path.join(backendDirectory, 'marker'), 'uncommitted\n');
   try {
     const result = await runChecker({
       ...paths,
@@ -399,24 +345,16 @@ test("explicit Backend export rejects tracked worktree changes", async () => {
   }
 });
 
-test("explicit Backend export rejects untracked source files", async () => {
+test('explicit Backend export rejects untracked source files', async () => {
   const paths = await fixture();
-  const backendDirectory = path.join(paths.root, "backend");
-  await runCommand("git", ["init", backendDirectory], paths.root);
-  await runCommand(
-    "git",
-    ["config", "user.email", "contract-test@example.com"],
-    backendDirectory,
-  );
-  await runCommand(
-    "git",
-    ["config", "user.name", "Contract Test"],
-    backendDirectory,
-  );
-  await writeFile(path.join(backendDirectory, "marker"), "committed\n");
-  await runCommand("git", ["add", "marker"], backendDirectory);
-  await runCommand("git", ["commit", "-m", "contract source"], backendDirectory);
-  await writeFile(path.join(backendDirectory, "untracked.ts"), "export {};\n");
+  const backendDirectory = path.join(paths.root, 'backend');
+  await runCommand('git', ['init', backendDirectory], paths.root);
+  await runCommand('git', ['config', 'user.email', 'contract-test@example.com'], backendDirectory);
+  await runCommand('git', ['config', 'user.name', 'Contract Test'], backendDirectory);
+  await writeFile(path.join(backendDirectory, 'marker'), 'committed\n');
+  await runCommand('git', ['add', 'marker'], backendDirectory);
+  await runCommand('git', ['commit', '-m', 'contract source'], backendDirectory);
+  await writeFile(path.join(backendDirectory, 'untracked.ts'), 'export {};\n');
   try {
     const result = await runChecker({
       ...paths,
@@ -431,30 +369,18 @@ test("explicit Backend export rejects untracked source files", async () => {
   }
 });
 
-test("an immutable metadata revision rejects a different explicit backend checkout", async () => {
+test('an immutable metadata revision rejects a different explicit backend checkout', async () => {
   const paths = await fixture();
-  const backendDirectory = path.join(paths.root, "backend");
-  await writeFile(path.join(paths.root, "backend-marker"), "contract source\n");
-  await runCommand("git", ["init", backendDirectory], paths.root);
-  await runCommand(
-    "git",
-    ["config", "user.email", "contract-test@example.com"],
-    backendDirectory,
-  );
-  await runCommand(
-    "git",
-    ["config", "user.name", "Contract Test"],
-    backendDirectory,
-  );
-  await writeFile(path.join(backendDirectory, "marker"), "contract source\n");
-  await runCommand("git", ["add", "marker"], backendDirectory);
-  await runCommand(
-    "git",
-    ["commit", "-m", "contract source"],
-    backendDirectory,
-  );
-  const metadata = JSON.parse(await readFile(paths.metadata, "utf8"));
-  metadata.backendSourceRevision = "0000000000000000000000000000000000000000";
+  const backendDirectory = path.join(paths.root, 'backend');
+  await writeFile(path.join(paths.root, 'backend-marker'), 'contract source\n');
+  await runCommand('git', ['init', backendDirectory], paths.root);
+  await runCommand('git', ['config', 'user.email', 'contract-test@example.com'], backendDirectory);
+  await runCommand('git', ['config', 'user.name', 'Contract Test'], backendDirectory);
+  await writeFile(path.join(backendDirectory, 'marker'), 'contract source\n');
+  await runCommand('git', ['add', 'marker'], backendDirectory);
+  await runCommand('git', ['commit', '-m', 'contract source'], backendDirectory);
+  const metadata = JSON.parse(await readFile(paths.metadata, 'utf8'));
+  metadata.backendSourceRevision = '0000000000000000000000000000000000000000';
   await writeFile(paths.metadata, `${JSON.stringify(metadata, null, 2)}\n`);
   try {
     const result = await runChecker({
@@ -469,10 +395,10 @@ test("an immutable metadata revision rejects a different explicit backend checko
   }
 });
 
-test("release metadata rejects a WORKTREE provenance sentinel", async () => {
+test('release metadata rejects a WORKTREE provenance sentinel', async () => {
   const paths = await fixture();
-  const metadata = JSON.parse(await readFile(paths.metadata, "utf8"));
-  metadata.backendSourceRevision = "WORKTREE_UNCOMMITTED";
+  const metadata = JSON.parse(await readFile(paths.metadata, 'utf8'));
+  metadata.backendSourceRevision = 'WORKTREE_UNCOMMITTED';
   await writeFile(paths.metadata, `${JSON.stringify(metadata, null, 2)}\n`);
   try {
     const result = await runChecker({

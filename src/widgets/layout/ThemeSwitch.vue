@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { setTheme, useTheme } from "@/shared/theme/theme";
+import { computed } from 'vue';
+import { setTheme, useTheme } from '@/shared/theme/theme';
 
 const theme = useTheme();
-const isDark = computed(() => theme.value === "dark");
+const isDark = computed(() => theme.value === 'dark');
 
 function changeTheme(event: Event) {
-  setTheme((event.target as HTMLInputElement).checked ? "dark" : "light");
+  setTheme((event.target as HTMLInputElement).checked ? 'dark' : 'light');
 }
 </script>
 
@@ -20,8 +20,7 @@ function changeTheme(event: Event) {
     />
     <i :class="isDark ? 'pi pi-moon' : 'pi pi-sun'" aria-hidden="true" />
     <span class="theme-copy"
-      ><strong>Тема</strong
-      ><small>{{ isDark ? "Тёмная" : "Светлая" }}</small></span
+      ><strong>Тема</strong><small>{{ isDark ? 'Тёмная' : 'Светлая' }}</small></span
     >
     <span class="theme-track" aria-hidden="true"><span /></span>
   </label>

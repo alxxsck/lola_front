@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch } from 'vue';
 import {
   TELEGRAM_BROADCAST_TEXT_MAX_LENGTH,
   TELEGRAM_BROADCAST_TITLE_MAX_LENGTH,
   validateBroadcastDraft,
   type TelegramBroadcastDraft,
-} from "../model/telegram-broadcast";
+} from '../model/telegram-broadcast';
 
 const props = defineProps<{
   draft: TelegramBroadcastDraft;
@@ -23,13 +23,11 @@ const submitted = ref(false);
 const candidate = computed<TelegramBroadcastDraft>(() => ({
   title: title.value,
   content: { text: text.value },
-  audience: { kind: "ALL_EXPLICITLY_OPTED_IN" },
+  audience: { kind: 'ALL_EXPLICITLY_OPTED_IN' },
 }));
 const errors = computed(() => validateBroadcastDraft(candidate.value));
 const dirty = computed(
-  () =>
-    title.value !== props.draft.title ||
-    text.value !== props.draft.content.text,
+  () => title.value !== props.draft.title || text.value !== props.draft.content.text,
 );
 
 watch(
@@ -41,12 +39,12 @@ watch(
   },
 );
 
-watch(dirty, (value) => emit("dirtyChange", value), { immediate: true });
+watch(dirty, (value) => emit('dirtyChange', value), { immediate: true });
 
 function submit(): void {
   submitted.value = true;
   if (Object.keys(errors.value).length) return;
-  emit("save", {
+  emit('save', {
     ...candidate.value,
     title: candidate.value.title.trim(),
     content: { text: candidate.value.content.text.trim() },
@@ -65,9 +63,7 @@ function submit(): void {
       :maxlength="TELEGRAM_BROADCAST_TITLE_MAX_LENGTH"
       :disabled="disabled"
       :aria-invalid="submitted && Boolean(errors.title)"
-      :aria-describedby="
-        submitted && errors.title ? 'broadcast-title-error' : undefined
-      "
+      :aria-describedby="submitted && errors.title ? 'broadcast-title-error' : undefined"
     />
     <p v-if="submitted && errors.title" id="broadcast-title-error" class="error">
       {{ errors.title }}
@@ -81,9 +77,7 @@ function submit(): void {
       :maxlength="TELEGRAM_BROADCAST_TEXT_MAX_LENGTH"
       :disabled="disabled"
       :aria-invalid="submitted && Boolean(errors.text)"
-      :aria-describedby="
-        submitted && errors.text ? 'broadcast-text-error' : undefined
-      "
+      :aria-describedby="submitted && errors.text ? 'broadcast-text-error' : undefined"
     />
     <p v-if="submitted && errors.text" id="broadcast-text-error" class="error">
       {{ errors.text }}
@@ -94,15 +88,13 @@ function submit(): void {
       <div>
         <strong>Только пользователи с явным согласием</strong>
         <p>
-          Аудиторию рассчитывает сервер. Неактивные и отозванные привязки будут
-          исключены перед фиксацией снимка.
+          Аудиторию рассчитывает сервер. Неактивные и отозванные привязки будут исключены перед
+          фиксацией снимка.
         </p>
       </div>
     </div>
 
-    <button type="submit" class="primary-button" :disabled="disabled">
-      Сохранить черновик
-    </button>
+    <button type="submit" class="primary-button" :disabled="disabled">Сохранить черновик</button>
   </form>
 </template>
 
@@ -128,7 +120,7 @@ textarea {
 textarea {
   resize: vertical;
 }
-[aria-invalid="true"] {
+[aria-invalid='true'] {
   border-color: var(--status-danger);
 }
 .error {

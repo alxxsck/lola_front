@@ -18,7 +18,7 @@ import type {
   ConversationAISuspensionResponseDto,
   ConversationAISuspensionSummaryResponseDto,
   ScenarioAuthoringSummaryResponseDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 import type {
   ActiveSession,
   AuditEvent,
@@ -35,16 +35,14 @@ import type {
   ScenarioRun,
   UiElement,
   SupportInboxConversation,
-} from "@/shared/types/domain";
-import type { CreateUiElement, UpdateUiElement } from "./contracts";
+} from '@/shared/types/domain';
+import type { CreateUiElement, UpdateUiElement } from './contracts';
 
 const defined = <T extends object>(value: T): T =>
-  Object.fromEntries(
-    Object.entries(value).filter(([, item]) => item !== undefined),
-  ) as T;
+  Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined)) as T;
 
 const optionalString = (value: unknown): string | undefined =>
-  typeof value === "string" ? value : undefined;
+  typeof value === 'string' ? value : undefined;
 
 function retainKnownValue<const T extends string>(
   value: string,
@@ -77,7 +75,7 @@ export function mapProject(dto: ProjectResponseDto): Project {
 }
 
 export function toUpdateProjectSettingsDto(
-  patch: Partial<Project> & Pick<Project, "version">,
+  patch: Partial<Project> & Pick<Project, 'version'>,
 ): UpdateProjectSettingsDto {
   return defined({
     expectedVersion: patch.version,
@@ -92,7 +90,7 @@ export function toUpdateProjectSettingsDto(
 export function mapEventDefinition(
   dto: EventCatalogDefinitionResponseDto | EventDefinitionCatalogResponseDto,
 ): EventDefinition {
-  if ("currentRevision" in dto) {
+  if ('currentRevision' in dto) {
     const revision = dto.currentRevision;
     return {
       id: revision?.id ?? dto.id,
@@ -114,7 +112,7 @@ export function mapEventDefinition(
       policyUpdatedAt: dto.policy.updatedAt,
       metadataUpdatedAt: dto.metadataUpdatedAt,
       lifecycle: dto.lifecycle,
-      archivedAt: dto.lifecycle === "ARCHIVED" ? dto.lifecycleUpdatedAt : null,
+      archivedAt: dto.lifecycle === 'ARCHIVED' ? dto.lifecycleUpdatedAt : null,
       updatedAt: dto.lifecycleUpdatedAt,
     };
   }
@@ -137,8 +135,8 @@ export function mapEventDefinition(
     policyVersion: dto.policyVersion,
     policyUpdatedAt: dto.policyUpdatedAt,
     metadataUpdatedAt: dto.metadataUpdatedAt,
-    ...("lifecycle" in dto ? { lifecycle: dto.lifecycle } : {}),
-    ...("archivedAt" in dto ? { archivedAt: dto.archivedAt ?? null } : {}),
+    ...('lifecycle' in dto ? { lifecycle: dto.lifecycle } : {}),
+    ...('archivedAt' in dto ? { archivedAt: dto.archivedAt ?? null } : {}),
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
   };
@@ -150,7 +148,7 @@ export function mapEventDefinitionRevision(
 ): EventDefinitionRevision {
   return {
     ...definition,
-    origin: definition.origin ?? "CUSTOM",
+    origin: definition.origin ?? 'CUSTOM',
     readOnly: definition.readOnly ?? false,
     id: dto.id,
     projectId: dto.projectId,
@@ -167,9 +165,7 @@ export function mapEventDefinitionRevision(
   };
 }
 
-export function mapScenario(
-  dto: ScenarioAuthoringSummaryResponseDto,
-): Scenario {
+export function mapScenario(dto: ScenarioAuthoringSummaryResponseDto): Scenario {
   return {
     id: dto.id,
     projectId: dto.projectId,
@@ -183,9 +179,7 @@ export function mapScenario(
     importanceClass: dto.importanceClass,
     respectsQuietHours: dto.respectsQuietHours,
     cooldownSeconds: dto.cooldownSeconds,
-    ...(dto.maxRunsPerUser == null
-      ? {}
-      : { maxRunsPerUser: dto.maxRunsPerUser }),
+    ...(dto.maxRunsPerUser == null ? {} : { maxRunsPerUser: dto.maxRunsPerUser }),
     ...(dto.activeFrom == null ? {} : { activeFrom: dto.activeFrom }),
     ...(dto.activeTo == null ? {} : { activeTo: dto.activeTo }),
     createdAt: dto.createdAt,
@@ -209,14 +203,12 @@ export function mapEndUser(dto: EndUserResponseDto): EndUser {
   };
 }
 
-export function mapConversation(
-  dto: AdminConversationResponseDto,
-): Conversation {
+export function mapConversation(dto: AdminConversationResponseDto): Conversation {
   return {
     id: dto.id,
     userId: dto.endUserId,
-    title: dto.title?.trim() || "Диалог без названия",
-    status: dto.status === "OPEN" ? "ACTIVE" : "ARCHIVED",
+    title: dto.title?.trim() || 'Диалог без названия',
+    status: dto.status === 'OPEN' ? 'ACTIVE' : 'ARCHIVED',
     updatedAt: dto.updatedAt,
     lastMessageAt: dto.messages[0]?.createdAt ?? dto.updatedAt,
     messageCount: dto._count.messages,
@@ -233,8 +225,8 @@ export function mapSupportInboxConversation(
     id: dto.id,
     projectId: dto.projectId,
     endUser: dto.endUser,
-    title: dto.title?.trim() || "Диалог без названия",
-    status: dto.status === "OPEN" ? "ACTIVE" : "ARCHIVED",
+    title: dto.title?.trim() || 'Диалог без названия',
+    status: dto.status === 'OPEN' ? 'ACTIVE' : 'ARCHIVED',
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
     messageCount: dto.messageCount,
@@ -282,13 +274,13 @@ export function mapConversationMessage(
 ): ConversationMessage {
   const author = retainKnownValue(
     dto.role,
-    ["USER", "ASSISTANT", "ADMIN", "SCENARIO", "SYSTEM"],
-    "message role",
+    ['USER', 'ASSISTANT', 'ADMIN', 'SCENARIO', 'SYSTEM'],
+    'message role',
   );
   const status = retainKnownValue(
     dto.status,
-    ["WRITING", "COMPLETED", "FAILED", "CANCELLED"],
-    "message status",
+    ['WRITING', 'COMPLETED', 'FAILED', 'CANCELLED'],
+    'message status',
   );
   return {
     id: dto.id,
@@ -300,8 +292,8 @@ export function mapConversationMessage(
           authorSnapshot: {
             type: retainKnownValue(
               dto.author.type,
-              ["CMS_USER", "SYSTEM", "BREAK_GLASS", "UNKNOWN"],
-              "message author type",
+              ['CMS_USER', 'SYSTEM', 'BREAK_GLASS', 'UNKNOWN'],
+              'message author type',
             ),
             cmsUserId: dto.author.cmsUserId,
             displayName: dto.author.displayName,
@@ -316,12 +308,8 @@ export function mapConversationMessage(
       contentType: attachment.contentType,
       sizeBytes: attachment.sizeBytes,
     })),
-    ...(dto.macroProvenance
-      ? { macroProvenance: { ...dto.macroProvenance } }
-      : {}),
-    ...(dto.knowledgeProvenance
-      ? { knowledgeProvenance: { ...dto.knowledgeProvenance } }
-      : {}),
+    ...(dto.macroProvenance ? { macroProvenance: { ...dto.macroProvenance } } : {}),
+    ...(dto.knowledgeProvenance ? { knowledgeProvenance: { ...dto.knowledgeProvenance } } : {}),
     status,
     ...(dto.delivery
       ? {
@@ -331,38 +319,32 @@ export function mapConversationMessage(
               ? {
                   channel: retainKnownValue(
                     dto.delivery.channel,
-                    ["SDK_REALTIME"],
-                    "delivery channel",
+                    ['SDK_REALTIME'],
+                    'delivery channel',
                   ),
                 }
               : {}),
             status: retainKnownValue(
               dto.delivery.status,
               [
-                "PENDING",
-                "DELIVERING",
-                "DELIVERED",
-                "READ",
-                "FAILED",
-                "CANCELLED",
-                "NOT_REDELIVERED",
+                'PENDING',
+                'DELIVERING',
+                'DELIVERED',
+                'READ',
+                'FAILED',
+                'CANCELLED',
+                'NOT_REDELIVERED',
               ],
-              "delivery status",
+              'delivery status',
             ),
             generation: dto.delivery.generation,
             version: dto.delivery.version,
             errorCode: dto.delivery.errorCode,
             retryEligible: dto.delivery.retryEligible,
             allowedActions: dto.delivery.allowedActions.map((action) =>
-              retainKnownValue(
-                action,
-                ["RETRY_FAILED_DELIVERY"],
-                "delivery action",
-              ),
+              retainKnownValue(action, ['RETRY_FAILED_DELIVERY'], 'delivery action'),
             ),
-            ...(dto.delivery.acceptedAt
-              ? { acceptedAt: dto.delivery.acceptedAt }
-              : {}),
+            ...(dto.delivery.acceptedAt ? { acceptedAt: dto.delivery.acceptedAt } : {}),
             ...(dto.delivery.interactionSessionId !== undefined
               ? {
                   interactionSessionId: dto.delivery.interactionSessionId,
@@ -398,9 +380,7 @@ export function mapConversationMessage(
 export function mapActiveSessions(dto: ActiveUserResponseDto): ActiveSession[] {
   const profile = record(dto.profile);
   const userName =
-    typeof profile.name === "string" && profile.name.trim()
-      ? profile.name
-      : dto.externalId;
+    typeof profile.name === 'string' && profile.name.trim() ? profile.name : dto.externalId;
   const sessions = new Map<string, ActiveSession>();
 
   for (const connection of dto.connections) {
@@ -411,14 +391,14 @@ export function mapActiveSessions(dto: ActiveUserResponseDto): ActiveSession[] {
       userId: dto.id,
       externalId: dto.externalId,
       userName,
-      device: connection.transport === "ANY_CABLE" ? "AnyCable" : "Socket.IO",
+      device: connection.transport === 'ANY_CABLE' ? 'AnyCable' : 'Socket.IO',
       transport: connection.transport,
       connectionCount: dto.activeConnectionCount,
       sessionCount: dto.activeSessionCount,
       currentConversationId: null,
       startedAt: connection.connectedAt,
       lastSeenAt: connection.lastHeartbeatAt,
-      status: "ONLINE",
+      status: 'ONLINE',
     });
   }
 
@@ -464,9 +444,7 @@ const uiPayload = (value: UpdateUiElement) =>
     auditReason: value.auditReason,
   });
 
-export function toCreateUiElementDto(
-  value: CreateUiElement,
-): CreateUiElementDto {
+export function toCreateUiElementDto(value: CreateUiElement): CreateUiElementDto {
   return {
     ...uiPayload(value),
     code: value.code,
@@ -476,14 +454,12 @@ export function toCreateUiElementDto(
   };
 }
 
-export function toUpdateUiElementDto(
-  value: UpdateUiElement,
-): UpdateUiElementDto {
+export function toUpdateUiElementDto(value: UpdateUiElement): UpdateUiElementDto {
   return uiPayload(value);
 }
 
 const record = (value: unknown): Record<string, unknown> =>
-  value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
 
 export function mapEventLog(dto: EventLogResponseDto): EventLog {
   return {
@@ -505,9 +481,7 @@ export function mapEventLog(dto: EventLogResponseDto): EventLog {
     receivedAt: dto.receivedAt,
     payload: record(dto.payload),
     context: record(dto.context),
-    processingResult: dto.processingResult
-      ? record(dto.processingResult)
-      : undefined,
+    processingResult: dto.processingResult ? record(dto.processingResult) : undefined,
     error: dto.error ?? undefined,
   };
 }
@@ -528,7 +502,7 @@ export function mapScenarioRun(dto: ScenarioRunResponseDto): ScenarioRun {
     scenarioRevisionId: optionalString(dto.scenarioRevisionId),
     errorCode: optionalString(dto.errorCode),
     startedAt: dto.startedAt,
-    finishedAt: typeof dto.finishedAt === "string" ? dto.finishedAt : undefined,
+    finishedAt: typeof dto.finishedAt === 'string' ? dto.finishedAt : undefined,
     currentStep: dto.currentStep,
     steps: dto.steps.map((step) => ({
       id: step.id,
@@ -537,8 +511,7 @@ export function mapScenarioRun(dto: ScenarioRunResponseDto): ScenarioRun {
       actionType: step.actionType,
       executor: step.executor,
       status: step.status,
-      errorCode:
-        typeof step.errorCode === "string" ? step.errorCode : undefined,
+      errorCode: typeof step.errorCode === 'string' ? step.errorCode : undefined,
       startedAt: optionalString(step.startedAt),
       finishedAt: optionalString(step.finishedAt),
       resumeAt: optionalString(step.resumeAt),
@@ -550,9 +523,7 @@ export function mapScenarioRun(dto: ScenarioRunResponseDto): ScenarioRun {
             sequence: step.command.sequence,
             createdAt: step.command.createdAt,
             expiresAt:
-              typeof step.command.expiresAt === "string"
-                ? step.command.expiresAt
-                : undefined,
+              typeof step.command.expiresAt === 'string' ? step.command.expiresAt : undefined,
             sentAt: optionalString(step.command.sentAt),
             acknowledgedAt: optionalString(step.command.acknowledgedAt),
             executedAt: optionalString(step.command.executedAt),

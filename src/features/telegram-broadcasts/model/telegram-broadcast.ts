@@ -1,23 +1,23 @@
 export type TelegramBroadcastLifecycle =
-  | "DRAFT"
-  | "APPROVED"
-  | "SCHEDULED"
-  | "RUNNING"
-  | "PAUSED"
-  | "COMPLETED"
-  | "COMPLETED_WITH_FAILURES"
-  | "CANCELLED";
+  | 'DRAFT'
+  | 'APPROVED'
+  | 'SCHEDULED'
+  | 'RUNNING'
+  | 'PAUSED'
+  | 'COMPLETED'
+  | 'COMPLETED_WITH_FAILURES'
+  | 'CANCELLED';
 
 export type TelegramBroadcastAction =
-  | "EDIT"
-  | "PREVIEW"
-  | "TEST_SEND"
-  | "APPROVE"
-  | "START"
-  | "SCHEDULE"
-  | "PAUSE"
-  | "RESUME"
-  | "CANCEL";
+  | 'EDIT'
+  | 'PREVIEW'
+  | 'TEST_SEND'
+  | 'APPROVE'
+  | 'START'
+  | 'SCHEDULE'
+  | 'PAUSE'
+  | 'RESUME'
+  | 'CANCEL';
 
 export interface TelegramBroadcastPermissions {
   read: boolean;
@@ -32,15 +32,12 @@ export interface TelegramBroadcastDraft {
     text: string;
   };
   audience: {
-    kind: "ALL_EXPLICITLY_OPTED_IN";
+    kind: 'ALL_EXPLICITLY_OPTED_IN';
   };
 }
 
 export type TelegramBroadcastExclusionReason =
-  | "CONSENT_NOT_ACTIVE"
-  | "STALE_CONSENT"
-  | "NO_ACTIVE_LINK"
-  | "INSTALLATION_UNAVAILABLE";
+  'CONSENT_NOT_ACTIVE' | 'STALE_CONSENT' | 'NO_ACTIVE_LINK' | 'INSTALLATION_UNAVAILABLE';
 
 export interface TelegramBroadcastExclusion {
   reason: TelegramBroadcastExclusionReason;
@@ -74,13 +71,13 @@ export interface TelegramBroadcastTest {
   label: string;
   revisionId: string;
   status:
-    | "PENDING"
-    | "SENDING"
-    | "RETRY_WAIT"
-    | "SENT"
-    | "FAILED_PERMANENT"
-    | "OUTCOME_UNKNOWN"
-    | "CANCELLED";
+    | 'PENDING'
+    | 'SENDING'
+    | 'RETRY_WAIT'
+    | 'SENT'
+    | 'FAILED_PERMANENT'
+    | 'OUTCOME_UNKNOWN'
+    | 'CANCELLED';
   currentRevision: boolean;
   sentAt: string | null;
 }
@@ -113,8 +110,8 @@ export interface TelegramBroadcast {
     contentAvailable: boolean;
     createdAt: string;
   };
-  content: TelegramBroadcastDraft["content"];
-  audience: TelegramBroadcastDraft["audience"];
+  content: TelegramBroadcastDraft['content'];
+  audience: TelegramBroadcastDraft['audience'];
   approval: TelegramBroadcastApproval | null;
   latestTest: TelegramBroadcastTest | null;
   recipientCount: number;
@@ -139,14 +136,14 @@ export interface TelegramBroadcastActionAvailability {
 
 export interface TelegramBroadcastSafeError {
   kind:
-    | "AMBIGUOUS"
-    | "CONFLICT"
-    | "FRESH_AUTH"
-    | "FORBIDDEN"
-    | "NOT_FOUND"
-    | "RATE_LIMITED"
-    | "CONFIGURATION"
-    | "UNKNOWN";
+    | 'AMBIGUOUS'
+    | 'CONFLICT'
+    | 'FRESH_AUTH'
+    | 'FORBIDDEN'
+    | 'NOT_FOUND'
+    | 'RATE_LIMITED'
+    | 'CONFIGURATION'
+    | 'UNKNOWN';
   message: string;
   retryable: boolean;
 }
@@ -159,9 +156,9 @@ export const TELEGRAM_BROADCAST_AUDIENCE_CAP = 10_000;
 
 export function createEmptyBroadcastDraft(): TelegramBroadcastDraft {
   return {
-    title: "",
-    content: { text: "" },
-    audience: { kind: "ALL_EXPLICITLY_OPTED_IN" },
+    title: '',
+    content: { text: '' },
+    audience: { kind: 'ALL_EXPLICITLY_OPTED_IN' },
   };
 }
 
@@ -169,51 +166,41 @@ export function telegramBroadcastPermissions(
   effectivePermissionCodes: readonly string[],
 ): TelegramBroadcastPermissions {
   return {
-    read: effectivePermissionCodes.includes("project.telegram.broadcasts.read"),
-    draft: effectivePermissionCodes.includes(
-      "project.telegram.broadcasts.draft",
-    ),
-    approve: effectivePermissionCodes.includes(
-      "project.telegram.broadcasts.approve",
-    ),
-    operate: effectivePermissionCodes.includes(
-      "project.telegram.broadcasts.operate",
-    ),
+    read: effectivePermissionCodes.includes('project.telegram.broadcasts.read'),
+    draft: effectivePermissionCodes.includes('project.telegram.broadcasts.draft'),
+    approve: effectivePermissionCodes.includes('project.telegram.broadcasts.approve'),
+    operate: effectivePermissionCodes.includes('project.telegram.broadcasts.operate'),
   };
 }
 
 export function validateBroadcastDraft(
   draft: TelegramBroadcastDraft,
-): Partial<Record<"title" | "text", string>> {
+): Partial<Record<'title' | 'text', string>> {
   const title = draft.title.trim();
   const text = draft.content.text.trim();
   return {
     ...(!title
-      ? { title: "Укажите название рассылки." }
+      ? { title: 'Укажите название рассылки.' }
       : draft.title.length > TELEGRAM_BROADCAST_TITLE_MAX_LENGTH
-        ? { title: "Название не должно превышать 120 символов." }
+        ? { title: 'Название не должно превышать 120 символов.' }
         : {}),
     ...(!text
-      ? { text: "Введите сообщение." }
+      ? { text: 'Введите сообщение.' }
       : draft.content.text.length > TELEGRAM_BROADCAST_TEXT_MAX_LENGTH
-        ? { text: "Сообщение не должно превышать 4096 символов." }
+        ? { text: 'Сообщение не должно превышать 4096 символов.' }
         : {}),
   };
 }
 
 export function validBroadcastTestLabel(label: string): boolean {
   const normalized = label.trim();
-  return (
-    normalized.length > 0 &&
-    normalized.length <= TELEGRAM_BROADCAST_TEST_LABEL_MAX_LENGTH
-  );
+  return normalized.length > 0 && normalized.length <= TELEGRAM_BROADCAST_TEST_LABEL_MAX_LENGTH;
 }
 
 export function validBroadcastEndUserExternalId(value: string): boolean {
   const normalized = value.trim();
   return (
-    normalized.length > 0 &&
-    normalized.length <= TELEGRAM_BROADCAST_END_USER_EXTERNAL_ID_MAX_LENGTH
+    normalized.length > 0 && normalized.length <= TELEGRAM_BROADCAST_END_USER_EXTERNAL_ID_MAX_LENGTH
   );
 }
 
@@ -224,99 +211,83 @@ export function broadcastActionAvailability(
   const allows = (action: TelegramBroadcastAction) =>
     Boolean(broadcast?.allowedActions.includes(action));
   return {
-    edit: permissions.draft && allows("EDIT"),
-    preview: permissions.draft && allows("PREVIEW"),
-    testSend: permissions.draft && allows("TEST_SEND"),
-    approve: permissions.approve && allows("APPROVE"),
-    start: permissions.operate && allows("START"),
-    schedule: permissions.operate && allows("SCHEDULE"),
-    pause: permissions.operate && allows("PAUSE"),
-    resume: permissions.operate && allows("RESUME"),
-    cancel: allows("CANCEL") && permissions.operate,
+    edit: permissions.draft && allows('EDIT'),
+    preview: permissions.draft && allows('PREVIEW'),
+    testSend: permissions.draft && allows('TEST_SEND'),
+    approve: permissions.approve && allows('APPROVE'),
+    start: permissions.operate && allows('START'),
+    schedule: permissions.operate && allows('SCHEDULE'),
+    pause: permissions.operate && allows('PAUSE'),
+    resume: permissions.operate && allows('RESUME'),
+    cancel: allows('CANCEL') && permissions.operate,
   };
 }
 
-export function terminalBroadcastLifecycle(
-  lifecycle: TelegramBroadcastLifecycle,
-): boolean {
-  return ["COMPLETED", "COMPLETED_WITH_FAILURES", "CANCELLED"].includes(
-    lifecycle,
-  );
+export function terminalBroadcastLifecycle(lifecycle: TelegramBroadcastLifecycle): boolean {
+  return ['COMPLETED', 'COMPLETED_WITH_FAILURES', 'CANCELLED'].includes(lifecycle);
 }
 
 function errorShape(cause: unknown): { status?: number; code?: string } {
-  if (!cause || typeof cause !== "object") return {};
+  if (!cause || typeof cause !== 'object') return {};
   const value = cause as { status?: unknown; code?: unknown };
   return {
-    ...(typeof value.status === "number" ? { status: value.status } : {}),
-    ...(typeof value.code === "string" ? { code: value.code } : {}),
+    ...(typeof value.status === 'number' ? { status: value.status } : {}),
+    ...(typeof value.code === 'string' ? { code: value.code } : {}),
   };
 }
 
 export function safeBroadcastError(cause: unknown): TelegramBroadcastSafeError {
   const { status, code } = errorShape(cause);
-  if (
-    status === 428 ||
-    code === "REAUTHENTICATION_REQUIRED" ||
-    code === "MFA_REQUIRED"
-  )
+  if (status === 428 || code === 'REAUTHENTICATION_REQUIRED' || code === 'MFA_REQUIRED')
     return {
-      kind: "FRESH_AUTH",
-      message:
-        "Требуется свежий вход с MFA. Команда не повторялась автоматически.",
+      kind: 'FRESH_AUTH',
+      message: 'Требуется свежий вход с MFA. Команда не повторялась автоматически.',
       retryable: false,
     };
-  if (
-    status === 0 ||
-    code === "NETWORK_ERROR" ||
-    code === "TIMEOUT" ||
-    code === "OUTCOME_UNKNOWN"
-  )
+  if (status === 0 || code === 'NETWORK_ERROR' || code === 'TIMEOUT' || code === 'OUTCOME_UNKNOWN')
     return {
-      kind: "AMBIGUOUS",
-      message:
-        "Не удалось подтвердить результат. Повторите команду безопасно с тем же запросом.",
+      kind: 'AMBIGUOUS',
+      message: 'Не удалось подтвердить результат. Повторите команду безопасно с тем же запросом.',
       retryable: true,
     };
-  if (status === 409 || code?.includes("VERSION_CONFLICT"))
+  if (status === 409 || code?.includes('VERSION_CONFLICT'))
     return {
-      kind: "CONFLICT",
-      message:
-        "Рассылка изменилась. Мы загрузили актуальную версию — проверьте её перед повтором.",
+      kind: 'CONFLICT',
+      message: 'Рассылка изменилась. Мы загрузили актуальную версию — проверьте её перед повтором.',
       retryable: false,
     };
   if (status === 403)
     return {
-      kind: "FORBIDDEN",
-      message: "Доступ к рассылкам изменился.",
+      kind: 'FORBIDDEN',
+      message: 'Доступ к рассылкам изменился.',
       retryable: false,
     };
   if (status === 404)
     return {
-      kind: "NOT_FOUND",
-      message: "Рассылка не найдена или больше недоступна.",
+      kind: 'NOT_FOUND',
+      message: 'Рассылка не найдена или больше недоступна.',
       retryable: false,
     };
-  if (status === 429 || code?.includes("RATE_LIMIT"))
+  if (status === 429 || code?.includes('RATE_LIMIT'))
     return {
-      kind: "RATE_LIMITED",
-      message: "Команда временно ограничена. Повторите позже.",
+      kind: 'RATE_LIMITED',
+      message: 'Команда временно ограничена. Повторите позже.',
       retryable: false,
     };
   if (
-    code?.includes("KILL_SWITCH") ||
-    code?.includes("CHANNEL_UNAVAILABLE") ||
-    code?.includes("CONFIGURATION")
+    code?.includes('KILL_SWITCH') ||
+    code?.includes('CHANNEL_UNAVAILABLE') ||
+    code?.includes('CONFIGURATION')
   )
     return {
-      kind: "CONFIGURATION",
+      kind: 'CONFIGURATION',
       message:
-        "Отправка Telegram сейчас недоступна. Проверьте интеграцию или обратитесь к владельцу проекта.",
+        'Отправка Telegram сейчас недоступна. Проверьте интеграцию или обратитесь к владельцу проекта.',
       retryable: false,
     };
   return {
-    kind: "UNKNOWN",
-    message: "Не удалось выполнить действие. Повторите попытку.",
+    kind: 'UNKNOWN',
+    message: 'Не удалось выполнить действие. Повторите попытку.',
     retryable: false,
   };
 }

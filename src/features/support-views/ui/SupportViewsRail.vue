@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch } from 'vue';
 import type {
   SavedSupportViewResponseDto,
   SupportViewPresetResponseDto,
-} from "@/shared/api/generated/models";
-import type { SupportSearchScope } from "@/features/support-search/api/support-search-source";
-import type { SupportViewSelection } from "@/features/support-views/api/support-views-source";
+} from '@/shared/api/generated/models';
+import type { SupportSearchScope } from '@/features/support-search/api/support-search-source';
+import type { SupportViewSelection } from '@/features/support-views/api/support-views-source';
 
 const props = defineProps<{
   system: readonly SupportViewPresetResponseDto[];
@@ -25,7 +25,7 @@ const emit = defineEmits<{
     value: {
       name: string;
       code: string;
-      scope: "PERSONAL" | "TEAM" | "PROJECT";
+      scope: 'PERSONAL' | 'TEAM' | 'PROJECT';
       teamId: string;
     },
   ];
@@ -37,21 +37,19 @@ const emit = defineEmits<{
 }>();
 
 const creating = ref(false);
-const name = ref("");
-const code = ref("");
-const scope = ref<"PERSONAL" | "TEAM" | "PROJECT">("PERSONAL");
-const teamId = ref("");
+const name = ref('');
+const code = ref('');
+const scope = ref<'PERSONAL' | 'TEAM' | 'PROJECT'>('PERSONAL');
+const teamId = ref('');
 const renaming = ref(false);
-const renamed = ref("");
+const renamed = ref('');
 const activeSaved = computed(() => {
-  const id = props.selection?.kind === "SAVED" ? props.selection.id : null;
+  const id = props.selection?.kind === 'SAVED' ? props.selection.id : null;
   return id ? (props.saved.find((item) => item.id === id) ?? null) : null;
 });
-const canSaveSurface = computed(
-  () => props.searchScope !== "END_USERS" && !props.selection,
-);
-type VisibleSystemView = Pick<SupportViewPresetResponseDto, "code"> &
-  Partial<Pick<SupportViewPresetResponseDto, "count" | "freshness">> & {
+const canSaveSurface = computed(() => props.searchScope !== 'END_USERS' && !props.selection);
+type VisibleSystemView = Pick<SupportViewPresetResponseDto, 'code'> &
+  Partial<Pick<SupportViewPresetResponseDto, 'count' | 'freshness'>> & {
     pending: boolean;
   };
 const visibleSystem = computed<VisibleSystemView[]>(() => {
@@ -59,12 +57,8 @@ const visibleSystem = computed<VisibleSystemView[]>(() => {
     return props.system.map((item) => ({ ...item, pending: false }));
   }
   return [
-    ...(props.canReadCases
-      ? (["MY_ACTIVE", "MY_TEAM_UNASSIGNED", "ALL_CASES"] as const)
-      : []),
-    ...(props.canReadConversations
-      ? (["ALL_CONVERSATIONS"] as const)
-      : []),
+    ...(props.canReadCases ? (['MY_ACTIVE', 'MY_TEAM_UNASSIGNED', 'ALL_CASES'] as const) : []),
+    ...(props.canReadConversations ? (['ALL_CONVERSATIONS'] as const) : []),
   ].map((code) => ({ code, pending: true }));
 });
 
@@ -72,7 +66,7 @@ watch(
   () => activeSaved.value?.id,
   () => {
     renaming.value = false;
-    renamed.value = "";
+    renamed.value = '';
   },
 );
 watch(
@@ -83,37 +77,30 @@ watch(
 );
 
 const systemNames: Record<string, string> = {
-  MY_ACTIVE: "Мои обращения",
-  MY_TEAM_UNASSIGNED: "Неназначенные команды",
-  ALL_CASES: "Все обращения",
-  ALL_CONVERSATIONS: "Все диалоги",
+  MY_ACTIVE: 'Мои обращения',
+  MY_TEAM_UNASSIGNED: 'Неназначенные команды',
+  ALL_CASES: 'Все обращения',
+  ALL_CONVERSATIONS: 'Все диалоги',
 };
 const scopeNames = {
-  PERSONAL: "Личное",
-  TEAM: "Командное",
-  PROJECT: "Проектное",
+  PERSONAL: 'Личное',
+  TEAM: 'Командное',
+  PROJECT: 'Проектное',
 } as const;
 
 function countLabel(item: {
   count?: { state: string; value?: number | null; cappedAt: number };
 }): string {
-  if (
-    !item.count ||
-    item.count.state === "UNAVAILABLE" ||
-    item.count.value == null
-  )
-    return "";
-  return item.count.state === "LOWER_BOUND"
-    ? `≥${item.count.value}`
-    : String(item.count.value);
+  if (!item.count || item.count.state === 'UNAVAILABLE' || item.count.value == null) return '';
+  return item.count.state === 'LOWER_BOUND' ? `≥${item.count.value}` : String(item.count.value);
 }
 
 function freshnessLabel(state: string): string {
-  return state === "BUILDING" ? "Индекс обновляется" : "Индекс отстаёт";
+  return state === 'BUILDING' ? 'Индекс обновляется' : 'Индекс отстаёт';
 }
 
 function submitCreate(): void {
-  emit("create", {
+  emit('create', {
     name: name.value,
     code: code.value,
     scope: scope.value,
@@ -158,11 +145,7 @@ function submitCreate(): void {
         }"
         @click="emit('select', { kind: 'SYSTEM', code: item.code })"
       >
-        <span
-          ><i class="pi pi-inbox" aria-hidden="true" />{{
-            systemNames[item.code]
-          }}</span
-        >
+        <span><i class="pi pi-inbox" aria-hidden="true" />{{ systemNames[item.code] }}</span>
         <small v-if="countLabel(item)">{{ countLabel(item) }}</small>
         <i
           v-if="item.freshness && item.freshness.state !== 'READY'"
@@ -185,16 +168,10 @@ function submitCreate(): void {
         }"
         @click="emit('select', { kind: 'SAVED', id: item.id })"
       >
-        <span
-          ><i class="pi pi-bookmark" aria-hidden="true" />{{
-            item.draft.displayName
-          }}</span
-        >
+        <span><i class="pi pi-bookmark" aria-hidden="true" />{{ item.draft.displayName }}</span>
         <small>
           {{ scopeNames[item.scope]
-          }}<template v-if="countLabel(item)">
-            · {{ countLabel(item) }}</template
-          >
+          }}<template v-if="countLabel(item)"> · {{ countLabel(item) }}</template>
           <i
             v-if="item.freshness.state !== 'READY'"
             class="pi pi-clock freshness"
@@ -206,15 +183,9 @@ function submitCreate(): void {
 
     <form v-if="creating" class="view-form" @submit.prevent="submitCreate">
       <strong>Сохранить текущий поиск</strong>
+      <label>Название<input v-model="name" required minlength="2" maxlength="120" /></label>
       <label
-        >Название<input v-model="name" required minlength="2" maxlength="120"
-      /></label>
-      <label
-        >Код<input
-          v-model="code"
-          required
-          pattern="[a-z][a-z0-9-]{1,63}"
-          placeholder="vip-cases"
+        >Код<input v-model="code" required pattern="[a-z][a-z0-9-]{1,63}" placeholder="vip-cases"
       /></label>
       <label
         >Доступ
@@ -234,11 +205,7 @@ function submitCreate(): void {
     </form>
 
     <div v-if="activeSaved" class="view-actions">
-      <button
-        type="button"
-        :disabled="mutating"
-        @click="emit('setDefault', selection!)"
-      >
+      <button type="button" :disabled="mutating" @click="emit('setDefault', selection!)">
         <i class="pi pi-home" /> По умолчанию
       </button>
       <button
@@ -273,16 +240,10 @@ function submitCreate(): void {
     <form
       v-if="activeSaved && renaming"
       class="rename-form"
-      @submit.prevent="
-        emit('replace', { view: activeSaved, displayName: renamed })
-      "
+      @submit.prevent="emit('replace', { view: activeSaved, displayName: renamed })"
     >
       <label
-        >Новое название<input
-          v-model="renamed"
-          required
-          minlength="2"
-          maxlength="120"
+        >Новое название<input v-model="renamed" required minlength="2" maxlength="120"
       /></label>
       <button type="submit" :disabled="mutating">Сохранить</button>
     </form>

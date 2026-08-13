@@ -1,45 +1,43 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import ToggleSwitch from "primevue/toggleswitch";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { supportCaseNotificationPolicySource } from "@/features/support-case-notifications/api/support-case-notification-policy-source";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import ToggleSwitch from 'primevue/toggleswitch';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { supportCaseNotificationPolicySource } from '@/features/support-case-notifications/api/support-case-notification-policy-source';
 import {
   policyModeLabel,
   policyStatusLabel,
-} from "@/features/support-case-notifications/model/support-case-notification-policy";
-import { createSupportCaseNotificationPolicyController } from "@/features/support-case-notifications/model/use-support-case-notification-policy";
-import { canManagePersonalSupportNotifications } from "@/features/support-workspace/model/support-workspace-access";
+} from '@/features/support-case-notifications/model/support-case-notification-policy';
+import { createSupportCaseNotificationPolicyController } from '@/features/support-case-notifications/model/use-support-case-notification-policy';
+import { canManagePersonalSupportNotifications } from '@/features/support-workspace/model/support-workspace-access';
 import {
   supportNotificationsSource,
   type SupportNotificationTopic,
-} from "@/features/support-notifications/api/support-notifications-source";
-import { createBrowserPushAdapter } from "@/features/support-notifications/model/browser-push-adapter";
-import { createSupportNotificationsController } from "@/features/support-notifications/model/use-support-notifications";
+} from '@/features/support-notifications/api/support-notifications-source';
+import { createBrowserPushAdapter } from '@/features/support-notifications/model/browser-push-adapter';
+import { createSupportNotificationsController } from '@/features/support-notifications/model/use-support-notifications';
 
 const auth = useAuthStore();
 const accessDenied = ref(false);
 const policyAccessDenied = ref(false);
 const permissionSignature = computed(() =>
-  [...(auth.project?.effectivePermissionCodes ?? [])].sort().join("\u0000"),
+  [...(auth.project?.effectivePermissionCodes ?? [])].sort().join('\u0000'),
 );
 const canRead = computed(
   () =>
     !accessDenied.value &&
-    canManagePersonalSupportNotifications(
-      auth.project?.effectivePermissionCodes ?? [],
-    ),
+    canManagePersonalSupportNotifications(auth.project?.effectivePermissionCodes ?? []),
 );
 const canManagePolicy = computed(
   () =>
     !policyAccessDenied.value &&
     hasProjectPermission(
       auth.project?.effectivePermissionCodes ?? [],
-      "project.support.notification_policy.manage",
+      'project.support.notification_policy.manage',
     ),
 );
 const controller = createSupportNotificationsController(
@@ -84,118 +82,111 @@ const topics: ReadonlyArray<{
   defaultLabel: string;
 }> = [
   {
-    topic: "SUPPORT_CASE_CREATED",
-    icon: "pi pi-inbox",
-    title: "Новые обращения",
+    topic: 'SUPPORT_CASE_CREATED',
+    icon: 'pi pi-inbox',
+    title: 'Новые обращения',
     description:
-      "Личный сигнал о создании или повторном открытии обращения, если политика проекта включает его в доставку.",
-    defaultLabel: "По умолчанию выключено",
+      'Личный сигнал о создании или повторном открытии обращения, если политика проекта включает его в доставку.',
+    defaultLabel: 'По умолчанию выключено',
   },
   {
-    topic: "SUPPORT_CASE_ATTENTION",
-    icon: "pi pi-exclamation-circle",
-    title: "Обращения, требующие внимания",
+    topic: 'SUPPORT_CASE_ATTENTION',
+    icon: 'pi pi-exclamation-circle',
+    title: 'Обращения, требующие внимания',
     description:
-      "Сигнал, когда обращение перешло в состояние, где нужен ответ или вмешательство поддержки.",
-    defaultLabel: "По умолчанию выключено",
+      'Сигнал, когда обращение перешло в состояние, где нужен ответ или вмешательство поддержки.',
+    defaultLabel: 'По умолчанию выключено',
   },
   {
-    topic: "SUPPORT_CASE_ASSIGNED_TO_ME",
-    icon: "pi pi-user-plus",
-    title: "Назначенные мне обращения",
-    description:
-      "Персональный сигнал, когда именно вы стали ответственным оператором обращения.",
-    defaultLabel: "По умолчанию включено",
+    topic: 'SUPPORT_CASE_ASSIGNED_TO_ME',
+    icon: 'pi pi-user-plus',
+    title: 'Назначенные мне обращения',
+    description: 'Персональный сигнал, когда именно вы стали ответственным оператором обращения.',
+    defaultLabel: 'По умолчанию включено',
   },
 ];
 
 function permissionLabel(): string {
   const state = controller.browserState.value;
-  if (state.permission === "GRANTED") return "Разрешено браузером";
-  if (state.permission === "DENIED") return "Заблокировано браузером";
-  if (state.permission === "DEFAULT") return "Разрешение ещё не запрошено";
+  if (state.permission === 'GRANTED') return 'Разрешено браузером';
+  if (state.permission === 'DENIED') return 'Заблокировано браузером';
+  if (state.permission === 'DEFAULT') return 'Разрешение ещё не запрошено';
   return state.requiresInstalledApp
-    ? "Нужно установить на экран «Домой»"
-    : "Веб-уведомления не поддерживаются";
+    ? 'Нужно установить на экран «Домой»'
+    : 'Веб-уведомления не поддерживаются';
 }
 
 function browserRecoveryCopy(): string {
   const state = controller.browserState.value;
-  const registrationCapability =
-    controller.configuration.value?.capabilities.deviceRegistration;
-  if (registrationCapability !== "AVAILABLE") {
-    return "Регистрация новых браузеров временно недоступна. Проверьте конфигурацию доставки; после восстановления кнопка запросит разрешение браузера.";
+  const registrationCapability = controller.configuration.value?.capabilities.deviceRegistration;
+  if (registrationCapability !== 'AVAILABLE') {
+    return 'Регистрация новых браузеров временно недоступна. Проверьте конфигурацию доставки; после восстановления кнопка запросит разрешение браузера.';
   }
-  if (state.permission === "DENIED")
+  if (state.permission === 'DENIED')
     return (
       state.permissionRecoveryPath ??
-      "Откройте разрешения сайта в настройках браузера и включите уведомления для Retenive CMS."
+      'Откройте разрешения сайта в настройках браузера и включите уведомления для Retenive CMS.'
     );
   if (state.requiresInstalledApp)
-    return "На iOS/iPadOS сначала добавьте Retenive CMS на экран «Домой», затем откройте установленное приложение.";
-  if (state.permission === "UNSUPPORTED")
+    return 'На iOS/iPadOS сначала добавьте Retenive CMS на экран «Домой», затем откройте установленное приложение.';
+  if (state.permission === 'UNSUPPORTED')
     return (
       state.unsupportedMessage ??
-      "Этот браузер или режим не поддерживает веб-уведомления. Обновите браузер и проверьте снова."
+      'Этот браузер или режим не поддерживает веб-уведомления. Обновите браузер и проверьте снова.'
     );
-  return "Запрос системного разрешения появляется только после вашего нажатия.";
+  return 'Запрос системного разрешения появляется только после вашего нажатия.';
 }
 
 function preferenceStatus(topic: SupportNotificationTopic): string {
   const item = controller.preference(topic);
-  if (!item?.subscribed) return "Выключено";
-  if (controller.capability(topic) !== "AVAILABLE")
-    return "Сохранено, но доставка ещё не запущена";
-  if (!controller.browserReady.value)
-    return "Выбрано, но нет подтверждённого устройства";
-  if (topic === "SUPPORT_CASE_CREATED") return "Личная доставка готова";
-  return "Доставка активна";
+  if (!item?.subscribed) return 'Выключено';
+  if (controller.capability(topic) !== 'AVAILABLE') return 'Сохранено, но доставка ещё не запущена';
+  if (!controller.browserReady.value) return 'Выбрано, но нет подтверждённого устройства';
+  if (topic === 'SUPPORT_CASE_CREATED') return 'Личная доставка готова';
+  return 'Доставка активна';
 }
 
 const personalNewCaseSubscriptionCopy = computed(() => {
-  if (!canRead.value) return "Недоступно для этой учётной записи";
-  return controller.preference("SUPPORT_CASE_CREATED")?.subscribed
-    ? "Включена"
-    : "Выключена";
+  if (!canRead.value) return 'Недоступно для этой учётной записи';
+  return controller.preference('SUPPORT_CASE_CREATED')?.subscribed ? 'Включена' : 'Выключена';
 });
 const personalBrowserCopy = computed(() => {
-  if (!canRead.value) return "Недоступно для этой учётной записи";
-  return controller.browserReady.value ? "Подключён" : "Не подключён";
+  if (!canRead.value) return 'Недоступно для этой учётной записи';
+  return controller.browserReady.value ? 'Подключён' : 'Не подключён';
 });
 const personalDeliveryCopy = computed(() => {
-  if (!canRead.value) return "Не проверено";
-  return policyController.current.value?.effectiveStatus === "ACTIVE" &&
-    controller.capability("SUPPORT_CASE_CREATED") === "AVAILABLE" &&
-    controller.preference("SUPPORT_CASE_CREATED")?.subscribed &&
+  if (!canRead.value) return 'Не проверено';
+  return policyController.current.value?.effectiveStatus === 'ACTIVE' &&
+    controller.capability('SUPPORT_CASE_CREATED') === 'AVAILABLE' &&
+    controller.preference('SUPPORT_CASE_CREATED')?.subscribed &&
     controller.browserReady.value
-    ? "Работает"
-    : "Не работает";
+    ? 'Работает'
+    : 'Не работает';
 });
 
 function preferenceSeverity(topic: SupportNotificationTopic) {
   const item = controller.preference(topic);
-  if (!item?.subscribed) return "secondary";
-  return controller.browserReady.value &&
-    controller.capability(topic) === "AVAILABLE"
-    ? "success"
-    : "warn";
+  if (!item?.subscribed) return 'secondary';
+  return controller.browserReady.value && controller.capability(topic) === 'AVAILABLE'
+    ? 'success'
+    : 'warn';
 }
 
 function capabilityCopy(topic: SupportNotificationTopic): string {
   const value = controller.capability(topic);
-  if (value === "DISABLE_ONLY")
-    return "Можно только отключить: новые подписки больше не принимаются.";
-  if (value === "UNAVAILABLE")
-    return "Этот тип недоступен для текущей роли или конфигурации доставки.";
-  return "Настройка доступна для выбранного проекта.";
+  if (value === 'DISABLE_ONLY')
+    return 'Можно только отключить: новые подписки больше не принимаются.';
+  if (value === 'UNAVAILABLE')
+    return 'Этот тип недоступен для текущей роли или конфигурации доставки.';
+  return 'Настройка доступна для выбранного проекта.';
 }
 
 function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(new Date(value));
 }
 
@@ -214,7 +205,7 @@ watch(
     if (canManagePolicy.value) void policyController.load();
     else policyController.reset({ forgetPending: true });
   },
-  { flush: "sync" },
+  { flush: 'sync' },
 );
 onMounted(() => {
   void controller.load();
@@ -233,8 +224,8 @@ onBeforeUnmount(() => {
         <div class="eyebrow"><i class="pi pi-bell" /> Настройки поддержки</div>
         <h1>Уведомления поддержки</h1>
         <p class="subtitle">
-          Личные уведомления для выбранного проекта. Разрешение браузера,
-          выбранные события и регистрация устройства проверяются отдельно.
+          Личные уведомления для выбранного проекта. Разрешение браузера, выбранные события и
+          регистрация устройства проверяются отдельно.
         </p>
       </div>
       <div class="header-actions">
@@ -249,25 +240,16 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <Message
-      v-if="!canRead && !canManagePolicy"
-      severity="warn"
-      :closable="false"
-    >
+    <Message v-if="!canRead && !canManagePolicy" severity="warn" :closable="false">
       Настройки уведомлений недоступны для текущего проекта или роли.
     </Message>
     <Message v-else-if="!canRead" severity="info" :closable="false">
-      Вы можете управлять политикой проекта, но личные подписки и браузеры для
-      этой роли недоступны.
+      Вы можете управлять политикой проекта, но личные подписки и браузеры для этой роли недоступны.
     </Message>
     <Message v-if="controller.error.value" severity="error" :closable="false">
       {{ controller.error.value }}
     </Message>
-    <Message
-      v-if="controller.success.value"
-      severity="success"
-      :closable="false"
-    >
+    <Message v-if="controller.success.value" severity="success" :closable="false">
       {{ controller.success.value }}
     </Message>
 
@@ -283,9 +265,7 @@ onBeforeUnmount(() => {
         </div>
         <Tag
           v-if="policyController.current.value"
-          :value="
-            policyStatusLabel(policyController.current.value.effectiveStatus)
-          "
+          :value="policyStatusLabel(policyController.current.value.effectiveStatus)"
           :severity="
             policyController.current.value.effectiveStatus === 'ACTIVE'
               ? 'success'
@@ -307,53 +287,37 @@ onBeforeUnmount(() => {
             ><strong>{{
               policyController.current.value?.current
                 ? policyModeLabel(policyController.current.value.current.mode)
-                : "Не настроена"
+                : 'Не настроена'
             }}</strong>
           </div>
           <i class="pi pi-times" aria-hidden="true" />
           <div>
-            <small>Личная подписка</small
-            ><strong>{{ personalNewCaseSubscriptionCopy }}</strong>
+            <small>Личная подписка</small><strong>{{ personalNewCaseSubscriptionCopy }}</strong>
           </div>
           <i class="pi pi-times" aria-hidden="true" />
           <div>
-            <small>Этот браузер</small
-            ><strong>{{ personalBrowserCopy }}</strong>
+            <small>Этот браузер</small><strong>{{ personalBrowserCopy }}</strong>
           </div>
           <i class="pi pi-equals" aria-hidden="true" />
           <div class="policy-equation-result">
-            <small>Доставка вам</small
-            ><strong>{{ personalDeliveryCopy }}</strong>
+            <small>Доставка вам</small><strong>{{ personalDeliveryCopy }}</strong>
           </div>
         </div>
         <div class="policy-summary-copy">
           <p>
-            Руководитель задаёт события, круг получателей и срок действия.
-            Каждый сотрудник сам включает личную подписку и подключает свой
-            браузер.
+            Руководитель задаёт события, круг получателей и срок действия. Каждый сотрудник сам
+            включает личную подписку и подключает свой браузер.
           </p>
-          <a
-            class="policy-editor-link"
-            href="/support/settings/notifications/new-cases"
-          >
+          <a class="policy-editor-link" href="/support/settings/notifications/new-cases">
             Настроить политику <i class="pi pi-arrow-right" />
           </a>
         </div>
       </div>
     </section>
 
-    <template
-      v-if="
-        canRead && controller.loading.value && !controller.configuration.value
-      "
-    >
+    <template v-if="canRead && controller.loading.value && !controller.configuration.value">
       <div class="readiness-grid" aria-label="Загрузка готовности уведомлений">
-        <Skeleton
-          v-for="index in 3"
-          :key="index"
-          height="128px"
-          border-radius="18px"
-        />
+        <Skeleton v-for="index in 3" :key="index" height="128px" border-radius="18px" />
       </div>
     </template>
 
@@ -386,34 +350,20 @@ onBeforeUnmount(() => {
             <div>
               <small>Подписка этого браузера</small>
               <strong>{{
-                controller.browserState.value.locallySubscribed
-                  ? "Создана"
-                  : "Не создана"
+                controller.browserState.value.locallySubscribed ? 'Создана' : 'Не создана'
               }}</strong>
-              <span
-                >Зашифрованный канал доставки уведомлений в этот браузер.</span
-              >
+              <span>Зашифрованный канал доставки уведомлений в этот браузер.</span>
             </div>
           </article>
-          <article
-            :class="[
-              'readiness-card',
-              { ready: controller.browserReady.value },
-            ]"
-          >
+          <article :class="['readiness-card', { ready: controller.browserReady.value }]">
             <span class="step-number">3</span>
             <i class="pi pi-shield" />
             <div>
               <small>Регистрация на сервере</small>
               <strong>{{
-                controller.currentDeviceId.value
-                  ? "Подтверждена"
-                  : "Не подтверждена"
+                controller.currentDeviceId.value ? 'Подтверждена' : 'Не подтверждена'
               }}</strong>
-              <span
-                >Только это состояние разрешает считать устройство
-                подключённым.</span
-              >
+              <span>Только это состояние разрешает считать устройство подключённым.</span>
             </div>
           </article>
         </div>
@@ -423,8 +373,8 @@ onBeforeUnmount(() => {
             <strong>
               {{
                 controller.browserReady.value
-                  ? "Этот браузер зарегистрирован"
-                  : "Подключите этот браузер"
+                  ? 'Этот браузер зарегистрирован'
+                  : 'Подключите этот браузер'
               }}
             </strong>
             <span>{{ browserRecoveryCopy() }}</span>
@@ -447,16 +397,11 @@ onBeforeUnmount(() => {
             :loading="controller.connecting.value"
             :disabled="
               controller.deviceBusy.value ||
-              controller.configuration.value.capabilities.deviceRegistration !==
-                'AVAILABLE'
+              controller.configuration.value.capabilities.deviceRegistration !== 'AVAILABLE'
             "
             @click="controller.connectBrowser"
           />
-          <Tag
-            v-else-if="!controller.browserReady.value"
-            value="Недоступно"
-            severity="secondary"
-          />
+          <Tag v-else-if="!controller.browserReady.value" value="Недоступно" severity="secondary" />
           <Tag v-else value="Подключён" severity="success" icon="pi pi-check" />
         </div>
       </section>
@@ -468,8 +413,7 @@ onBeforeUnmount(() => {
             <h2 id="topics-title">Типы уведомлений</h2>
           </div>
           <span class="section-note"
-            >Настройки действуют только в
-            {{ auth.project?.name ?? "этом проекте" }}</span
+            >Настройки действуют только в {{ auth.project?.name ?? 'этом проекте' }}</span
           >
         </div>
         <div class="topic-list">
@@ -484,23 +428,15 @@ onBeforeUnmount(() => {
                 />
               </div>
               <p>{{ item.description }}</p>
-              <small
-                >{{ item.defaultLabel }} ·
-                {{ capabilityCopy(item.topic) }}</small
-              >
+              <small>{{ item.defaultLabel }} · {{ capabilityCopy(item.topic) }}</small>
             </div>
             <ToggleSwitch
-              :model-value="
-                Boolean(controller.preference(item.topic)?.subscribed)
-              "
+              :model-value="Boolean(controller.preference(item.topic)?.subscribed)"
               :aria-label="`${item.title}: ${controller.preference(item.topic)?.subscribed ? 'включено' : 'выключено'}`"
               :disabled="
                 controller.savingTopic.value !== null ||
                 controller.loading.value ||
-                !controller.canSet(
-                  item.topic,
-                  !controller.preference(item.topic)?.subscribed,
-                )
+                !controller.canSet(item.topic, !controller.preference(item.topic)?.subscribed)
               "
               @update:model-value="controller.setPreference(item.topic, $event)"
             />
@@ -509,9 +445,9 @@ onBeforeUnmount(() => {
         <div class="scope-note" role="note">
           <i class="pi pi-info-circle" />
           <span>
-            «Новые обращения» и «Требует внимания» — разные события. Создание
-            обращения не повторяется при обычном сообщении, а последующая
-            эскалация приходит отдельным уведомлением.
+            «Новые обращения» и «Требует внимания» — разные события. Создание обращения не
+            повторяется при обычном сообщении, а последующая эскалация приходит отдельным
+            уведомлением.
           </span>
         </div>
       </section>
@@ -522,19 +458,11 @@ onBeforeUnmount(() => {
             <span class="section-kicker">Личные устройства</span>
             <h2 id="devices-title">Зарегистрированные браузеры</h2>
           </div>
-          <span class="section-note"
-            >Активных: {{ controller.activeDevices.value.length }}</span
-          >
+          <span class="section-note">Активных: {{ controller.activeDevices.value.length }}</span>
         </div>
         <div v-if="controller.devices.value.length" class="device-list">
-          <article
-            v-for="device in controller.devices.value"
-            :key="device.id"
-            class="device-row"
-          >
-            <span
-              :class="['device-icon', { revoked: device.status === 'REVOKED' }]"
-            >
+          <article v-for="device in controller.devices.value" :key="device.id" class="device-row">
+            <span :class="['device-icon', { revoked: device.status === 'REVOKED' }]">
               <i class="pi pi-desktop" />
             </span>
             <div>
@@ -542,14 +470,9 @@ onBeforeUnmount(() => {
                 <strong>{{ device.userAgentClass }}</strong>
                 <Tag
                   :value="device.status === 'ACTIVE' ? 'Активно' : 'Отключено'"
-                  :severity="
-                    device.status === 'ACTIVE' ? 'success' : 'secondary'
-                  "
+                  :severity="device.status === 'ACTIVE' ? 'success' : 'secondary'"
                 />
-                <span
-                  v-if="controller.currentDeviceId.value === device.id"
-                  class="current-device"
-                >
+                <span v-if="controller.currentDeviceId.value === device.id" class="current-device">
                   Этот браузер
                 </span>
               </div>
@@ -743,11 +666,7 @@ onBeforeUnmount(() => {
 }
 .readiness-card.ready {
   border-color: color-mix(in srgb, var(--status-success) 40%, var(--line));
-  background: color-mix(
-    in srgb,
-    var(--status-success-soft) 48%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--status-success-soft) 48%, var(--surface-card));
 }
 .readiness-card > i {
   display: grid;

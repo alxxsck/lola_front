@@ -1,7 +1,7 @@
-import { shallowMount } from '@vue/test-utils'
-import type { NodeProps } from '@vue-flow/core'
-import { describe, expect, it } from 'vitest'
-import ScenarioFlowNode from './ScenarioFlowNode.vue'
+import { shallowMount } from '@vue/test-utils';
+import type { NodeProps } from '@vue-flow/core';
+import { describe, expect, it } from 'vitest';
+import ScenarioFlowNode from './ScenarioFlowNode.vue';
 
 describe('ScenarioFlowNode', () => {
   it('renders semantic source handles in domain order', () => {
@@ -42,18 +42,20 @@ describe('ScenarioFlowNode', () => {
           },
         },
       },
-    })
+    });
 
-    expect(wrapper.findAll('.handle-stub').map((handle) => ({
-      id: handle.attributes('data-id'),
-      type: handle.attributes('data-type'),
-    }))).toEqual([
+    expect(
+      wrapper.findAll('.handle-stub').map((handle) => ({
+        id: handle.attributes('data-id'),
+        type: handle.attributes('data-type'),
+      })),
+    ).toEqual([
       { id: 'target', type: 'target' },
       { id: 'choice:yes', type: 'source' },
       { id: 'choice:no', type: 'source' },
       { id: 'timeout', type: 'source' },
-    ])
-  })
+    ]);
+  });
 
   it('renders the node kind as text and styling instead of relying on color or system code', () => {
     const wrapper = shallowMount(ScenarioFlowNode, {
@@ -82,11 +84,11 @@ describe('ScenarioFlowNode', () => {
         },
       },
       global: { stubs: { Handle: true } },
-    })
+    });
 
-    expect(wrapper.get('.flow-node').classes()).toContain('kind-wait')
-    expect(wrapper.get('.node-kind').text()).toBe('Ожидание')
-    expect(wrapper.get('.node-title').text()).toBe('Ждать оплату')
-    expect(wrapper.get('.node-key').text()).toBe('wait_for_payment')
-  })
-})
+    expect(wrapper.get('.flow-node').classes()).toContain('kind-wait');
+    expect(wrapper.get('.node-kind').text()).toBe('Ожидание');
+    expect(wrapper.get('.node-title').text()).toBe('Ждать оплату');
+    expect(wrapper.get('.node-key').text()).toBe('wait_for_payment');
+  });
+});

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import operatorGuideSource from '../../docs/cms-support-operator-guide.ru.md?raw'
-import operatorScreen from '../../docs/evidence/support-guides/operator-workspace.png?url'
-import { AdminGuidePage } from '@/features/documentation/ui'
+import operatorGuideSource from '../../docs/cms-support-operator-guide.ru.md?raw';
+import operatorScreen from '../../docs/evidence/support-guides/operator-workspace.png?url';
+import { AdminGuidePage } from '@/features/documentation/ui';
 
 const screen = {
   src: operatorScreen,
@@ -13,7 +13,7 @@ const screen = {
     { x: 49, y: 42, label: 'Переписка и поле ответа' },
     { x: 84, y: 43, label: 'Контекст обращения, SLA и назначение' },
   ],
-}
+};
 </script>
 
 <template>

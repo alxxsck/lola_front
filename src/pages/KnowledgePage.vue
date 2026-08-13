@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import ProgressBar from "primevue/progressbar";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import Textarea from "primevue/textarea";
-import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import ProgressBar from 'primevue/progressbar';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import Textarea from 'primevue/textarea';
+import { useConfirm } from 'primevue/useconfirm';
+import { useToast } from 'primevue/usetoast';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
 import {
   createKnowledgeText,
   deleteKnowledgeDocument,
@@ -20,7 +20,7 @@ import {
   listKnowledgeDocuments,
   retryKnowledgeDocument,
   uploadKnowledgeFile,
-} from "@/features/knowledge/knowledge.api";
+} from '@/features/knowledge/knowledge.api';
 import {
   KNOWLEDGE_FILE_ACCEPT,
   MAX_KNOWLEDGE_TEXT_LENGTH,
@@ -29,12 +29,12 @@ import {
   type KnowledgeDocument,
   type KnowledgeDocumentDetail,
   type KnowledgeDocumentStatus,
-} from "@/features/knowledge/knowledge.model";
-import { ApiError } from "@/shared/api/http/api-error";
-import { useUnsavedChangesGuard } from "@/shared/lib/use-unsaved-changes-guard";
+} from '@/features/knowledge/knowledge.model';
+import { ApiError } from '@/shared/api/http/api-error';
+import { useUnsavedChangesGuard } from '@/shared/lib/use-unsaved-changes-guard';
 
-type StatusFilter = "ALL" | KnowledgeDocumentStatus;
-type UploadStatus = "QUEUED" | "UPLOADING" | "DONE" | "ERROR";
+type StatusFilter = 'ALL' | KnowledgeDocumentStatus;
+type UploadStatus = 'QUEUED' | 'UPLOADING' | 'DONE' | 'ERROR';
 
 interface UploadItem {
   id: string;
@@ -51,19 +51,19 @@ const MAX_UPLOAD_BATCH_FILES = 50;
 const MAX_UPLOAD_BATCH_BYTES = 250 * 1024 * 1024;
 
 const localeNames: Record<string, string> = {
-  ru: "Русский",
-  en: "English",
-  es: "Español",
-  pt: "Português",
-  de: "Deutsch",
-  fr: "Français",
-  it: "Italiano",
+  ru: 'Русский',
+  en: 'English',
+  es: 'Español',
+  pt: 'Português',
+  de: 'Deutsch',
+  fr: 'Français',
+  it: 'Italiano',
 };
 const statusOptions: Array<{ label: string; value: StatusFilter }> = [
-  { label: "Все", value: "ALL" },
-  { label: "Готовы", value: "READY" },
-  { label: "Индексируются", value: "INDEXING" },
-  { label: "С ошибкой", value: "FAILED" },
+  { label: 'Все', value: 'ALL' },
+  { label: 'Готовы', value: 'READY' },
+  { label: 'Индексируются', value: 'INDEXING' },
+  { label: 'С ошибкой', value: 'FAILED' },
 ];
 
 const auth = useAuthStore();
@@ -74,30 +74,30 @@ const nextCursor = ref<string | null>(null);
 const loading = ref(true);
 const loadingMore = ref(false);
 const refreshing = ref(false);
-const loadError = ref("");
-const search = ref("");
-const statusFilter = ref<StatusFilter>("ALL");
+const loadError = ref('');
+const search = ref('');
+const statusFilter = ref<StatusFilter>('ALL');
 const uploadDialogVisible = ref(false);
 const uploadItems = ref<UploadItem[]>([]);
 const uploadLocale = ref<string | null>(null);
-const uploadCategory = ref("");
-const uploadError = ref("");
+const uploadCategory = ref('');
+const uploadError = ref('');
 const dragging = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 const uploadController = ref<AbortController | null>(null);
 const textDialogVisible = ref(false);
-const textMode = ref<"CREATE" | "VERSION">("CREATE");
+const textMode = ref<'CREATE' | 'VERSION'>('CREATE');
 const textSource = ref<KnowledgeDocumentDetail | null>(null);
-const textTitle = ref("");
-const textContent = ref("");
+const textTitle = ref('');
+const textContent = ref('');
 const textLocale = ref<string | null>(null);
-const textCategory = ref("");
-const textError = ref("");
+const textCategory = ref('');
+const textError = ref('');
 const savingText = ref(false);
-const initialTextSnapshot = ref("");
+const initialTextSnapshot = ref('');
 const detailsVisible = ref(false);
 const detailsLoading = ref(false);
-const detailsError = ref("");
+const detailsError = ref('');
 const details = ref<KnowledgeDocumentDetail | null>(null);
 const detailsController = ref<AbortController | null>(null);
 const textController = ref<AbortController | null>(null);
@@ -111,12 +111,9 @@ let projectEpoch = 0;
 let pollGeneration = 0;
 const mutationControllers = new Set<AbortController>();
 
-const projectId = computed(() => auth.project?.id ?? "");
+const projectId = computed(() => auth.project?.id ?? '');
 const hasManagePermission = computed(() =>
-  hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
-    "project.knowledge.write",
-  ),
+  hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.knowledge.write'),
 );
 const localeCatalog = computed(() => {
   const defaultLocale = auth.project?.defaultLocale;
@@ -131,31 +128,21 @@ const localeCatalog = computed(() => {
   return {
     defaultLocale,
     supportedLocales: supportedLocales.filter(
-      (value, index, values) =>
-        Boolean(value) && values.indexOf(value) === index,
+      (value, index, values) => Boolean(value) && values.indexOf(value) === index,
     ),
   };
 });
 const localeProjectionError =
-  "Backend не вернул разрешённый каталог языков проекта. База знаний заблокирована до обновления прав или контракта.";
-const canManage = computed(
-  () => hasManagePermission.value && Boolean(localeCatalog.value),
-);
-const uploading = computed(() =>
-  uploadItems.value.some((item) => item.status === "UPLOADING"),
-);
+  'Backend не вернул разрешённый каталог языков проекта. База знаний заблокирована до обновления прав или контракта.';
+const canManage = computed(() => hasManagePermission.value && Boolean(localeCatalog.value));
+const uploading = computed(() => uploadItems.value.some((item) => item.status === 'UPLOADING'));
 const queuedUploads = computed(
-  () =>
-    uploadItems.value.filter(
-      (item) => item.status === "QUEUED" && !item.clientRejected,
-    ).length,
+  () => uploadItems.value.filter((item) => item.status === 'QUEUED' && !item.clientRejected).length,
 );
 const uploadDone = computed(
   () =>
     uploadItems.value.length > 0 &&
-    uploadItems.value.every(
-      (item) => item.status === "DONE" || item.clientRejected,
-    ),
+    uploadItems.value.every((item) => item.status === 'DONE' || item.clientRejected),
 );
 const localeOptions = computed(() =>
   (localeCatalog.value?.supportedLocales ?? []).map((value) => ({
@@ -164,21 +151,18 @@ const localeOptions = computed(() =>
   })),
 );
 function isAllowedKnowledgeLocale(value: string | null): value is string {
-  return Boolean(
-    value && localeCatalog.value?.supportedLocales.includes(value),
-  );
+  return Boolean(value && localeCatalog.value?.supportedLocales.includes(value));
 }
 const stats = computed(() => ({
   total: documents.value.length,
-  ready: documents.value.filter((item) => item.status === "READY").length,
-  indexing: documents.value.filter((item) => item.status === "INDEXING").length,
-  failed: documents.value.filter((item) => item.status === "FAILED").length,
+  ready: documents.value.filter((item) => item.status === 'READY').length,
+  indexing: documents.value.filter((item) => item.status === 'INDEXING').length,
+  failed: documents.value.filter((item) => item.status === 'FAILED').length,
 }));
 const filteredDocuments = computed(() => {
   const query = search.value.trim().toLowerCase();
   return documents.value.filter((item) => {
-    const matchesStatus =
-      statusFilter.value === "ALL" || item.status === statusFilter.value;
+    const matchesStatus = statusFilter.value === 'ALL' || item.status === statusFilter.value;
     const matchesQuery =
       !query ||
       [item.title, item.filename, item.category, item.locale].some((value) =>
@@ -189,8 +173,7 @@ const filteredDocuments = computed(() => {
 });
 const textContentChanged = computed(
   () =>
-    !textSource.value ||
-    textContent.value.trim() !== (textSource.value.contentText ?? "").trim(),
+    !textSource.value || textContent.value.trim() !== (textSource.value.contentText ?? '').trim(),
 );
 const textSnapshot = computed(() =>
   JSON.stringify({
@@ -208,32 +191,26 @@ const textDirty = computed(
 );
 const { confirmDiscard: confirmTextDiscard } = useUnsavedChangesGuard(
   textDirty,
-  "Есть несохранённые изменения документа. Закрыть форму?",
+  'Есть несохранённые изменения документа. Закрыть форму?',
 );
 
 function errorMessage(cause: unknown, fallback: string): string {
-  if (!(cause instanceof ApiError))
-    return cause instanceof Error ? cause.message : fallback;
-  if (cause.status === 0)
-    return "Нет соединения с сервером. Проверьте сеть и повторите попытку.";
-  if (cause.status === 403)
-    return "Недостаточно прав для управления базой знаний.";
-  if (cause.status === 413) return "Файл превышает допустимый размер 25 МБ.";
-  if (cause.status === 415)
-    return "Сервер не поддерживает формат или MIME-тип файла.";
+  if (!(cause instanceof ApiError)) return cause instanceof Error ? cause.message : fallback;
+  if (cause.status === 0) return 'Нет соединения с сервером. Проверьте сеть и повторите попытку.';
+  if (cause.status === 403) return 'Недостаточно прав для управления базой знаний.';
+  if (cause.status === 413) return 'Файл превышает допустимый размер 25 МБ.';
+  if (cause.status === 415) return 'Сервер не поддерживает формат или MIME-тип файла.';
   if (cause.status === 409)
-    return (
-      cause.message || "Операция конфликтует с текущим состоянием документа."
-    );
-  const request = cause.requestId ? ` Код запроса: ${cause.requestId}.` : "";
+    return cause.message || 'Операция конфликтует с текущим состоянием документа.';
+  const request = cause.requestId ? ` Код запроса: ${cause.requestId}.` : '';
   return `${cause.message || fallback}${request}`;
 }
 
 function uploadFailureMessage(cause: unknown): string {
   if (cause instanceof ApiError && cause.status === 0) {
-    return "Связь прервана или истёк таймаут. Результат может быть неизвестен — обновите список документов.";
+    return 'Связь прервана или истёк таймаут. Результат может быть неизвестен — обновите список документов.';
   }
-  return errorMessage(cause, "Не удалось загрузить файл");
+  return errorMessage(cause, 'Не удалось загрузить файл');
 }
 
 function invalidateListRequest() {
@@ -262,8 +239,7 @@ function mergeDocument(document: KnowledgeDocument) {
   const index = documents.value.findIndex((item) => item.id === document.id);
   if (index >= 0) documents.value.splice(index, 1, document);
   else documents.value.unshift(document);
-  if (details.value?.id === document.id)
-    details.value = { ...details.value, ...document };
+  if (details.value?.id === document.id) details.value = { ...details.value, ...document };
   schedulePoll();
 }
 
@@ -272,7 +248,7 @@ async function loadDocuments(force = false, resetWindow = false) {
   const requestedEpoch = projectEpoch;
   if (!requestedProjectId) {
     loading.value = false;
-    loadError.value = "Текущий проект не найден. Войдите заново.";
+    loadError.value = 'Текущий проект не найден. Войдите заново.';
     return;
   }
   if (!localeCatalog.value) {
@@ -287,14 +263,12 @@ async function loadDocuments(force = false, resetWindow = false) {
   const generation = ++listGeneration;
   if (!force) loading.value = true;
   else refreshing.value = true;
-  loadError.value = "";
+  loadError.value = '';
   try {
     const page = await listKnowledgeDocuments(
       requestedProjectId,
       {
-        limit: resetWindow
-          ? 30
-          : Math.min(Math.max(documents.value.length, 30), 100),
+        limit: resetWindow ? 30 : Math.min(Math.max(documents.value.length, 30), 100),
       },
       controller.signal,
     );
@@ -308,7 +282,7 @@ async function loadDocuments(force = false, resetWindow = false) {
     nextCursor.value = page.nextCursor;
   } catch (cause) {
     if (controller.signal.aborted || generation !== listGeneration) return;
-    loadError.value = errorMessage(cause, "Не удалось загрузить документы");
+    loadError.value = errorMessage(cause, 'Не удалось загрузить документы');
   } finally {
     if (generation === listGeneration) {
       loading.value = false;
@@ -341,16 +315,14 @@ async function loadMore() {
     )
       return;
     const existing = new Set(documents.value.map((item) => item.id));
-    documents.value.push(
-      ...page.items.filter((item) => !existing.has(item.id)),
-    );
+    documents.value.push(...page.items.filter((item) => !existing.has(item.id)));
     nextCursor.value = page.nextCursor;
   } catch (cause) {
     if (!controller.signal.aborted && requestedEpoch === projectEpoch)
       toast.add({
-        severity: "error",
-        summary: "Не удалось загрузить ещё",
-        detail: errorMessage(cause, "Повторите попытку"),
+        severity: 'error',
+        summary: 'Не удалось загрузить ещё',
+        detail: errorMessage(cause, 'Повторите попытку'),
         life: 4500,
       });
   } finally {
@@ -364,7 +336,7 @@ async function loadMore() {
 
 function schedulePoll() {
   if (pollTimer) window.clearTimeout(pollTimer);
-  if (!documents.value.some((item) => item.status === "INDEXING")) return;
+  if (!documents.value.some((item) => item.status === 'INDEXING')) return;
   pollTimer = window.setTimeout(async () => {
     if (document.hidden) {
       schedulePoll();
@@ -373,9 +345,7 @@ function schedulePoll() {
     const requestedProjectId = projectId.value;
     const requestedEpoch = projectEpoch;
     const requestedPollGeneration = pollGeneration;
-    const indexing = documents.value
-      .filter((item) => item.status === "INDEXING")
-      .slice(0, 10);
+    const indexing = documents.value.filter((item) => item.status === 'INDEXING').slice(0, 10);
     const updates = await Promise.allSettled(
       indexing.map((item) => getKnowledgeDocument(requestedProjectId, item.id)),
     );
@@ -386,7 +356,7 @@ function schedulePoll() {
     )
       return;
     for (const update of updates) {
-      if (update.status === "fulfilled") mergeDocument(update.value);
+      if (update.status === 'fulfilled') mergeDocument(update.value);
     }
     schedulePoll();
   }, 5_000);
@@ -396,8 +366,8 @@ function openUploadDialog() {
   if (!canManage.value) return;
   uploadItems.value = [];
   uploadLocale.value = localeCatalog.value?.defaultLocale ?? null;
-  uploadCategory.value = "";
-  uploadError.value = "";
+  uploadCategory.value = '';
+  uploadError.value = '';
   uploadDialogVisible.value = true;
 }
 
@@ -408,15 +378,9 @@ function requestUploadDialog(value: boolean) {
 
 function addFiles(files: File[]) {
   if (uploading.value || !files.length) return;
-  const available = Math.max(
-    0,
-    MAX_UPLOAD_BATCH_FILES - uploadItems.value.length,
-  );
+  const available = Math.max(0, MAX_UPLOAD_BATCH_FILES - uploadItems.value.length);
   const accepted = files.slice(0, available);
-  let batchBytes = uploadItems.value.reduce(
-    (total, item) => total + item.file.size,
-    0,
-  );
+  let batchBytes = uploadItems.value.reduce((total, item) => total + item.file.size, 0);
   let limited = files.length > accepted.length;
   for (const file of accepted) {
     if (batchBytes + file.size > MAX_UPLOAD_BATCH_BYTES) {
@@ -424,12 +388,12 @@ function addFiles(files: File[]) {
       continue;
     }
     batchBytes += file.size;
-    const error = validateKnowledgeFile(file) ?? "";
+    const error = validateKnowledgeFile(file) ?? '';
     uploadItems.value.push({
       id: globalThis.crypto.randomUUID(),
       file,
-      title: file.name.replace(/\.[^.]+$/, "").slice(0, 200),
-      status: error ? "ERROR" : "QUEUED",
+      title: file.name.replace(/\.[^.]+$/, '').slice(0, 200),
+      status: error ? 'ERROR' : 'QUEUED',
       progress: 0,
       error,
       clientRejected: Boolean(error),
@@ -437,9 +401,9 @@ function addFiles(files: File[]) {
     });
   }
   uploadError.value = limited
-    ? "За один запуск можно выбрать до 50 файлов общим размером не более 250 МБ."
-    : "";
-  if (fileInput.value) fileInput.value.value = "";
+    ? 'За один запуск можно выбрать до 50 файлов общим размером не более 250 МБ.'
+    : '';
+  if (fileInput.value) fileInput.value.value = '';
 }
 
 function onFileSelection(event: Event) {
@@ -457,22 +421,16 @@ function removeUpload(id: string) {
 }
 
 function queueUploadAgain(item: UploadItem) {
-  item.status = "QUEUED";
-  item.error = "";
+  item.status = 'QUEUED';
+  item.error = '';
   item.progress = 0;
 }
 
 async function startUpload() {
-  if (
-    !canManage.value ||
-    !projectId.value ||
-    !queuedUploads.value ||
-    uploading.value
-  )
-    return;
+  if (!canManage.value || !projectId.value || !queuedUploads.value || uploading.value) return;
   const locale = uploadLocale.value;
   if (uploadCategory.value.trim().length > 80) {
-    uploadError.value = "Категория не должна превышать 80 символов.";
+    uploadError.value = 'Категория не должна превышать 80 символов.';
     return;
   }
   if (!isAllowedKnowledgeLocale(locale)) {
@@ -480,19 +438,17 @@ async function startUpload() {
     return;
   }
   const invalidTitle = uploadItems.value.find(
-    (item) =>
-      item.status === "QUEUED" &&
-      (!item.title.trim() || item.title.trim().length > 200),
+    (item) => item.status === 'QUEUED' && (!item.title.trim() || item.title.trim().length > 200),
   );
   if (invalidTitle) {
     uploadError.value = `Укажите название для файла «${invalidTitle.file.name}».`;
     return;
   }
-  uploadError.value = "";
+  uploadError.value = '';
   const requestedProjectId = projectId.value;
   const requestedEpoch = projectEpoch;
   const batch = uploadItems.value.filter(
-    (item) => item.status === "QUEUED" && !item.clientRejected,
+    (item) => item.status === 'QUEUED' && !item.clientRejected,
   );
   const controller = new AbortController();
   uploadController.value = controller;
@@ -505,8 +461,8 @@ async function startUpload() {
       requestedProjectId !== projectId.value
     )
       break;
-    item.status = "UPLOADING";
-    item.error = "";
+    item.status = 'UPLOADING';
+    item.error = '';
     try {
       const result = await uploadKnowledgeFile(
         requestedProjectId,
@@ -521,35 +477,30 @@ async function startUpload() {
           item.progress = progress;
         },
       );
-      if (
-        requestedEpoch !== projectEpoch ||
-        requestedProjectId !== projectId.value
-      )
-        break;
+      if (requestedEpoch !== projectEpoch || requestedProjectId !== projectId.value) break;
       invalidateListRequest();
       item.progress = 100;
-      item.status = "DONE";
+      item.status = 'DONE';
       item.duplicate = result.duplicate;
       uploaded += 1;
       if (result.duplicate) duplicates += 1;
       mergeDocument(result.document);
     } catch (cause) {
       if (controller.signal.aborted) {
-        item.status = "ERROR";
+        item.status = 'ERROR';
         item.error =
-          "Загрузка остановлена. Результат текущего запроса может быть неизвестен — обновите список.";
+          'Загрузка остановлена. Результат текущего запроса может быть неизвестен — обновите список.';
         break;
       }
-      item.status = "ERROR";
+      item.status = 'ERROR';
       item.error = uploadFailureMessage(cause);
     }
   }
   if (uploadController.value === controller) uploadController.value = null;
   if (uploaded && requestedEpoch === projectEpoch) {
     toast.add({
-      severity: duplicates === uploaded ? "info" : "success",
-      summary:
-        duplicates === uploaded ? "Файлы уже были загружены" : "Файлы приняты",
+      severity: duplicates === uploaded ? 'info' : 'success',
+      summary: duplicates === uploaded ? 'Файлы уже были загружены' : 'Файлы приняты',
       detail: duplicates
         ? `${uploaded} обработано, совпадений: ${duplicates}.`
         : `${uploaded} отправлено на индексацию.`,
@@ -564,26 +515,26 @@ function stopUpload() {
 
 function openCreateText() {
   if (!canManage.value) return;
-  textMode.value = "CREATE";
+  textMode.value = 'CREATE';
   textSource.value = null;
-  textTitle.value = "";
-  textContent.value = "";
+  textTitle.value = '';
+  textContent.value = '';
   textLocale.value = localeCatalog.value?.defaultLocale ?? null;
-  textCategory.value = "";
-  textError.value = "";
+  textCategory.value = '';
+  textError.value = '';
   initialTextSnapshot.value = textSnapshot.value;
   textDialogVisible.value = true;
 }
 
 function openNewVersion(document: KnowledgeDocumentDetail) {
   if (!canManage.value || document.projectId !== projectId.value) return;
-  textMode.value = "VERSION";
+  textMode.value = 'VERSION';
   textSource.value = document;
   textTitle.value = document.title;
-  textContent.value = document.contentText ?? "";
+  textContent.value = document.contentText ?? '';
   textLocale.value = document.locale;
-  textCategory.value = document.category ?? "";
-  textError.value = "";
+  textCategory.value = document.category ?? '';
+  textError.value = '';
   initialTextSnapshot.value = textSnapshot.value;
   detailsVisible.value = false;
   textDialogVisible.value = true;
@@ -600,18 +551,17 @@ async function saveText() {
   const title = textTitle.value.trim();
   const text = textContent.value.trim();
   const locale = textLocale.value;
-  if (!title) textError.value = "Укажите название документа.";
-  else if (title.length > 200)
-    textError.value = "Название не должно превышать 200 символов.";
-  else if (!text) textError.value = "Добавьте текст документа.";
+  if (!title) textError.value = 'Укажите название документа.';
+  else if (title.length > 200) textError.value = 'Название не должно превышать 200 символов.';
+  else if (!text) textError.value = 'Добавьте текст документа.';
   else if (text.length > MAX_KNOWLEDGE_TEXT_LENGTH)
-    textError.value = "Текст превышает ограничение 500 000 символов.";
+    textError.value = 'Текст превышает ограничение 500 000 символов.';
   else if (textCategory.value.trim().length > 80)
-    textError.value = "Категория не должна превышать 80 символов.";
-  else if (textMode.value === "VERSION" && !textContentChanged.value)
+    textError.value = 'Категория не должна превышать 80 символов.';
+  else if (textMode.value === 'VERSION' && !textContentChanged.value)
     textError.value =
-      "Backend пока не умеет менять только название или метаданные. Измените содержимое обновлённой копии.";
-  else textError.value = "";
+      'Backend пока не умеет менять только название или метаданные. Измените содержимое обновлённой копии.';
+  else textError.value = '';
   if (textError.value) return;
   if (!isAllowedKnowledgeLocale(locale)) {
     textError.value = localeProjectionError;
@@ -634,30 +584,24 @@ async function saveText() {
       },
       controller.signal,
     );
-    if (
-      requestedEpoch !== projectEpoch ||
-      requestedProjectId !== projectId.value
-    )
-      return;
+    if (requestedEpoch !== projectEpoch || requestedProjectId !== projectId.value) return;
     invalidateListRequest();
     mergeDocument(result.document);
-    initialTextSnapshot.value = "";
+    initialTextSnapshot.value = '';
     textDialogVisible.value = false;
     toast.add({
-      severity: result.duplicate ? "info" : "success",
+      severity: result.duplicate ? 'info' : 'success',
       summary: result.duplicate
-        ? "Такой материал уже есть"
-        : textMode.value === "VERSION"
-          ? "Обновлённая копия создана"
-          : "Текст принят",
-      detail: result.duplicate
-        ? "Повторная копия не добавлена."
-        : "Индексация продолжится в фоне.",
+        ? 'Такой материал уже есть'
+        : textMode.value === 'VERSION'
+          ? 'Обновлённая копия создана'
+          : 'Текст принят',
+      detail: result.duplicate ? 'Повторная копия не добавлена.' : 'Индексация продолжится в фоне.',
       life: 3600,
     });
   } catch (cause) {
     if (!controller.signal.aborted && requestedEpoch === projectEpoch)
-      textError.value = errorMessage(cause, "Не удалось сохранить текст");
+      textError.value = errorMessage(cause, 'Не удалось сохранить текст');
   } finally {
     if (textController.value === controller) textController.value = null;
     if (requestedEpoch === projectEpoch) savingText.value = false;
@@ -672,24 +616,16 @@ async function openDetails(document: KnowledgeDocument) {
   const controller = new AbortController();
   detailsController.value = controller;
   details.value = null;
-  detailsError.value = "";
+  detailsError.value = '';
   detailsLoading.value = true;
   detailsVisible.value = true;
   try {
-    const result = await getKnowledgeDocument(
-      requestedProjectId,
-      document.id,
-      controller.signal,
-    );
-    if (
-      requestedEpoch !== projectEpoch ||
-      requestedProjectId !== projectId.value
-    )
-      return;
+    const result = await getKnowledgeDocument(requestedProjectId, document.id, controller.signal);
+    if (requestedEpoch !== projectEpoch || requestedProjectId !== projectId.value) return;
     details.value = result;
   } catch (cause) {
     if (!controller.signal.aborted)
-      detailsError.value = errorMessage(cause, "Не удалось открыть документ");
+      detailsError.value = errorMessage(cause, 'Не удалось открыть документ');
   } finally {
     if (!controller.signal.aborted) detailsLoading.value = false;
   }
@@ -712,30 +648,22 @@ async function retryDocument(document: KnowledgeDocument) {
   const controller = mutationController();
   retryingIds.value = new Set(retryingIds.value).add(document.id);
   try {
-    const result = await retryKnowledgeDocument(
-      requestedProjectId,
-      document.id,
-      controller.signal,
-    );
-    if (
-      requestedEpoch !== projectEpoch ||
-      requestedProjectId !== projectId.value
-    )
-      return;
+    const result = await retryKnowledgeDocument(requestedProjectId, document.id, controller.signal);
+    if (requestedEpoch !== projectEpoch || requestedProjectId !== projectId.value) return;
     invalidateListRequest();
     mergeDocument(result.document);
     toast.add({
-      severity: "success",
-      summary: "Повторная индексация запущена",
+      severity: 'success',
+      summary: 'Повторная индексация запущена',
       detail: document.title,
       life: 3000,
     });
   } catch (cause) {
     if (!controller.signal.aborted && requestedEpoch === projectEpoch)
       toast.add({
-        severity: "error",
-        summary: "Не удалось повторить",
-        detail: errorMessage(cause, "Повторите попытку"),
+        severity: 'error',
+        summary: 'Не удалось повторить',
+        detail: errorMessage(cause, 'Повторите попытку'),
         life: 4500,
       });
   } finally {
@@ -749,12 +677,12 @@ async function retryDocument(document: KnowledgeDocument) {
 function askDelete(document: KnowledgeDocument) {
   if (!canManage.value || document.projectId !== projectId.value) return;
   confirm.require({
-    header: "Удалить документ?",
+    header: 'Удалить документ?',
     message: `«${document.title}» перестанет использоваться в ответах Retenive. Отменить удаление будет нельзя.`,
-    icon: "pi pi-exclamation-triangle",
-    rejectLabel: "Отмена",
-    acceptLabel: "Удалить",
-    acceptProps: { severity: "danger" },
+    icon: 'pi pi-exclamation-triangle',
+    rejectLabel: 'Отмена',
+    acceptLabel: 'Удалить',
+    acceptProps: { severity: 'danger' },
     accept: () => deleteDocument(document),
   });
 }
@@ -772,33 +700,25 @@ async function deleteDocument(document: KnowledgeDocument) {
   deletingIds.value = new Set(deletingIds.value).add(document.id);
   const cursorDeleted = nextCursor.value === document.id;
   try {
-    await deleteKnowledgeDocument(
-      requestedProjectId,
-      document.id,
-      controller.signal,
-    );
-    if (
-      requestedEpoch !== projectEpoch ||
-      requestedProjectId !== projectId.value
-    )
-      return;
+    await deleteKnowledgeDocument(requestedProjectId, document.id, controller.signal);
+    if (requestedEpoch !== projectEpoch || requestedProjectId !== projectId.value) return;
     invalidateListRequest();
     documents.value = documents.value.filter((item) => item.id !== document.id);
     schedulePoll();
     if (details.value?.id === document.id) closeDetails();
     if (cursorDeleted) await loadDocuments(true, true);
     toast.add({
-      severity: "success",
-      summary: "Документ удалён",
+      severity: 'success',
+      summary: 'Документ удалён',
       detail: document.title,
       life: 2800,
     });
   } catch (cause) {
     if (!controller.signal.aborted && requestedEpoch === projectEpoch)
       toast.add({
-        severity: "error",
-        summary: "Не удалось удалить",
-        detail: errorMessage(cause, "Повторите попытку"),
+        severity: 'error',
+        summary: 'Не удалось удалить',
+        detail: errorMessage(cause, 'Повторите попытку'),
         life: 4500,
       });
   } finally {
@@ -810,33 +730,28 @@ async function deleteDocument(document: KnowledgeDocument) {
 }
 
 function statusLabel(status: KnowledgeDocumentStatus): string {
-  return { INDEXING: "Индексируется", READY: "Готов", FAILED: "Ошибка" }[
-    status
-  ];
+  return { INDEXING: 'Индексируется', READY: 'Готов', FAILED: 'Ошибка' }[status];
 }
 
-function statusSeverity(
-  status: KnowledgeDocumentStatus,
-): "success" | "warn" | "danger" {
-  return { INDEXING: "warn", READY: "success", FAILED: "danger" }[status] as
-    "success" | "warn" | "danger";
+function statusSeverity(status: KnowledgeDocumentStatus): 'success' | 'warn' | 'danger' {
+  return { INDEXING: 'warn', READY: 'success', FAILED: 'danger' }[status] as
+    'success' | 'warn' | 'danger';
 }
 
 function documentIcon(document: KnowledgeDocument): string {
-  if (document.sourceType === "TEXT") return "pi pi-align-left";
-  if (document.filename.toLowerCase().endsWith(".pdf")) return "pi pi-file-pdf";
-  if (/\.docx?$/.test(document.filename.toLowerCase()))
-    return "pi pi-file-word";
-  return "pi pi-file";
+  if (document.sourceType === 'TEXT') return 'pi pi-align-left';
+  if (document.filename.toLowerCase().endsWith('.pdf')) return 'pi pi-file-pdf';
+  if (/\.docx?$/.test(document.filename.toLowerCase())) return 'pi pi-file-word';
+  return 'pi pi-file';
 }
 
 function formatDate(value: string): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
-    ? "—"
-    : new Intl.DateTimeFormat("ru-RU", {
-        dateStyle: "medium",
-        timeStyle: "short",
+    ? '—'
+    : new Intl.DateTimeFormat('ru-RU', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
       }).format(date);
 }
 
@@ -863,7 +778,7 @@ watch(projectId, (next, previous) => {
   details.value = null;
   detailsVisible.value = false;
   textDialogVisible.value = false;
-  initialTextSnapshot.value = "";
+  initialTextSnapshot.value = '';
   uploadDialogVisible.value = false;
   uploadItems.value = [];
   retryingIds.value = new Set();
@@ -872,7 +787,7 @@ watch(projectId, (next, previous) => {
     void loadDocuments();
   } else {
     loading.value = false;
-    loadError.value = "Текущий проект не найден. Войдите заново.";
+    loadError.value = 'Текущий проект не найден. Войдите заново.';
   }
 });
 
@@ -901,8 +816,8 @@ onBeforeUnmount(() => {
         <div class="eyebrow">AI knowledge</div>
         <h1>База знаний</h1>
         <p class="subtitle">
-          Материалы проекта {{ auth.project?.name }}, на которые Retenive опирается
-          в текстовых и голосовых ответах.
+          Материалы проекта {{ auth.project?.name }}, на которые Retenive опирается в текстовых и
+          голосовых ответах.
         </p>
       </div>
       <div class="header-actions">
@@ -928,15 +843,10 @@ onBeforeUnmount(() => {
       :closable="false"
       class="permission-message"
     >
-      У вас доступ только для просмотра. Для загрузки, повторной индексации и
-      удаления документов требуется разрешение на изменение базы знаний.
+      У вас доступ только для просмотра. Для загрузки, повторной индексации и удаления документов
+      требуется разрешение на изменение базы знаний.
     </Message>
-    <Message
-      v-if="loadError"
-      severity="error"
-      :closable="false"
-      class="page-message"
-    >
+    <Message v-if="loadError" severity="error" :closable="false" class="page-message">
       <div class="message-row">
         <span>{{ loadError }}</span
         ><Button
@@ -955,35 +865,27 @@ onBeforeUnmount(() => {
         <div>
           <h2>Состояние базы знаний</h2>
           <p>
-            Следите за загрузкой и индексацией материалов. Документы со статусом
-            «Готово» уже участвуют в ответах Retenive.
+            Следите за загрузкой и индексацией материалов. Документы со статусом «Готово» уже
+            участвуют в ответах Retenive.
           </p>
         </div>
       </div>
       <div class="stat-grid" aria-label="Статусы документов">
         <div>
           <span>В списке</span
-          ><strong>{{
-            loadError && !documents.length ? "—" : stats.total
-          }}</strong>
+          ><strong>{{ loadError && !documents.length ? '—' : stats.total }}</strong>
         </div>
         <div class="ready">
           <span>Готово</span
-          ><strong>{{
-            loadError && !documents.length ? "—" : stats.ready
-          }}</strong>
+          ><strong>{{ loadError && !documents.length ? '—' : stats.ready }}</strong>
         </div>
         <div class="indexing">
           <span>В работе</span
-          ><strong>{{
-            loadError && !documents.length ? "—" : stats.indexing
-          }}</strong>
+          ><strong>{{ loadError && !documents.length ? '—' : stats.indexing }}</strong>
         </div>
         <div class="failed">
           <span>Ошибки</span
-          ><strong>{{
-            loadError && !documents.length ? "—" : stats.failed
-          }}</strong>
+          ><strong>{{ loadError && !documents.length ? '—' : stats.failed }}</strong>
         </div>
       </div>
     </section>
@@ -993,8 +895,7 @@ onBeforeUnmount(() => {
         <div>
           <h2 id="documents-title">Документы</h2>
           <p>
-            Статусы обновляются каждые 5 секунд. Поиск и счётчики относятся к
-            показанным документам.
+            Статусы обновляются каждые 5 секунд. Поиск и счётчики относятся к показанным документам.
           </p>
         </div>
         <div class="toolbar-actions">
@@ -1023,38 +924,20 @@ onBeforeUnmount(() => {
         </div>
       </header>
 
-      <div
-        v-if="loading"
-        class="document-skeletons"
-        aria-label="Загрузка документов"
-      >
+      <div v-if="loading" class="document-skeletons" aria-label="Загрузка документов">
         <div v-for="item in 5" :key="item" class="document-skeleton">
           <Skeleton width="2.8rem" height="2.8rem" border-radius="13px" />
-          <div>
-            <Skeleton width="13rem" /><Skeleton width="18rem" height=".7rem" />
-          </div>
+          <div><Skeleton width="13rem" /><Skeleton width="18rem" height=".7rem" /></div>
           <Skeleton width="7rem" />
         </div>
       </div>
 
-      <div
-        v-else-if="loadError && !documents.length"
-        class="empty documents-empty"
-      >
-        <span class="empty-illustration error"
-          ><i class="pi pi-cloud-off"
-        /></span>
+      <div v-else-if="loadError && !documents.length" class="empty documents-empty">
+        <span class="empty-illustration error"><i class="pi pi-cloud-off" /></span>
         <h3>Документы пока недоступны</h3>
-        <p>
-          Не удалось определить, есть ли материалы в проекте. Повторите загрузку
-          списка.
-        </p>
+        <p>Не удалось определить, есть ли материалы в проекте. Повторите загрузку списка.</p>
         <div class="empty-actions">
-          <Button
-            label="Повторить"
-            icon="pi pi-refresh"
-            @click="loadDocuments()"
-          />
+          <Button label="Повторить" icon="pi pi-refresh" @click="loadDocuments()" />
         </div>
       </div>
 
@@ -1071,22 +954,16 @@ onBeforeUnmount(() => {
             :aria-label="`Открыть ${document.title}`"
             @click="openDetails(document)"
           >
-            <span class="document-icon"
-              ><i :class="documentIcon(document)"
-            /></span>
+            <span class="document-icon"><i :class="documentIcon(document)" /></span>
             <span class="document-copy">
               <span class="document-title">{{ document.title }}</span>
               <span class="document-meta">
                 <span>{{ document.filename }}</span
-                ><span>·</span
-                ><span>{{ formatKnowledgeSize(document.sizeBytes) }}</span
+                ><span>·</span><span>{{ formatKnowledgeSize(document.sizeBytes) }}</span
                 ><span>·</span><span>{{ formatDate(document.createdAt) }}</span>
               </span>
-              <span
-                v-if="document.status === 'FAILED' && document.error"
-                class="document-error"
-                ><i class="pi pi-exclamation-circle" />
-                {{ document.error }}</span
+              <span v-if="document.status === 'FAILED' && document.error" class="document-error"
+                ><i class="pi pi-exclamation-circle" /> {{ document.error }}</span
               >
             </span>
           </button>
@@ -1094,9 +971,7 @@ onBeforeUnmount(() => {
             <span v-if="document.locale" class="meta-chip">{{
               document.locale.toUpperCase()
             }}</span>
-            <span v-if="document.category" class="meta-chip category">{{
-              document.category
-            }}</span>
+            <span v-if="document.category" class="meta-chip category">{{ document.category }}</span>
           </div>
           <Tag
             :value="statusLabel(document.status)"
@@ -1141,15 +1016,13 @@ onBeforeUnmount(() => {
           ><i :class="documents.length ? 'pi pi-search' : 'pi pi-book'"
         /></span>
         <h3>
-          {{
-            documents.length ? "Ничего не найдено" : "Добавьте первый материал"
-          }}
+          {{ documents.length ? 'Ничего не найдено' : 'Добавьте первый материал' }}
         </h3>
         <p>
           {{
             documents.length
-              ? "Измените запрос или фильтр статуса."
-              : "Загрузите файлы или добавьте структурированный текст, чтобы Retenive отвечала точнее."
+              ? 'Измените запрос или фильтр статуса.'
+              : 'Загрузите файлы или добавьте структурированный текст, чтобы Retenive отвечала точнее.'
           }}
         </p>
         <div v-if="!documents.length && canManage" class="empty-actions">
@@ -1158,11 +1031,7 @@ onBeforeUnmount(() => {
             icon="pi pi-pencil"
             severity="secondary"
             @click="openCreateText"
-          /><Button
-            label="Выбрать файлы"
-            icon="pi pi-upload"
-            @click="openUploadDialog"
-          />
+          /><Button label="Выбрать файлы" icon="pi pi-upload" @click="openUploadDialog" />
         </div>
       </div>
 
@@ -1180,13 +1049,9 @@ onBeforeUnmount(() => {
     <aside class="privacy-note">
       <i class="pi pi-shield" />
       <p>
-        <strong
-          >Не загружайте секреты и персональные данные без
-          необходимости.</strong
-        >
-        Файлы хранятся в xAI Files и Collections до удаления документа. Для
-        балансов, заказов и другой изменяемой информации нужны backend tools, а
-        не база знаний.
+        <strong>Не загружайте секреты и персональные данные без необходимости.</strong>
+        Файлы хранятся в xAI Files и Collections до удаления документа. Для балансов, заказов и
+        другой изменяемой информации нужны backend tools, а не база знаний.
       </p>
     </aside>
 
@@ -1200,8 +1065,8 @@ onBeforeUnmount(() => {
     >
       <div class="dialog-stack">
         <Message severity="info" size="small" :closable="false"
-          >Можно выбрать несколько файлов. Они отправятся по одному: backend
-          принимает один файл в каждом запросе.</Message
+          >Можно выбрать несколько файлов. Они отправятся по одному: backend принимает один файл в
+          каждом запросе.</Message
         >
         <button
           type="button"
@@ -1218,8 +1083,8 @@ onBeforeUnmount(() => {
           <strong>Перетащите файлы сюда</strong>
           <span>или нажмите, чтобы выбрать · до 25 МБ каждый</span>
           <small
-            >PDF, DOC, DOCX, PPTX, TXT, MD, HTML, JSON и исходный код. CSV и
-            Excel пока не поддерживаются.</small
+            >PDF, DOC, DOCX, PPTX, TXT, MD, HTML, JSON и исходный код. CSV и Excel пока не
+            поддерживаются.</small
           >
         </button>
         <input
@@ -1252,8 +1117,7 @@ onBeforeUnmount(() => {
               />
             </div>
             <span v-if="item.status === 'DONE'" class="upload-result success"
-              ><i class="pi pi-check" />
-              {{ item.duplicate ? "Уже есть" : "Принят" }}</span
+              ><i class="pi pi-check" /> {{ item.duplicate ? 'Уже есть' : 'Принят' }}</span
             >
             <span
               v-else-if="item.status === 'ERROR'"
@@ -1261,15 +1125,9 @@ onBeforeUnmount(() => {
               :title="item.error"
               ><i class="pi pi-times" /> {{ item.error }}</span
             >
-            <span
-              v-else-if="item.status === 'UPLOADING'"
-              class="upload-result"
-              >{{
-                item.progress >= 100
-                  ? "Передаётся провайдеру"
-                  : `${item.progress}%`
-              }}</span
-            >
+            <span v-else-if="item.status === 'UPLOADING'" class="upload-result">{{
+              item.progress >= 100 ? 'Передаётся провайдеру' : `${item.progress}%`
+            }}</span>
             <Button
               v-if="item.status === 'ERROR' && !item.clientRejected"
               icon="pi pi-refresh"
@@ -1326,9 +1184,8 @@ onBeforeUnmount(() => {
           >{{ uploadError }}</Message
         >
         <p class="format-note">
-          Backend дополнительно проверит расширение, MIME-тип и сигнатуру
-          содержимого. Переименование опасного файла не позволит обойти
-          проверку.
+          Backend дополнительно проверит расширение, MIME-тип и сигнатуру содержимого.
+          Переименование опасного файла не позволит обойти проверку.
         </p>
       </div>
       <template #footer>
@@ -1360,26 +1217,15 @@ onBeforeUnmount(() => {
     <Dialog
       :visible="textDialogVisible"
       modal
-      :header="
-        textMode === 'VERSION' ? 'Обновлённая копия текста' : 'Добавить текст'
-      "
+      :header="textMode === 'VERSION' ? 'Обновлённая копия текста' : 'Добавить текст'"
       :closable="!savingText"
       :style="{ width: 'min(780px, calc(100vw - 28px))' }"
       @update:visible="requestTextDialog"
     >
-      <form
-        id="knowledge-text-form"
-        class="dialog-stack"
-        @submit.prevent="saveText"
-      >
-        <Message
-          v-if="textMode === 'VERSION'"
-          severity="warn"
-          size="small"
-          :closable="false"
-          >Backend пока не связывает версии: будет создана отдельная обновлённая
-          копия. Удаляйте исходник только после того, как копия получит статус
-          «Готов».</Message
+      <form id="knowledge-text-form" class="dialog-stack" @submit.prevent="saveText">
+        <Message v-if="textMode === 'VERSION'" severity="warn" size="small" :closable="false"
+          >Backend пока не связывает версии: будет создана отдельная обновлённая копия. Удаляйте
+          исходник только после того, как копия получит статус «Готов».</Message
         >
         <div class="field">
           <label for="text-title">Название</label
@@ -1401,10 +1247,8 @@ onBeforeUnmount(() => {
             placeholder="Используйте понятные заголовки, списки и короткие абзацы…"
             :disabled="savingText"
           /><small
-            >{{ new Intl.NumberFormat("ru-RU").format(textContent.length) }} /
-            {{
-              new Intl.NumberFormat("ru-RU").format(MAX_KNOWLEDGE_TEXT_LENGTH)
-            }}</small
+            >{{ new Intl.NumberFormat('ru-RU').format(textContent.length) }} /
+            {{ new Intl.NumberFormat('ru-RU').format(MAX_KNOWLEDGE_TEXT_LENGTH) }}</small
           >
         </div>
         <div class="metadata-grid">
@@ -1450,11 +1294,7 @@ onBeforeUnmount(() => {
           @click="requestTextDialog(false)" /><Button
           form="knowledge-text-form"
           type="submit"
-          :label="
-            textMode === 'VERSION'
-              ? 'Создать обновлённую копию'
-              : 'Добавить текст'
-          "
+          :label="textMode === 'VERSION' ? 'Создать обновлённую копию' : 'Добавить текст'"
           icon="pi pi-check"
           :loading="savingText"
       /></template>
@@ -1468,18 +1308,14 @@ onBeforeUnmount(() => {
       @update:visible="(value) => (value ? undefined : closeDetails())"
     >
       <div v-if="detailsLoading" class="details-skeleton">
-        <Skeleton width="55%" height="1.5rem" /><Skeleton
-          width="35%"
-        /><Skeleton height="16rem" />
+        <Skeleton width="55%" height="1.5rem" /><Skeleton width="35%" /><Skeleton height="16rem" />
       </div>
       <Message v-else-if="detailsError" severity="error" :closable="false">{{
         detailsError
       }}</Message>
       <div v-else-if="details" class="details-content">
         <div class="details-heading">
-          <span class="document-icon large"
-            ><i :class="documentIcon(details)"
-          /></span>
+          <span class="document-icon large"><i :class="documentIcon(details)" /></span>
           <div>
             <h2>{{ details.title }}</h2>
             <p>{{ details.filename }}</p>
@@ -1494,11 +1330,7 @@ onBeforeUnmount(() => {
           <div>
             <dt>Тип</dt>
             <dd>
-              {{
-                details.sourceType === "TEXT"
-                  ? "Текст из CMS"
-                  : details.mimeType
-              }}
+              {{ details.sourceType === 'TEXT' ? 'Текст из CMS' : details.mimeType }}
             </dd>
           </div>
           <div>
@@ -1507,11 +1339,11 @@ onBeforeUnmount(() => {
           </div>
           <div>
             <dt>Язык</dt>
-            <dd>{{ details.locale?.toUpperCase() ?? "Не указан" }}</dd>
+            <dd>{{ details.locale?.toUpperCase() ?? 'Не указан' }}</dd>
           </div>
           <div>
             <dt>Категория</dt>
-            <dd>{{ details.category ?? "Не указана" }}</dd>
+            <dd>{{ details.category ?? 'Не указана' }}</dd>
           </div>
           <div>
             <dt>Создан</dt>
@@ -1522,23 +1354,16 @@ onBeforeUnmount(() => {
             <dd>{{ formatDate(details.updatedAt) }}</dd>
           </div>
         </dl>
-        <Message
-          v-if="details.status === 'FAILED'"
-          severity="error"
-          :closable="false"
-          ><strong>{{ details.errorCode ?? "Ошибка индексации" }}</strong
-          ><br />{{
-            details.error ?? "Провайдер не смог обработать документ."
-          }}</Message
+        <Message v-if="details.status === 'FAILED'" severity="error" :closable="false"
+          ><strong>{{ details.errorCode ?? 'Ошибка индексации' }}</strong
+          ><br />{{ details.error ?? 'Провайдер не смог обработать документ.' }}</Message
         >
         <section v-if="details.sourceType === 'TEXT'" class="text-preview">
           <header>
             <strong>Содержимое</strong
             ><span
               >{{
-                new Intl.NumberFormat("ru-RU").format(
-                  details.contentText?.length ?? 0,
-                )
+                new Intl.NumberFormat('ru-RU').format(details.contentText?.length ?? 0)
               }}
               символов</span
             >
@@ -1546,17 +1371,12 @@ onBeforeUnmount(() => {
           <pre>{{ details.contentText }}</pre>
         </section>
         <Message v-else severity="secondary" size="small" :closable="false"
-          >Backend хранит и показывает только метаданные файла. Скачивание
-          оригинала не предусмотрено контрактом API.</Message
+          >Backend хранит и показывает только метаданные файла. Скачивание оригинала не
+          предусмотрено контрактом API.</Message
         >
       </div>
       <template #footer>
-        <Button
-          label="Закрыть"
-          severity="secondary"
-          text
-          @click="closeDetails"
-        />
+        <Button label="Закрыть" severity="secondary" text @click="closeDetails" />
         <Button
           v-if="canManage && details?.sourceType === 'TEXT'"
           label="Создать обновлённую копию"
@@ -1622,7 +1442,7 @@ onBeforeUnmount(() => {
   position: relative;
 }
 .knowledge-hero::after {
-  content: "";
+  content: '';
   position: absolute;
   width: 260px;
   height: 260px;

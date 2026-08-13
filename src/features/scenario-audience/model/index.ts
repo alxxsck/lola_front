@@ -6,7 +6,7 @@ export {
   mapAudienceIssues,
   serializeAudienceDraft,
   summarizeAudience,
-} from './audience-domain'
+} from './audience-domain';
 export type {
   AudienceCommand,
   AudienceCommandResult,
@@ -26,4 +26,4 @@ export type {
   AudienceSerializationResult,
   AudienceSummary,
   MappedAudienceIssue,
-} from './audience-types'
+} from './audience-types';

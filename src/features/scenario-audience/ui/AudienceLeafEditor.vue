@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 import type {
   AudienceAttributeResponseDto,
   AudienceAttributeV2ResponseDto,
   SegmentSummaryResponseDto,
-} from "@/shared/api/repository/scenario-authoring";
+} from '@/shared/api/repository/scenario-authoring';
 import type {
   AudienceDomainContext,
   AudienceLeafDraftNode,
   AudienceLeafInput,
   AudienceLeafKind,
   AudienceLiteral,
-} from "../model";
+} from '../model';
 
 const props = defineProps<{
   kind: AudienceLeafKind;
@@ -34,62 +34,51 @@ interface Buffer {
   segmentId: string;
 }
 
-function cloneLiteral(
-  value: AudienceLiteral | undefined,
-): AudienceLiteral | undefined {
-  return value === undefined
-    ? undefined
-    : (JSON.parse(JSON.stringify(value)) as AudienceLiteral);
+function cloneLiteral(value: AudienceLiteral | undefined): AudienceLiteral | undefined {
+  return value === undefined ? undefined : (JSON.parse(JSON.stringify(value)) as AudienceLiteral);
 }
 
 function initialBuffer(): Buffer {
   const node = props.node;
-  if (node?.kind === "userAttribute")
+  if (node?.kind === 'userAttribute')
     return {
       kind: node.kind,
       operator: node.operator,
       value: cloneLiteral(node.value),
       definitionId: node.definitionId,
-      segmentId: "",
+      segmentId: '',
     };
-  if (node?.kind === "segmentMembership")
+  if (node?.kind === 'segmentMembership')
     return {
       kind: node.kind,
       operator: node.operator,
       value: undefined,
-      definitionId: "",
+      definitionId: '',
       segmentId: node.segmentId,
     };
-  if (
-    node &&
-    (node.kind === "locale" ||
-      node.kind === "language" ||
-      node.kind === "country")
-  )
+  if (node && (node.kind === 'locale' || node.kind === 'language' || node.kind === 'country'))
     return {
       kind: node.kind,
       operator: node.operator,
       value: cloneLiteral(node.value),
-      definitionId: "",
-      segmentId: "",
+      definitionId: '',
+      segmentId: '',
     };
   return {
     kind: props.kind,
-    operator: props.kind === "segmentMembership" ? "is_member" : "eq",
+    operator: props.kind === 'segmentMembership' ? 'is_member' : 'eq',
     value: undefined,
-    definitionId: "",
-    segmentId: "",
+    definitionId: '',
+    segmentId: '',
   };
 }
 
 const buffer = reactive<Buffer>(initialBuffer());
 const baseline = JSON.stringify(buffer);
-const segmentQuery = ref("");
-const segmentOptions = ref<SegmentSummaryResponseDto[]>([
-  ...props.context.segments,
-]);
+const segmentQuery = ref('');
+const segmentOptions = ref<SegmentSummaryResponseDto[]>([...props.context.segments]);
 const segmentLoading = ref(false);
-const segmentError = ref("");
+const segmentError = ref('');
 const dialog = ref<HTMLElement | null>(null);
 const selectedAttribute = computed(() =>
   props.context.catalog.attributes.find(
@@ -98,14 +87,13 @@ const selectedAttribute = computed(() =>
 );
 const selectedSegment = computed(() =>
   [...props.context.segments, ...segmentOptions.value].find(
-    (segment) =>
-      segment.segmentId === buffer.segmentId && segment.status === "ACTIVE",
+    (segment) => segment.segmentId === buffer.segmentId && segment.status === 'ACTIVE',
   ),
 );
 const localeOptions = computed(() =>
   props.context.catalog.version !== 1
     ? []
-    : buffer.kind === "language"
+    : buffer.kind === 'language'
       ? [
           ...new Map(
             props.context.catalog.locales.map((locale) => [
@@ -120,57 +108,39 @@ const localeOptions = computed(() =>
         })),
 );
 const operators = computed(() => {
-  if (buffer.kind === "locale")
-    return props.context.catalog.version === 1
-      ? props.context.catalog.localeSource.operators
-      : [];
-  if (buffer.kind === "language")
+  if (buffer.kind === 'locale')
+    return props.context.catalog.version === 1 ? props.context.catalog.localeSource.operators : [];
+  if (buffer.kind === 'language')
     return props.context.catalog.version === 1
       ? props.context.catalog.languageSource.operators
       : [];
-  if (buffer.kind === "country")
-    return props.context.catalog.version === 1
-      ? props.context.catalog.country.operators
-      : [];
-  if (buffer.kind === "userAttribute")
-    return selectedAttribute.value?.operators ?? [];
+  if (buffer.kind === 'country')
+    return props.context.catalog.version === 1 ? props.context.catalog.country.operators : [];
+  if (buffer.kind === 'userAttribute') return selectedAttribute.value?.operators ?? [];
   return props.context.catalog.segmentSource.operators;
 });
 const needsValue = computed(
   () =>
-    ![
-      "exists",
-      "not_exists",
-      "is_missing",
-      "is_stale",
-      "is_member",
-      "is_not_member",
-    ].includes(buffer.operator),
+    !['exists', 'not_exists', 'is_missing', 'is_stale', 'is_member', 'is_not_member'].includes(
+      buffer.operator,
+    ),
 );
-const isListOperator = (operator: string) =>
-  operator === "in" || operator === "not_in";
+const isListOperator = (operator: string) => operator === 'in' || operator === 'not_in';
 const valueIsValid = computed(
   () =>
     !needsValue.value ||
     (isListOperator(buffer.operator)
       ? Array.isArray(buffer.value) && buffer.value.length > 0
-      : !Array.isArray(buffer.value) &&
-        buffer.value !== undefined &&
-        buffer.value !== ""),
+      : !Array.isArray(buffer.value) && buffer.value !== undefined && buffer.value !== ''),
 );
 const canApply = computed(() => {
-  if (
-    !operators.value.includes(buffer.operator as never) ||
-    !valueIsValid.value
-  )
-    return false;
-  if (buffer.kind === "userAttribute") return Boolean(selectedAttribute.value);
-  if (buffer.kind === "segmentMembership")
-    return Boolean(selectedSegment.value?.currentRevision);
+  if (!operators.value.includes(buffer.operator as never) || !valueIsValid.value) return false;
+  if (buffer.kind === 'userAttribute') return Boolean(selectedAttribute.value);
+  if (buffer.kind === 'segmentMembership') return Boolean(selectedSegment.value?.currentRevision);
   return true;
 });
 
-watch(buffer, () => emit("dirtyChange", JSON.stringify(buffer) !== baseline), {
+watch(buffer, () => emit('dirtyChange', JSON.stringify(buffer) !== baseline), {
   deep: true,
 });
 watch(
@@ -179,21 +149,18 @@ watch(
     const attribute = selectedAttribute.value;
     if (!attribute) return;
     if (!attribute.operators.includes(buffer.operator))
-      buffer.operator = attribute.operators[0] ?? "eq";
+      buffer.operator = attribute.operators[0] ?? 'eq';
     buffer.value = undefined;
   },
 );
 watch(
   () => buffer.operator,
   (operator) => {
-    if (["exists", "not_exists", "is_missing", "is_stale"].includes(operator))
+    if (['exists', 'not_exists', 'is_missing', 'is_stale'].includes(operator))
       buffer.value = undefined;
     else if (isListOperator(operator)) {
       if (!Array.isArray(buffer.value))
-        buffer.value =
-          buffer.value === undefined || buffer.value === ""
-            ? []
-            : [buffer.value];
+        buffer.value = buffer.value === undefined || buffer.value === '' ? [] : [buffer.value];
     } else if (Array.isArray(buffer.value)) buffer.value = buffer.value[0];
   },
 );
@@ -202,15 +169,15 @@ onMounted(
   () =>
     void nextTick(() => {
       const selector =
-        props.activeIssue?.fieldPath === "definitionId"
+        props.activeIssue?.fieldPath === 'definitionId'
           ? '[aria-label="Поле профиля пользователя"]'
-          : props.activeIssue?.fieldPath === "segmentId"
+          : props.activeIssue?.fieldPath === 'segmentId'
             ? '[aria-label="Сегмент аудитории"]'
-            : props.activeIssue?.fieldPath === "operator"
+            : props.activeIssue?.fieldPath === 'operator'
               ? 'select[aria-label^="Оператор"], select[aria-label^="Проверка"]'
-              : props.activeIssue?.fieldPath === "value"
+              : props.activeIssue?.fieldPath === 'value'
                 ? '[aria-label^="Значение"], [aria-label^="Код страны"]'
-                : "select, input, button";
+                : 'select, input, button';
       dialog.value?.querySelector<HTMLElement>(selector)?.focus();
     }),
 );
@@ -233,27 +200,26 @@ function trapFocus(event: KeyboardEvent) {
   }
 }
 
-type AudienceAttribute =
-  AudienceAttributeResponseDto | AudienceAttributeV2ResponseDto;
+type AudienceAttribute = AudienceAttributeResponseDto | AudienceAttributeV2ResponseDto;
 
 function attributeValue(value: string, attribute: AudienceAttribute) {
-  const multiple = buffer.operator === "in" || buffer.operator === "not_in";
+  const multiple = buffer.operator === 'in' || buffer.operator === 'not_in';
   const values = multiple
     ? value
-        .split(",")
+        .split(',')
         .map((item) => item.trim())
         .filter(Boolean)
     : [value];
   const converted = values.map((item) =>
-    attribute.valueType === "number" ||
-    attribute.valueType === "INTEGER" ||
-    attribute.valueType === "LEGACY_NUMBER"
+    attribute.valueType === 'number' ||
+    attribute.valueType === 'INTEGER' ||
+    attribute.valueType === 'LEGACY_NUMBER'
       ? Number(item)
-      : attribute.valueType === "boolean" || attribute.valueType === "BOOLEAN"
-        ? item === "true"
+      : attribute.valueType === 'boolean' || attribute.valueType === 'BOOLEAN'
+        ? item === 'true'
         : item,
   );
-  buffer.value = multiple ? converted : value === "" ? undefined : converted[0];
+  buffer.value = multiple ? converted : value === '' ? undefined : converted[0];
 }
 
 function selectedValues(event: Event, attribute?: AudienceAttribute) {
@@ -267,14 +233,12 @@ function selectedValues(event: Event, attribute?: AudienceAttribute) {
   }
   buffer.value = selected.map(
     (value) =>
-      attribute.allowedValues?.find(
-        (candidate) => String(candidate) === value,
-      ) ??
-      (attribute.valueType === "boolean" || attribute.valueType === "BOOLEAN"
-        ? value === "true"
-        : attribute.valueType === "number" ||
-            attribute.valueType === "INTEGER" ||
-            attribute.valueType === "LEGACY_NUMBER"
+      attribute.allowedValues?.find((candidate) => String(candidate) === value) ??
+      (attribute.valueType === 'boolean' || attribute.valueType === 'BOOLEAN'
+        ? value === 'true'
+        : attribute.valueType === 'number' ||
+            attribute.valueType === 'INTEGER' ||
+            attribute.valueType === 'LEGACY_NUMBER'
           ? Number(value)
           : value),
   );
@@ -283,9 +247,9 @@ function selectedValues(event: Event, attribute?: AudienceAttribute) {
 function countryValue(value: string) {
   const upper = value.toUpperCase();
   buffer.value =
-    buffer.operator === "in"
+    buffer.operator === 'in'
       ? upper
-          .split(",")
+          .split(',')
           .map((item) => item.trim())
           .filter(Boolean)
       : upper;
@@ -294,12 +258,11 @@ function countryValue(value: string) {
 async function searchSegments() {
   if (!props.segmentSearch) return;
   segmentLoading.value = true;
-  segmentError.value = "";
+  segmentError.value = '';
   try {
     segmentOptions.value = await props.segmentSearch(segmentQuery.value.trim());
   } catch (cause) {
-    segmentError.value =
-      cause instanceof Error ? cause.message : "Не удалось найти сегменты";
+    segmentError.value = cause instanceof Error ? cause.message : 'Не удалось найти сегменты';
   } finally {
     segmentLoading.value = false;
   }
@@ -307,55 +270,47 @@ async function searchSegments() {
 
 function apply() {
   if (!canApply.value) return;
-  if (buffer.kind === "segmentMembership") {
+  if (buffer.kind === 'segmentMembership') {
     const revision = selectedSegment.value?.currentRevision;
     if (!revision) return;
-    emit("apply", {
-      kind: "segmentMembership",
+    emit('apply', {
+      kind: 'segmentMembership',
       segmentId: buffer.segmentId,
       segmentRevisionId: revision.segmentRevisionId,
-      operator: buffer.operator as "is_member" | "is_not_member",
+      operator: buffer.operator as 'is_member' | 'is_not_member',
     });
     return;
   }
-  if (buffer.kind === "userAttribute") {
-    emit("apply", {
-      kind: "userAttribute",
+  if (buffer.kind === 'userAttribute') {
+    emit('apply', {
+      kind: 'userAttribute',
       definitionId: buffer.definitionId,
       operator: buffer.operator as never,
       ...(needsValue.value ? { value: cloneLiteral(buffer.value) } : {}),
     });
     return;
   }
-  emit("apply", {
+  emit('apply', {
     kind: buffer.kind,
     operator: buffer.operator as never,
-    ...(needsValue.value
-      ? { value: cloneLiteral(buffer.value) as string | string[] }
-      : {}),
+    ...(needsValue.value ? { value: cloneLiteral(buffer.value) as string | string[] } : {}),
   } as AudienceLeafInput);
 }
 
 function segmentLabel(segment: SegmentSummaryResponseDto) {
-  return `${segment.name} · v${segment.currentRevision?.revision ?? "—"}`;
+  return `${segment.name} · v${segment.currentRevision?.revision ?? '—'}`;
 }
 
 function isSensitive(attribute: AudienceAttribute | undefined) {
   return Boolean(
     attribute &&
-    ("sensitive" in attribute
-      ? attribute.sensitive
-      : attribute.classification === "SENSITIVE"),
+    ('sensitive' in attribute ? attribute.sensitive : attribute.classification === 'SENSITIVE'),
   );
 }
 </script>
 
 <template>
-  <div
-    class="leaf-backdrop"
-    role="presentation"
-    @mousedown.self="emit('close')"
-  >
+  <div class="leaf-backdrop" role="presentation" @mousedown.self="emit('close')">
     <aside
       ref="dialog"
       class="leaf-editor"
@@ -371,11 +326,11 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
           <h3 id="audience-leaf-title">
             {{
               {
-                locale: "Регион и язык",
-                language: "Язык",
-                country: "Страна",
-                userAttribute: "Данные пользователя",
-                segmentMembership: "Сегмент",
+                locale: 'Регион и язык',
+                language: 'Язык',
+                country: 'Страна',
+                userAttribute: 'Данные пользователя',
+                segmentMembership: 'Сегмент',
               }[kind]
             }}
           </h3>
@@ -391,19 +346,14 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
       </header>
       <p class="intro">
         {{
-          kind === "userAttribute"
-            ? "При запуске сценария Retenive проверит последнее сохранённое значение выбранного поля."
-            : kind === "segmentMembership"
-              ? "При запуске сценария Retenive проверит, входит ли пользователь в выбранный сегмент."
-              : "При запуске сценария Retenive проверит выбранные данные пользователя."
+          kind === 'userAttribute'
+            ? 'При запуске сценария Retenive проверит последнее сохранённое значение выбранного поля.'
+            : kind === 'segmentMembership'
+              ? 'При запуске сценария Retenive проверит, входит ли пользователь в выбранный сегмент.'
+              : 'При запуске сценария Retenive проверит выбранные данные пользователя.'
         }}
       </p>
-      <div
-        v-if="activeIssue"
-        id="audience-active-issue"
-        class="active-issue"
-        role="alert"
-      >
+      <div v-if="activeIssue" id="audience-active-issue" class="active-issue" role="alert">
         <i class="pi pi-exclamation-circle" /> {{ activeIssue.message }}
       </div>
 
@@ -423,14 +373,12 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
           >
             {{ attribute.label
             }}{{
-              attribute.authoringAvailability !== "AVAILABLE"
-                ? " · нельзя использовать в новых условиях"
-                : ""
+              attribute.authoringAvailability !== 'AVAILABLE'
+                ? ' · нельзя использовать в новых условиях'
+                : ''
             }}
           </option></select
-        ><small v-if="selectedAttribute?.description">{{
-          selectedAttribute.description
-        }}</small
+        ><small v-if="selectedAttribute?.description">{{ selectedAttribute.description }}</small
         ><small
           v-if="
             selectedAttribute &&
@@ -439,28 +387,22 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
           "
           class="field-error"
           >Это поле больше не поддерживается. Выберите
-          {{ selectedAttribute.replacement?.label ?? "другое поле" }}.</small
+          {{ selectedAttribute.replacement?.label ?? 'другое поле' }}.</small
         ></label
       >
       <div v-if="kind === 'segmentMembership'" class="field">
         <span>Сегмент</span>
-        <form
-          v-if="segmentSearch"
-          class="segment-search"
-          @submit.prevent="searchSegments"
-        >
+        <form v-if="segmentSearch" class="segment-search" @submit.prevent="searchSegments">
           <input
             v-model="segmentQuery"
             aria-label="Поиск сегмента аудитории"
             maxlength="128"
             placeholder="Название или ключ"
           /><button type="submit" :disabled="segmentLoading">
-            {{ segmentLoading ? "Ищем…" : "Найти" }}
+            {{ segmentLoading ? 'Ищем…' : 'Найти' }}
           </button>
         </form>
-        <small v-if="segmentError" class="field-error" role="alert">{{
-          segmentError
-        }}</small
+        <small v-if="segmentError" class="field-error" role="alert">{{ segmentError }}</small
         ><select
           v-model="buffer.segmentId"
           aria-label="Сегмент аудитории"
@@ -477,9 +419,8 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
             {{ segmentLabel(segment) }}
           </option></select
         ><small v-if="selectedSegment?.currentRevision"
-          >Сценарий сохранит версию
-          {{ selectedSegment.currentRevision.revision }}. Новые версии сегмента
-          не изменят уже опубликованный сценарий.</small
+          >Сценарий сохранит версию {{ selectedSegment.currentRevision.revision }}. Новые версии
+          сегмента не изменят уже опубликованный сценарий.</small
         >
       </div>
 
@@ -498,37 +439,31 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
           "
           :aria-invalid="activeIssue?.fieldPath === 'operator'"
         >
-          <option
-            v-for="operator in operators"
-            :key="operator"
-            :value="operator"
-          >
+          <option v-for="operator in operators" :key="operator" :value="operator">
             {{
               {
-                eq: "Равно",
-                neq: "Не равно",
-                gt: "Больше",
-                gte: "Не меньше",
-                lt: "Меньше",
-                lte: "Не больше",
-                in: "Одно из",
-                not_in: "Не входит в список",
-                exists: "Заполнено",
-                not_exists: "Не заполнено",
-                is_missing: "Отсутствует",
-                is_stale: "Устарело",
-                is_member: "Входит в сегмент",
-                is_not_member: "Не входит в сегмент",
+                eq: 'Равно',
+                neq: 'Не равно',
+                gt: 'Больше',
+                gte: 'Не меньше',
+                lt: 'Меньше',
+                lte: 'Не больше',
+                in: 'Одно из',
+                not_in: 'Не входит в список',
+                exists: 'Заполнено',
+                not_exists: 'Не заполнено',
+                is_missing: 'Отсутствует',
+                is_stale: 'Устарело',
+                is_member: 'Входит в сегмент',
+                is_not_member: 'Не входит в сегмент',
               }[operator] ?? operator
             }}
           </option>
         </select></label
       >
 
-      <label
-        v-if="needsValue && (kind === 'locale' || kind === 'language')"
-        class="field"
-        ><span>{{ buffer.operator === "in" ? "Значения" : "Значение" }}</span
+      <label v-if="needsValue && (kind === 'locale' || kind === 'language')" class="field"
+        ><span>{{ buffer.operator === 'in' ? 'Значения' : 'Значение' }}</span
         ><select
           v-if="buffer.operator === 'in'"
           multiple
@@ -540,9 +475,7 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
             v-for="option in localeOptions"
             :key="option.value"
             :value="option.value"
-            :selected="
-              Array.isArray(buffer.value) && buffer.value.includes(option.value)
-            "
+            :selected="Array.isArray(buffer.value) && buffer.value.includes(option.value)"
           >
             {{ option.label }}
           </option></select
@@ -552,39 +485,25 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
           :aria-label="`Значение ${kind === 'language' ? 'языка' : 'региона и языка'}`"
           :aria-invalid="activeIssue?.fieldPath === 'value'"
           :aria-describedby="
-            activeIssue?.fieldPath === 'value'
-              ? 'audience-active-issue'
-              : undefined
+            activeIssue?.fieldPath === 'value' ? 'audience-active-issue' : undefined
           "
         >
           <option :value="undefined">Выберите значение</option>
-          <option
-            v-for="option in localeOptions"
-            :key="option.value"
-            :value="option.value"
-          >
+          <option v-for="option in localeOptions" :key="option.value" :value="option.value">
             {{ option.label }}
           </option></select
-        ><small v-if="buffer.operator === 'in'"
-          >Можно выбрать несколько значений.</small
-        ></label
+        ><small v-if="buffer.operator === 'in'">Можно выбрать несколько значений.</small></label
       >
       <label v-if="needsValue && kind === 'country'" class="field"
-        ><span>{{ buffer.operator === "in" ? "Страны" : "Страна" }}</span
+        ><span>{{ buffer.operator === 'in' ? 'Страны' : 'Страна' }}</span
         ><input
-          :value="
-            Array.isArray(buffer.value) ? buffer.value.join(', ') : buffer.value
-          "
+          :value="Array.isArray(buffer.value) ? buffer.value.join(', ') : buffer.value"
           :maxlength="buffer.operator === 'in' ? 256 : 2"
-          :aria-label="
-            buffer.operator === 'in' ? 'Коды стран' : 'Код страны'
-          "
+          :aria-label="buffer.operator === 'in' ? 'Коды стран' : 'Код страны'"
           :placeholder="buffer.operator === 'in' ? 'ES, PT' : 'ES'"
           :aria-invalid="activeIssue?.fieldPath === 'value'"
           :aria-describedby="
-            activeIssue?.fieldPath === 'value'
-              ? 'audience-active-issue'
-              : 'country-help'
+            activeIssue?.fieldPath === 'value' ? 'audience-active-issue' : 'country-help'
           "
           @input="countryValue(($event.target as HTMLInputElement).value)"
         /><small id="country-help"
@@ -595,13 +514,9 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
           >.</small
         ></label
       >
-      <label
-        v-if="needsValue && kind === 'userAttribute' && selectedAttribute"
-        class="field"
+      <label v-if="needsValue && kind === 'userAttribute' && selectedAttribute" class="field"
         ><span>{{
-          buffer.operator === "in" || buffer.operator === "not_in"
-            ? "Значения"
-            : "Значение"
+          buffer.operator === 'in' || buffer.operator === 'not_in' ? 'Значения' : 'Значение'
         }}</span
         ><select
           v-if="
@@ -616,9 +531,7 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
             v-for="value in selectedAttribute.allowedValues"
             :key="String(value)"
             :value="String(value)"
-            :selected="
-              Array.isArray(buffer.value) && buffer.value.includes(value)
-            "
+            :selected="Array.isArray(buffer.value) && buffer.value.includes(value)"
           >
             {{ value }}
           </option></select
@@ -626,12 +539,7 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
           v-else-if="selectedAttribute.allowedValues?.length"
           :value="buffer.value"
           :aria-label="`Значение поля ${selectedAttribute.label}`"
-          @change="
-            attributeValue(
-              ($event.target as HTMLSelectElement).value,
-              selectedAttribute,
-            )
-          "
+          @change="attributeValue(($event.target as HTMLSelectElement).value, selectedAttribute)"
         >
           <option value="">Выберите значение</option>
           <option
@@ -653,33 +561,23 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
         >
           <option
             value="true"
-            :selected="
-              Array.isArray(buffer.value) && buffer.value.includes(true)
-            "
+            :selected="Array.isArray(buffer.value) && buffer.value.includes(true)"
           >
             Да
           </option>
           <option
             value="false"
-            :selected="
-              Array.isArray(buffer.value) && buffer.value.includes(false)
-            "
+            :selected="Array.isArray(buffer.value) && buffer.value.includes(false)"
           >
             Нет
           </option></select
         ><select
           v-else-if="
-            selectedAttribute.valueType === 'boolean' ||
-            selectedAttribute.valueType === 'BOOLEAN'
+            selectedAttribute.valueType === 'boolean' || selectedAttribute.valueType === 'BOOLEAN'
           "
           :value="buffer.value === undefined ? '' : String(buffer.value)"
           :aria-label="`Значение поля ${selectedAttribute.label}`"
-          @change="
-            attributeValue(
-              ($event.target as HTMLSelectElement).value,
-              selectedAttribute,
-            )
-          "
+          @change="attributeValue(($event.target as HTMLSelectElement).value, selectedAttribute)"
         >
           <option value="">Выберите значение</option>
           <option value="true">Да</option>
@@ -699,12 +597,8 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
                     ? 'date'
                     : 'text'
           "
-          :inputmode="
-            selectedAttribute.valueType === 'DECIMAL' ? 'decimal' : undefined
-          "
-          :value="
-            Array.isArray(buffer.value) ? buffer.value.join(', ') : buffer.value
-          "
+          :inputmode="selectedAttribute.valueType === 'DECIMAL' ? 'decimal' : undefined"
+          :value="Array.isArray(buffer.value) ? buffer.value.join(', ') : buffer.value"
           :aria-label="`${buffer.operator === 'in' || buffer.operator === 'not_in' ? 'Значения' : 'Значение'} поля ${selectedAttribute.label}`"
           :placeholder="
             buffer.operator === 'in' || buffer.operator === 'not_in'
@@ -715,21 +609,13 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
           "
           :aria-invalid="activeIssue?.fieldPath === 'value'"
           :aria-describedby="
-            activeIssue?.fieldPath === 'value'
-              ? 'audience-active-issue'
-              : undefined
+            activeIssue?.fieldPath === 'value' ? 'audience-active-issue' : undefined
           "
-          @input="
-            attributeValue(
-              ($event.target as HTMLInputElement).value,
-              selectedAttribute,
-            )
-          "
+          @input="attributeValue(($event.target as HTMLInputElement).value, selectedAttribute)"
         /><small v-if="selectedAttribute.valueType === 'DECIMAL'"
           >Введите точное число, например 1.00.</small
         ><small v-else-if="selectedAttribute.valueType === 'DATETIME'"
-          >Укажите дату, время и часовой пояс, например
-          2026-07-19T10:00:00Z.</small
+          >Укажите дату, время и часовой пояс, например 2026-07-19T10:00:00Z.</small
         ></label
       >
 
@@ -738,14 +624,13 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
         <div>
           <strong>Чувствительное значение</strong
           ><span
-            >При проверке и в истории запусков значение будет скрыто. В
-            интерфейсе его нельзя будет посмотреть.</span
+            >При проверке и в истории запусков значение будет скрыто. В интерфейсе его нельзя будет
+            посмотреть.</span
           >
         </div>
       </div>
       <footer>
-        <button type="button" class="secondary" @click="emit('close')">
-          Отмена</button
+        <button type="button" class="secondary" @click="emit('close')">Отмена</button
         ><button
           type="button"
           class="primary"
@@ -834,7 +719,7 @@ function isSensitive(attribute: AudienceAttribute | undefined) {
   color: var(--text-primary);
   font-size: var(--font-size-control);
 }
-.field [aria-invalid="true"] {
+.field [aria-invalid='true'] {
   border-color: var(--status-danger-text);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-danger) 8%, transparent);
 }

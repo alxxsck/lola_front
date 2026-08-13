@@ -1,24 +1,24 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import Checkbox from "primevue/checkbox";
-import Dialog from "primevue/dialog";
-import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import Textarea from "primevue/textarea";
-import SupportDetectionCalibrationCard from "@/features/support-case-intelligence/ui/SupportDetectionCalibrationCard.vue";
-import SupportDetectionPreviewConsole from "@/features/support-case-intelligence/ui/SupportDetectionPreviewConsole.vue";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Checkbox from 'primevue/checkbox';
+import Dialog from 'primevue/dialog';
+import InputNumber from 'primevue/inputnumber';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import Textarea from 'primevue/textarea';
+import SupportDetectionCalibrationCard from '@/features/support-case-intelligence/ui/SupportDetectionCalibrationCard.vue';
+import SupportDetectionPreviewConsole from '@/features/support-case-intelligence/ui/SupportDetectionPreviewConsole.vue';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
 import {
   type CaseIntelligenceAuthority,
   useSupportCaseIntelligence,
-} from "@/features/support-case-intelligence/model/use-support-case-intelligence";
+} from '@/features/support-case-intelligence/model/use-support-case-intelligence';
 import {
   createRule,
   createTopic,
@@ -26,43 +26,37 @@ import {
   presentCaseIntelligenceModelSetup,
   presentCaseIntelligenceRuntime,
   synchronizeProjectLocales,
-} from "@/features/support-case-intelligence/model/support-case-intelligence-policy";
+} from '@/features/support-case-intelligence/model/support-case-intelligence-policy';
 import type {
   CaseIntelligenceAttributePredicateDto,
   CaseIntelligenceDetectionRuleDto,
-} from "@/shared/api/generated/models";
-import { localeDisplayName } from "@/shared/lib/locale";
+} from '@/shared/api/generated/models';
+import { localeDisplayName } from '@/shared/lib/locale';
 
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 const accessDenied = ref(false);
-const publishKind = ref<"DETECTION" | "BUDGET" | null>(null);
+const publishKind = ref<'DETECTION' | 'BUDGET' | null>(null);
 const discardVisible = ref(false);
-const detectionEditor = ref<"SCOPE" | "TOPIC" | "RULE" | "ADVANCED" | null>(
-  null,
-);
+const detectionEditor = ref<'SCOPE' | 'TOPIC' | 'RULE' | 'ADVANCED' | null>(null);
 const previewVisible = ref(false);
-const reason = ref("");
+const reason = ref('');
 const selectedTopicIndex = ref(0);
 const selectedRuleIndex = ref(0);
-const mobilePanel = computed<"MAP" | "EDITOR" | "PREVIEW">(() => "MAP");
+const mobilePanel = computed<'MAP' | 'EDITOR' | 'PREVIEW'>(() => 'MAP');
 
-const permissions = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
-const permissionSignature = computed(() =>
-  [...permissions.value].sort().join(","),
-);
+const permissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
+const permissionSignature = computed(() => [...permissions.value].sort().join(','));
 const canRead = computed(
   () =>
     !accessDenied.value &&
-    hasProjectPermission(permissions.value, "project.case_intelligence.read"),
+    hasProjectPermission(permissions.value, 'project.case_intelligence.read'),
 );
-const section = computed<"OVERVIEW" | "DETECTION" | "BUDGET">(() => {
-  if (route.name === "support-case-intelligence-detection") return "DETECTION";
-  if (route.name === "support-case-intelligence-budget") return "BUDGET";
-  return "OVERVIEW";
+const section = computed<'OVERVIEW' | 'DETECTION' | 'BUDGET'>(() => {
+  if (route.name === 'support-case-intelligence-detection') return 'DETECTION';
+  if (route.name === 'support-case-intelligence-budget') return 'BUDGET';
+  return 'OVERVIEW';
 });
 
 function currentAuthority(): CaseIntelligenceAuthority | null {
@@ -92,25 +86,17 @@ const controller = useSupportCaseIntelligence({
       // Local authority is cleared before the remote logout request.
     } finally {
       await router.replace({
-        path: "/login",
+        path: '/login',
         query: { redirect: route.fullPath },
       });
     }
   },
 });
 
-const draftDetection = computed(
-  () => controller.snapshot.value?.detection?.draft ?? null,
-);
-const publishedDetection = computed(
-  () => controller.snapshot.value?.detection?.published ?? null,
-);
-const draftBudget = computed(
-  () => controller.snapshot.value?.budget?.draft ?? null,
-);
-const publishedBudget = computed(
-  () => controller.snapshot.value?.budget?.published ?? null,
-);
+const draftDetection = computed(() => controller.snapshot.value?.detection?.draft ?? null);
+const publishedDetection = computed(() => controller.snapshot.value?.detection?.published ?? null);
+const draftBudget = computed(() => controller.snapshot.value?.budget?.draft ?? null);
+const publishedBudget = computed(() => controller.snapshot.value?.budget?.published ?? null);
 const activeDetectionRevisionId = computed(
   () => controller.snapshot.value?.release?.detectionPolicyRevisionId ?? null,
 );
@@ -120,60 +106,52 @@ const selectedTopic = computed(
 const selectedRule = computed(
   () => controller.detection.value.rules[selectedRuleIndex.value] ?? null,
 );
-const isBusy = computed(
-  () => controller.loading.value || controller.mutating.value,
-);
+const isBusy = computed(() => controller.loading.value || controller.mutating.value);
 
 const ruleKindOptions = [
-  { label: "Точное совпадение", value: "EXACT" },
-  { label: "Фраза в сообщении", value: "PHRASE" },
-  { label: "Поле профиля", value: "ATTRIBUTE" },
-  { label: "Смысл сообщения", value: "SEMANTIC_STATEMENT" },
+  { label: 'Точное совпадение', value: 'EXACT' },
+  { label: 'Фраза в сообщении', value: 'PHRASE' },
+  { label: 'Поле профиля', value: 'ATTRIBUTE' },
+  { label: 'Смысл сообщения', value: 'SEMANTIC_STATEMENT' },
 ];
 const ruleActionOptions = [
-  { label: "Не создавать обращение", value: "NO_CASE" },
-  { label: "Создать обращение", value: "CREATE" },
-  { label: "Привязать к открытому", value: "ATTACH" },
-  { label: "Открыть повторно", value: "REOPEN" },
-  { label: "Передать на проверку", value: "DEFER" },
+  { label: 'Не создавать обращение', value: 'NO_CASE' },
+  { label: 'Создать обращение', value: 'CREATE' },
+  { label: 'Привязать к открытому', value: 'ATTACH' },
+  { label: 'Открыть повторно', value: 'REOPEN' },
+  { label: 'Передать на проверку', value: 'DEFER' },
 ];
 const attributeOperatorOptions = [
-  { label: "равно", value: "EQ" },
-  { label: "одно из", value: "IN" },
-  { label: "больше", value: "GT" },
-  { label: "не меньше", value: "GTE" },
-  { label: "меньше", value: "LT" },
-  { label: "не больше", value: "LTE" },
+  { label: 'равно', value: 'EQ' },
+  { label: 'одно из', value: 'IN' },
+  { label: 'больше', value: 'GT' },
+  { label: 'не меньше', value: 'GTE' },
+  { label: 'меньше', value: 'LT' },
+  { label: 'не больше', value: 'LTE' },
 ];
 const channelOptions = [
-  { label: "Текст", value: "TEXT" },
-  { label: "Голос", value: "VOICE" },
-  { label: "Telegram", value: "TELEGRAM" },
+  { label: 'Текст', value: 'TEXT' },
+  { label: 'Голос', value: 'VOICE' },
+  { label: 'Telegram', value: 'TELEGRAM' },
 ];
 const classificationChannelSummary = computed(
   () =>
     controller.detection.value.channels
-      .map(
-        (value) =>
-          channelOptions.find((item) => item.value === value)?.label ?? value,
-      )
-      .join(", ") || "Не выбраны",
+      .map((value) => channelOptions.find((item) => item.value === value)?.label ?? value)
+      .join(', ') || 'Не выбраны',
 );
 const ambiguityOptions = [
-  { label: "Передать на проверку", value: "DEFER" },
-  { label: "Добавить в очередь разбора", value: "REVIEW" },
+  { label: 'Передать на проверку', value: 'DEFER' },
+  { label: 'Добавить в очередь разбора', value: 'REVIEW' },
 ];
-const audienceKinds = ["include", "exclude"] as const;
+const audienceKinds = ['include', 'exclude'] as const;
 const runtimePresentation = computed(() =>
   presentCaseIntelligenceRuntime(controller.snapshot.value),
 );
-const modelProfileOptions = computed(
-  () => controller.modelProfiles.value?.items ?? [],
-);
+const modelProfileOptions = computed(() => controller.modelProfiles.value?.items ?? []);
 const selectedModelProfile = computed(() =>
   modelProfileOptions.value.find(
-    (profile) =>
-      profile.revisionId === controller.detection.value.modelProfileRevisionId,
+    (profile) => profile.revisionId === controller.detection.value.modelProfileRevisionId,
   ),
 );
 const classificationLocaleOptions = computed(() => {
@@ -186,27 +164,24 @@ const classificationLocaleOptions = computed(() => {
 const fallbackLocaleSummary = computed(() =>
   controller.detection.value.fallbackLocale
     ? humanLocaleName(controller.detection.value.fallbackLocale)
-    : "Не выбран",
+    : 'Не выбран',
 );
 const detectionEditorTitle = computed(() => {
-  if (detectionEditor.value === "SCOPE") return "Охват классификации";
-  if (detectionEditor.value === "TOPIC")
-    return selectedTopic.value?.label || "Новая категория";
-  if (detectionEditor.value === "RULE")
+  if (detectionEditor.value === 'SCOPE') return 'Охват классификации';
+  if (detectionEditor.value === 'TOPIC') return selectedTopic.value?.label || 'Новая категория';
+  if (detectionEditor.value === 'RULE')
     return selectedRule.value?.phrase ||
       selectedRule.value?.statement ||
       selectedRule.value?.attributeCode
-      ? "Точное правило"
-      : "Новое точное правило";
-  return "Дополнительные настройки";
+      ? 'Точное правило'
+      : 'Новое точное правило';
+  return 'Дополнительные настройки';
 });
 const detectionErrors = computed(() =>
-  controller.detectionIssues.value.filter((item) => item.severity === "ERROR"),
+  controller.detectionIssues.value.filter((item) => item.severity === 'ERROR'),
 );
 const detectionWarnings = computed(() =>
-  controller.detectionIssues.value.filter(
-    (item) => item.severity === "WARNING",
-  ),
+  controller.detectionIssues.value.filter((item) => item.severity === 'WARNING'),
 );
 const modelSetupNotice = computed(() =>
   presentCaseIntelligenceModelSetup(
@@ -217,39 +192,36 @@ const modelSetupNotice = computed(() =>
 );
 const safetyPresentation = computed(() => {
   const safety = controller.snapshot.value?.safety;
-  if (safety?.state === "READY")
+  if (safety?.state === 'READY')
     return {
-      label: "Защита согласована",
+      label: 'Защита согласована',
       copy:
-        safety.assistantReleaseGate === "ALLOW"
-          ? "Обязательные правила безопасности проверены. Обычные ответы Lola разрешены."
-          : "Сервер использует только безопасный резервный ответ.",
-      tone: "success",
+        safety.assistantReleaseGate === 'ALLOW'
+          ? 'Обязательные правила безопасности проверены. Обычные ответы Lola разрешены.'
+          : 'Сервер использует только безопасный резервный ответ.',
+      tone: 'success',
     };
-  if (safety?.state === "SAFETY_RECONCILING")
+  if (safety?.state === 'SAFETY_RECONCILING')
     return {
-      label: "Защита обновляется",
-      copy: "Платформа согласует обязательную версию. Проект не может отменить или ослабить эту проверку.",
-      tone: "warning",
+      label: 'Защита обновляется',
+      copy: 'Платформа согласует обязательную версию. Проект не может отменить или ослабить эту проверку.',
+      tone: 'warning',
     };
   return {
-    label: "Защита недоступна",
-    copy: "Обычные автоматические ответы заблокированы до восстановления обязательной проверки.",
-    tone: "warning",
+    label: 'Защита недоступна',
+    copy: 'Обычные автоматические ответы заблокированы до восстановления обязательной проверки.',
+    tone: 'warning',
   };
 });
 
 function examplesText(values: string[]) {
-  return values.join("\n");
+  return values.join('\n');
 }
 
-function updateExamples(
-  kind: "positiveExamples" | "negativeExamples",
-  value: string | undefined,
-) {
+function updateExamples(kind: 'positiveExamples' | 'negativeExamples', value: string | undefined) {
   if (!selectedTopic.value) return;
-  selectedTopic.value[kind] = String(value ?? "")
-    .split("\n")
+  selectedTopic.value[kind] = String(value ?? '')
+    .split('\n')
     .map((item) => item.trim())
     .filter(Boolean)
     .slice(0, 20);
@@ -257,7 +229,7 @@ function updateExamples(
 
 function humanLocaleName(value: string) {
   const name = localeDisplayName(value);
-  return name.charAt(0).toLocaleUpperCase("ru-RU") + name.slice(1);
+  return name.charAt(0).toLocaleUpperCase('ru-RU') + name.slice(1);
 }
 
 function applyProjectLocales() {
@@ -277,116 +249,101 @@ function topicIssue(index: number) {
 }
 
 function topicStatus(index: number) {
-  if (issueFor(`topics.${index}.code`)) return "Исправьте код";
-  if (issueFor(`topics.${index}.label`)) return "Добавьте название";
-  if (issueFor(`topics.${index}.description`)) return "Добавьте описание";
-  return "Готово";
+  if (issueFor(`topics.${index}.code`)) return 'Исправьте код';
+  if (issueFor(`topics.${index}.label`)) return 'Добавьте название';
+  if (issueFor(`topics.${index}.description`)) return 'Добавьте описание';
+  return 'Готово';
 }
 
 function addTopic() {
   if (controller.detection.value.topics.length >= 50) return;
-  controller.detection.value.topics.push(
-    createTopic(controller.detection.value.topics.length + 1),
-  );
+  controller.detection.value.topics.push(createTopic(controller.detection.value.topics.length + 1));
   selectedTopicIndex.value = controller.detection.value.topics.length - 1;
-  detectionEditor.value = "TOPIC";
+  detectionEditor.value = 'TOPIC';
 }
 
 function removeTopic(index: number) {
   controller.detection.value.topics.splice(index, 1);
   selectedTopicIndex.value = Math.max(
     0,
-    Math.min(
-      selectedTopicIndex.value,
-      controller.detection.value.topics.length - 1,
-    ),
+    Math.min(selectedTopicIndex.value, controller.detection.value.topics.length - 1),
   );
 }
 
 function addRule() {
   if (controller.detection.value.rules.length >= 200) return;
-  controller.detection.value.rules.push(
-    createRule(controller.detection.value.rules.length + 1),
-  );
+  controller.detection.value.rules.push(createRule(controller.detection.value.rules.length + 1));
   selectedRuleIndex.value = controller.detection.value.rules.length - 1;
-  detectionEditor.value = "RULE";
+  detectionEditor.value = 'RULE';
 }
 
 function removeRule(index: number) {
   controller.detection.value.rules.splice(index, 1);
   selectedRuleIndex.value = Math.max(
     0,
-    Math.min(
-      selectedRuleIndex.value,
-      controller.detection.value.rules.length - 1,
-    ),
+    Math.min(selectedRuleIndex.value, controller.detection.value.rules.length - 1),
   );
 }
 
 function updateRuleKind(rule: CaseIntelligenceDetectionRuleDto, value: string) {
-  rule.kind = value as CaseIntelligenceDetectionRuleDto["kind"];
+  rule.kind = value as CaseIntelligenceDetectionRuleDto['kind'];
   delete rule.phrase;
   delete rule.statement;
   delete rule.attributeCode;
   delete rule.operator;
   delete rule.value;
-  if (rule.kind === "EXACT" || rule.kind === "PHRASE") rule.phrase = "";
-  if (rule.kind === "SEMANTIC_STATEMENT") rule.statement = "";
-  if (rule.kind === "ATTRIBUTE") {
-    rule.attributeCode = "";
-    rule.operator = "EQ";
-    rule.value = "";
+  if (rule.kind === 'EXACT' || rule.kind === 'PHRASE') rule.phrase = '';
+  if (rule.kind === 'SEMANTIC_STATEMENT') rule.statement = '';
+  if (rule.kind === 'ATTRIBUTE') {
+    rule.attributeCode = '';
+    rule.operator = 'EQ';
+    rule.value = '';
   }
 }
 
 function ruleValueText(rule: CaseIntelligenceDetectionRuleDto) {
-  return Array.isArray(rule.value)
-    ? rule.value.join(", ")
-    : String(rule.value ?? "");
+  return Array.isArray(rule.value) ? rule.value.join(', ') : String(rule.value ?? '');
 }
 
-function updateRuleValue(
-  rule: CaseIntelligenceDetectionRuleDto,
-  value: string | undefined,
-) {
-  const normalized = String(value ?? "").trim();
+function updateRuleValue(rule: CaseIntelligenceDetectionRuleDto, value: string | undefined) {
+  const normalized = String(value ?? '').trim();
   rule.value =
-    rule.operator === "IN"
+    rule.operator === 'IN'
       ? normalized
-          .split(",")
+          .split(',')
           .map((item) => item.trim())
           .filter(Boolean)
       : normalized;
 }
 
-function addAudiencePredicate(kind: "include" | "exclude") {
+function addAudiencePredicate(kind: 'include' | 'exclude') {
   controller.detection.value.audience[kind].push({
-    attributeCode: "",
-    operator: "EQ",
-    value: "",
+    attributeCode: '',
+    operator: 'EQ',
+    value: '',
   });
 }
 
-function showMobilePanel(_panel: "MAP" | "EDITOR" | "PREVIEW") {
+function showMobilePanel(_panel: 'MAP' | 'EDITOR' | 'PREVIEW') {
   void _panel;
   // The desktop and mobile flows now use the same explicit editor dialogs.
 }
 
 function audienceValueText(predicate: CaseIntelligenceAttributePredicateDto) {
   return Array.isArray(predicate.value)
-    ? predicate.value.join(", ")
-    : String(predicate.value ?? "");
+    ? predicate.value.join(', ')
+    : String(predicate.value ?? '');
 }
 
 function updateAudienceValue(
   predicate: CaseIntelligenceAttributePredicateDto,
   value: string | undefined,
 ) {
-  const normalized = String(value ?? "").trim();
+  const normalized = String(value ?? '').trim();
   predicate.value =
-    predicate.operator === "IN"
+    predicate.operator === 'IN'
       ? normalized
-          .split(",")
+          .split(',')
           .map((item) => item.trim())
           .filter(Boolean)
       : normalized;
@@ -394,12 +351,12 @@ function updateAudienceValue(
 
 function openTopic(index: number) {
   selectedTopicIndex.value = index;
-  detectionEditor.value = "TOPIC";
+  detectionEditor.value = 'TOPIC';
 }
 
 function openRule(index: number) {
   selectedRuleIndex.value = index;
-  detectionEditor.value = "RULE";
+  detectionEditor.value = 'RULE';
 }
 
 function closeDetectionEditor() {
@@ -417,45 +374,36 @@ function openIssue(path: string) {
     openRule(Number(rule[1]));
     return;
   }
-  if (["scope", "locales", "fallbackLocale", "channels"].includes(path)) {
-    detectionEditor.value = "SCOPE";
+  if (['scope', 'locales', 'fallbackLocale', 'channels'].includes(path)) {
+    detectionEditor.value = 'SCOPE';
     return;
   }
-  detectionEditor.value = "ADVANCED";
+  detectionEditor.value = 'ADVANCED';
 }
 
 function decisionLabel(value: string) {
-  return (
-    ruleActionOptions.find((item) => item.value === value)?.label ??
-    "Передать на проверку"
-  );
+  return ruleActionOptions.find((item) => item.value === value)?.label ?? 'Передать на проверку';
 }
 
 function formatMicroUsd(value: string) {
-  if (!/^\d+$/.test(value)) return "Введите сумму целым числом";
-  return `≈ ${new Intl.NumberFormat("ru-RU", {
-    style: "currency",
-    currency: "USD",
+  if (!/^\d+$/.test(value)) return 'Введите сумму целым числом';
+  return `≈ ${new Intl.NumberFormat('ru-RU', {
+    style: 'currency',
+    currency: 'USD',
     maximumFractionDigits: 4,
   }).format(Number(value) / 1_000_000)}`;
 }
 
 function issueFor(path: string) {
-  return (
-    controller.detectionIssues.value.find((item) => item.path === path)
-      ?.message ?? ""
-  );
+  return controller.detectionIssues.value.find((item) => item.path === path)?.message ?? '';
 }
 
 function budgetIssueFor(path: string) {
-  return (
-    controller.budgetIssues.value.find((item) => item.path === path)?.message ??
-    ""
-  );
+  return controller.budgetIssues.value.find((item) => item.path === path)?.message ?? '';
 }
 
-function openPublish(kind: "DETECTION" | "BUDGET") {
-  reason.value = "Обновление рабочих правил поддержки";
+function openPublish(kind: 'DETECTION' | 'BUDGET') {
+  reason.value = 'Обновление рабочих правил поддержки';
   publishKind.value = kind;
 }
 
@@ -463,14 +411,13 @@ async function confirmPublish() {
   const kind = publishKind.value;
   publishKind.value = null;
   if (!reason.value.trim()) return;
-  if (kind === "DETECTION")
-    await controller.publishDetection(reason.value.trim());
-  if (kind === "BUDGET") await controller.publishBudget(reason.value.trim());
+  if (kind === 'DETECTION') await controller.publishDetection(reason.value.trim());
+  if (kind === 'BUDGET') await controller.publishBudget(reason.value.trim());
 }
 
 async function confirmDiscard() {
   discardVisible.value = false;
-  await controller.discardDetection("Черновик больше не нужен");
+  await controller.discardDetection('Черновик больше не нужен');
 }
 
 async function load() {
@@ -483,13 +430,13 @@ async function load() {
 function beforeUnload(event: BeforeUnloadEvent) {
   if (!controller.hasPendingRecovery.value) return;
   event.preventDefault();
-  event.returnValue = "";
+  event.returnValue = '';
 }
 
 onBeforeRouteLeave(() => {
   if (!controller.hasPendingRecovery.value) return true;
   return window.confirm(
-    "Сервер ещё не подтвердил предыдущую команду. Всё равно покинуть страницу?",
+    'Сервер ещё не подтвердил предыдущую команду. Всё равно покинуть страницу?',
   );
 });
 
@@ -500,23 +447,23 @@ watch(
       auth.project?.id,
       permissionSignature.value,
       auth.project?.defaultLocale,
-      (auth.project?.supportedLocales ?? []).join(","),
+      (auth.project?.supportedLocales ?? []).join(','),
     ] as const,
   () => {
     accessDenied.value = false;
     controller.reset({ nextAuthority: currentAuthority() });
     if (canRead.value) void load();
   },
-  { flush: "sync" },
+  { flush: 'sync' },
 );
 
 onMounted(() => {
-  window.addEventListener("beforeunload", beforeUnload);
+  window.addEventListener('beforeunload', beforeUnload);
   if (canRead.value) void load();
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener("beforeunload", beforeUnload);
+  window.removeEventListener('beforeunload', beforeUnload);
   controller.reset();
 });
 </script>
@@ -525,14 +472,9 @@ onBeforeUnmount(() => {
   <section class="page intelligence-page" aria-labelledby="intelligence-title">
     <header class="intelligence-header">
       <div>
-        <div class="eyebrow">
-          <i class="pi pi-sitemap" /> Настройки поддержки
-        </div>
+        <div class="eyebrow"><i class="pi pi-sitemap" /> Настройки поддержки</div>
         <h1 id="intelligence-title">Категории и правила обращений</h1>
-        <p>
-          Настройте, как Lola распознаёт тему сообщения и решает, создавать ли
-          обращение.
-        </p>
+        <p>Настройте, как Lola распознаёт тему сообщения и решает, создавать ли обращение.</p>
       </div>
       <div class="header-actions">
         <RouterLink
@@ -555,9 +497,7 @@ onBeforeUnmount(() => {
           severity="secondary"
           outlined
           :loading="controller.loading.value"
-          :disabled="
-            controller.mutating.value || controller.hasPendingRecovery.value
-          "
+          :disabled="controller.mutating.value || controller.hasPendingRecovery.value"
           @click="load"
         />
       </div>
@@ -590,27 +530,17 @@ onBeforeUnmount(() => {
       </nav>
 
       <div class="live-region" aria-live="polite" aria-atomic="true">
-        <Message
-          v-if="controller.error.value"
-          severity="error"
-          :closable="false"
-          >{{ controller.error.value }}</Message
-        >
-        <Message
-          v-else-if="controller.feedback.value"
-          severity="success"
-          :closable="false"
-          >{{ controller.feedback.value }}</Message
-        >
-        <Message
-          v-if="controller.hasPendingRecovery.value"
-          severity="warn"
-          :closable="false"
-        >
+        <Message v-if="controller.error.value" severity="error" :closable="false">{{
+          controller.error.value
+        }}</Message>
+        <Message v-else-if="controller.feedback.value" severity="success" :closable="false">{{
+          controller.feedback.value
+        }}</Message>
+        <Message v-if="controller.hasPendingRecovery.value" severity="warn" :closable="false">
           <div class="recovery-message">
             <span
-              >Предыдущая команда ждёт подтверждения сервера. Новые изменения
-              временно заблокированы.</span
+              >Предыдущая команда ждёт подтверждения сервера. Новые изменения временно
+              заблокированы.</span
             ><Button
               label="Проверить эту попытку"
               size="small"
@@ -631,25 +561,16 @@ onBeforeUnmount(() => {
         <Skeleton height="20rem" border-radius="14px" />
       </div>
 
-      <section
-        v-else-if="!controller.snapshot.value"
-        class="empty-state"
-        role="alert"
-      >
+      <section v-else-if="!controller.snapshot.value" class="empty-state" role="alert">
         <i class="pi pi-cloud-off" aria-hidden="true" />
         <h2>Не удалось открыть правила</h2>
-        <p>
-          Данные проекта не загружены. На этой странице ничего не изменилось.
-        </p>
+        <p>Данные проекта не загружены. На этой странице ничего не изменилось.</p>
         <Button label="Попробовать снова" icon="pi pi-refresh" @click="load" />
       </section>
 
       <template v-else>
         <main v-if="section === 'OVERVIEW'" class="overview-grid">
-          <article
-            class="summary-card summary-card--primary"
-            :data-tone="runtimePresentation.tone"
-          >
+          <article class="summary-card summary-card--primary" :data-tone="runtimePresentation.tone">
             <div class="card-kicker">Рабочая версия</div>
             <div class="summary-heading">
               <span class="status-dot" /> {{ runtimePresentation.label }}
@@ -663,17 +584,15 @@ onBeforeUnmount(() => {
                     activeDetectionRevisionId
                       ? activeDetectionRevisionId === publishedDetection?.id
                         ? `Версия ${publishedDetection.version}`
-                        : "Предыдущая опубликованная версия"
-                      : "Не входят в общую версию"
+                        : 'Предыдущая опубликованная версия'
+                      : 'Не входят в общую версию'
                   }}
                 </dd>
               </div>
               <div>
                 <dt>Черновик</dt>
                 <dd>
-                  {{
-                    draftDetection ? `Версия ${draftDetection.version}` : "Нет"
-                  }}
+                  {{ draftDetection ? `Версия ${draftDetection.version}` : 'Нет' }}
                 </dd>
               </div>
             </dl>
@@ -681,9 +600,7 @@ onBeforeUnmount(() => {
               label="Открыть правила"
               icon="pi pi-arrow-right"
               icon-pos="right"
-              @click="
-                router.push('/support/settings/case-intelligence/detection')
-              "
+              @click="router.push('/support/settings/case-intelligence/detection')"
             />
           </article>
           <article class="summary-card">
@@ -692,19 +609,14 @@ onBeforeUnmount(() => {
               {{ controller.detection.value.topics.length }} категорий ·
               {{ controller.detection.value.rules.length }} правил
             </h2>
-            <p>
-              Категории объясняют смысл обращения. Правила задают точные
-              признаки и действие.
-            </p>
+            <p>Категории объясняют смысл обращения. Правила задают точные признаки и действие.</p>
             <div class="topic-cloud">
               <Tag
                 v-for="topic in controller.detection.value.topics.slice(0, 6)"
                 :key="topic.code"
                 :value="topic.label || topic.code"
                 severity="secondary"
-              /><span
-                v-if="!controller.detection.value.topics.length"
-                class="muted"
+              /><span v-if="!controller.detection.value.topics.length" class="muted"
                 >Категории ещё не созданы</span
               >
             </div>
@@ -723,26 +635,22 @@ onBeforeUnmount(() => {
             <h2>
               {{
                 controller.canReadCost.value
-                  ? Number(
-                      controller.budget.value.dailyTokenHardCap,
-                    ).toLocaleString("ru-RU")
-                  : "Скрыто правами"
+                  ? Number(controller.budget.value.dailyTokenHardCap).toLocaleString('ru-RU')
+                  : 'Скрыто правами'
               }}
             </h2>
             <p>
               {{
                 controller.canReadCost.value
-                  ? "Максимум токенов в день. При достижении лимита новые проверки останавливаются."
-                  : "Для просмотра лимитов нужен отдельный доступ к расходам."
+                  ? 'Максимум токенов в день. При достижении лимита новые проверки останавливаются.'
+                  : 'Для просмотра лимитов нужен отдельный доступ к расходам.'
               }}
             </p>
             <Button
               label="Модель и лимиты"
               severity="secondary"
               outlined
-              @click="
-                router.push('/support/settings/case-intelligence/models-budget')
-              "
+              @click="router.push('/support/settings/case-intelligence/models-budget')"
             />
           </article>
         </main>
@@ -754,9 +662,8 @@ onBeforeUnmount(() => {
                 <div class="card-kicker">Текущий черновик</div>
                 <h2>Карта классификации</h2>
                 <p>
-                  Категории описывают смысл обращения через название, описание и
-                  примеры. Точные правила нужны только для однозначных фраз и
-                  проверяются раньше смысловой модели.
+                  Категории описывают смысл обращения через название, описание и примеры. Точные
+                  правила нужны только для однозначных фраз и проверяются раньше смысловой модели.
                 </p>
               </div>
               <div class="brief-actions">
@@ -797,11 +704,7 @@ onBeforeUnmount(() => {
                 :label="modelSetupNotice.action"
                 severity="secondary"
                 text
-                @click="
-                  router.push(
-                    '/support/settings/case-intelligence/models-budget',
-                  )
-                "
+                @click="router.push('/support/settings/case-intelligence/models-budget')"
               />
             </div>
 
@@ -809,10 +712,7 @@ onBeforeUnmount(() => {
               <div class="catalog-heading">
                 <div>
                   <h2 id="topics-title">Категории</h2>
-                  <p>
-                    Понятные темы обращений: «Доставка», «Возврат», «Не проходит
-                    оплата».
-                  </p>
+                  <p>Понятные темы обращений: «Доставка», «Возврат», «Не проходит оплата».</p>
                 </div>
                 <Button
                   v-if="controller.canManageDetection.value"
@@ -823,10 +723,7 @@ onBeforeUnmount(() => {
                   @click="addTopic"
                 />
               </div>
-              <div
-                v-if="controller.detection.value.topics.length"
-                class="topic-grid"
-              >
+              <div v-if="controller.detection.value.topics.length" class="topic-grid">
                 <article
                   v-for="(topic, index) in controller.detection.value.topics"
                   :key="`${topic.code}-${index}`"
@@ -837,15 +734,13 @@ onBeforeUnmount(() => {
                       :value="topicStatus(index)"
                       :severity="topicIssue(index) ? 'warn' : 'success'"
                     />
-                    <span class="stable-code">{{
-                      topic.code || "КОД НЕ ЗАДАН"
-                    }}</span>
+                    <span class="stable-code">{{ topic.code || 'КОД НЕ ЗАДАН' }}</span>
                   </div>
-                  <h3>{{ topic.label || "Новая категория" }}</h3>
+                  <h3>{{ topic.label || 'Новая категория' }}</h3>
                   <p>
                     {{
                       topic.description ||
-                      "Добавьте короткое объяснение, какие обращения относятся к этой категории."
+                      'Добавьте короткое объяснение, какие обращения относятся к этой категории.'
                     }}
                   </p>
                   <div class="topic-card__meta">
@@ -872,8 +767,7 @@ onBeforeUnmount(() => {
                 <div>
                   <h3>Категорий пока нет</h3>
                   <p>
-                    Добавьте первую тему и приведите несколько реальных примеров
-                    без личных данных.
+                    Добавьте первую тему и приведите несколько реальных примеров без личных данных.
                   </p>
                 </div>
               </div>
@@ -886,10 +780,7 @@ onBeforeUnmount(() => {
               <div class="catalog-heading">
                 <div>
                   <h2 id="rules-title">Точные правила</h2>
-                  <p>
-                    Исключения для однозначных фраз. Они проверяются раньше
-                    смысловой модели.
-                  </p>
+                  <p>Исключения для однозначных фраз. Они проверяются раньше смысловой модели.</p>
                 </div>
                 <Button
                   v-if="controller.canManageDetection.value"
@@ -900,10 +791,7 @@ onBeforeUnmount(() => {
                   @click="addRule"
                 />
               </div>
-              <div
-                v-if="controller.detection.value.rules.length"
-                class="rule-list"
-              >
+              <div v-if="controller.detection.value.rules.length" class="rule-list">
                 <button
                   v-for="(rule, index) in controller.detection.value.rules"
                   :key="`${rule.code}-${index}`"
@@ -912,19 +800,13 @@ onBeforeUnmount(() => {
                   @click="openRule(index)"
                 >
                   <span class="rule-kind">{{
-                    ruleKindOptions.find((item) => item.value === rule.kind)
-                      ?.label
+                    ruleKindOptions.find((item) => item.value === rule.kind)?.label
                   }}</span>
                   <span
                     ><strong>{{
-                      rule.phrase ||
-                      rule.statement ||
-                      rule.attributeCode ||
-                      "Новое правило"
+                      rule.phrase || rule.statement || rule.attributeCode || 'Новое правило'
                     }}</strong
-                    ><small
-                      >{{ rule.code }} · {{ decisionLabel(rule.action) }}</small
-                    ></span
+                    ><small>{{ rule.code }} · {{ decisionLabel(rule.action) }}</small></span
                   >
                   <i class="pi pi-chevron-right" aria-hidden="true" />
                 </button>
@@ -933,39 +815,26 @@ onBeforeUnmount(() => {
                 <i class="pi pi-bolt" aria-hidden="true" />
                 <div>
                   <h3>Точных правил нет</h3>
-                  <p>
-                    Это нормально: категории и примеры уже дают Lola основу для
-                    классификации.
-                  </p>
+                  <p>Это нормально: категории и примеры уже дают Lola основу для классификации.</p>
                 </div>
               </div>
               <footer class="catalog-footer">
-                Точных правил: {{ controller.detection.value.rules.length }} из
-                200
+                Точных правил: {{ controller.detection.value.rules.length }} из 200
               </footer>
             </section>
 
-            <button
-              type="button"
-              class="advanced-summary"
-              @click="detectionEditor = 'ADVANCED'"
-            >
-              <span class="advanced-summary__icon"
-                ><i class="pi pi-sliders-h"
-              /></span>
+            <button type="button" class="advanced-summary" @click="detectionEditor = 'ADVANCED'">
+              <span class="advanced-summary__icon"><i class="pi pi-sliders-h" /></span>
               <span
                 ><strong>Порог уверенности и ограничения</strong
                 ><small
-                  >Когда предложить категорию, когда применить её автоматически
-                  и сколько данных учитывать.</small
+                  >Когда предложить категорию, когда применить её автоматически и сколько данных
+                  учитывать.</small
                 ></span
               >
               <span class="advanced-summary__value"
-                >{{
-                  Math.round(
-                    controller.detection.value.confidenceTiers.autoApply * 100,
-                  )
-                }}% для автоматики</span
+                >{{ Math.round(controller.detection.value.confidenceTiers.autoApply * 100) }}% для
+                автоматики</span
               >
               <i class="pi pi-chevron-right" aria-hidden="true" />
             </button>
@@ -981,11 +850,8 @@ onBeforeUnmount(() => {
                 <span v-if="detectionWarnings.length"
                   >{{ detectionWarnings.length }} рекомендаций</span
                 >
-                <span
-                  v-if="controller.validatedPolicyHash.value"
-                  class="validation-confirmation"
-                  ><i class="pi pi-check-circle" /> Серверная проверка
-                  пройдена</span
+                <span v-if="controller.validatedPolicyHash.value" class="validation-confirmation"
+                  ><i class="pi pi-check-circle" /> Серверная проверка пройдена</span
                 >
               </div>
               <div v-if="detectionErrors.length" class="blocking-list">
@@ -1008,8 +874,7 @@ onBeforeUnmount(() => {
                   outlined
                   :loading="controller.validating.value"
                   :disabled="
-                    controller.hasDetectionErrors.value ||
-                    controller.hasPendingRecovery.value
+                    controller.hasDetectionErrors.value || controller.hasPendingRecovery.value
                   "
                   @click="controller.validateDraft"
                 />
@@ -1019,8 +884,7 @@ onBeforeUnmount(() => {
                   icon="pi pi-save"
                   :loading="controller.mutating.value"
                   :disabled="
-                    controller.hasDetectionErrors.value ||
-                    controller.hasPendingRecovery.value
+                    controller.hasDetectionErrors.value || controller.hasPendingRecovery.value
                   "
                   @click="controller.saveDetection"
                 />
@@ -1036,11 +900,7 @@ onBeforeUnmount(() => {
             </section>
           </main>
 
-          <nav
-            v-if="false"
-            class="mobile-workflow"
-            aria-label="Шаги настройки правил"
-          >
+          <nav v-if="false" class="mobile-workflow" aria-label="Шаги настройки правил">
             <button
               type="button"
               class="mobile-step"
@@ -1074,20 +934,13 @@ onBeforeUnmount(() => {
             :style="{ width: 'min(68rem, calc(100vw - 2rem))' }"
             @update:visible="closeDetectionEditor"
           >
-            <main
-              class="policy-layout policy-layout--dialog"
-              :data-mobile-panel="mobilePanel"
-            >
+            <main class="policy-layout policy-layout--dialog" :data-mobile-panel="mobilePanel">
               <aside class="policy-map" aria-label="Карта категорий и правил">
                 <div class="map-section">
                   <div class="map-heading">
                     <div>
                       <span>Категории</span
-                      ><small
-                        >{{
-                          controller.detection.value.topics.length
-                        }}/50</small
-                      >
+                      ><small>{{ controller.detection.value.topics.length }}/50</small>
                     </div>
                     <Button
                       v-if="controller.canManageDetection.value"
@@ -1111,29 +964,19 @@ onBeforeUnmount(() => {
                       showMobilePanel('EDITOR');
                     "
                   >
-                    <span class="map-code">{{ topic.code || "БЕЗ_КОДА" }}</span
-                    ><span>{{
-                      topic.label || topic.description || "Новая категория"
-                    }}</span
+                    <span class="map-code">{{ topic.code || 'БЕЗ_КОДА' }}</span
+                    ><span>{{ topic.label || topic.description || 'Новая категория' }}</span
                     ><i class="pi pi-chevron-right" />
                   </button>
-                  <div
-                    v-if="!controller.detection.value.topics.length"
-                    class="map-empty"
-                  >
-                    Добавьте первую категорию и опишите сообщения, которые к ней
-                    относятся.
+                  <div v-if="!controller.detection.value.topics.length" class="map-empty">
+                    Добавьте первую категорию и опишите сообщения, которые к ней относятся.
                   </div>
                 </div>
                 <div class="map-section">
                   <div class="map-heading">
                     <div>
                       <span>Правила</span
-                      ><small
-                        >{{
-                          controller.detection.value.rules.length
-                        }}/200</small
-                      >
+                      ><small>{{ controller.detection.value.rules.length }}/200</small>
                     </div>
                     <Button
                       v-if="controller.canManageDetection.value"
@@ -1155,16 +998,12 @@ onBeforeUnmount(() => {
                       showMobilePanel('EDITOR');
                     "
                   >
-                    <span class="map-code">{{ rule.code || "БЕЗ_КОДА" }}</span
+                    <span class="map-code">{{ rule.code || 'БЕЗ_КОДА' }}</span
                     ><span>{{ decisionLabel(rule.action) }}</span
                     ><i class="pi pi-chevron-right" />
                   </button>
-                  <div
-                    v-if="!controller.detection.value.rules.length"
-                    class="map-empty"
-                  >
-                    Правила не обязательны: Lola может опираться на описания и
-                    примеры категорий.
+                  <div v-if="!controller.detection.value.rules.length" class="map-empty">
+                    Правила не обязательны: Lola может опираться на описания и примеры категорий.
                   </div>
                 </div>
               </aside>
@@ -1176,8 +1015,8 @@ onBeforeUnmount(() => {
                       <div class="card-kicker">Охват классификации</div>
                       <h2>Какие сообщения относить к категориям</h2>
                       <p>
-                        Здесь вы задаёте, для каких языков и каналов сервер
-                        будет применять правила классификации.
+                        Здесь вы задаёте, для каких языков и каналов сервер будет применять правила
+                        классификации.
                       </p>
                     </div>
                     <Tag
@@ -1189,19 +1028,13 @@ onBeforeUnmount(() => {
                       severity="secondary"
                     />
                   </div>
-                  <section
-                    class="scope-explainer"
-                    aria-label="Как работает языковой охват"
-                  >
+                  <section class="scope-explainer" aria-label="Как работает языковой охват">
                     <i class="pi pi-language" aria-hidden="true" />
                     <div>
-                      <strong
-                        >Язык здесь — не переключатель понимания Lola</strong
-                      >
+                      <strong>Язык здесь — не переключатель понимания Lola</strong>
                       <p>
-                        Он выбирает языковые правила и пороги точности.
-                        Например, русское сообщение проверяется по русским
-                        правилам, а английское — по английским.
+                        Он выбирает языковые правила и пороги точности. Например, русское сообщение
+                        проверяется по русским правилам, а английское — по английским.
                       </p>
                     </div>
                   </section>
@@ -1211,8 +1044,7 @@ onBeforeUnmount(() => {
                       <small>Пользователи этот текст не увидят.</small>
                     </div>
                     <div class="field field--flush">
-                      <label for="policy-scope"
-                        >Зачем проекту нужна классификация</label
+                      <label for="policy-scope">Зачем проекту нужна классификация</label
                       ><Textarea
                         id="policy-scope"
                         v-model="controller.detection.value.scope"
@@ -1223,28 +1055,21 @@ onBeforeUnmount(() => {
                         :aria-invalid="Boolean(issueFor('scope'))"
                         aria-describedby="policy-scope-help"
                         :disabled="!controller.canManageDetection.value"
-                      /><small
-                        id="policy-scope-help"
-                        :class="{ 'field-error': issueFor('scope') }"
-                        >Одно короткое предложение, понятное любому
-                        руководителю. {{ issueFor("scope") }}</small
+                      /><small id="policy-scope-help" :class="{ 'field-error': issueFor('scope') }"
+                        >Одно короткое предложение, понятное любому руководителю.
+                        {{ issueFor('scope') }}</small
                       >
                     </div>
                   </div>
                   <div class="scope-section scope-section--language">
                     <div class="scope-section__heading">
                       <span>Языковой охват</span>
-                      <small
-                        >Берётся автоматически из языков профиля проекта.</small
-                      >
+                      <small>Берётся автоматически из языков профиля проекта.</small>
                     </div>
                     <div class="field-grid scope-language-grid">
                       <div class="field field--flush">
                         <span class="field-label">Языки классификации</span>
-                        <div
-                          class="project-locale-list"
-                          aria-label="Языки проекта"
-                        >
+                        <div class="project-locale-list" aria-label="Языки проекта">
                           <Tag
                             v-for="locale in classificationLocaleOptions"
                             :key="locale.value"
@@ -1256,11 +1081,11 @@ onBeforeUnmount(() => {
                           >
                         </div>
                         <small id="policy-locales-help"
-                          >При добавлении языка в профиль проекта он
-                          автоматически попадёт в классификацию.</small
+                          >При добавлении языка в профиль проекта он автоматически попадёт в
+                          классификацию.</small
                         >
                         <small id="policy-locales-error" class="field-error">{{
-                          issueFor("locales")
+                          issueFor('locales')
                         }}</small>
                       </div>
                       <div class="field field--flush">
@@ -1269,22 +1094,18 @@ onBeforeUnmount(() => {
                           {{ fallbackLocaleSummary }}
                         </div>
                         <small id="policy-fallback-help"
-                          >Равен основному языку проекта и используется, если
-                          канал или профиль пользователя не сообщил язык.</small
+                          >Равен основному языку проекта и используется, если канал или профиль
+                          пользователя не сообщил язык.</small
                         >
                         <small id="policy-fallback-error" class="field-error">{{
-                          issueFor("fallbackLocale")
+                          issueFor('fallbackLocale')
                         }}</small>
                       </div>
                     </div>
-                    <Message
-                      severity="info"
-                      :closable="false"
-                      class="fallback-note"
-                    >
-                      Здесь ничего не нужно выбирать вручную. Источник истины —
-                      языки профиля проекта; для каждого из них сервер применяет
-                      свои правила и проверенные пороги.
+                    <Message severity="info" :closable="false" class="fallback-note">
+                      Здесь ничего не нужно выбирать вручную. Источник истины — языки профиля
+                      проекта; для каждого из них сервер применяет свои правила и проверенные
+                      пороги.
                     </Message>
                   </div>
                   <div class="scope-section">
@@ -1293,13 +1114,9 @@ onBeforeUnmount(() => {
                       <small>Где должна запускаться классификация.</small>
                     </div>
                     <div class="field field--flush">
-                      <span class="field-label"
-                        >Проверять сообщения из каналов</span
-                      >
+                      <span class="field-label">Проверять сообщения из каналов</span>
                       <div class="check-row channel-choice-row">
-                        <label
-                          v-for="channel in channelOptions"
-                          :key="channel.value"
+                        <label v-for="channel in channelOptions" :key="channel.value"
                           ><Checkbox
                             v-model="controller.detection.value.channels"
                             :input-id="`channel-${channel.value}`"
@@ -1311,7 +1128,7 @@ onBeforeUnmount(() => {
                         >
                       </div>
                       <small id="channels-error" class="field-error">{{
-                        issueFor("channels")
+                        issueFor('channels')
                       }}</small>
                     </div>
                   </div>
@@ -1323,10 +1140,8 @@ onBeforeUnmount(() => {
                 >
                   <div class="editor-card__heading">
                     <div>
-                      <div class="card-kicker">
-                        Категория {{ selectedTopicIndex + 1 }}
-                      </div>
-                      <h2>{{ selectedTopic.label || "Новая категория" }}</h2>
+                      <div class="card-kicker">Категория {{ selectedTopicIndex + 1 }}</div>
+                      <h2>{{ selectedTopic.label || 'Новая категория' }}</h2>
                     </div>
                     <Button
                       v-if="false"
@@ -1345,25 +1160,17 @@ onBeforeUnmount(() => {
                         :model-value="selectedTopic.code"
                         maxlength="64"
                         :disabled="!controller.canManageDetection.value"
-                        :aria-invalid="
-                          Boolean(issueFor(`topics.${selectedTopicIndex}.code`))
-                        "
+                        :aria-invalid="Boolean(issueFor(`topics.${selectedTopicIndex}.code`))"
                         @update:model-value="
-                          selectedTopic.code = normalizeStableCode(
-                            String($event ?? ''),
-                          )
+                          selectedTopic.code = normalizeStableCode(String($event ?? ''))
                         "
                       /><small
                         :class="{
-                          'field-error': issueFor(
-                            `topics.${selectedTopicIndex}.code`,
-                          ),
+                          'field-error': issueFor(`topics.${selectedTopicIndex}.code`),
                         }"
-                        >Короткий постоянный код для отчётов. Используйте
-                        заглавные латинские буквы, цифры и подчёркивание.
-                        {{
-                          issueFor(`topics.${selectedTopicIndex}.code`)
-                        }}</small
+                        >Короткий постоянный код для отчётов. Используйте заглавные латинские буквы,
+                        цифры и подчёркивание.
+                        {{ issueFor(`topics.${selectedTopicIndex}.code`) }}</small
                       >
                     </div>
                     <div class="field">
@@ -1372,26 +1179,17 @@ onBeforeUnmount(() => {
                         id="topic-label"
                         v-model="selectedTopic.label"
                         maxlength="120"
-                        :aria-invalid="
-                          Boolean(
-                            issueFor(`topics.${selectedTopicIndex}.label`),
-                          )
-                        "
+                        :aria-invalid="Boolean(issueFor(`topics.${selectedTopicIndex}.label`))"
                         :aria-describedby="`topic-label-error-${selectedTopicIndex}`"
                         :disabled="!controller.canManageDetection.value"
                       />
-                      <small
-                        :id="`topic-label-error-${selectedTopicIndex}`"
-                        class="field-error"
-                        >{{
-                          issueFor(`topics.${selectedTopicIndex}.label`)
-                        }}</small
-                      >
+                      <small :id="`topic-label-error-${selectedTopicIndex}`" class="field-error">{{
+                        issueFor(`topics.${selectedTopicIndex}.label`)
+                      }}</small>
                     </div>
                   </div>
                   <div class="field">
-                    <label for="topic-description"
-                      >Какие обращения сюда относятся</label
+                    <label for="topic-description">Какие обращения сюда относятся</label
                     ><Textarea
                       id="topic-description"
                       v-model="selectedTopic.description"
@@ -1408,60 +1206,40 @@ onBeforeUnmount(() => {
                       <label for="topic-positive">Подходящие примеры</label
                       ><Textarea
                         id="topic-positive"
-                        :model-value="
-                          examplesText(selectedTopic.positiveExamples)
-                        "
+                        :model-value="examplesText(selectedTopic.positiveExamples)"
                         rows="4"
                         :disabled="!controller.canManageDetection.value"
-                        @update:model-value="
-                          updateExamples('positiveExamples', $event)
-                        "
+                        @update:model-value="updateExamples('positiveExamples', $event)"
                       /><small
-                        >Один пример в строке. Используйте реальные формулировки
-                        без личных данных.</small
+                        >Один пример в строке. Используйте реальные формулировки без личных
+                        данных.</small
                       >
                       <small class="field-error">{{
-                        issueFor(
-                          `topics.${selectedTopicIndex}.positiveExamples`,
-                        )
+                        issueFor(`topics.${selectedTopicIndex}.positiveExamples`)
                       }}</small>
                     </div>
                     <div class="field">
-                      <label for="topic-negative"
-                        >Похожие, но неподходящие примеры</label
+                      <label for="topic-negative">Похожие, но неподходящие примеры</label
                       ><Textarea
                         id="topic-negative"
-                        :model-value="
-                          examplesText(selectedTopic.negativeExamples)
-                        "
+                        :model-value="examplesText(selectedTopic.negativeExamples)"
                         rows="4"
                         :disabled="!controller.canManageDetection.value"
-                        @update:model-value="
-                          updateExamples('negativeExamples', $event)
-                        "
+                        @update:model-value="updateExamples('negativeExamples', $event)"
                       /><small
-                        >Покажите границу категории, чтобы сократить ложные
-                        совпадения.</small
+                        >Покажите границу категории, чтобы сократить ложные совпадения.</small
                       >
                       <small class="field-error">{{
-                        issueFor(
-                          `topics.${selectedTopicIndex}.negativeExamples`,
-                        )
+                        issueFor(`topics.${selectedTopicIndex}.negativeExamples`)
                       }}</small>
                     </div>
                   </div>
                 </section>
 
-                <section
-                  v-else-if="detectionEditor === 'TOPIC'"
-                  class="editor-card empty-card"
-                >
+                <section v-else-if="detectionEditor === 'TOPIC'" class="editor-card empty-card">
                   <i class="pi pi-tags" />
                   <h2>Добавьте категорию</h2>
-                  <p>
-                    Начните с понятного названия, описания и нескольких
-                    примеров.
-                  </p>
+                  <p>Начните с понятного названия, описания и нескольких примеров.</p>
                   <Button
                     v-if="controller.canManageDetection.value"
                     label="Добавить категорию"
@@ -1470,16 +1248,11 @@ onBeforeUnmount(() => {
                   />
                 </section>
 
-                <section
-                  v-if="detectionEditor === 'RULE' && selectedRule"
-                  class="editor-card"
-                >
+                <section v-if="detectionEditor === 'RULE' && selectedRule" class="editor-card">
                   <div class="editor-card__heading">
                     <div>
-                      <div class="card-kicker">
-                        Точное правило {{ selectedRuleIndex + 1 }}
-                      </div>
-                      <h2>{{ selectedRule.code || "Новое правило" }}</h2>
+                      <div class="card-kicker">Точное правило {{ selectedRuleIndex + 1 }}</div>
+                      <h2>{{ selectedRule.code || 'Новое правило' }}</h2>
                     </div>
                     <Button
                       v-if="false"
@@ -1512,9 +1285,7 @@ onBeforeUnmount(() => {
                         option-label="label"
                         option-value="value"
                         :disabled="!controller.canManageDetection.value"
-                        @update:model-value="
-                          updateRuleKind(selectedRule, $event)
-                        "
+                        @update:model-value="updateRuleKind(selectedRule, $event)"
                       />
                     </div>
                     <div class="field">
@@ -1530,16 +1301,11 @@ onBeforeUnmount(() => {
                     </div>
                   </div>
                   <div
-                    v-if="
-                      selectedRule.kind === 'EXACT' ||
-                      selectedRule.kind === 'PHRASE'
-                    "
+                    v-if="selectedRule.kind === 'EXACT' || selectedRule.kind === 'PHRASE'"
                     class="field"
                   >
                     <label for="rule-phrase">{{
-                      selectedRule.kind === "EXACT"
-                        ? "Точный текст"
-                        : "Фраза в сообщении"
+                      selectedRule.kind === 'EXACT' ? 'Точный текст' : 'Фраза в сообщении'
                     }}</label
                     ><InputText
                       id="rule-phrase"
@@ -1550,10 +1316,7 @@ onBeforeUnmount(() => {
                       issueFor(`rules.${selectedRuleIndex}.phrase`)
                     }}</small>
                   </div>
-                  <div
-                    v-else-if="selectedRule.kind === 'SEMANTIC_STATEMENT'"
-                    class="field"
-                  >
+                  <div v-else-if="selectedRule.kind === 'SEMANTIC_STATEMENT'" class="field">
                     <label for="rule-statement">Какой смысл искать</label
                     ><Textarea
                       id="rule-statement"
@@ -1600,9 +1363,7 @@ onBeforeUnmount(() => {
                         id="rule-value"
                         :model-value="ruleValueText(selectedRule)"
                         :disabled="!controller.canManageDetection.value"
-                        @update:model-value="
-                          updateRuleValue(selectedRule, $event)
-                        "
+                        @update:model-value="updateRuleValue(selectedRule, $event)"
                       />
                       <small class="field-error">{{
                         issueFor(`rules.${selectedRuleIndex}.value`)
@@ -1652,40 +1413,30 @@ onBeforeUnmount(() => {
                   </summary>
                   <div class="advanced-content">
                     <Message severity="info" :closable="false">
-                      Текст сравнивается без различия регистра и лишних
-                      пробелов. Точное правило учитывает границы слов.
-                      Совпадение внутри цитаты или отрицания не запускает
-                      действие автоматически. Сначала проверяется больший
-                      приоритет; конфликт правил одного уровня передаётся
-                      человеку.
+                      Текст сравнивается без различия регистра и лишних пробелов. Точное правило
+                      учитывает границы слов. Совпадение внутри цитаты или отрицания не запускает
+                      действие автоматически. Сначала проверяется больший приоритет; конфликт правил
+                      одного уровня передаётся человеку.
                     </Message>
                     <div class="field-grid field-grid--three">
                       <div class="field">
-                        <label for="threshold-monitor"
-                          >Начать учитывать категорию</label
+                        <label for="threshold-monitor">Начать учитывать категорию</label
                         ><InputNumber
                           input-id="threshold-monitor"
-                          v-model="
-                            controller.detection.value.confidenceTiers.monitor
-                          "
+                          v-model="controller.detection.value.confidenceTiers.monitor"
                           :min="0"
                           :max="1"
                           :min-fraction-digits="2"
                           :max-fraction-digits="2"
                           :disabled="!controller.canManageDetection.value"
                         />
-                        <small
-                          >Ниже этого значения категория отбрасывается.</small
-                        >
+                        <small>Ниже этого значения категория отбрасывается.</small>
                       </div>
                       <div class="field">
-                        <label for="threshold-suggest"
-                          >Подсказка оператору</label
+                        <label for="threshold-suggest">Подсказка оператору</label
                         ><InputNumber
                           input-id="threshold-suggest"
-                          v-model="
-                            controller.detection.value.confidenceTiers.suggest
-                          "
+                          v-model="controller.detection.value.confidenceTiers.suggest"
                           :min="0"
                           :max="1"
                           :min-fraction-digits="2"
@@ -1693,18 +1444,15 @@ onBeforeUnmount(() => {
                           :disabled="!controller.canManageDetection.value"
                         />
                         <small
-                          >Категория появится как рекомендация, но решение
-                          останется за человеком.</small
+                          >Категория появится как рекомендация, но решение останется за
+                          человеком.</small
                         >
                       </div>
                       <div class="field">
-                        <label for="threshold-auto"
-                          >Применить без подтверждения</label
+                        <label for="threshold-auto">Применить без подтверждения</label
                         ><InputNumber
                           input-id="threshold-auto"
-                          v-model="
-                            controller.detection.value.confidenceTiers.autoApply
-                          "
+                          v-model="controller.detection.value.confidenceTiers.autoApply"
                           :min="0"
                           :max="1"
                           :min-fraction-digits="2"
@@ -1718,12 +1466,11 @@ onBeforeUnmount(() => {
                       v-if="issueFor('confidenceTiers')"
                       severity="error"
                       :closable="false"
-                      >{{ issueFor("confidenceTiers") }}</Message
+                      >{{ issueFor('confidenceTiers') }}</Message
                     >
                     <div class="field-grid field-grid--three">
                       <div class="field">
-                        <label for="candidate-limit"
-                          >Сколько обращений сравнить</label
+                        <label for="candidate-limit">Сколько обращений сравнить</label
                         ><InputNumber
                           input-id="candidate-limit"
                           v-model="controller.detection.value.candidateLimit"
@@ -1736,9 +1483,8 @@ onBeforeUnmount(() => {
                         <small
                           id="candidate-limit-error"
                           :class="{ 'field-error': issueFor('candidateLimit') }"
-                          >Последние открытые обращения, к которым можно
-                          привязать сообщение.
-                          {{ issueFor("candidateLimit") }}</small
+                          >Последние открытые обращения, к которым можно привязать сообщение.
+                          {{ issueFor('candidateLimit') }}</small
                         >
                       </div>
                       <div class="field">
@@ -1755,8 +1501,8 @@ onBeforeUnmount(() => {
                         <small
                           id="debounce-error"
                           :class="{ 'field-error': issueFor('debounceMs') }"
-                          >Сервер подождёт продолжение сообщения и только затем
-                          начнёт проверку. {{ issueFor("debounceMs") }}</small
+                          >Сервер подождёт продолжение сообщения и только затем начнёт проверку.
+                          {{ issueFor('debounceMs') }}</small
                         >
                       </div>
                       <div class="field model-profile-field">
@@ -1764,16 +1510,12 @@ onBeforeUnmount(() => {
                         ><Select
                           v-if="modelProfileOptions.length"
                           input-id="model-revision"
-                          v-model="
-                            controller.detection.value.modelProfileRevisionId
-                          "
+                          v-model="controller.detection.value.modelProfileRevisionId"
                           :options="modelProfileOptions"
                           option-label="displayName"
                           option-value="revisionId"
                           placeholder="Выберите разрешённую модель"
-                          :aria-invalid="
-                            Boolean(issueFor('modelProfileRevisionId'))
-                          "
+                          :aria-invalid="Boolean(issueFor('modelProfileRevisionId'))"
                           aria-describedby="model-revision-description model-revision-error"
                           :disabled="!controller.canManageDetection.value"
                         />
@@ -1784,30 +1526,25 @@ onBeforeUnmount(() => {
                           <i class="pi pi-check-circle" aria-hidden="true" />
                           <span
                             ><strong>Назначена сервером</strong
-                            ><small
-                              >Профиль закреплён в текущей конфигурации
-                              проекта.</small
-                            ></span
+                            ><small>Профиль закреплён в текущей конфигурации проекта.</small></span
                           >
                         </div>
                         <small id="model-revision-description">
                           {{
                             selectedModelProfile?.description ??
                             (controller.assignedModelRevisionId.value
-                              ? "Подробности профиля не включены в список доступных вариантов."
-                              : "Сервер не вернул описание выбранной модели.")
+                              ? 'Подробности профиля не включены в список доступных вариантов.'
+                              : 'Сервер не вернул описание выбранной модели.')
                           }}
                         </small>
                         <small id="model-revision-error" class="field-error">{{
-                          issueFor("modelProfileRevisionId")
+                          issueFor('modelProfileRevisionId')
                         }}</small>
                       </div>
                     </div>
                     <div class="field-grid field-grid--three">
                       <div class="field">
-                        <label for="ambiguity-action"
-                          >Если уверенности недостаточно</label
-                        >
+                        <label for="ambiguity-action">Если уверенности недостаточно</label>
                         <Select
                           input-id="ambiguity-action"
                           v-model="controller.detection.value.ambiguityAction"
@@ -1819,55 +1556,43 @@ onBeforeUnmount(() => {
                         <small>Без автоматического изменения обращения.</small>
                       </div>
                       <div class="field">
-                        <label for="attach-window"
-                          >Продолжать открытое обращение, минут</label
-                        >
+                        <label for="attach-window">Продолжать открытое обращение, минут</label>
                         <InputNumber
                           input-id="attach-window"
                           :model-value="
-                            Math.round(
-                              controller.detection.value.attachWindowMs / 60000,
-                            )
+                            Math.round(controller.detection.value.attachWindowMs / 60000)
                           "
                           :min="1"
                           :max="525600"
                           :aria-invalid="Boolean(issueFor('attachWindowMs'))"
                           :disabled="!controller.canManageDetection.value"
                           @update:model-value="
-                            controller.detection.value.attachWindowMs =
-                              Number($event ?? 1) * 60000
+                            controller.detection.value.attachWindowMs = Number($event ?? 1) * 60000
                           "
                         />
-                        <small
-                          :class="{ 'field-error': issueFor('attachWindowMs') }"
-                          >В этот период новое сообщение продолжит уже открытое
-                          обращение. {{ issueFor("attachWindowMs") }}</small
+                        <small :class="{ 'field-error': issueFor('attachWindowMs') }"
+                          >В этот период новое сообщение продолжит уже открытое обращение.
+                          {{ issueFor('attachWindowMs') }}</small
                         >
                       </div>
                       <div class="field">
-                        <label for="reopen-window"
-                          >Возвращать закрытое обращение, минут</label
-                        >
+                        <label for="reopen-window">Возвращать закрытое обращение, минут</label>
                         <InputNumber
                           input-id="reopen-window"
                           :model-value="
-                            Math.round(
-                              controller.detection.value.reopenWindowMs / 60000,
-                            )
+                            Math.round(controller.detection.value.reopenWindowMs / 60000)
                           "
                           :min="1"
                           :max="525600"
                           :aria-invalid="Boolean(issueFor('reopenWindowMs'))"
                           :disabled="!controller.canManageDetection.value"
                           @update:model-value="
-                            controller.detection.value.reopenWindowMs =
-                              Number($event ?? 1) * 60000
+                            controller.detection.value.reopenWindowMs = Number($event ?? 1) * 60000
                           "
                         />
-                        <small
-                          :class="{ 'field-error': issueFor('reopenWindowMs') }"
+                        <small :class="{ 'field-error': issueFor('reopenWindowMs') }"
                           >Позже этого срока будет создано новое обращение.
-                          {{ issueFor("reopenWindowMs") }}</small
+                          {{ issueFor('reopenWindowMs') }}</small
                         >
                       </div>
                     </div>
@@ -1876,40 +1601,28 @@ onBeforeUnmount(() => {
                         <div>
                           <strong>Кому применять правила</strong>
                           <small
-                            >Оставьте списки пустыми, чтобы проверять всех
-                            пользователей проекта.</small
+                            >Оставьте списки пустыми, чтобы проверять всех пользователей
+                            проекта.</small
                           >
                         </div>
                       </div>
-                      <div
-                        v-for="kind in audienceKinds"
-                        :key="kind"
-                        class="audience-block"
-                      >
+                      <div v-for="kind in audienceKinds" :key="kind" class="audience-block">
                         <div class="advanced-group__heading">
-                          <span>{{
-                            kind === "include" ? "Включать" : "Исключать"
-                          }}</span>
+                          <span>{{ kind === 'include' ? 'Включать' : 'Исключать' }}</span>
                           <Button
                             v-if="controller.canManageDetection.value"
-                            :label="
-                              kind === 'include'
-                                ? 'Добавить условие'
-                                : 'Добавить исключение'
-                            "
+                            :label="kind === 'include' ? 'Добавить условие' : 'Добавить исключение'"
                             icon="pi pi-plus"
                             size="small"
                             text
-                            :disabled="
-                              controller.detection.value.audience[kind]
-                                .length >= 100
-                            "
+                            :disabled="controller.detection.value.audience[kind].length >= 100"
                             @click="addAudiencePredicate(kind)"
                           />
                         </div>
                         <div
-                          v-for="(predicate, predicateIndex) in controller
-                            .detection.value.audience[kind]"
+                          v-for="(predicate, predicateIndex) in controller.detection.value.audience[
+                            kind
+                          ]"
                           :key="`${kind}-${predicateIndex}`"
                           class="predicate-row"
                         >
@@ -1919,11 +1632,7 @@ onBeforeUnmount(() => {
                             placeholder="Например, SEGMENT"
                             maxlength="64"
                             :aria-invalid="
-                              Boolean(
-                                issueFor(
-                                  `audience.${kind}.${predicateIndex}.attributeCode`,
-                                ),
-                              )
+                              Boolean(issueFor(`audience.${kind}.${predicateIndex}.attributeCode`))
                             "
                             :disabled="!controller.canManageDetection.value"
                           />
@@ -1941,26 +1650,16 @@ onBeforeUnmount(() => {
                             placeholder="Значение"
                             :disabled="!controller.canManageDetection.value"
                             :aria-invalid="
-                              Boolean(
-                                issueFor(
-                                  `audience.${kind}.${predicateIndex}.value`,
-                                ),
-                              )
+                              Boolean(issueFor(`audience.${kind}.${predicateIndex}.value`))
                             "
-                            @update:model-value="
-                              updateAudienceValue(predicate, $event)
-                            "
+                            @update:model-value="updateAudienceValue(predicate, $event)"
                           />
                           <div class="predicate-errors">
                             <small class="field-error">{{
-                              issueFor(
-                                `audience.${kind}.${predicateIndex}.attributeCode`,
-                              )
+                              issueFor(`audience.${kind}.${predicateIndex}.attributeCode`)
                             }}</small>
                             <small class="field-error">{{
-                              issueFor(
-                                `audience.${kind}.${predicateIndex}.value`,
-                              )
+                              issueFor(`audience.${kind}.${predicateIndex}.value`)
                             }}</small>
                           </div>
                           <Button
@@ -1971,17 +1670,12 @@ onBeforeUnmount(() => {
                             rounded
                             aria-label="Удалить условие"
                             @click="
-                              controller.detection.value.audience[kind].splice(
-                                predicateIndex,
-                                1,
-                              )
+                              controller.detection.value.audience[kind].splice(predicateIndex, 1)
                             "
                           />
                         </div>
                         <small
-                          v-if="
-                            !controller.detection.value.audience[kind].length
-                          "
+                          v-if="!controller.detection.value.audience[kind].length"
                           class="muted"
                           >Условий нет</small
                         >
@@ -1992,102 +1686,64 @@ onBeforeUnmount(() => {
                         <div>
                           <strong>Данные для решения</strong
                           ><small
-                            >Сколько истории и фактов сервер может использовать
-                            для одной классификации.</small
+                            >Сколько истории и фактов сервер может использовать для одной
+                            классификации.</small
                           >
                         </div>
                       </div>
                       <div class="field-grid field-grid--three">
                         <div class="field">
-                          <label for="max-signals"
-                            >Сигналы о пользователе</label
-                          >
+                          <label for="max-signals">Сигналы о пользователе</label>
                           <InputNumber
                             input-id="max-signals"
-                            v-model="
-                              controller.detection.value.routerContext
-                                .maxSignals
-                            "
+                            v-model="controller.detection.value.routerContext.maxSignals"
                             :min="1"
                             :max="8"
-                            :aria-invalid="
-                              Boolean(issueFor('routerContext.maxSignals'))
-                            "
+                            :aria-invalid="Boolean(issueFor('routerContext.maxSignals'))"
                             :disabled="!controller.canManageDetection.value"
                           />
                           <small
                             :class="{
-                              'field-error': issueFor(
-                                'routerContext.maxSignals',
-                              ),
+                              'field-error': issueFor('routerContext.maxSignals'),
                             }"
-                            >Структурированные факты профиля, полезные для
-                            решения.
-                            {{ issueFor("routerContext.maxSignals") }}</small
+                            >Структурированные факты профиля, полезные для решения.
+                            {{ issueFor('routerContext.maxSignals') }}</small
                           >
                         </div>
                         <div class="field">
-                          <label for="max-context-messages"
-                            >Последние сообщения</label
-                          >
+                          <label for="max-context-messages">Последние сообщения</label>
                           <InputNumber
                             input-id="max-context-messages"
-                            v-model="
-                              controller.detection.value.routerContext
-                                .maxContextMessages
-                            "
+                            v-model="controller.detection.value.routerContext.maxContextMessages"
                             :min="0"
                             :max="50"
-                            :aria-invalid="
-                              Boolean(
-                                issueFor('routerContext.maxContextMessages'),
-                              )
-                            "
+                            :aria-invalid="Boolean(issueFor('routerContext.maxContextMessages'))"
                             :disabled="!controller.canManageDetection.value"
                           />
                           <small
                             :class="{
-                              'field-error': issueFor(
-                                'routerContext.maxContextMessages',
-                              ),
+                              'field-error': issueFor('routerContext.maxContextMessages'),
                             }"
-                            >Сколько сообщений взять, чтобы понять контекст
-                            диалога.
-                            {{
-                              issueFor("routerContext.maxContextMessages")
-                            }}</small
+                            >Сколько сообщений взять, чтобы понять контекст диалога.
+                            {{ issueFor('routerContext.maxContextMessages') }}</small
                           >
                         </div>
                         <div class="field">
-                          <label for="max-candidate-cases"
-                            >Открытые обращения</label
-                          >
+                          <label for="max-candidate-cases">Открытые обращения</label>
                           <InputNumber
                             input-id="max-candidate-cases"
-                            v-model="
-                              controller.detection.value.routerContext
-                                .maxCandidateCases
-                            "
+                            v-model="controller.detection.value.routerContext.maxCandidateCases"
                             :min="0"
                             :max="20"
-                            :aria-invalid="
-                              Boolean(
-                                issueFor('routerContext.maxCandidateCases'),
-                              )
-                            "
+                            :aria-invalid="Boolean(issueFor('routerContext.maxCandidateCases'))"
                             :disabled="!controller.canManageDetection.value"
                           />
                           <small
                             :class="{
-                              'field-error': issueFor(
-                                'routerContext.maxCandidateCases',
-                              ),
+                              'field-error': issueFor('routerContext.maxCandidateCases'),
                             }"
-                            >Кандидаты на продолжение вместо создания нового
-                            обращения.
-                            {{
-                              issueFor("routerContext.maxCandidateCases")
-                            }}</small
+                            >Кандидаты на продолжение вместо создания нового обращения.
+                            {{ issueFor('routerContext.maxCandidateCases') }}</small
                           >
                         </div>
                       </div>
@@ -2096,105 +1752,62 @@ onBeforeUnmount(() => {
                       <div class="advanced-group__heading">
                         <div>
                           <strong>Ограничения одной проверки</strong
-                          ><small
-                            >Защитные пределы на случай слишком сложной
-                            конфигурации.</small
-                          >
+                          ><small>Защитные пределы на случай слишком сложной конфигурации.</small>
                         </div>
                       </div>
                       <div class="field-grid field-grid--three">
                         <div class="field">
-                          <label for="max-rules-evaluated"
-                            >Точных правил за проверку</label
-                          >
+                          <label for="max-rules-evaluated">Точных правил за проверку</label>
                           <InputNumber
                             input-id="max-rules-evaluated"
-                            v-model="
-                              controller.detection.value.runtimeLimits
-                                .maxRulesEvaluated
-                            "
+                            v-model="controller.detection.value.runtimeLimits.maxRulesEvaluated"
                             :min="1"
                             :max="20"
-                            :aria-invalid="
-                              Boolean(
-                                issueFor('runtimeLimits.maxRulesEvaluated'),
-                              )
-                            "
+                            :aria-invalid="Boolean(issueFor('runtimeLimits.maxRulesEvaluated'))"
                             :disabled="!controller.canManageDetection.value"
                           />
                           <small
                             :class="{
-                              'field-error': issueFor(
-                                'runtimeLimits.maxRulesEvaluated',
-                              ),
+                              'field-error': issueFor('runtimeLimits.maxRulesEvaluated'),
                             }"
-                            >Это технический предел, а не требуемое количество
-                            созданных правил.
-                            {{
-                              issueFor("runtimeLimits.maxRulesEvaluated")
-                            }}</small
+                            >Это технический предел, а не требуемое количество созданных правил.
+                            {{ issueFor('runtimeLimits.maxRulesEvaluated') }}</small
                           >
                         </div>
                         <div class="field">
-                          <label for="max-semantic-statements"
-                            >Смысловых признаков</label
-                          >
+                          <label for="max-semantic-statements">Смысловых признаков</label>
                           <InputNumber
                             input-id="max-semantic-statements"
-                            v-model="
-                              controller.detection.value.runtimeLimits
-                                .maxSemanticStatements
-                            "
+                            v-model="controller.detection.value.runtimeLimits.maxSemanticStatements"
                             :min="0"
                             :max="50"
-                            :aria-invalid="
-                              Boolean(
-                                issueFor('runtimeLimits.maxSemanticStatements'),
-                              )
-                            "
+                            :aria-invalid="Boolean(issueFor('runtimeLimits.maxSemanticStatements'))"
                             :disabled="!controller.canManageDetection.value"
                           />
                           <small
                             :class="{
-                              'field-error': issueFor(
-                                'runtimeLimits.maxSemanticStatements',
-                              ),
+                              'field-error': issueFor('runtimeLimits.maxSemanticStatements'),
                             }"
-                            >Сколько смысловых условий модель может оценить за
-                            раз.
-                            {{
-                              issueFor("runtimeLimits.maxSemanticStatements")
-                            }}</small
+                            >Сколько смысловых условий модель может оценить за раз.
+                            {{ issueFor('runtimeLimits.maxSemanticStatements') }}</small
                           >
                         </div>
                         <div class="field">
-                          <label for="max-evaluation-ms"
-                            >Максимальное время, мс</label
-                          >
+                          <label for="max-evaluation-ms">Максимальное время, мс</label>
                           <InputNumber
                             input-id="max-evaluation-ms"
-                            v-model="
-                              controller.detection.value.runtimeLimits
-                                .maxEvaluationMs
-                            "
+                            v-model="controller.detection.value.runtimeLimits.maxEvaluationMs"
                             :min="1"
                             :max="5000"
-                            :aria-invalid="
-                              Boolean(issueFor('runtimeLimits.maxEvaluationMs'))
-                            "
+                            :aria-invalid="Boolean(issueFor('runtimeLimits.maxEvaluationMs'))"
                             :disabled="!controller.canManageDetection.value"
                           />
                           <small
                             :class="{
-                              'field-error': issueFor(
-                                'runtimeLimits.maxEvaluationMs',
-                              ),
+                              'field-error': issueFor('runtimeLimits.maxEvaluationMs'),
                             }"
-                            >После этого срока сервер выберет безопасный
-                            результат.
-                            {{
-                              issueFor("runtimeLimits.maxEvaluationMs")
-                            }}</small
+                            >После этого срока сервер выберет безопасный результат.
+                            {{ issueFor('runtimeLimits.maxEvaluationMs') }}</small
                           >
                         </div>
                       </div>
@@ -2206,15 +1819,14 @@ onBeforeUnmount(() => {
                   <div>
                     <strong
                       >{{
-                        controller.detectionIssues.value.filter(
-                          (item) => item.severity === "ERROR",
-                        ).length
+                        controller.detectionIssues.value.filter((item) => item.severity === 'ERROR')
+                          .length
                       }}
                       ошибок</strong
                     ><span
                       >{{
                         controller.detectionIssues.value.filter(
-                          (item) => item.severity === "WARNING",
+                          (item) => item.severity === 'WARNING',
                         ).length
                       }}
                       рекомендаций</span
@@ -2250,8 +1862,7 @@ onBeforeUnmount(() => {
                     outlined
                     :loading="controller.validating.value"
                     :disabled="
-                      controller.hasDetectionErrors.value ||
-                      controller.hasPendingRecovery.value
+                      controller.hasDetectionErrors.value || controller.hasPendingRecovery.value
                     "
                     @click="controller.validateDraft"
                   /><Button
@@ -2267,14 +1878,11 @@ onBeforeUnmount(() => {
                     icon="pi pi-save"
                     :loading="controller.mutating.value"
                     :disabled="
-                      controller.hasDetectionErrors.value ||
-                      controller.hasPendingRecovery.value
+                      controller.hasDetectionErrors.value || controller.hasPendingRecovery.value
                     "
                     @click="controller.saveDetection"
                   /><Button
-                    v-if="
-                      draftDetection && controller.canPublishDetection.value
-                    "
+                    v-if="draftDetection && controller.canPublishDetection.value"
                     label="Опубликовать"
                     icon="pi pi-check"
                     severity="success"
@@ -2289,21 +1897,15 @@ onBeforeUnmount(() => {
                 :locales="controller.detection.value.locales"
                 :can-preview="controller.canPreview.value"
                 :blocked="
-                  controller.hasDetectionErrors.value ||
-                  controller.hasPendingRecovery.value
+                  controller.hasDetectionErrors.value || controller.hasPendingRecovery.value
                 "
-                :loading="
-                  controller.previewing.value || controller.validating.value
-                "
+                :loading="controller.previewing.value || controller.validating.value"
                 @preview="controller.preview"
               />
             </main>
             <template #footer>
               <Button
-                v-if="
-                  detectionEditor === 'TOPIC' &&
-                  controller.canManageDetection.value
-                "
+                v-if="detectionEditor === 'TOPIC' && controller.canManageDetection.value"
                 label="Удалить категорию"
                 icon="pi pi-trash"
                 severity="danger"
@@ -2314,10 +1916,7 @@ onBeforeUnmount(() => {
                 "
               />
               <Button
-                v-if="
-                  detectionEditor === 'RULE' &&
-                  controller.canManageDetection.value
-                "
+                v-if="detectionEditor === 'RULE' && controller.canManageDetection.value"
                 label="Удалить правило"
                 icon="pi pi-trash"
                 severity="danger"
@@ -2342,21 +1941,12 @@ onBeforeUnmount(() => {
               :result="controller.dryRunResult.value"
               :locales="controller.detection.value.locales"
               :can-preview="controller.canPreview.value"
-              :blocked="
-                controller.hasDetectionErrors.value ||
-                controller.hasPendingRecovery.value
-              "
-              :loading="
-                controller.previewing.value || controller.validating.value
-              "
+              :blocked="controller.hasDetectionErrors.value || controller.hasPendingRecovery.value"
+              :loading="controller.previewing.value || controller.validating.value"
               @preview="controller.preview"
             />
             <template #footer>
-              <Button
-                label="Закрыть"
-                severity="secondary"
-                @click="previewVisible = false"
-              />
+              <Button label="Закрыть" severity="secondary" @click="previewVisible = false" />
             </template>
           </Dialog>
         </div>
@@ -2368,8 +1958,8 @@ onBeforeUnmount(() => {
                 <div class="card-kicker">Модель и лимиты</div>
                 <h2>Ограничения расходов</h2>
                 <p>
-                  Задайте предупреждения и жёсткие пределы. Все суммы хранятся в
-                  миллионных долях доллара.
+                  Задайте предупреждения и жёсткие пределы. Все суммы хранятся в миллионных долях
+                  доллара.
                 </p>
               </div>
               <Tag
@@ -2381,12 +1971,8 @@ onBeforeUnmount(() => {
                 severity="secondary"
               />
             </div>
-            <Message
-              v-if="!controller.canReadCost.value"
-              severity="warn"
-              :closable="false"
-              >Ваша роль может видеть состояние настроек, но не значения лимитов
-              расходов.</Message
+            <Message v-if="!controller.canReadCost.value" severity="warn" :closable="false"
+              >Ваша роль может видеть состояние настроек, но не значения лимитов расходов.</Message
             >
             <div v-else class="field-grid">
               <div class="field">
@@ -2399,7 +1985,7 @@ onBeforeUnmount(() => {
                   :disabled="!controller.canManageBudget.value"
                 />
                 <small id="token-soft-error" class="field-error">{{
-                  budgetIssueFor("dailyTokenSoftCap")
+                  budgetIssueFor('dailyTokenSoftCap')
                 }}</small>
               </div>
               <div class="field">
@@ -2412,7 +1998,7 @@ onBeforeUnmount(() => {
                   :disabled="!controller.canManageBudget.value"
                 />
                 <small id="token-hard-error" class="field-error">{{
-                  budgetIssueFor("dailyTokenHardCap")
+                  budgetIssueFor('dailyTokenHardCap')
                 }}</small>
               </div>
               <div class="field">
@@ -2420,19 +2006,15 @@ onBeforeUnmount(() => {
                 ><InputText
                   id="cost-soft"
                   v-model="controller.budget.value.dailyCostMicroUsdSoftCap"
-                  :aria-invalid="
-                    Boolean(budgetIssueFor('dailyCostMicroUsdSoftCap'))
-                  "
+                  :aria-invalid="Boolean(budgetIssueFor('dailyCostMicroUsdSoftCap'))"
                   aria-describedby="cost-soft-help cost-soft-error"
                   :disabled="!controller.canManageBudget.value"
                 />
                 <small id="cost-soft-help">{{
-                  formatMicroUsd(
-                    controller.budget.value.dailyCostMicroUsdSoftCap,
-                  )
+                  formatMicroUsd(controller.budget.value.dailyCostMicroUsdSoftCap)
                 }}</small>
                 <small id="cost-soft-error" class="field-error">{{
-                  budgetIssueFor("dailyCostMicroUsdSoftCap")
+                  budgetIssueFor('dailyCostMicroUsdSoftCap')
                 }}</small>
               </div>
               <div class="field">
@@ -2440,19 +2022,15 @@ onBeforeUnmount(() => {
                 ><InputText
                   id="cost-hard"
                   v-model="controller.budget.value.dailyCostMicroUsdHardCap"
-                  :aria-invalid="
-                    Boolean(budgetIssueFor('dailyCostMicroUsdHardCap'))
-                  "
+                  :aria-invalid="Boolean(budgetIssueFor('dailyCostMicroUsdHardCap'))"
                   aria-describedby="cost-hard-help cost-hard-error"
                   :disabled="!controller.canManageBudget.value"
                 />
                 <small id="cost-hard-help">{{
-                  formatMicroUsd(
-                    controller.budget.value.dailyCostMicroUsdHardCap,
-                  )
+                  formatMicroUsd(controller.budget.value.dailyCostMicroUsdHardCap)
                 }}</small>
                 <small id="cost-hard-error" class="field-error">{{
-                  budgetIssueFor("dailyCostMicroUsdHardCap")
+                  budgetIssueFor('dailyCostMicroUsdHardCap')
                 }}</small>
               </div>
               <div class="field">
@@ -2468,7 +2046,7 @@ onBeforeUnmount(() => {
                   formatMicroUsd(controller.budget.value.maxRunCostMicroUsd)
                 }}</small>
                 <small id="run-cost-error" class="field-error">{{
-                  budgetIssueFor("maxRunCostMicroUsd")
+                  budgetIssueFor('maxRunCostMicroUsd')
                 }}</small>
               </div>
               <div class="field">
@@ -2476,19 +2054,15 @@ onBeforeUnmount(() => {
                 ><InputText
                   id="token-rate"
                   v-model="controller.budget.value.costMicroUsdPerMillionTokens"
-                  :aria-invalid="
-                    Boolean(budgetIssueFor('costMicroUsdPerMillionTokens'))
-                  "
+                  :aria-invalid="Boolean(budgetIssueFor('costMicroUsdPerMillionTokens'))"
                   aria-describedby="token-rate-help token-rate-error"
                   :disabled="!controller.canManageBudget.value"
                 />
                 <small id="token-rate-help">{{
-                  formatMicroUsd(
-                    controller.budget.value.costMicroUsdPerMillionTokens,
-                  )
+                  formatMicroUsd(controller.budget.value.costMicroUsdPerMillionTokens)
                 }}</small>
                 <small id="token-rate-error" class="field-error">{{
-                  budgetIssueFor("costMicroUsdPerMillionTokens")
+                  budgetIssueFor('costMicroUsdPerMillionTokens')
                 }}</small>
               </div>
               <div class="field">
@@ -2503,7 +2077,7 @@ onBeforeUnmount(() => {
                   :disabled="!controller.canManageBudget.value"
                 />
                 <small id="max-runs-error" class="field-error">{{
-                  budgetIssueFor("maxConcurrentRuns")
+                  budgetIssueFor('maxConcurrentRuns')
                 }}</small>
               </div>
               <div class="field">
@@ -2513,32 +2087,25 @@ onBeforeUnmount(() => {
                   v-model="controller.budget.value.routeMaxEstimatedTokens"
                   :min="64"
                   :max="20000"
-                  :aria-invalid="
-                    Boolean(budgetIssueFor('routeMaxEstimatedTokens'))
-                  "
+                  :aria-invalid="Boolean(budgetIssueFor('routeMaxEstimatedTokens'))"
                   aria-describedby="route-tokens-error"
                   :disabled="!controller.canManageBudget.value"
                 />
                 <small id="route-tokens-error" class="field-error">{{
-                  budgetIssueFor("routeMaxEstimatedTokens")
+                  budgetIssueFor('routeMaxEstimatedTokens')
                 }}</small>
               </div>
             </div>
             <div v-if="controller.canReadCost.value" class="editor-actions">
               <div>
-                <strong
-                  >{{ controller.budgetIssues.value.length }} ошибок</strong
-                >
+                <strong>{{ controller.budgetIssues.value.length }} ошибок</strong>
               </div>
               <Button
                 v-if="controller.canManageBudget.value"
                 label="Сохранить черновик"
                 icon="pi pi-save"
                 :loading="controller.mutating.value"
-                :disabled="
-                  controller.hasBudgetErrors.value ||
-                  controller.hasPendingRecovery.value
-                "
+                :disabled="controller.hasBudgetErrors.value || controller.hasPendingRecovery.value"
                 @click="controller.saveBudget"
               /><Button
                 v-if="draftBudget && controller.canPublishBudget.value"
@@ -2560,23 +2127,18 @@ onBeforeUnmount(() => {
               </li>
               <li>
                 <strong>Жёсткий предел</strong
-                ><span
-                  >Новые проверки приостанавливаются до следующего
-                  периода.</span
-                >
+                ><span>Новые проверки приостанавливаются до следующего периода.</span>
               </li>
             </ol>
             <p>
-              Публикация лимитов требует свежего входа в систему. Команда не
-              повторяется автоматически.
+              Публикация лимитов требует свежего входа в систему. Команда не повторяется
+              автоматически.
             </p>
           </aside>
           <SupportDetectionCalibrationCard
             class="budget-calibration"
             :calibration="controller.calibration.value"
-            :loading="
-              controller.calibrating.value || controller.validating.value
-            "
+            :loading="controller.calibrating.value || controller.validating.value"
             :can-preview="controller.canPreview.value"
             @load="controller.loadCalibration"
           />
@@ -2591,15 +2153,11 @@ onBeforeUnmount(() => {
       :style="{ width: 'min(30rem, calc(100vw - 2rem))' }"
     >
       <p>
-        Опубликованная версия останется без изменений. Несохранённые правки
-        восстановить не получится.
+        Опубликованная версия останется без изменений. Несохранённые правки восстановить не
+        получится.
       </p>
       <template #footer
-        ><Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="discardVisible = false" /><Button
+        ><Button label="Отмена" severity="secondary" text @click="discardVisible = false" /><Button
           label="Удалить черновик"
           severity="danger"
           @click="confirmDiscard"
@@ -2613,26 +2171,15 @@ onBeforeUnmount(() => {
       @update:visible="publishKind = null"
     >
       <p>
-        Версия станет доступна для следующей общей рабочей конфигурации. Одна
-        публикация этого раздела не переключает обработку сообщений. Уже
-        принятые решения не изменятся.
+        Версия станет доступна для следующей общей рабочей конфигурации. Одна публикация этого
+        раздела не переключает обработку сообщений. Уже принятые решения не изменятся.
       </p>
       <div class="field">
         <label for="publish-reason">Причина изменения</label
-        ><Textarea
-          id="publish-reason"
-          v-model="reason"
-          rows="3"
-          maxlength="2000"
-          auto-resize
-        />
+        ><Textarea id="publish-reason" v-model="reason" rows="3" maxlength="2000" auto-resize />
       </div>
       <template #footer
-        ><Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="publishKind = null" /><Button
+        ><Button label="Отмена" severity="secondary" text @click="publishKind = null" /><Button
           label="Опубликовать"
           severity="success"
           :disabled="!reason.trim()"
@@ -2725,11 +2272,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--ci-line);
   border-radius: 9px;
   color: var(--status-success-text);
-  background: color-mix(
-    in srgb,
-    var(--status-success-text) 7%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--status-success-text) 7%, var(--surface-card));
 }
 .assigned-model-summary > span {
   display: grid;
@@ -2753,11 +2296,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--line);
   border-radius: 12px;
   color: var(--text-secondary);
-  background: color-mix(
-    in srgb,
-    var(--surface-card) 82%,
-    var(--surface-ground)
-  );
+  background: color-mix(in srgb, var(--surface-card) 82%, var(--surface-ground));
 }
 .model-availability-note > i {
   color: var(--text-tertiary);
@@ -3105,7 +2644,7 @@ onBeforeUnmount(() => {
   background: var(--ci-soft);
   color: var(--ci-ink);
 }
-.section-tabs a[aria-current="page"] {
+.section-tabs a[aria-current='page'] {
   background: var(--status-accent-soft);
   color: var(--status-accent-text);
   box-shadow: inset 0 0 0 1px var(--palette-blue-200);
@@ -3143,17 +2682,13 @@ onBeforeUnmount(() => {
   box-shadow: var(--shadow-raised);
 }
 .summary-card--primary {
-  background: linear-gradient(
-    145deg,
-    var(--surface-card) 40%,
-    var(--status-accent-soft)
-  );
+  background: linear-gradient(145deg, var(--surface-card) 40%, var(--status-accent-soft));
 }
-.summary-card--primary[data-tone="warning"] .status-dot {
+.summary-card--primary[data-tone='warning'] .status-dot {
   background: var(--status-warning);
   box-shadow: 0 0 0 5px var(--status-warning-soft);
 }
-.summary-card--primary[data-tone="neutral"] .status-dot {
+.summary-card--primary[data-tone='neutral'] .status-dot {
   background: var(--text-tertiary);
   box-shadow: 0 0 0 5px var(--surface-hover);
 }
@@ -3747,7 +3282,7 @@ onBeforeUnmount(() => {
     font: inherit;
     font-weight: 750;
   }
-  .mobile-step[aria-current="step"] {
+  .mobile-step[aria-current='step'] {
     border-color: var(--action-primary);
     background: var(--action-primary);
     color: var(--on-action-primary);
@@ -3813,19 +3348,17 @@ onBeforeUnmount(() => {
     display: grid;
     grid-template-columns: 1fr 1fr;
   }
-  .policy-layout[data-mobile-panel="MAP"] .editor-column,
-  .policy-layout[data-mobile-panel="MAP"] .test-console,
-  .policy-layout[data-mobile-panel="EDITOR"] .policy-map,
-  .policy-layout[data-mobile-panel="EDITOR"] .test-console,
-  .policy-layout[data-mobile-panel="PREVIEW"] .policy-map,
-  .policy-layout[data-mobile-panel="PREVIEW"] .editor-column {
+  .policy-layout[data-mobile-panel='MAP'] .editor-column,
+  .policy-layout[data-mobile-panel='MAP'] .test-console,
+  .policy-layout[data-mobile-panel='EDITOR'] .policy-map,
+  .policy-layout[data-mobile-panel='EDITOR'] .test-console,
+  .policy-layout[data-mobile-panel='PREVIEW'] .policy-map,
+  .policy-layout[data-mobile-panel='PREVIEW'] .editor-column {
     display: none;
   }
-  .policy-layout.policy-layout--dialog[data-mobile-panel="MAP"] .editor-column,
-  .policy-layout.policy-layout--dialog[data-mobile-panel="EDITOR"]
-    .editor-column,
-  .policy-layout.policy-layout--dialog[data-mobile-panel="PREVIEW"]
-    .editor-column {
+  .policy-layout.policy-layout--dialog[data-mobile-panel='MAP'] .editor-column,
+  .policy-layout.policy-layout--dialog[data-mobile-panel='EDITOR'] .editor-column,
+  .policy-layout.policy-layout--dialog[data-mobile-panel='PREVIEW'] .editor-column {
     display: block;
   }
   .predicate-row {

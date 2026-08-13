@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 
 import type {
   AudienceCatalogResponseDto,
   AudienceCatalogV2ResponseDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 import {
   applyAudienceCommand,
@@ -13,62 +13,62 @@ import {
   serializeAudienceDraft,
   summarizeAudience,
   type AudienceDomainContext,
-} from "./index";
+} from './index';
 
 const catalog: AudienceCatalogResponseDto = {
   version: 1,
-  revision: "audience-revision-7",
+  revision: 'audience-revision-7',
   locales: [
-    { code: "ru-RU", language: "ru", label: "Русский (Россия)" },
-    { code: "en-US", language: "en", label: "English (United States)" },
+    { code: 'ru-RU', language: 'ru', label: 'Русский (Россия)' },
+    { code: 'en-US', language: 'en', label: 'English (United States)' },
   ],
   localeSource: {
-    operators: ["eq", "neq", "in", "exists", "not_exists"],
-    control: "SELECT",
-    authoringAvailability: "AVAILABLE",
+    operators: ['eq', 'neq', 'in', 'exists', 'not_exists'],
+    control: 'SELECT',
+    authoringAvailability: 'AVAILABLE',
   },
   languageSource: {
-    operators: ["eq", "neq", "in", "exists", "not_exists"],
-    control: "SELECT",
-    authoringAvailability: "AVAILABLE",
+    operators: ['eq', 'neq', 'in', 'exists', 'not_exists'],
+    control: 'SELECT',
+    authoringAvailability: 'AVAILABLE',
   },
   country: {
-    source: "profile.country",
-    valueType: "countryCode",
-    semantics: "ISO_3166_1_ALPHA_2_UPPERCASE",
-    operators: ["eq", "neq", "in", "exists", "not_exists"],
-    control: "COUNTRY_CODE",
-    authoringAvailability: "AVAILABLE",
+    source: 'profile.country',
+    valueType: 'countryCode',
+    semantics: 'ISO_3166_1_ALPHA_2_UPPERCASE',
+    operators: ['eq', 'neq', 'in', 'exists', 'not_exists'],
+    control: 'COUNTRY_CODE',
+    authoringAvailability: 'AVAILABLE',
   },
   attributes: [
     {
-      definitionId: "attribute-1",
-      definitionRevisionId: "attribute-revision-3",
+      definitionId: 'attribute-1',
+      definitionRevisionId: 'attribute-revision-3',
       revision: 3,
-      key: "vipLevel",
-      label: "VIP-уровень",
-      valueType: "number",
+      key: 'vipLevel',
+      label: 'VIP-уровень',
+      valueType: 'number',
       required: false,
       sensitive: true,
-      operators: ["eq", "gte", "exists", "not_exists"],
-      control: "NUMBER",
-      authoringAvailability: "AVAILABLE",
+      operators: ['eq', 'gte', 'exists', 'not_exists'],
+      control: 'NUMBER',
+      authoringAvailability: 'AVAILABLE',
     },
   ],
   segmentSource: {
-    operators: ["is_member", "is_not_member"],
-    searchEndpoint: "/segments",
-    control: "SEARCH",
-    authoringAvailability: "AVAILABLE",
+    operators: ['is_member', 'is_not_member'],
+    searchEndpoint: '/segments',
+    control: 'SEARCH',
+    authoringAvailability: 'AVAILABLE',
   },
   snapshotPolicy: {
-    initialEvaluation: "RUN_START",
-    missingOrNull: "NO_MATCH_EXCEPT_NOT_EXISTS",
-    deletedDefinition: "PINNED_SNAPSHOT_CONTINUES",
-    unavailableSource: "PUBLISH_REJECTED_EXPLAIN_UNAVAILABLE",
-    segmentRevision: "PINNED_REVISION",
-    persistence: "SNAPSHOT_WITH_SEPARATE_LAST_RECHECK",
-    recheckTrigger: "DELIVERY_RECHECK_ELIGIBILITY",
+    initialEvaluation: 'RUN_START',
+    missingOrNull: 'NO_MATCH_EXCEPT_NOT_EXISTS',
+    deletedDefinition: 'PINNED_SNAPSHOT_CONTINUES',
+    unavailableSource: 'PUBLISH_REJECTED_EXPLAIN_UNAVAILABLE',
+    segmentRevision: 'PINNED_REVISION',
+    persistence: 'SNAPSHOT_WITH_SEPARATE_LAST_RECHECK',
+    recheckTrigger: 'DELIVERY_RECHECK_ELIGIBILITY',
   },
 };
 
@@ -76,62 +76,62 @@ const context: AudienceDomainContext = {
   catalog,
   segments: [
     {
-      segmentId: "segment-1",
-      key: "vip",
-      name: "VIP-пользователи",
-      status: "ACTIVE",
+      segmentId: 'segment-1',
+      key: 'vip',
+      name: 'VIP-пользователи',
+      status: 'ACTIVE',
       currentRevision: {
-        segmentRevisionId: "segment-revision-2",
+        segmentRevisionId: 'segment-revision-2',
         revision: 2,
-        catalogRevision: "audience-revision-7",
-        contentHash: "hash",
-        publishedAt: "2026-07-18T00:00:00.000Z",
+        catalogRevision: 'audience-revision-7',
+        contentHash: 'hash',
+        publishedAt: '2026-07-18T00:00:00.000Z',
       },
     },
   ],
 };
 
-describe("Audience domain", () => {
-  it("serializes V2 profile attributes without coercing DECIMAL and keeps freshness at the rule root", () => {
+describe('Audience domain', () => {
+  it('serializes V2 profile attributes without coercing DECIMAL and keeps freshness at the rule root', () => {
     const v2Catalog: AudienceCatalogV2ResponseDto = {
       version: 2,
-      revision: "catalog-v2",
-      source: "END_USER_ATTRIBUTE",
+      revision: 'catalog-v2',
+      source: 'END_USER_ATTRIBUTE',
       attributes: [
         {
-          definitionId: "balance",
-          definitionRevisionId: "balance-r3",
+          definitionId: 'balance',
+          definitionRevisionId: 'balance-r3',
           revision: 3,
-          key: "balance",
-          label: "Баланс",
-          description: "Текущий баланс",
-          valueType: "DECIMAL",
+          key: 'balance',
+          label: 'Баланс',
+          description: 'Текущий баланс',
+          valueType: 'DECIMAL',
           constraints: { precision: 18, scale: 2 },
-          classification: "SENSITIVE",
-          lifecycle: "ACTIVE",
+          classification: 'SENSITIVE',
+          lifecycle: 'ACTIVE',
           audienceRead: true,
-          defaultFreshnessHint: { mode: "REQUIRE_FRESH", maxAgeSeconds: 3600 },
-          operators: ["eq", "gte", "is_missing", "is_stale"],
-          control: "NUMBER",
-          authoringAvailability: "AVAILABLE",
+          defaultFreshnessHint: { mode: 'REQUIRE_FRESH', maxAgeSeconds: 3600 },
+          operators: ['eq', 'gte', 'is_missing', 'is_stale'],
+          control: 'NUMBER',
+          authoringAvailability: 'AVAILABLE',
         },
       ],
       segmentSource: catalog.segmentSource,
       freshnessPolicies: [
-        { mode: "USE_LAST_KNOWN" },
+        { mode: 'USE_LAST_KNOWN' },
         {
-          mode: "REQUIRE_FRESH",
+          mode: 'REQUIRE_FRESH',
           maxAgeSeconds: { minimum: 1, maximum: 31_536_000 },
         },
       ],
       snapshotPolicy: {
-        initialEvaluation: "RUN_START",
-        truth: "THREE_VALUED_FAIL_CLOSED",
-        missing: "UNKNOWN",
-        stale: "UNKNOWN_WHEN_REQUIRED",
-        revision: "PINNED_DEFINITION_REVISION",
-        persistence: "INITIAL_AND_SEPARATE_RECHECK",
-        recheckTrigger: "DELIVERY_RECHECK_ELIGIBILITY",
+        initialEvaluation: 'RUN_START',
+        truth: 'THREE_VALUED_FAIL_CLOSED',
+        missing: 'UNKNOWN',
+        stale: 'UNKNOWN_WHEN_REQUIRED',
+        revision: 'PINNED_DEFINITION_REVISION',
+        persistence: 'INITIAL_AND_SEPARATE_RECHECK',
+        recheckTrigger: 'DELIVERY_RECHECK_ELIGIBILITY',
       },
     };
     const v2Context: AudienceDomainContext = {
@@ -141,12 +141,12 @@ describe("Audience domain", () => {
     const parsed = deserializeAudience(
       {
         version: 2,
-        freshness: { mode: "REQUIRE_FRESH", maxAgeSeconds: 3600 },
+        freshness: { mode: 'REQUIRE_FRESH', maxAgeSeconds: 3600 },
         root: {
-          kind: "profileAttribute",
-          definitionId: "balance",
-          operator: "gte",
-          value: "1.00",
+          kind: 'profileAttribute',
+          definitionId: 'balance',
+          operator: 'gte',
+          value: '1.00',
         },
       },
       v2Context,
@@ -157,12 +157,12 @@ describe("Audience domain", () => {
       ok: true,
       value: {
         version: 2,
-        freshness: { mode: "REQUIRE_FRESH", maxAgeSeconds: 3600 },
+        freshness: { mode: 'REQUIRE_FRESH', maxAgeSeconds: 3600 },
         root: {
-          kind: "profileAttribute",
-          definitionId: "balance",
-          operator: "gte",
-          value: "1.00",
+          kind: 'profileAttribute',
+          definitionId: 'balance',
+          operator: 'gte',
+          value: '1.00',
         },
       },
     });
@@ -170,37 +170,35 @@ describe("Audience domain", () => {
     parsed.draft.freshness = undefined;
     expect(serializeAudienceDraft(parsed.draft, v2Context)).toMatchObject({
       ok: true,
-      value: { freshness: { mode: "USE_LAST_KNOWN" } },
+      value: { freshness: { mode: 'USE_LAST_KNOWN' } },
     });
 
-    if (parsed.draft.root.kind === "userAttribute")
-      parsed.draft.root.value = "00.1";
+    if (parsed.draft.root.kind === 'userAttribute') parsed.draft.root.value = '00.1';
     expect(serializeAudienceDraft(parsed.draft, v2Context)).toMatchObject({
       ok: false,
       issues: [
         expect.objectContaining({
-          code: "attribute-value-type",
-          fieldPath: "value",
+          code: 'attribute-value-type',
+          fieldPath: 'value',
         }),
       ],
     });
-    if (parsed.draft.root.kind === "userAttribute")
-      parsed.draft.root.value = "1.000";
+    if (parsed.draft.root.kind === 'userAttribute') parsed.draft.root.value = '1.000';
     expect(serializeAudienceDraft(parsed.draft, v2Context)).toMatchObject({
       ok: false,
-      issues: [expect.objectContaining({ fieldPath: "value" })],
+      issues: [expect.objectContaining({ fieldPath: 'value' })],
     });
   });
 
-  it("keeps an immutable historical Segment pin valid after its head advances", () => {
+  it('keeps an immutable historical Segment pin valid after its head advances', () => {
     const draft = deserializeAudience(
       {
         version: 1,
         root: {
-          kind: "segmentMembership",
-          segmentId: "segment-1",
-          segmentRevisionId: "segment-revision-1",
-          operator: "is_member",
+          kind: 'segmentMembership',
+          segmentId: 'segment-1',
+          segmentRevisionId: 'segment-revision-1',
+          operator: 'is_member',
         },
       },
       context,
@@ -209,21 +207,21 @@ describe("Audience domain", () => {
     expect(serializeAudienceDraft(draft, context)).toMatchObject({
       ok: true,
       value: {
-        root: { segmentRevisionId: "segment-revision-1" },
+        root: { segmentRevisionId: 'segment-revision-1' },
       },
     });
-    expect(summarizeAudience(draft, context).text).toContain("предыдущая опубликованная версия");
+    expect(summarizeAudience(draft, context).text).toContain('предыдущая опубликованная версия');
   });
 
-  it("builds nested groups through commands and serializes stable typed identities", () => {
+  it('builds nested groups through commands and serializes stable typed identities', () => {
     let draft = createAudienceDraft();
     const rootId = draft.root.nodeId;
     const locale = applyAudienceCommand(
       draft,
       {
-        type: "add",
+        type: 'add',
         parentNodeId: rootId,
-        leaf: { kind: "locale", operator: "eq", value: "ru-RU" },
+        leaf: { kind: 'locale', operator: 'eq', value: 'ru-RU' },
       },
       context,
     );
@@ -234,12 +232,12 @@ describe("Audience domain", () => {
     const attribute = applyAudienceCommand(
       draft,
       {
-        type: "add",
+        type: 'add',
         parentNodeId: rootId,
         leaf: {
-          kind: "userAttribute",
-          definitionId: "attribute-1",
-          operator: "gte",
+          kind: 'userAttribute',
+          definitionId: 'attribute-1',
+          operator: 'gte',
           value: 3,
         },
       },
@@ -251,7 +249,7 @@ describe("Audience domain", () => {
 
     const wrapped = applyAudienceCommand(
       draft,
-      { type: "wrapNot", nodeId: attribute.focusNodeId },
+      { type: 'wrapNot', nodeId: attribute.focusNodeId },
       context,
     );
     expect(wrapped.ok).toBe(true);
@@ -263,15 +261,15 @@ describe("Audience domain", () => {
       value: {
         version: 1,
         root: {
-          kind: "all",
+          kind: 'all',
           children: [
-            { kind: "locale", operator: "eq", value: "ru-RU" },
+            { kind: 'locale', operator: 'eq', value: 'ru-RU' },
             {
-              kind: "not",
+              kind: 'not',
               child: {
-                kind: "userAttribute",
-                definitionId: "attribute-1",
-                operator: "gte",
+                kind: 'userAttribute',
+                definitionId: 'attribute-1',
+                operator: 'gte',
                 value: 3,
               },
             },
@@ -280,23 +278,21 @@ describe("Audience domain", () => {
       },
     });
     if (result.ok)
-      expect(result.pathIndex["root.children.1.child"]?.nodeId).toBe(
-        attribute.focusNodeId,
-      );
+      expect(result.pathIndex['root.children.1.child']?.nodeId).toBe(attribute.focusNodeId);
   });
 
-  it("pins an exact Segment revision and explains the audience in user language", () => {
+  it('pins an exact Segment revision and explains the audience in user language', () => {
     const source = {
       version: 1,
       root: {
-        kind: "any",
+        kind: 'any',
         children: [
-          { kind: "country", operator: "in", value: ["ES", "PT"] },
+          { kind: 'country', operator: 'in', value: ['ES', 'PT'] },
           {
-            kind: "segmentMembership",
-            segmentId: "segment-1",
-            segmentRevisionId: "segment-revision-2",
-            operator: "is_member",
+            kind: 'segmentMembership',
+            segmentId: 'segment-1',
+            segmentRevisionId: 'segment-revision-2',
+            operator: 'is_member',
           },
         ],
       },
@@ -307,16 +303,16 @@ describe("Audience domain", () => {
     expect(parsed.issues).toEqual([]);
     expect(serialized).toMatchObject({ ok: true, value: source });
     expect(summarizeAudience(parsed.draft, context)).toMatchObject({
-      status: "ready",
+      status: 'ready',
       leaves: 2,
       segmentLeaves: 1,
-      text: "Достаточно одного условия: страна — одна из ES, PT; входит в сегмент «VIP-пользователи» (версия 2)",
+      text: 'Достаточно одного условия: страна — одна из ES, PT; входит в сегмент «VIP-пользователи» (версия 2)',
     });
   });
 
-  it("maps a full-draft audience path back to the exact editor node", () => {
+  it('maps a full-draft audience path back to the exact editor node', () => {
     const parsed = deserializeAudience(
-      { version: 1, root: { kind: "locale", operator: "eq", value: "ru-RU" } },
+      { version: 1, root: { kind: 'locale', operator: 'eq', value: 'ru-RU' } },
       context,
     );
     const serialized = serializeAudienceDraft(parsed.draft, context);
@@ -326,19 +322,19 @@ describe("Audience domain", () => {
       mapAudienceIssues(
         [
           {
-            code: "AUDIENCE_VALUE_INVALID",
-            path: "audience.root.value",
-            message: "Недопустимое значение",
+            code: 'AUDIENCE_VALUE_INVALID',
+            path: 'audience.root.value',
+            message: 'Недопустимое значение',
           },
         ],
         serialized.pathIndex,
       )[0],
-    ).toMatchObject({ nodeId: parsed.draft.root.nodeId, fieldPath: "value" });
+    ).toMatchObject({ nodeId: parsed.draft.root.nodeId, fieldPath: 'value' });
   });
 
-  it("requires an array for the in operator, matching backend compilation", () => {
+  it('requires an array for the in operator, matching backend compilation', () => {
     const parsed = deserializeAudience(
-      { version: 1, root: { kind: "locale", operator: "in", value: "ru-RU" } },
+      { version: 1, root: { kind: 'locale', operator: 'in', value: 'ru-RU' } },
       context,
     );
     const result = serializeAudienceDraft(parsed.draft, context);
@@ -347,68 +343,68 @@ describe("Audience domain", () => {
       ok: false,
       issues: [
         expect.objectContaining({
-          code: "in-requires-array",
+          code: 'in-requires-array',
           nodeId: parsed.draft.root.nodeId,
-          fieldPath: "value",
+          fieldPath: 'value',
         }),
       ],
     });
   });
 
-  it("marks an empty nested group as invalid instead of omitting a restrictive Audience", () => {
+  it('marks an empty nested group as invalid instead of omitting a restrictive Audience', () => {
     const parsed = deserializeAudience(
       {
         version: 1,
         root: {
-          kind: "all",
+          kind: 'all',
           children: [
-            { kind: "locale", operator: "eq", value: "ru-RU" },
-            { kind: "any", children: [] },
+            { kind: 'locale', operator: 'eq', value: 'ru-RU' },
+            { kind: 'any', children: [] },
           ],
         },
       },
       context,
     );
 
-    expect(summarizeAudience(parsed.draft, context).status).toBe("invalid");
+    expect(summarizeAudience(parsed.draft, context).status).toBe('invalid');
     expect(serializeAudienceDraft(parsed.draft, context)).toEqual({
       ok: false,
-      issues: [expect.objectContaining({ code: "empty-group" })],
+      issues: [expect.objectContaining({ code: 'empty-group' })],
     });
   });
 
-  it("keeps an unknown discriminated node visible and blocks publication without data loss", () => {
+  it('keeps an unknown discriminated node visible and blocks publication without data loss', () => {
     const source = {
       version: 1,
-      root: { kind: "futureAudienceFact", stable: { value: 42 } },
+      root: { kind: 'futureAudienceFact', stable: { value: 42 } },
     };
     const parsed = deserializeAudience(source, context);
     const result = serializeAudienceDraft(parsed.draft, context);
 
     expect(parsed.draft.root).toMatchObject({
-      kind: "opaque",
-      reportedKind: "futureAudienceFact",
+      kind: 'opaque',
+      reportedKind: 'futureAudienceFact',
       source: source.root,
     });
     expect(result).toEqual({
       ok: false,
       issues: [
         expect.objectContaining({
-          code: "unsupported-node",
+          code: 'unsupported-node',
           nodeId: parsed.draft.root.nodeId,
         }),
       ],
     });
   });
 
-  it("rejects stale catalog choices locally and maps backend paths to the exact card", () => {
+  it('rejects stale catalog choices locally and maps backend paths to the exact card', () => {
     const parsed = deserializeAudience(
       {
         version: 1,
         root: {
-          kind: "userAttribute",
-          definitionId: "attribute-1",
-          operator: "gte",
+          kind: 'userAttribute',
+          definitionId: 'attribute-1',
+          operator: 'gte',
           value: 3,
         },
       },
@@ -424,7 +420,7 @@ describe("Audience domain", () => {
       ok: false,
       issues: [
         expect.objectContaining({
-          code: "attribute-unavailable",
+          code: 'attribute-unavailable',
           nodeId: parsed.draft.root.nodeId,
         }),
       ],
@@ -437,9 +433,9 @@ describe("Audience domain", () => {
       mapAudienceIssues(
         [
           {
-            code: "AUDIENCE_VALUE_INVALID",
-            path: "root.value",
-            message: "Value is invalid",
+            code: 'AUDIENCE_VALUE_INVALID',
+            path: 'root.value',
+            message: 'Value is invalid',
           },
         ],
         current.pathIndex,
@@ -447,7 +443,7 @@ describe("Audience domain", () => {
     ).toEqual([
       expect.objectContaining({
         nodeId: parsed.draft.root.nodeId,
-        fieldPath: "value",
+        fieldPath: 'value',
       }),
     ]);
   });

@@ -1,13 +1,13 @@
-import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
-import AISettingsSectionCard from "./AISettingsSectionCard.vue";
+import { mount } from '@vue/test-utils';
+import { describe, expect, it } from 'vitest';
+import AISettingsSectionCard from './AISettingsSectionCard.vue';
 
-describe("AISettingsSectionCard", () => {
-  it("keeps AI settings collapsed by default and reveals the mounted editor", async () => {
+describe('AISettingsSectionCard', () => {
+  it('keeps AI settings collapsed by default and reveals the mounted editor', async () => {
     const wrapper = mount(AISettingsSectionCard, {
       props: {
-        title: "Память Retenive",
-        description: "Настройки памяти",
+        title: 'Память Retenive',
+        description: 'Настройки памяти',
         loading: false,
       },
       slots: {
@@ -15,20 +15,16 @@ describe("AISettingsSectionCard", () => {
       },
     });
 
-    const toggle = wrapper.get("[aria-controls]");
-    const contentId = toggle.attributes("aria-controls");
+    const toggle = wrapper.get('[aria-controls]');
+    const contentId = toggle.attributes('aria-controls');
 
-    expect(toggle.attributes("aria-expanded")).toBe("false");
-    expect(wrapper.get(`#${contentId}`).attributes("style")).toContain(
-      "display: none",
-    );
+    expect(toggle.attributes('aria-expanded')).toBe('false');
+    expect(wrapper.get(`#${contentId}`).attributes('style')).toContain('display: none');
     expect(wrapper.find('[data-testid="editor"]').exists()).toBe(true);
 
-    await toggle.trigger("click");
+    await toggle.trigger('click');
 
-    expect(toggle.attributes("aria-expanded")).toBe("true");
-    expect(wrapper.get(`#${contentId}`).attributes("style")).not.toContain(
-      "display: none",
-    );
+    expect(toggle.attributes('aria-expanded')).toBe('true');
+    expect(wrapper.get(`#${contentId}`).attributes('style')).not.toContain('display: none');
   });
 });

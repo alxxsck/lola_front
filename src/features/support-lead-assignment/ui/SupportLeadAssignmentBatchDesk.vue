@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Tag from "primevue/tag";
-import Textarea from "primevue/textarea";
+import { ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Tag from 'primevue/tag';
+import Textarea from 'primevue/textarea';
 import type {
   SupportLeadAssignmentBatchRow,
   createSupportLeadAssignmentBatchController,
-} from "@/features/support-lead-assignment/model/use-support-lead-assignment-batch";
+} from '@/features/support-lead-assignment/model/use-support-lead-assignment-batch';
 
 const props = withDefaults(
   defineProps<{
@@ -28,8 +28,7 @@ function teams(row: SupportLeadAssignmentBatchRow) {
       team.operators.some(
         (operator) =>
           operator.actions.assign ||
-          (props.controller.hasForceAuthority.value &&
-            operator.actions.assignWithOverride),
+          (props.controller.hasForceAuthority.value && operator.actions.assignWithOverride),
       ),
     ) ?? []
   );
@@ -42,8 +41,7 @@ function operators(row: SupportLeadAssignmentBatchRow) {
       ?.operators.filter(
         (operator) =>
           operator.actions.assign ||
-          (props.controller.hasForceAuthority.value &&
-            operator.actions.assignWithOverride),
+          (props.controller.hasForceAuthority.value && operator.actions.assignWithOverride),
       )
       .map((operator) => ({
         ...operator,
@@ -53,39 +51,34 @@ function operators(row: SupportLeadAssignmentBatchRow) {
 }
 
 function requiredOverrides(row: SupportLeadAssignmentBatchRow): string[] {
-  return (
-    operators(row).find((operator) => operator.id === row.operatorId)
-      ?.requiredOverrides ?? []
-  );
+  return operators(row).find((operator) => operator.id === row.operatorId)?.requiredOverrides ?? [];
 }
 
 function caseLabel(value: string): string {
-  return props.caseLabels[value] ?? "Выбранное обращение";
+  return props.caseLabels[value] ?? 'Выбранное обращение';
 }
 
 function rowRequiresForce(row: SupportLeadAssignmentBatchRow): boolean {
   const operator = row.snapshot?.teams
     .find((team) => team.id === row.teamId)
     ?.operators.find((candidate) => candidate.id === row.operatorId);
-  return Boolean(
-    operator && !operator.actions.assign && operator.actions.assignWithOverride,
-  );
+  return Boolean(operator && !operator.actions.assign && operator.actions.assignWithOverride);
 }
 
 function caseCountLabel(value: number): string {
-  return `${value} ${value === 1 ? "обращение" : "обращений"} в пакете`;
+  return `${value} ${value === 1 ? 'обращение' : 'обращений'} в пакете`;
 }
 
 function errorLabel(code?: string): string {
   return (
     {
-      OPERATOR_CAPACITY_EXCEEDED: "Недостаточно свободной нагрузки",
-      OPERATOR_NOT_AVAILABLE: "Оператор недоступен",
-      CASE_VERSION_CONFLICT: "Обращение уже изменилось",
-      CASE_NOT_ACTIONABLE: "Обращение больше нельзя назначить",
-      IDEMPOTENCY_KEY_REUSED: "Ключ команды уже использован с другим пакетом",
-    }[code ?? ""] ??
-    "Ошибка не распознана. Обновите данные; если она повторится, передайте идентификатор обращения администратору."
+      OPERATOR_CAPACITY_EXCEEDED: 'Недостаточно свободной нагрузки',
+      OPERATOR_NOT_AVAILABLE: 'Оператор недоступен',
+      CASE_VERSION_CONFLICT: 'Обращение уже изменилось',
+      CASE_NOT_ACTIONABLE: 'Обращение больше нельзя назначить',
+      IDEMPOTENCY_KEY_REUSED: 'Ключ команды уже использован с другим пакетом',
+    }[code ?? ''] ??
+    'Ошибка не распознана. Обновите данные; если она повторится, передайте идентификатор обращения администратору.'
   );
 }
 
@@ -112,20 +105,15 @@ watch(
 watch(
   () => props.controller.hasForceAuthority.value,
   (allowed) => {
-    if (
-      allowed ||
-      !visible.value ||
-      !props.controller.rows.value.some(rowRequiresForce)
-    )
-      return;
+    if (allowed || !visible.value || !props.controller.rows.value.some(rowRequiresForce)) return;
     visible.value = false;
     props.controller.reset();
   },
-  { flush: "sync" },
+  { flush: 'sync' },
 );
 
 watch(
-  () => props.caseIds.join("\u001f"),
+  () => props.caseIds.join('\u001f'),
   (signature, previous) => {
     if (!visible.value || signature === previous) return;
     visible.value = false;
@@ -164,16 +152,13 @@ watch(
         v-if="controller.rows.value.length"
         :value="`${controller.readyCount.value} готовы`"
         :severity="
-          controller.readyCount.value === controller.rows.value.length
-            ? 'success'
-            : 'warn'
+          controller.readyCount.value === controller.rows.value.length ? 'success' : 'warn'
         "
       />
     </div>
 
     <Message severity="info" :closable="false">
-      Каждое обращение проверяется отдельно. Частичный результат останется
-      видимым по строкам.
+      Каждое обращение проверяется отдельно. Частичный результат останется видимым по строкам.
     </Message>
     <Message v-if="controller.error.value" severity="error" :closable="false">
       {{ controller.error.value }}
@@ -185,21 +170,13 @@ watch(
     </div>
 
     <div v-else-if="!controller.result.value" class="batch-rows">
-      <article
-        v-for="row in controller.rows.value"
-        :key="row.caseId"
-        class="batch-row"
-      >
+      <article v-for="row in controller.rows.value" :key="row.caseId" class="batch-row">
         <header>
           <div>
             <span class="section-kicker">Обращение</span>
             <strong>{{ caseLabel(row.caseId) }}</strong>
           </div>
-          <Tag
-            v-if="requiredOverrides(row).length"
-            value="Нужно исключение"
-            severity="warn"
-          />
+          <Tag v-if="requiredOverrides(row).length" value="Нужно исключение" severity="warn" />
         </header>
         <Message v-if="row.error" severity="error" :closable="false">
           {{ row.error }}
@@ -226,9 +203,7 @@ watch(
               option-value="id"
               :aria-label="`Оператор для ${caseLabel(row.caseId)}`"
               fluid
-              @update:model-value="
-                controller.setTarget(row.caseId, row.teamId, $event)
-              "
+              @update:model-value="controller.setTarget(row.caseId, row.teamId, $event)"
             />
           </label>
         </div>
@@ -254,13 +229,13 @@ watch(
           <span class="section-kicker">Результат</span>
           <h3>
             {{
-              controller.result.value.outcome === "PENDING"
-                ? "Пакет обрабатывается"
-                : controller.result.value.outcome === "SUCCEEDED"
-                  ? "Пакет выполнен"
-                  : controller.result.value.outcome === "PARTIAL"
-                    ? "Пакет выполнен частично"
-                    : "Пакет не выполнен"
+              controller.result.value.outcome === 'PENDING'
+                ? 'Пакет обрабатывается'
+                : controller.result.value.outcome === 'SUCCEEDED'
+                  ? 'Пакет выполнен'
+                  : controller.result.value.outcome === 'PARTIAL'
+                    ? 'Пакет выполнен частично'
+                    : 'Пакет не выполнен'
             }}
           </h3>
         </div>
@@ -278,10 +253,7 @@ watch(
         />
       </header>
       <ol>
-        <li
-          v-for="item in controller.result.value.items"
-          :key="item.clientItemId"
-        >
+        <li v-for="item in controller.result.value.items" :key="item.clientItemId">
           <div>
             <strong>{{ caseLabel(item.caseId) }}</strong>
           </div>
@@ -294,11 +266,7 @@ watch(
                   : 'В обработке'
             "
             :severity="
-              item.status === 'SUCCEEDED'
-                ? 'success'
-                : item.status === 'FAILED'
-                  ? 'danger'
-                  : 'info'
+              item.status === 'SUCCEEDED' ? 'success' : item.status === 'FAILED' ? 'danger' : 'info'
             "
           />
         </li>

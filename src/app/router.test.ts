@@ -1,54 +1,50 @@
-import { createPinia, setActivePinia } from "pinia";
-import {
-  AxiosError,
-  type AxiosResponse,
-  type InternalAxiosRequestConfig,
-} from "axios";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { authApi } from "@/features/auth/auth.api";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { takeSupportNotificationCapability } from "@/features/support-notifications/model/support-notification-capability";
-import { axiosInstance } from "@/shared/api/http/axios-instance";
-import { appScrollBehavior, router } from "./router";
+import { createPinia, setActivePinia } from 'pinia';
+import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { authApi } from '@/features/auth/auth.api';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { takeSupportNotificationCapability } from '@/features/support-notifications/model/support-notification-capability';
+import { axiosInstance } from '@/shared/api/http/axios-instance';
+import { appScrollBehavior, router } from './router';
 
-describe("scroll behavior", () => {
-  it("does not expose the retired Retenive Proposals routes", () => {
-    expect(router.hasRoute("ai-proposals")).toBe(false);
-    expect(router.hasRoute("ai-proposal-detail")).toBe(false);
+describe('scroll behavior', () => {
+  it('does not expose the retired Retenive Proposals routes', () => {
+    expect(router.hasRoute('ai-proposals')).toBe(false);
+    expect(router.hasRoute('ai-proposal-detail')).toBe(false);
   });
 
-  it("preserves window scroll while an AI ledger detail opens or closes", () => {
+  it('preserves window scroll while an AI ledger detail opens or closes', () => {
     expect(
       appScrollBehavior(
-        { name: "ai-analysis-detail" } as never,
-        { name: "ai-analyses" } as never,
+        { name: 'ai-analysis-detail' } as never,
+        { name: 'ai-analyses' } as never,
         null,
       ),
     ).toBe(false);
     expect(
       appScrollBehavior(
-        { name: "ai-operations" } as never,
-        { name: "ai-operation-detail" } as never,
+        { name: 'ai-operations' } as never,
+        { name: 'ai-operation-detail' } as never,
         null,
       ),
     ).toBe(false);
   });
 
-  it("restores browser history positions before applying route defaults", () => {
+  it('restores browser history positions before applying route defaults', () => {
     const savedPosition = { left: 0, top: 420 };
     expect(
       appScrollBehavior(
-        { name: "ai-analyses" } as never,
-        { name: "overview" } as never,
+        { name: 'ai-analyses' } as never,
+        { name: 'overview' } as never,
         savedPosition,
       ),
     ).toEqual(savedPosition);
   });
 });
 
-vi.mock("@/features/auth/auth.api", () => ({
+vi.mock('@/features/auth/auth.api', () => ({
   authApi: {
-    mode: "api",
+    mode: 'api',
     cancelMfa: vi.fn(),
     login: vi.fn(),
     restore: vi.fn().mockResolvedValue(null),
@@ -61,509 +57,457 @@ vi.mock("@/features/auth/auth.api", () => ({
   },
 }));
 
-vi.mock("@/pages/SupportCaseIntelligenceSettingsPage.vue", () => ({
-  default: { template: "<div />" },
+vi.mock('@/pages/SupportCaseIntelligenceSettingsPage.vue', () => ({
+  default: { template: '<div />' },
 }));
 
-describe("authentication routes", () => {
+describe('authentication routes', () => {
   beforeEach(async () => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
-    await router.replace("/login");
+    await router.replace('/login');
   });
 
-  it("captures a Support notification capability before an anonymous login redirect", async () => {
+  it('captures a Support notification capability before an anonymous login redirect', async () => {
     const auth = useAuthStore();
     auth.$patch({
       restored: true,
-      phase: "ANONYMOUS",
+      phase: 'ANONYMOUS',
       user: null,
       project: null,
       projects: [],
     });
-    const capability = "N".repeat(43);
+    const capability = 'N'.repeat(43);
 
     await router.push(`/support/notifications/open#capability=${capability}`);
 
-    expect(router.currentRoute.value.name).toBe("login");
-    expect(String(router.currentRoute.value.query.redirect)).toBe(
-      "/support/notifications/open",
-    );
+    expect(router.currentRoute.value.name).toBe('login');
+    expect(String(router.currentRoute.value.query.redirect)).toBe('/support/notifications/open');
     expect(router.currentRoute.value.fullPath).not.toContain(capability);
     expect(takeSupportNotificationCapability()).toBe(capability);
   });
 
-  it("allows the memory-bound setup state to enter the dedicated route", async () => {
+  it('allows the memory-bound setup state to enter the dedicated route', async () => {
     const auth = useAuthStore();
-    auth.$patch({ phase: "SETUP_REQUIRED", setupToken: "lps_setup-secret" });
+    auth.$patch({ phase: 'SETUP_REQUIRED', setupToken: 'lps_setup-secret' });
 
-    await router.push("/password/setup");
+    await router.push('/password/setup');
 
-    expect(router.currentRoute.value.name).toBe("password-setup");
+    expect(router.currentRoute.value.name).toBe('password-setup');
   });
 
-  it("returns a reload or direct setup URL to login when the memory capability is absent", async () => {
-    await router.push("/password/setup");
+  it('returns a reload or direct setup URL to login when the memory capability is absent', async () => {
+    await router.push('/password/setup');
 
-    expect(router.currentRoute.value.name).toBe("login");
+    expect(router.currentRoute.value.name).toBe('login');
   });
 
-  it("preserves a validated return target when an MFA page reload loses its memory capability", async () => {
-    await router.push(
-      "/auth/mfa?redirect=/ai-costs?tab=journal%26allowanceUser=user-1",
-    );
+  it('preserves a validated return target when an MFA page reload loses its memory capability', async () => {
+    await router.push('/auth/mfa?redirect=/ai-costs?tab=journal%26allowanceUser=user-1');
 
-    expect(router.currentRoute.value.name).toBe("login");
+    expect(router.currentRoute.value.name).toBe('login');
     expect(router.currentRoute.value.query.redirect).toBe(
-      "/ai-costs?tab=journal&allowanceUser=user-1",
+      '/ai-costs?tab=journal&allowanceUser=user-1',
     );
   });
 
-  it("drops an unsafe return target when an MFA page reloads", async () => {
-    await router.push("/auth/mfa?redirect=https%3A%2F%2Fevil.example%2Fsteal");
+  it('drops an unsafe return target when an MFA page reloads', async () => {
+    await router.push('/auth/mfa?redirect=https%3A%2F%2Fevil.example%2Fsteal');
 
-    expect(router.currentRoute.value.name).toBe("login");
+    expect(router.currentRoute.value.name).toBe('login');
     expect(router.currentRoute.value.query.redirect).toBeUndefined();
   });
 
-  it("allows only an in-memory MFA ceremony to enter the dedicated route", async () => {
+  it('allows only an in-memory MFA ceremony to enter the dedicated route', async () => {
     const auth = useAuthStore();
     auth.$patch({
-      phase: "MFA_REQUIRED",
+      phase: 'MFA_REQUIRED',
       mfaChallenge: {
-        kind: "MFA_REQUIRED",
-        ceremonyToken: "lmf_memory-only",
-        expiresAt: "2026-07-21T21:10:00.000Z",
-        publicKey: { challenge: "challenge" },
+        kind: 'MFA_REQUIRED',
+        ceremonyToken: 'lmf_memory-only',
+        expiresAt: '2026-07-21T21:10:00.000Z',
+        publicKey: { challenge: 'challenge' },
         recoveryAvailable: true,
       },
     });
 
-    await router.push("/auth/mfa");
-    expect(router.currentRoute.value.name).toBe("mfa");
+    await router.push('/auth/mfa');
+    expect(router.currentRoute.value.name).toBe('mfa');
 
     auth.cancelMfa();
-    await router.push("/overview");
-    await router.push("/auth/mfa");
-    expect(router.currentRoute.value.name).toBe("login");
+    await router.push('/overview');
+    await router.push('/auth/mfa');
+    expect(router.currentRoute.value.name).toBe('login');
   });
 
-  it("hands an active session requiring MFA back to login without replaying the protected request", async () => {
+  it('hands an active session requiring MFA back to login without replaying the protected request', async () => {
     const auth = useAuthStore();
     const project = {
-      id: "project-1",
-      name: "Project One",
-      slug: "project-one",
-      status: "ACTIVE" as const,
-      publicKey: "public",
-      defaultLocale: "ru",
-      supportedLocales: ["ru"],
-      assistantName: "Retenive",
-      systemPrompt: "",
-      voiceInstructions: "",
+      id: 'project-1',
+      name: 'Project One',
+      slug: 'project-one',
+      status: 'ACTIVE' as const,
+      publicKey: 'public',
+      defaultLocale: 'ru',
+      supportedLocales: ['ru'],
+      assistantName: 'Retenive',
+      systemPrompt: '',
+      voiceInstructions: '',
       settings: {},
-      effectivePermissionCodes: ["project.settings.read"],
+      effectivePermissionCodes: ['project.settings.read'],
     };
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
       },
       project,
       projects: [project],
       supportEnabled: true,
     });
-    await router.push("/project");
+    await router.push('/project');
     let attempts = 0;
     axiosInstance.defaults.adapter = async (config) => {
       attempts += 1;
       const response: AxiosResponse = {
         data: {
-          code: "MFA_ENROLLMENT_REQUIRED",
-          message: "Platform Operator MFA is required",
+          code: 'MFA_ENROLLMENT_REQUIRED',
+          message: 'Platform Operator MFA is required',
         },
         status: 428,
-        statusText: "Precondition Required",
+        statusText: 'Precondition Required',
         headers: {},
         config: config as InternalAxiosRequestConfig,
       };
-      throw new AxiosError(
-        "Request failed",
-        "ERR_BAD_REQUEST",
-        config,
-        undefined,
-        response,
-      );
+      throw new AxiosError('Request failed', 'ERR_BAD_REQUEST', config, undefined, response);
     };
 
     await expect(
-      axiosInstance.get("/api/v1/admin/projects/project-1/settings"),
-    ).rejects.toMatchObject({ status: 428, code: "MFA_ENROLLMENT_REQUIRED" });
-    await vi.waitFor(() =>
-      expect(router.currentRoute.value.name).toBe("login"),
-    );
+      axiosInstance.get('/api/v1/admin/projects/project-1/settings'),
+    ).rejects.toMatchObject({ status: 428, code: 'MFA_ENROLLMENT_REQUIRED' });
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login'));
 
     expect(router.currentRoute.value.query).toMatchObject({
-      redirect: "/project",
-      mfa: "MFA_ENROLLMENT_REQUIRED",
+      redirect: '/project',
+      mfa: 'MFA_ENROLLMENT_REQUIRED',
     });
-    expect(auth.phase).toBe("ANONYMOUS");
+    expect(auth.phase).toBe('ANONYMOUS');
     expect(auth.mfaChallenge).toBeNull();
     expect(attempts).toBe(1);
   });
 
-  it("allows the CMS User control plane only with the exact read Permission", async () => {
+  it('allows the CMS User control plane only with the exact read Permission', async () => {
     const auth = useAuthStore();
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
-        platformPermissionCodes: ["platform.cms_users.read"],
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
+        platformPermissionCodes: ['platform.cms_users.read'],
       },
     });
 
-    await router.push("/platform/cms-users");
-    expect(router.currentRoute.value.name).toBe("platform-cms-users");
+    await router.push('/platform/cms-users');
+    expect(router.currentRoute.value.name).toBe('platform-cms-users');
 
     auth.user!.platformPermissionCodes = [];
-    await router.push("/platform/cms-users/user-1");
-    expect(router.currentRoute.value.name).toBe("security-settings");
+    await router.push('/platform/cms-users/user-1');
+    expect(router.currentRoute.value.name).toBe('security-settings');
   });
 
-  it("allows notification recovery only with the exact Platform read Permission", async () => {
+  it('allows notification recovery only with the exact Platform read Permission', async () => {
     const auth = useAuthStore();
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
-        platformPermissionCodes: ["platform.notifications.operations.read"],
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
+        platformPermissionCodes: ['platform.notifications.operations.read'],
       },
     });
 
-    await router.push("/platform/notification-operations");
-    expect(router.currentRoute.value.name).toBe(
-      "platform-notification-operations",
-    );
+    await router.push('/platform/notification-operations');
+    expect(router.currentRoute.value.name).toBe('platform-notification-operations');
 
-    auth.user!.platformPermissionCodes = [
-      "platform.notifications.operations.operate",
-    ];
-    await router.push("/settings/security");
-    await router.push("/platform/notification-operations");
-    expect(router.currentRoute.value.name).toBe("security-settings");
+    auth.user!.platformPermissionCodes = ['platform.notifications.operations.operate'];
+    await router.push('/settings/security');
+    await router.push('/platform/notification-operations');
+    expect(router.currentRoute.value.name).toBe('security-settings');
   });
 
-  it("allows AI pricing only with the exact Platform read Permission", async () => {
+  it('allows AI pricing only with the exact Platform read Permission', async () => {
     const auth = useAuthStore();
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
-        platformPermissionCodes: ["platform.ai_pricing.read"],
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
+        platformPermissionCodes: ['platform.ai_pricing.read'],
       },
     });
 
-    await router.push("/platform/ai-pricing");
-    expect(router.currentRoute.value.name).toBe("platform-ai-pricing");
+    await router.push('/platform/ai-pricing');
+    expect(router.currentRoute.value.name).toBe('platform-ai-pricing');
 
-    auth.user!.platformPermissionCodes = ["platform.ai_pricing.write"];
-    await router.push("/settings/security");
-    await router.push("/platform/ai-pricing");
-    expect(router.currentRoute.value.name).toBe("security-settings");
+    auth.user!.platformPermissionCodes = ['platform.ai_pricing.write'];
+    await router.push('/settings/security');
+    await router.push('/platform/ai-pricing');
+    expect(router.currentRoute.value.name).toBe('security-settings');
   });
 
-  it("allows global Case Intelligence safety only with the manage Permission", async () => {
+  it('allows global Case Intelligence safety only with the manage Permission', async () => {
     const auth = useAuthStore();
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
-        platformPermissionCodes: [
-          "platform.case_intelligence.safety.manage",
-        ],
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
+        platformPermissionCodes: ['platform.case_intelligence.safety.manage'],
       },
     });
 
-    await router.push("/platform/case-intelligence/safety");
-    expect(router.currentRoute.value.name).toBe(
-      "platform-case-intelligence-safety",
-    );
+    await router.push('/platform/case-intelligence/safety');
+    expect(router.currentRoute.value.name).toBe('platform-case-intelligence-safety');
 
     auth.user!.platformPermissionCodes = [];
-    await router.push("/settings/security");
-    await router.push("/platform/case-intelligence/safety");
-    expect(router.currentRoute.value.name).toBe("security-settings");
+    await router.push('/settings/security');
+    await router.push('/platform/case-intelligence/safety');
+    expect(router.currentRoute.value.name).toBe('security-settings');
   });
 
-  it("allows every authenticated CMS User to open personal security settings", async () => {
+  it('allows every authenticated CMS User to open personal security settings', async () => {
     const auth = useAuthStore();
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
       },
     });
 
-    await router.push("/settings/security");
+    await router.push('/settings/security');
 
-    expect(router.currentRoute.value.name).toBe("security-settings");
+    expect(router.currentRoute.value.name).toBe('security-settings');
   });
 
-  it("allows Project integrations through notification or integration read Permission", async () => {
+  it('allows Project integrations through notification or integration read Permission', async () => {
     const auth = useAuthStore();
     const project = {
-      id: "project-1",
-      name: "Project One",
-      slug: "project-one",
-      status: "ACTIVE" as const,
-      publicKey: "public",
-      defaultLocale: "ru",
-      supportedLocales: ["ru"],
-      assistantName: "Retenive",
-      systemPrompt: "",
-      voiceInstructions: "",
+      id: 'project-1',
+      name: 'Project One',
+      slug: 'project-one',
+      status: 'ACTIVE' as const,
+      publicKey: 'public',
+      defaultLocale: 'ru',
+      supportedLocales: ['ru'],
+      assistantName: 'Retenive',
+      systemPrompt: '',
+      voiceInstructions: '',
       settings: {},
-      effectivePermissionCodes: ["project.notifications.read"],
+      effectivePermissionCodes: ['project.notifications.read'],
     };
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
       },
       project,
       projects: [project],
     });
 
-    await router.push("/settings/integrations");
-    expect(router.currentRoute.value.name).toBe("project-integrations");
+    await router.push('/settings/integrations');
+    expect(router.currentRoute.value.name).toBe('project-integrations');
 
-    auth.project!.effectivePermissionCodes = ["project.integrations.read"];
-    await router.push("/overview");
-    await router.push("/settings/integrations");
-    expect(router.currentRoute.value.name).toBe("project-integrations");
+    auth.project!.effectivePermissionCodes = ['project.integrations.read'];
+    await router.push('/overview');
+    await router.push('/settings/integrations');
+    expect(router.currentRoute.value.name).toBe('project-integrations');
 
-    auth.project!.effectivePermissionCodes = ["project.settings.read"];
-    await router.push("/overview");
-    await router.push("/settings/integrations");
-    expect(router.currentRoute.value.name).toBe("overview");
+    auth.project!.effectivePermissionCodes = ['project.settings.read'];
+    await router.push('/overview');
+    await router.push('/settings/integrations');
+    expect(router.currentRoute.value.name).toBe('overview');
   });
 
-  it("protects AI Analysis list and detail with the exact read Permission", () => {
-    expect(router.resolve("/ai-analyses").meta.projectPermission).toBe(
-      "project.ai_analyses.read",
+  it('protects AI Analysis list and detail with the exact read Permission', () => {
+    expect(router.resolve('/ai-analyses').meta.projectPermission).toBe('project.ai_analyses.read');
+    expect(router.resolve('/ai-analyses/analysis-1').name).toBe('ai-analysis-detail');
+    expect(router.resolve('/ai-analyses/analysis-1').meta.projectPermission).toBe(
+      'project.ai_analyses.read',
     );
-    expect(router.resolve("/ai-analyses/analysis-1").name).toBe(
-      "ai-analysis-detail",
-    );
-    expect(
-      router.resolve("/ai-analyses/analysis-1").meta.projectPermission,
-    ).toBe("project.ai_analyses.read");
   });
 
-  it("protects AI Operations list and safe detail with the exact read Permission", () => {
-    expect(router.resolve("/ai-operations").meta.projectPermission).toBe(
-      "project.ai_operations.read",
+  it('protects AI Operations list and safe detail with the exact read Permission', () => {
+    expect(router.resolve('/ai-operations').meta.projectPermission).toBe(
+      'project.ai_operations.read',
     );
-    expect(router.resolve("/ai-operations/operation-1").name).toBe(
-      "ai-operation-detail",
+    expect(router.resolve('/ai-operations/operation-1').name).toBe('ai-operation-detail');
+    expect(router.resolve('/ai-operations/operation-1').meta.projectPermission).toBe(
+      'project.ai_operations.read',
     );
-    expect(
-      router.resolve("/ai-operations/operation-1").meta.projectPermission,
-    ).toBe("project.ai_operations.read");
-    expect(
-      router.resolve("/ai-operations/operation-1").meta.projectPermissionsAny,
-    ).toBeUndefined();
+    expect(router.resolve('/ai-operations/operation-1').meta.projectPermissionsAny).toBeUndefined();
   });
 
-  it("protects the separate AI Costs workspace with its exact read Permission", () => {
-    expect(router.resolve("/ai-costs").name).toBe("ai-costs");
-    expect(router.resolve("/ai-costs").meta.projectPermissionsAny).toContain(
-      "project.ai_costs.read",
+  it('protects the separate AI Costs workspace with its exact read Permission', () => {
+    expect(router.resolve('/ai-costs').name).toBe('ai-costs');
+    expect(router.resolve('/ai-costs').meta.projectPermissionsAny).toContain(
+      'project.ai_costs.read',
     );
-    expect(router.resolve("/ai-costs").meta.projectPermissionsAny).toContain(
-      "project.ai_allowance.read",
+    expect(router.resolve('/ai-costs').meta.projectPermissionsAny).toContain(
+      'project.ai_allowance.read',
     );
-    expect(router.resolve("/ai-costs").name).not.toBe("ai-operations");
+    expect(router.resolve('/ai-costs').name).not.toBe('ai-operations');
   });
 
-  it("declares the Case Intelligence evaluation, cost, decision and version routes with exact authority", () => {
+  it('declares the Case Intelligence evaluation, cost, decision and version routes with exact authority', () => {
     expect(
-      router.resolve("/support/settings/case-intelligence/evaluation").meta
+      router.resolve('/support/settings/case-intelligence/evaluation').meta.projectPermissionsAll,
+    ).toEqual(['project.case_intelligence.read', 'project.case_intelligence.release.manage']);
+    expect(
+      router.resolve('/support/settings/case-intelligence/observability').meta
         .projectPermissionsAll,
-    ).toEqual([
-      "project.case_intelligence.read",
-      "project.case_intelligence.release.manage",
-    ]);
+    ).toEqual(['project.case_intelligence.read', 'project.case_intelligence.cost.read']);
     expect(
-      router.resolve("/support/settings/case-intelligence/observability").meta
-        .projectPermissionsAll,
-    ).toEqual([
-      "project.case_intelligence.read",
-      "project.case_intelligence.cost.read",
-    ]);
+      router.resolve('/support/settings/case-intelligence/decision-log').meta.projectPermissionsAll,
+    ).toEqual(['project.case_intelligence.read', 'project.case_intelligence.decisions.read']);
     expect(
-      router.resolve("/support/settings/case-intelligence/decision-log").meta
-        .projectPermissionsAll,
-    ).toEqual([
-      "project.case_intelligence.read",
-      "project.case_intelligence.decisions.read",
-    ]);
-    expect(
-      router.resolve("/support/settings/case-intelligence/versions-audit").meta
-        .projectPermission,
-    ).toBe("project.case_intelligence.read");
+      router.resolve('/support/settings/case-intelligence/versions-audit').meta.projectPermission,
+    ).toBe('project.case_intelligence.read');
   });
 
-  it("declares fail-closed Reporting routes for readers and authors", () => {
-    expect(router.resolve("/reports").meta.reportingAccess).toBe("READ");
-    expect(router.resolve("/reports/new").meta.reportingAccess).toBe(
-      "SAVED_REPORT_CREATE",
+  it('declares fail-closed Reporting routes for readers and authors', () => {
+    expect(router.resolve('/reports').meta.reportingAccess).toBe('READ');
+    expect(router.resolve('/reports/new').meta.reportingAccess).toBe('SAVED_REPORT_CREATE');
+    expect(router.resolve('/reports/report-1/edit').meta.reportingAccess).toBe('SAVED_REPORT_EDIT');
+    expect(router.resolve('/dashboards/dashboard-1').meta.reportingAccess).toBe('READ');
+    expect(router.resolve('/dashboards/new').meta.reportingAccess).toBe('DASHBOARD_CREATE');
+    expect(router.resolve('/dashboards/dashboard-1/edit').meta.reportingAccess).toBe(
+      'DASHBOARD_EDIT',
     );
-    expect(router.resolve("/reports/report-1/edit").meta.reportingAccess).toBe(
-      "SAVED_REPORT_EDIT",
-    );
-    expect(router.resolve("/dashboards/dashboard-1").meta.reportingAccess).toBe(
-      "READ",
-    );
-    expect(router.resolve("/dashboards/new").meta.reportingAccess).toBe(
-      "DASHBOARD_CREATE",
-    );
-    expect(
-      router.resolve("/dashboards/dashboard-1/edit").meta.reportingAccess,
-    ).toBe("DASHBOARD_EDIT");
   });
 
-  it("selects the Project encoded by an AI Analysis deep link before checking access", async () => {
+  it('selects the Project encoded by an AI Analysis deep link before checking access', async () => {
     const auth = useAuthStore();
     const makeProject = (id: string, permissions: string[]) => ({
       id,
       name: id,
       slug: id,
-      status: "ACTIVE" as const,
+      status: 'ACTIVE' as const,
       publicKey: `public-${id}`,
-      defaultLocale: "ru",
-      supportedLocales: ["ru"],
-      assistantName: "Retenive",
-      systemPrompt: "",
-      voiceInstructions: "",
+      defaultLocale: 'ru',
+      supportedLocales: ['ru'],
+      assistantName: 'Retenive',
+      systemPrompt: '',
+      voiceInstructions: '',
       settings: {},
       effectivePermissionCodes: permissions,
     });
-    const current = makeProject("project-1", []);
-    const target = makeProject("project-2", ["project.ai_analyses.read"]);
+    const current = makeProject('project-1', []);
+    const target = makeProject('project-2', ['project.ai_analyses.read']);
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
       },
       project: current,
       projects: [current, target],
     });
 
-    await router.push("/ai-analyses/analysis-1?projectId=project-2");
+    await router.push('/ai-analyses/analysis-1?projectId=project-2');
 
-    expect(router.currentRoute.value.name).toBe("ai-analysis-detail");
-    expect(auth.project?.id).toBe("project-2");
+    expect(router.currentRoute.value.name).toBe('ai-analysis-detail');
+    expect(auth.project?.id).toBe('project-2');
   });
 
-  it("selects the Project encoded by an AI Operation safe-detail link", async () => {
+  it('selects the Project encoded by an AI Operation safe-detail link', async () => {
     const auth = useAuthStore();
     const makeProject = (id: string, permissions: string[]) => ({
       id,
       name: id,
       slug: id,
-      status: "ACTIVE" as const,
+      status: 'ACTIVE' as const,
       publicKey: `public-${id}`,
-      defaultLocale: "ru",
-      supportedLocales: ["ru"],
-      assistantName: "Retenive",
-      systemPrompt: "",
-      voiceInstructions: "",
+      defaultLocale: 'ru',
+      supportedLocales: ['ru'],
+      assistantName: 'Retenive',
+      systemPrompt: '',
+      voiceInstructions: '',
       settings: {},
       effectivePermissionCodes: permissions,
     });
-    const current = makeProject("project-1", []);
-    const target = makeProject("project-2", ["project.ai_operations.read"]);
+    const current = makeProject('project-1', []);
+    const target = makeProject('project-2', ['project.ai_operations.read']);
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
       },
       project: current,
       projects: [current, target],
     });
 
-    await router.push("/ai-operations/operation-1?projectId=project-2");
+    await router.push('/ai-operations/operation-1?projectId=project-2');
 
-    expect(router.currentRoute.value.name).toBe("ai-operation-detail");
-    expect(auth.project?.id).toBe("project-2");
+    expect(router.currentRoute.value.name).toBe('ai-operation-detail');
+    expect(auth.project?.id).toBe('project-2');
   });
 
   it.each([
+    ['/cases/case-1?projectId=project-2', 'support-inbox-case', 'project.cases.read'],
     [
-      "/cases/case-1?projectId=project-2",
-      "support-inbox-case",
-      "project.cases.read",
-    ],
-    [
-      "/users/end-user-1?conversationId=conversation-1&projectId=project-2",
-      "users",
-      "project.profiles.read",
+      '/users/end-user-1?conversationId=conversation-1&projectId=project-2',
+      'users',
+      'project.profiles.read',
     ],
   ])(
-    "selects the Project encoded by a related AI result link %s",
+    'selects the Project encoded by a related AI result link %s',
     async (path, routeName, permission) => {
       const auth = useAuthStore();
       const makeProject = (id: string, permissions: string[]) => ({
         id,
         name: id,
         slug: id,
-        status: "ACTIVE" as const,
+        status: 'ACTIVE' as const,
         publicKey: `public-${id}`,
-        defaultLocale: "ru",
-        supportedLocales: ["ru"],
-        assistantName: "Retenive",
-        systemPrompt: "",
-        voiceInstructions: "",
+        defaultLocale: 'ru',
+        supportedLocales: ['ru'],
+        assistantName: 'Retenive',
+        systemPrompt: '',
+        voiceInstructions: '',
         settings: {},
         effectivePermissionCodes: permissions,
       });
-      const current = makeProject("project-1", []);
-      const target = makeProject("project-2", [permission]);
+      const current = makeProject('project-1', []);
+      const target = makeProject('project-2', [permission]);
       auth.$patch({
         restored: true,
-        phase: "AUTHENTICATED",
+        phase: 'AUTHENTICATED',
         user: {
-          id: "operator-1",
-          email: "operator@example.com",
-          name: "Operator",
+          id: 'operator-1',
+          email: 'operator@example.com',
+          name: 'Operator',
         },
         project: current,
         projects: [current, target],
@@ -573,544 +517,521 @@ describe("authentication routes", () => {
       await router.push(path);
 
       expect(router.currentRoute.value.name).toBe(routeName);
-      expect(auth.project?.id).toBe("project-2");
+      expect(auth.project?.id).toBe('project-2');
     },
   );
 
-  it("keeps Cases as canonical Support redirects and retires the legacy settings surface", () => {
-    expect(router.resolve("/cases").matched.at(-1)?.redirect).toBeTypeOf(
-      "function",
-    );
-    expect(router.resolve("/cases/case-1").matched.at(-1)?.redirect).toBeTypeOf(
-      "function",
-    );
-    expect(router.resolve("/cases/settings").matched.at(-1)?.redirect).toEqual({
-      name: "support-case-intelligence-detection",
+  it('keeps Cases as canonical Support redirects and retires the legacy settings surface', () => {
+    expect(router.resolve('/cases').matched.at(-1)?.redirect).toBeTypeOf('function');
+    expect(router.resolve('/cases/case-1').matched.at(-1)?.redirect).toBeTypeOf('function');
+    expect(router.resolve('/cases/settings').matched.at(-1)?.redirect).toEqual({
+      name: 'support-case-intelligence-detection',
     });
     expect(
-      router.resolve("/support/settings/case-intelligence/detection").meta
-        .projectPermission,
-    ).toBe("project.case_intelligence.read");
+      router.resolve('/support/settings/case-intelligence/detection').meta.projectPermission,
+    ).toBe('project.case_intelligence.read');
     expect(
-      router.resolve("/support/settings/case-intelligence/escalation").meta
-        .projectPermission,
-    ).toBe("project.case_intelligence.read");
-    expect(router.resolve("/cases/case-1").redirectedFrom).toBeUndefined();
-    expect(router.resolve("/support/inbox/cases/case-1").name).toBe(
-      "support-inbox-case",
-    );
+      router.resolve('/support/settings/case-intelligence/escalation').meta.projectPermission,
+    ).toBe('project.case_intelligence.read');
+    expect(router.resolve('/cases/case-1').redirectedFrom).toBeUndefined();
+    expect(router.resolve('/support/inbox/cases/case-1').name).toBe('support-inbox-case');
   });
 
-  it("keeps Users and Live independent from Support availability", async () => {
+  it('keeps Users and Live independent from Support availability', async () => {
     const auth = useAuthStore();
     const project = {
-      id: "project-1",
-      name: "Project One",
-      slug: "project-one",
-      status: "ACTIVE" as const,
+      id: 'project-1',
+      name: 'Project One',
+      slug: 'project-one',
+      status: 'ACTIVE' as const,
       effectivePermissionCodes: [
-        "project.cases.read",
-        "project.conversations.read",
-        "project.profiles.read",
-        "project.end_users.read",
+        'project.cases.read',
+        'project.conversations.read',
+        'project.profiles.read',
+        'project.end_users.read',
       ],
     };
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
       },
       project,
       projects: [project],
       supportEnabled: true,
     });
 
-    await router.push("/cases/case-1?projectId=project-1");
-    expect(router.currentRoute.value.name).toBe("support-inbox-case");
-    expect(router.currentRoute.value.params.caseId).toBe("case-1");
+    await router.push('/cases/case-1?projectId=project-1');
+    expect(router.currentRoute.value.name).toBe('support-inbox-case');
+    expect(router.currentRoute.value.params.caseId).toBe('case-1');
 
     auth.supportEnabled = false;
 
-    await router.push(
-      "/users/user-1?conversationId=conversation-1&projectId=project-1",
-    );
-    expect(router.currentRoute.value.name).toBe("users");
-    expect(router.currentRoute.value.params.endUserId).toBe("user-1");
-    expect(router.currentRoute.value.query.conversationId).toBe(
-      "conversation-1",
-    );
+    await router.push('/users/user-1?conversationId=conversation-1&projectId=project-1');
+    expect(router.currentRoute.value.name).toBe('users');
+    expect(router.currentRoute.value.params.endUserId).toBe('user-1');
+    expect(router.currentRoute.value.query.conversationId).toBe('conversation-1');
 
-    await router.push("/live?endUserId=user-2&projectId=project-1");
-    expect(router.currentRoute.value.name).toBe("live");
-    expect(router.currentRoute.value.query.endUserId).toBe("user-2");
+    await router.push('/live?endUserId=user-2&projectId=project-1');
+    expect(router.currentRoute.value.name).toBe('live');
+    expect(router.currentRoute.value.query.endUserId).toBe('user-2');
   });
 
-  it("returns a disabled Support deep link to the authenticated landing without using Users or Live", async () => {
+  it('returns a disabled Support deep link to the authenticated landing without using Users or Live', async () => {
     const auth = useAuthStore();
     const project = {
-      id: "project-1",
-      name: "Project One",
-      slug: "project-one",
-      status: "ACTIVE" as const,
+      id: 'project-1',
+      name: 'Project One',
+      slug: 'project-one',
+      status: 'ACTIVE' as const,
       effectivePermissionCodes: [
-        "project.cases.read",
-        "project.conversations.read",
-        "project.profiles.read",
+        'project.cases.read',
+        'project.conversations.read',
+        'project.profiles.read',
       ],
     };
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
       },
       project,
       projects: [project],
       supportEnabled: false,
     });
 
-    await router.push(
-      "/support/inbox/conversations/conversation-1?projectId=project-1",
-    );
+    await router.push('/support/inbox/conversations/conversation-1?projectId=project-1');
 
-    expect(router.currentRoute.value.name).toBe("overview");
+    expect(router.currentRoute.value.name).toBe('overview');
 
-    project.effectivePermissionCodes.push("project.case_intelligence.read");
-    await router.push("/cases/settings?projectId=project-1");
-    expect(router.currentRoute.value.name).toBe("overview");
+    project.effectivePermissionCodes.push('project.case_intelligence.read');
+    await router.push('/cases/settings?projectId=project-1');
+    expect(router.currentRoute.value.name).toBe('overview');
   });
 
-  it("uses the Cases access target for the list mode and requires the exact read permission", async () => {
+  it('uses the Cases access target for the list mode and requires the exact read permission', async () => {
     const auth = useAuthStore();
     const project = {
-      id: "project-1",
-      name: "Project One",
-      slug: "project-one",
-      status: "ACTIVE" as const,
-      effectivePermissionCodes: ["project.cases.read"],
+      id: 'project-1',
+      name: 'Project One',
+      slug: 'project-one',
+      status: 'ACTIVE' as const,
+      effectivePermissionCodes: ['project.cases.read'],
     };
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
       },
       project,
       projects: [project],
       supportEnabled: true,
     });
 
-    await router.push("/cases?projectId=project-1");
-    expect(router.currentRoute.value.name).toBe("support-inbox");
-    expect(router.currentRoute.value.query.mode).toBe("cases");
+    await router.push('/cases?projectId=project-1');
+    expect(router.currentRoute.value.name).toBe('support-inbox');
+    expect(router.currentRoute.value.query.mode).toBe('cases');
 
-    auth.project!.effectivePermissionCodes = ["project.conversations.read"];
-    await router.push("/overview");
-    await router.push("/support/inbox?mode=cases&projectId=project-1");
-    expect(router.currentRoute.value.name).toBe("overview");
+    auth.project!.effectivePermissionCodes = ['project.conversations.read'];
+    await router.push('/overview');
+    await router.push('/support/inbox?mode=cases&projectId=project-1');
+    expect(router.currentRoute.value.name).toBe('overview');
   });
 
-  it("observes deployment Support availability on the next SPA navigation", async () => {
+  it('observes deployment Support availability on the next SPA navigation', async () => {
     const auth = useAuthStore();
     const project = {
-      id: "project-1",
-      name: "Project One",
-      slug: "project-one",
-      status: "ACTIVE" as const,
-      effectivePermissionCodes: [
-        "project.conversations.read",
-        "project.profiles.read",
-      ],
+      id: 'project-1',
+      name: 'Project One',
+      slug: 'project-one',
+      status: 'ACTIVE' as const,
+      effectivePermissionCodes: ['project.conversations.read', 'project.profiles.read'],
     };
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
       },
       project,
       projects: [project],
       supportEnabled: true,
     });
 
-    await router.push("/support/inbox?projectId=project-1");
-    expect(router.currentRoute.value.name).toBe("support-inbox");
+    await router.push('/support/inbox?projectId=project-1');
+    expect(router.currentRoute.value.name).toBe('support-inbox');
     auth.supportEnabled = false;
 
-    await router.push("/overview");
-    await router.push("/support/inbox?projectId=project-1");
+    await router.push('/overview');
+    await router.push('/support/inbox?projectId=project-1');
 
-    expect(router.currentRoute.value.name).toBe("overview");
+    expect(router.currentRoute.value.name).toBe('overview');
   });
 
-  it("keeps an authenticated multi-Project user on login until a Project is selected", async () => {
+  it('keeps an authenticated multi-Project user on login until a Project is selected', async () => {
     const auth = useAuthStore();
     const project = (id: string) => ({
       id,
       name: id,
       slug: id,
-      status: "ACTIVE" as const,
-      effectivePermissionCodes: ["project.settings.read"],
+      status: 'ACTIVE' as const,
+      effectivePermissionCodes: ['project.settings.read'],
     });
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "owner-1",
-        email: "owner@example.com",
-        name: "Owner",
+        id: 'owner-1',
+        email: 'owner@example.com',
+        name: 'Owner',
       },
       project: null,
-      projects: [project("project-1"), project("project-2")],
+      projects: [project('project-1'), project('project-2')],
     });
 
-    await router.push("/overview");
+    await router.push('/overview');
 
     expect(auth.requiresProjectSelection).toBe(true);
-    expect(router.currentRoute.value.name).toBe("login");
+    expect(router.currentRoute.value.name).toBe('login');
   });
 
-  it("removes an email capability fragment and skips session restoration before rendering", async () => {
+  it('removes an email capability fragment and skips session restoration before rendering', async () => {
     const auth = useAuthStore();
-    auth.$patch({ restored: false, phase: "ANONYMOUS" });
+    auth.$patch({ restored: false, phase: 'ANONYMOUS' });
     vi.mocked(authApi.restore).mockClear();
     const capability =
-      "lev_00000000-0000-4000-8000-000000000001.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+      'lev_00000000-0000-4000-8000-000000000001.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
     await router.push(`/auth/email-verification#token=${capability}`);
 
-    expect(router.currentRoute.value.name).toBe("email-verification");
-    expect(router.currentRoute.value.hash).toBe("");
+    expect(router.currentRoute.value.name).toBe('email-verification');
+    expect(router.currentRoute.value.hash).toBe('');
     expect(window.location.href).not.toContain(capability);
     expect(authApi.restore).not.toHaveBeenCalled();
   });
 
-  it("sanitizes a password-reset fragment before rendering and keeps both recovery GET routes inert", async () => {
+  it('sanitizes a password-reset fragment before rendering and keeps both recovery GET routes inert', async () => {
     vi.mocked(authApi.restore).mockClear();
     const capability =
-      "lpr_00000000-0000-4000-8000-000000000001.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD";
+      'lpr_00000000-0000-4000-8000-000000000001.DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD';
 
     await router.push(`/auth/password-reset#token=${capability}`);
 
-    expect(router.currentRoute.value.name).toBe("password-reset");
-    expect(router.currentRoute.value.hash).toBe("");
+    expect(router.currentRoute.value.name).toBe('password-reset');
+    expect(router.currentRoute.value.hash).toBe('');
     expect(window.location.href).not.toContain(capability);
     expect(authApi.restore).not.toHaveBeenCalled();
 
-    await router.push("/forgot-password");
-    expect(router.currentRoute.value.name).toBe("forgot-password");
+    await router.push('/forgot-password');
+    expect(router.currentRoute.value.name).toBe('forgot-password');
     expect(authApi.restore).not.toHaveBeenCalled();
   });
 
-  it("allows Project Memberships only through the exact Platform-or-selected-Project read Permission", async () => {
+  it('allows Project Memberships only through the exact Platform-or-selected-Project read Permission', async () => {
     const auth = useAuthStore();
     const project = {
-      id: "project-1",
-      name: "Project One",
-      slug: "project-one",
-      status: "ACTIVE" as const,
-      publicKey: "public",
-      defaultLocale: "ru",
-      supportedLocales: ["ru"],
-      assistantName: "Retenive",
-      systemPrompt: "",
-      voiceInstructions: "",
+      id: 'project-1',
+      name: 'Project One',
+      slug: 'project-one',
+      status: 'ACTIVE' as const,
+      publicKey: 'public',
+      defaultLocale: 'ru',
+      supportedLocales: ['ru'],
+      assistantName: 'Retenive',
+      systemPrompt: '',
+      voiceInstructions: '',
       settings: {},
-      effectivePermissionCodes: ["project.members.read"],
+      effectivePermissionCodes: ['project.members.read'],
     };
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
       },
       project,
       projects: [project],
       supportEnabled: true,
     });
 
-    await router.push("/project/memberships");
-    expect(router.currentRoute.value.name).toBe("project-memberships");
+    await router.push('/project/memberships');
+    expect(router.currentRoute.value.name).toBe('project-memberships');
 
-    auth.project!.effectivePermissionCodes = ["project.roles.read"];
-    auth.user!.platformPermissionCodes = ["platform.memberships.read"];
-    await router.push("/overview");
-    await router.push("/project/memberships");
-    expect(router.currentRoute.value.name).toBe("project-memberships");
+    auth.project!.effectivePermissionCodes = ['project.roles.read'];
+    auth.user!.platformPermissionCodes = ['platform.memberships.read'];
+    await router.push('/overview');
+    await router.push('/project/memberships');
+    expect(router.currentRoute.value.name).toBe('project-memberships');
 
-    auth.user!.platformPermissionCodes = ["platform.projects.read"];
-    await router.push("/overview");
-    await router.push("/project/memberships");
-    expect(router.currentRoute.value.name).toBe("overview");
+    auth.user!.platformPermissionCodes = ['platform.projects.read'];
+    await router.push('/overview');
+    await router.push('/project/memberships');
+    expect(router.currentRoute.value.name).toBe('overview');
   });
 
-  it("allows Project Roles only through the exact Platform-or-selected-Project role read Permission", async () => {
+  it('allows Project Roles only through the exact Platform-or-selected-Project role read Permission', async () => {
     const auth = useAuthStore();
     const project = {
-      id: "project-1",
-      name: "Project One",
-      slug: "project-one",
-      status: "ACTIVE" as const,
-      publicKey: "public",
-      defaultLocale: "ru",
-      supportedLocales: ["ru"],
-      assistantName: "Retenive",
-      systemPrompt: "",
-      voiceInstructions: "",
+      id: 'project-1',
+      name: 'Project One',
+      slug: 'project-one',
+      status: 'ACTIVE' as const,
+      publicKey: 'public',
+      defaultLocale: 'ru',
+      supportedLocales: ['ru'],
+      assistantName: 'Retenive',
+      systemPrompt: '',
+      voiceInstructions: '',
       settings: {},
-      effectivePermissionCodes: ["project.roles.read"],
+      effectivePermissionCodes: ['project.roles.read'],
     };
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
       },
       project,
       projects: [project],
     });
 
-    await router.push("/project/roles");
-    expect(router.currentRoute.value.name).toBe("project-roles");
+    await router.push('/project/roles');
+    expect(router.currentRoute.value.name).toBe('project-roles');
 
-    auth.project!.effectivePermissionCodes = ["project.members.read"];
-    auth.user!.platformPermissionCodes = ["platform.roles.read"];
-    await router.push("/overview");
-    await router.push("/project/roles");
-    expect(router.currentRoute.value.name).toBe("project-roles");
+    auth.project!.effectivePermissionCodes = ['project.members.read'];
+    auth.user!.platformPermissionCodes = ['platform.roles.read'];
+    await router.push('/overview');
+    await router.push('/project/roles');
+    expect(router.currentRoute.value.name).toBe('project-roles');
 
-    auth.user!.platformPermissionCodes = ["platform.projects.read"];
-    await router.push("/overview");
-    await router.push("/project/roles");
-    expect(router.currentRoute.value.name).toBe("overview");
+    auth.user!.platformPermissionCodes = ['platform.projects.read'];
+    await router.push('/overview');
+    await router.push('/project/roles');
+    expect(router.currentRoute.value.name).toBe('overview');
   });
 
-  it("guards authoring routes with the exact selected-Project Permission and no role fallback", async () => {
+  it('guards authoring routes with the exact selected-Project Permission and no role fallback', async () => {
     const auth = useAuthStore();
     const project = {
-      id: "project-1",
-      name: "Project One",
-      slug: "project-one",
-      status: "ACTIVE" as const,
-      publicKey: "public",
-      defaultLocale: "ru",
-      supportedLocales: ["ru"],
-      assistantName: "Retenive",
-      systemPrompt: "",
-      voiceInstructions: "",
+      id: 'project-1',
+      name: 'Project One',
+      slug: 'project-one',
+      status: 'ACTIVE' as const,
+      publicKey: 'public',
+      defaultLocale: 'ru',
+      supportedLocales: ['ru'],
+      assistantName: 'Retenive',
+      systemPrompt: '',
+      voiceInstructions: '',
       settings: {},
-      effectivePermissionCodes: ["project.knowledge.read"],
+      effectivePermissionCodes: ['project.knowledge.read'],
     };
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
       },
       project,
       projects: [project],
     });
 
-    await router.push("/knowledge");
-    expect(router.currentRoute.value.name).toBe("knowledge");
+    await router.push('/knowledge');
+    expect(router.currentRoute.value.name).toBe('knowledge');
 
     auth.project!.effectivePermissionCodes = [];
-    await router.push("/overview");
-    await router.push("/knowledge");
-    expect(router.currentRoute.value.name).toBe("overview");
+    await router.push('/overview');
+    await router.push('/knowledge');
+    expect(router.currentRoute.value.name).toBe('overview');
   });
 
-  it.each([
-    "project.settings.read",
-    "project.profile_contract.read",
-    "project.ai_usage.read",
-  ])(
-    "allows the composite Project settings surface through independent %s authority",
+  it.each(['project.settings.read', 'project.profile_contract.read', 'project.ai_usage.read'])(
+    'allows the composite Project settings surface through independent %s authority',
     async (permission) => {
       const auth = useAuthStore();
       const project = {
-        id: "project-1",
-        name: "Project One",
-        slug: "project-one",
-        status: "ACTIVE" as const,
-        publicKey: "public",
-        defaultLocale: "ru",
-        supportedLocales: ["ru"],
-        assistantName: "Retenive",
-        systemPrompt: "",
-        voiceInstructions: "",
+        id: 'project-1',
+        name: 'Project One',
+        slug: 'project-one',
+        status: 'ACTIVE' as const,
+        publicKey: 'public',
+        defaultLocale: 'ru',
+        supportedLocales: ['ru'],
+        assistantName: 'Retenive',
+        systemPrompt: '',
+        voiceInstructions: '',
         settings: {},
         effectivePermissionCodes: [permission],
       };
       auth.$patch({
         restored: true,
-        phase: "AUTHENTICATED",
+        phase: 'AUTHENTICATED',
         user: {
-          id: "operator-1",
-          email: "operator@example.com",
-          name: "Operator",
+          id: 'operator-1',
+          email: 'operator@example.com',
+          name: 'Operator',
         },
         project,
         projects: [project],
       });
 
-      await router.push("/project");
+      await router.push('/project');
 
-      expect(router.currentRoute.value.name).toBe("project");
+      expect(router.currentRoute.value.name).toBe('project');
     },
   );
 
-  it("rejects the composite Project settings surface without any section read Permission", async () => {
+  it('rejects the composite Project settings surface without any section read Permission', async () => {
     const auth = useAuthStore();
     const project = {
-      id: "project-1",
-      name: "Project One",
-      slug: "project-one",
-      status: "ACTIVE" as const,
-      publicKey: "public",
-      defaultLocale: "ru",
-      supportedLocales: ["ru"],
-      assistantName: "Retenive",
-      systemPrompt: "",
-      voiceInstructions: "",
+      id: 'project-1',
+      name: 'Project One',
+      slug: 'project-one',
+      status: 'ACTIVE' as const,
+      publicKey: 'public',
+      defaultLocale: 'ru',
+      supportedLocales: ['ru'],
+      assistantName: 'Retenive',
+      systemPrompt: '',
+      voiceInstructions: '',
       settings: {},
-      effectivePermissionCodes: ["project.knowledge.read"],
+      effectivePermissionCodes: ['project.knowledge.read'],
     };
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
       },
       project,
       projects: [project],
     });
 
-    await router.push("/project");
+    await router.push('/project');
 
-    expect(router.currentRoute.value.name).toBe("overview");
+    expect(router.currentRoute.value.name).toBe('overview');
   });
 
-  it("separates profile-list and live-presence route authority", async () => {
+  it('separates profile-list and live-presence route authority', async () => {
     const auth = useAuthStore();
     const project = {
-      id: "project-1",
-      name: "Project One",
-      slug: "project-one",
-      status: "ACTIVE" as const,
-      publicKey: "public",
-      defaultLocale: "ru",
-      supportedLocales: ["ru"],
-      assistantName: "Retenive",
-      systemPrompt: "",
-      voiceInstructions: "",
+      id: 'project-1',
+      name: 'Project One',
+      slug: 'project-one',
+      status: 'ACTIVE' as const,
+      publicKey: 'public',
+      defaultLocale: 'ru',
+      supportedLocales: ['ru'],
+      assistantName: 'Retenive',
+      systemPrompt: '',
+      voiceInstructions: '',
       settings: {},
-      effectivePermissionCodes: ["project.profiles.read"],
+      effectivePermissionCodes: ['project.profiles.read'],
     };
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
       },
       project,
       projects: [project],
     });
 
-    await router.push("/users");
-    expect(router.currentRoute.value.name).toBe("users");
-    await router.push("/live");
-    expect(router.currentRoute.value.name).toBe("overview");
+    await router.push('/users');
+    expect(router.currentRoute.value.name).toBe('users');
+    await router.push('/live');
+    expect(router.currentRoute.value.name).toBe('overview');
 
-    auth.project!.effectivePermissionCodes = ["project.end_users.read"];
-    await router.push("/live");
-    expect(router.currentRoute.value.name).toBe("live");
-    await router.push("/users");
-    expect(router.currentRoute.value.name).toBe("overview");
+    auth.project!.effectivePermissionCodes = ['project.end_users.read'];
+    await router.push('/live');
+    expect(router.currentRoute.value.name).toBe('live');
+    await router.push('/users');
+    expect(router.currentRoute.value.name).toBe('overview');
   });
 
-  it("gates both Telegram broadcast routes by the exact read permission", async () => {
+  it('gates both Telegram broadcast routes by the exact read permission', async () => {
     const auth = useAuthStore();
     const project = {
-      id: "project-1",
-      name: "Project One",
-      slug: "project-one",
-      status: "ACTIVE" as const,
-      publicKey: "public",
-      defaultLocale: "ru",
-      supportedLocales: ["ru"],
-      assistantName: "Retenive",
-      systemPrompt: "",
-      voiceInstructions: "",
+      id: 'project-1',
+      name: 'Project One',
+      slug: 'project-one',
+      status: 'ACTIVE' as const,
+      publicKey: 'public',
+      defaultLocale: 'ru',
+      supportedLocales: ['ru'],
+      assistantName: 'Retenive',
+      systemPrompt: '',
+      voiceInstructions: '',
       settings: {},
-      effectivePermissionCodes: ["project.telegram.broadcasts.draft"],
+      effectivePermissionCodes: ['project.telegram.broadcasts.draft'],
     };
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
       },
       project,
       projects: [project],
     });
 
-    await router.push("/telegram/broadcasts");
-    expect(router.currentRoute.value.name).toBe("overview");
+    await router.push('/telegram/broadcasts');
+    expect(router.currentRoute.value.name).toBe('overview');
 
-    auth.project!.effectivePermissionCodes = [
-      "project.telegram.broadcasts.read",
-    ];
-    await router.push("/telegram/broadcasts");
-    expect(router.currentRoute.value.name).toBe("telegram-broadcasts");
-    await router.push("/telegram/broadcasts/broadcast-1");
-    expect(router.currentRoute.value.name).toBe("telegram-broadcast-detail");
+    auth.project!.effectivePermissionCodes = ['project.telegram.broadcasts.read'];
+    await router.push('/telegram/broadcasts');
+    expect(router.currentRoute.value.name).toBe('telegram-broadcasts');
+    await router.push('/telegram/broadcasts/broadcast-1');
+    expect(router.currentRoute.value.name).toBe('telegram-broadcast-detail');
   });
 
   function authenticatedSupportProject(effectivePermissionCodes: string[]) {
     const auth = useAuthStore();
     const project = {
-      id: "project-1",
-      name: "Project One",
-      slug: "project-one",
-      status: "ACTIVE" as const,
-      publicKey: "public",
-      defaultLocale: "ru",
-      supportedLocales: ["ru"],
-      assistantName: "Retenive",
-      systemPrompt: "",
-      voiceInstructions: "",
+      id: 'project-1',
+      name: 'Project One',
+      slug: 'project-one',
+      status: 'ACTIVE' as const,
+      publicKey: 'public',
+      defaultLocale: 'ru',
+      supportedLocales: ['ru'],
+      assistantName: 'Retenive',
+      systemPrompt: '',
+      voiceInstructions: '',
       effectivePermissionCodes,
     };
     auth.$patch({
       restored: true,
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       supportEnabled: true,
       user: {
-        id: "operator-1",
-        email: "operator@example.com",
-        name: "Operator",
+        id: 'operator-1',
+        email: 'operator@example.com',
+        name: 'Operator',
       },
       project,
       projects: [project],
@@ -1118,110 +1039,88 @@ describe("authentication routes", () => {
     return auth;
   }
 
-  it("gates Support operator routes with their exact permissions", async () => {
-    const auth = authenticatedSupportProject(["project.conversations.reply"]);
+  it('gates Support operator routes with their exact permissions', async () => {
+    const auth = authenticatedSupportProject(['project.conversations.reply']);
 
-    await router.push("/support/inbox");
-    expect(router.currentRoute.value.name).toBe("overview");
+    await router.push('/support/inbox');
+    expect(router.currentRoute.value.name).toBe('overview');
 
-    auth.project!.effectivePermissionCodes = ["project.conversations.read"];
-    await router.push("/support/inbox/conversations/conversation-1");
-    expect(router.currentRoute.value.name).toBe("support-inbox-conversation");
+    auth.project!.effectivePermissionCodes = ['project.conversations.read'];
+    await router.push('/support/inbox/conversations/conversation-1');
+    expect(router.currentRoute.value.name).toBe('support-inbox-conversation');
 
-    await router.push("/support/control");
-    expect(router.currentRoute.value.name).toBe("overview");
+    await router.push('/support/control');
+    expect(router.currentRoute.value.name).toBe('overview');
 
-    auth.project!.effectivePermissionCodes = [
-      "project.support.lead_control.read",
-    ];
-    await router.push("/support/control");
-    expect(router.currentRoute.value.name).toBe("support-control");
+    auth.project!.effectivePermissionCodes = ['project.support.lead_control.read'];
+    await router.push('/support/control');
+    expect(router.currentRoute.value.name).toBe('support-control');
 
-    await router.push("/support/settings/notifications");
-    expect(router.currentRoute.value.name).toBe(
-      "support-notification-settings",
-    );
+    await router.push('/support/settings/notifications');
+    expect(router.currentRoute.value.name).toBe('support-notification-settings');
   });
 
-  it("gates Support authoring routes with their exact permissions", async () => {
-    const auth = authenticatedSupportProject([
-      "project.support.lead_control.read",
-    ]);
+  it('gates Support authoring routes with their exact permissions', async () => {
+    const auth = authenticatedSupportProject(['project.support.lead_control.read']);
 
-    await router.push("/support/settings/macros");
-    expect(router.currentRoute.value.name).toBe("overview");
+    await router.push('/support/settings/macros');
+    expect(router.currentRoute.value.name).toBe('overview');
 
-    auth.project!.effectivePermissionCodes = ["project.support.macros.manage"];
-    await router.push("/support/settings/macros");
-    expect(router.currentRoute.value.name).toBe("support-macro-settings");
+    auth.project!.effectivePermissionCodes = ['project.support.macros.manage'];
+    await router.push('/support/settings/macros');
+    expect(router.currentRoute.value.name).toBe('support-macro-settings');
 
-    await router.push("/support/settings/case-intelligence/detection");
-    expect(router.currentRoute.value.name).toBe("overview");
+    await router.push('/support/settings/case-intelligence/detection');
+    expect(router.currentRoute.value.name).toBe('overview');
 
-    auth.project!.effectivePermissionCodes = ["project.case_intelligence.read"];
-    await router.push("/support/settings/case-intelligence/detection");
-    expect(router.currentRoute.value.name).toBe(
-      "support-case-intelligence-detection",
-    );
+    auth.project!.effectivePermissionCodes = ['project.case_intelligence.read'];
+    await router.push('/support/settings/case-intelligence/detection');
+    expect(router.currentRoute.value.name).toBe('support-case-intelligence-detection');
   });
 
-  it("gates Support operational settings with their exact permissions", async () => {
-    const auth = authenticatedSupportProject([
-      "project.case_intelligence.read",
-    ]);
+  it('gates Support operational settings with their exact permissions', async () => {
+    const auth = authenticatedSupportProject(['project.case_intelligence.read']);
 
-    await router.push("/support/settings/sla-calendars");
-    expect(router.currentRoute.value.name).toBe("overview");
-    auth.project!.effectivePermissionCodes = ["project.support.sla.read"];
-    await router.push("/support/settings/sla-calendars");
-    expect(router.currentRoute.value.name).toBe("support-sla-settings");
+    await router.push('/support/settings/sla-calendars');
+    expect(router.currentRoute.value.name).toBe('overview');
+    auth.project!.effectivePermissionCodes = ['project.support.sla.read'];
+    await router.push('/support/settings/sla-calendars');
+    expect(router.currentRoute.value.name).toBe('support-sla-settings');
 
-    await router.push("/support/settings/notifications");
-    expect(router.currentRoute.value.name).toBe("overview");
+    await router.push('/support/settings/notifications');
+    expect(router.currentRoute.value.name).toBe('overview');
 
-    await router.push("/support/settings/notifications/new-cases");
-    expect(router.currentRoute.value.name).toBe("overview");
-    auth.project!.effectivePermissionCodes = [
-      "project.support.notification_policy.manage",
-    ];
-    await router.push("/support/settings/notifications/new-cases");
-    expect(router.currentRoute.value.name).toBe(
-      "support-case-notification-policy",
-    );
+    await router.push('/support/settings/notifications/new-cases');
+    expect(router.currentRoute.value.name).toBe('overview');
+    auth.project!.effectivePermissionCodes = ['project.support.notification_policy.manage'];
+    await router.push('/support/settings/notifications/new-cases');
+    expect(router.currentRoute.value.name).toBe('support-case-notification-policy');
   });
 
-  it("gates External Work routes with their exact permissions", async () => {
-    const auth = authenticatedSupportProject(["project.integrations.manage"]);
+  it('gates External Work routes with their exact permissions', async () => {
+    const auth = authenticatedSupportProject(['project.integrations.manage']);
 
-    await router.push("/support/settings/integrations");
-    expect(router.currentRoute.value.name).toBe("overview");
+    await router.push('/support/settings/integrations');
+    expect(router.currentRoute.value.name).toBe('overview');
 
-    auth.project!.effectivePermissionCodes = [
-      "project.support.external_work.manage",
-    ];
+    auth.project!.effectivePermissionCodes = ['project.support.external_work.manage'];
     expect(
-      typeof router
-        .getRoutes()
-        .find((route) => route.name === "support-external-settings")?.components
-        ?.default,
-    ).toBe("function");
-    await router.push("/support/settings/integrations");
-    expect(router.currentRoute.value.name).toBe("support-external-settings");
+      typeof router.getRoutes().find((route) => route.name === 'support-external-settings')
+        ?.components?.default,
+    ).toBe('function');
+    await router.push('/support/settings/integrations');
+    expect(router.currentRoute.value.name).toBe('support-external-settings');
 
-    await router.push("/support/external-work");
-    expect(router.currentRoute.value.name).toBe("overview");
+    await router.push('/support/external-work');
+    expect(router.currentRoute.value.name).toBe('overview');
 
-    auth.project!.effectivePermissionCodes = [
-      "project.support.external_work.inbox_read",
-    ];
-    await router.push("/support/external-work");
-    expect(router.currentRoute.value.name).toBe("support-external-work");
+    auth.project!.effectivePermissionCodes = ['project.support.external_work.inbox_read'];
+    await router.push('/support/external-work');
+    expect(router.currentRoute.value.name).toBe('support-external-work');
 
-    auth.project!.effectivePermissionCodes = [
-      "project.support.external_work.read_linked",
-    ];
-    await router.push("/overview");
-    await router.push("/support/external-work");
-    expect(router.currentRoute.value.name).toBe("support-external-work");
+    auth.project!.effectivePermissionCodes = ['project.support.external_work.read_linked'];
+    await router.push('/overview');
+    await router.push('/support/external-work');
+    expect(router.currentRoute.value.name).toBe('support-external-work');
   });
 });

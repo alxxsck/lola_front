@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from 'vue';
 
 import type {
   ScenarioAuthoringEvent,
   ScenarioAuthoringField,
-} from "@/shared/api/repository/scenario-authoring";
-import { uid } from "@/shared/lib/format";
+} from '@/shared/api/repository/scenario-authoring';
+import { uid } from '@/shared/lib/format';
 import {
   findCatalogFieldForDraft,
   summarizeEventFieldCapability,
-} from "../model/event-schema-capability";
+} from '../model/event-schema-capability';
 import {
   buildEventSchemaExample,
   diffEventSchemas,
@@ -18,16 +18,16 @@ import {
   serializeEventSchema,
   validateEventSchemaDefinition,
   validateEventSchemaSample,
-} from "../model/event-schema";
+} from '../model/event-schema';
 import type {
   EventSchemaChange,
   EventSchemaDraft,
   EventSchemaDraftIssue,
   EventSchemaFieldDraft,
   EventSchemaSampleIssue,
-} from "../model/event-schema";
+} from '../model/event-schema';
 
-type StudioSection = "payload" | "sample" | "review" | "all";
+type StudioSection = 'payload' | 'sample' | 'review' | 'all';
 
 const props = defineProps<{
   modelValue: EventSchemaDraft;
@@ -39,38 +39,29 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "update:modelValue": [value: EventSchemaDraft];
-  "technical-draft-change": [dirty: boolean];
+  'update:modelValue': [value: EventSchemaDraft];
+  'technical-draft-change': [dirty: boolean];
 }>();
 
 const expandedFieldId = ref<string | null>(null);
 const advancedVisible = ref(false);
-const advancedText = ref("");
-const advancedOriginalText = ref("");
-const advancedError = ref("");
+const advancedText = ref('');
+const advancedOriginalText = ref('');
+const advancedError = ref('');
 const advancedCandidate = ref<EventSchemaDraft | null>(null);
 const advancedChanges = ref<EventSchemaChange[]>([]);
 const advancedDiscardPrompt = ref(false);
-const sampleText = ref("");
+const sampleText = ref('');
 const sampleIssues = ref<EventSchemaSampleIssue[] | null>(null);
 
 const showPayload = computed(
-  () =>
-    !props.activeSection ||
-    props.activeSection === "all" ||
-    props.activeSection === "payload",
+  () => !props.activeSection || props.activeSection === 'all' || props.activeSection === 'payload',
 );
 const showSample = computed(
-  () =>
-    !props.activeSection ||
-    props.activeSection === "all" ||
-    props.activeSection === "sample",
+  () => !props.activeSection || props.activeSection === 'all' || props.activeSection === 'sample',
 );
 const showReview = computed(
-  () =>
-    !props.activeSection ||
-    props.activeSection === "all" ||
-    props.activeSection === "review",
+  () => !props.activeSection || props.activeSection === 'all' || props.activeSection === 'review',
 );
 
 const generatedSample = computed(() =>
@@ -79,63 +70,57 @@ const generatedSample = computed(() =>
 
 const changes = computed(() =>
   props.baselineSchema
-    ? diffEventSchemas(
-        props.baselineSchema,
-        serializeEventSchema(props.modelValue),
-      )
+    ? diffEventSchemas(props.baselineSchema, serializeEventSchema(props.modelValue))
     : [],
 );
 
-const fieldTypeLabels: Record<EventSchemaFieldDraft["type"] & string, string> =
-  {
-    string: "Текст",
-    number: "Число",
-    integer: "Целое число",
-    boolean: "Да / нет",
-    object: "Набор полей",
-    array: "Список",
-  };
+const fieldTypeLabels: Record<EventSchemaFieldDraft['type'] & string, string> = {
+  string: 'Текст',
+  number: 'Число',
+  integer: 'Целое число',
+  boolean: 'Да / нет',
+  object: 'Набор полей',
+  array: 'Список',
+};
 
 const semanticTypeOptions = [
-  { value: "", label: "Обычное значение" },
-  { value: "money", label: "Денежная сумма" },
-  { value: "currency", label: "Валюта" },
-  { value: "datetime", label: "Дата и время" },
+  { value: '', label: 'Обычное значение' },
+  { value: 'money', label: 'Денежная сумма' },
+  { value: 'currency', label: 'Валюта' },
+  { value: 'datetime', label: 'Дата и время' },
 ];
 
 const unitOptions = [
-  { value: "", label: "Как передано интеграцией" },
-  { value: "minor", label: "Минимальные денежные единицы (например, центы)" },
-  { value: "major", label: "Основные денежные единицы" },
-  { value: "milliseconds", label: "Миллисекунды" },
-  { value: "seconds", label: "Секунды" },
+  { value: '', label: 'Как передано интеграцией' },
+  { value: 'minor', label: 'Минимальные денежные единицы (например, центы)' },
+  { value: 'major', label: 'Основные денежные единицы' },
+  { value: 'milliseconds', label: 'Миллисекунды' },
+  { value: 'seconds', label: 'Секунды' },
 ];
 
 function addField() {
   const fieldKey = `field_${crypto.randomUUID()}`;
   const field: EventSchemaFieldDraft = {
-    id: uid("schema_field"),
-    wireKey: "",
-    title: "",
-    type: "string",
+    id: uid('schema_field'),
+    wireKey: '',
+    title: '',
+    type: 'string',
     required: false,
     fieldKey,
     sensitive: false,
     visuallyEditable: true,
     source: {},
   };
-  emit("update:modelValue", {
+  emit('update:modelValue', {
     ...props.modelValue,
     fields: [...props.modelValue.fields, field],
     hasProperties: true,
   });
-  void nextTick(() =>
-    document.getElementById(`field-title-${field.id}`)?.focus(),
-  );
+  void nextTick(() => document.getElementById(`field-title-${field.id}`)?.focus());
 }
 
 function updateField(id: string, patch: Partial<EventSchemaFieldDraft>) {
-  emit("update:modelValue", {
+  emit('update:modelValue', {
     ...props.modelValue,
     fields: props.modelValue.fields.map((field) =>
       field.id === id ? { ...field, ...patch } : field,
@@ -145,13 +130,13 @@ function updateField(id: string, patch: Partial<EventSchemaFieldDraft>) {
 
 function updateSemanticType(field: EventSchemaFieldDraft, event: Event) {
   const semanticType = optionalInput(event);
-  if (semanticType !== "money") {
+  if (semanticType !== 'money') {
     updateField(field.id, { semanticType });
     return;
   }
   updateField(field.id, {
     semanticType,
-    unit: field.unit ?? "minor",
+    unit: field.unit ?? 'minor',
     displayScale: field.displayScale ?? 0.01,
     displayPrecision: field.displayPrecision ?? 2,
   });
@@ -161,10 +146,10 @@ function updateMoneyUnit(field: EventSchemaFieldDraft, event: Event) {
   const unit = optionalInput(event);
   updateField(field.id, {
     unit,
-    ...(field.semanticType === "money" && unit === "minor"
+    ...(field.semanticType === 'money' && unit === 'minor'
       ? { displayScale: 0.01, displayPrecision: 2 }
       : {}),
-    ...(field.semanticType === "money" && unit === "major"
+    ...(field.semanticType === 'money' && unit === 'major'
       ? { displayScale: 1, displayPrecision: 2 }
       : {}),
   });
@@ -172,17 +157,14 @@ function updateMoneyUnit(field: EventSchemaFieldDraft, event: Event) {
 
 function removeField(id: string) {
   const index = props.modelValue.fields.findIndex((field) => field.id === id);
-  const focusId =
-    props.modelValue.fields[index + 1]?.id ??
-    props.modelValue.fields[index - 1]?.id;
-  emit("update:modelValue", {
+  const focusId = props.modelValue.fields[index + 1]?.id ?? props.modelValue.fields[index - 1]?.id;
+  emit('update:modelValue', {
     ...props.modelValue,
     fields: props.modelValue.fields.filter((field) => field.id !== id),
   });
   void nextTick(() => {
     if (focusId) document.getElementById(`field-title-${focusId}`)?.focus();
-    else
-      document.querySelector<HTMLElement>('[data-test="add-field"]')?.focus();
+    else document.querySelector<HTMLElement>('[data-test="add-field"]')?.focus();
   });
 }
 
@@ -200,26 +182,25 @@ function optionalInputWhileTyping(event: Event): string | undefined {
 
 function optionalNumber(event: Event): number | undefined {
   const value = inputValue(event);
-  return value === "" ? undefined : Number(value);
+  return value === '' ? undefined : Number(value);
 }
 
 function enumText(field: EventSchemaFieldDraft): string {
-  return field.enumValues?.every((value) => typeof value === "string")
-    ? field.enumValues.join("\n")
-    : "";
+  return field.enumValues?.every((value) => typeof value === 'string')
+    ? field.enumValues.join('\n')
+    : '';
 }
 
 function canEditEnum(field: EventSchemaFieldDraft): boolean {
   return (
-    field.type === "string" &&
-    (!field.enumValues ||
-      field.enumValues.every((value) => typeof value === "string"))
+    field.type === 'string' &&
+    (!field.enumValues || field.enumValues.every((value) => typeof value === 'string'))
   );
 }
 
 function updateEnum(field: EventSchemaFieldDraft, event: Event) {
   const values = inputValue(event)
-    .split("\n")
+    .split('\n')
     .map((value) => value.trim())
     .filter(Boolean);
   updateField(field.id, { enumValues: values.length ? values : undefined });
@@ -235,17 +216,16 @@ function clearFieldConstraints(field: EventSchemaFieldDraft) {
 
 function hasIncompatibleConstraints(field: EventSchemaFieldDraft): boolean {
   const stringEnumOnAnotherType =
-    field.type !== "string" &&
-    field.enumValues?.some((value) => typeof value === "string");
+    field.type !== 'string' && field.enumValues?.some((value) => typeof value === 'string');
   const rangeOnAnotherType =
-    field.type !== "number" &&
-    field.type !== "integer" &&
+    field.type !== 'number' &&
+    field.type !== 'integer' &&
     (field.minimum !== undefined || field.maximum !== undefined);
   return Boolean(stringEnumOnAnotherType || rangeOnAnotherType);
 }
 
 function setAdditionalProperties(event: Event) {
-  emit("update:modelValue", {
+  emit('update:modelValue', {
     ...props.modelValue,
     additionalProperties: (event.target as HTMLInputElement).checked,
     hasAdditionalProperties: true,
@@ -262,51 +242,40 @@ function toggleAdvanced() {
     return;
   }
   advancedVisible.value = true;
-  advancedError.value = "";
+  advancedError.value = '';
   advancedCandidate.value = null;
   advancedChanges.value = [];
   advancedDiscardPrompt.value = false;
-  advancedText.value = JSON.stringify(
-    serializeEventSchema(props.modelValue),
-    null,
-    2,
-  );
+  advancedText.value = JSON.stringify(serializeEventSchema(props.modelValue), null, 2);
   advancedOriginalText.value = advancedText.value;
-  emit("technical-draft-change", false);
+  emit('technical-draft-change', false);
 }
 
 function updateAdvancedText(event: Event) {
   advancedText.value = inputValue(event);
   advancedCandidate.value = null;
   advancedChanges.value = [];
-  advancedError.value = "";
+  advancedError.value = '';
   advancedDiscardPrompt.value = false;
-  emit(
-    "technical-draft-change",
-    advancedText.value !== advancedOriginalText.value,
-  );
+  emit('technical-draft-change', advancedText.value !== advancedOriginalText.value);
 }
 
 function reviewAdvancedSchema() {
   try {
     const schema: unknown = JSON.parse(advancedText.value);
-    if (!schema || typeof schema !== "object" || Array.isArray(schema))
-      throw new Error("Корневая JSON Schema должна быть объектом.");
-    const issues = validateEventSchemaDefinition(
-      schema as Record<string, unknown>,
-    );
-    if (issues.length)
-      throw new Error(issues.map((issue) => issue.message).join(" "));
+    if (!schema || typeof schema !== 'object' || Array.isArray(schema))
+      throw new Error('Корневая JSON Schema должна быть объектом.');
+    const issues = validateEventSchemaDefinition(schema as Record<string, unknown>);
+    if (issues.length) throw new Error(issues.map((issue) => issue.message).join(' '));
     const candidate = parseEventSchema(schema as Record<string, unknown>);
     advancedCandidate.value = candidate;
     advancedChanges.value = diffEventSchemas(
       serializeEventSchema(props.modelValue),
       serializeEventSchema(candidate),
     );
-    advancedError.value = "";
+    advancedError.value = '';
   } catch (cause) {
-    advancedError.value =
-      cause instanceof Error ? cause.message : "Некорректная JSON Schema.";
+    advancedError.value = cause instanceof Error ? cause.message : 'Некорректная JSON Schema.';
     advancedCandidate.value = null;
     advancedChanges.value = [];
   }
@@ -314,82 +283,67 @@ function reviewAdvancedSchema() {
 
 function applyAdvancedSchema() {
   if (!advancedCandidate.value) return;
-  emit("update:modelValue", advancedCandidate.value);
+  emit('update:modelValue', advancedCandidate.value);
   advancedVisible.value = false;
   advancedCandidate.value = null;
   advancedChanges.value = [];
   advancedDiscardPrompt.value = false;
-  emit("technical-draft-change", false);
+  emit('technical-draft-change', false);
 }
 
 function discardAdvancedDraft() {
   advancedVisible.value = false;
-  advancedText.value = "";
-  advancedOriginalText.value = "";
-  advancedError.value = "";
+  advancedText.value = '';
+  advancedOriginalText.value = '';
+  advancedError.value = '';
   advancedCandidate.value = null;
   advancedChanges.value = [];
   advancedDiscardPrompt.value = false;
-  emit("technical-draft-change", false);
+  emit('technical-draft-change', false);
 }
 
 defineExpose({ discardAdvancedDraft });
 
-function catalogField(
-  field: EventSchemaFieldDraft,
-): ScenarioAuthoringField | undefined {
+function catalogField(field: EventSchemaFieldDraft): ScenarioAuthoringField | undefined {
   return findCatalogFieldForDraft(props.catalogEvent, field);
 }
 
 function capability(field: EventSchemaFieldDraft) {
-  return summarizeEventFieldCapability(
-    catalogField(field),
-    Boolean(props.catalogEvent),
-  );
+  return summarizeEventFieldCapability(catalogField(field), Boolean(props.catalogEvent));
 }
 
 function fieldLabel(field: EventSchemaFieldDraft): string {
-  return field.title || field.wireKey || "без названия";
+  return field.title || field.wireKey || 'без названия';
 }
 
-function fieldIssue(
-  field: EventSchemaFieldDraft,
-): EventSchemaDraftIssue | undefined {
+function fieldIssue(field: EventSchemaFieldDraft): EventSchemaDraftIssue | undefined {
   return props.issues?.find((issue) => issue.fieldId === field.id);
 }
 
-function optionsWithCurrent(
-  options: Array<{ value: string; label: string }>,
-  current?: string,
-) {
-  if (!current || options.some((option) => option.value === current))
-    return options;
-  return [
-    ...options,
-    { value: current, label: `Текущее значение: ${current}` },
-  ];
+function optionsWithCurrent(options: Array<{ value: string; label: string }>, current?: string) {
+  if (!current || options.some((option) => option.value === current)) return options;
+  return [...options, { value: current, label: `Текущее значение: ${current}` }];
 }
 
-const changeLabels: Record<EventSchemaChange["kind"], string> = {
-  added: "Добавлено поле",
-  removed: "Удалено поле",
-  renamed: "Изменено имя поля в данных",
-  "type-changed": "Изменён тип",
-  "field-key-changed": "Изменён технический идентификатор",
-  "required-changed": "Изменена обязательность",
-  "constraint-changed": "Изменены допустимые значения или диапазон",
-  "metadata-changed": "Изменены описание или смысл данных",
-  "additional-properties-changed": "Изменён приём дополнительных полей",
+const changeLabels: Record<EventSchemaChange['kind'], string> = {
+  added: 'Добавлено поле',
+  removed: 'Удалено поле',
+  renamed: 'Изменено имя поля в данных',
+  'type-changed': 'Изменён тип',
+  'field-key-changed': 'Изменён технический идентификатор',
+  'required-changed': 'Изменена обязательность',
+  'constraint-changed': 'Изменены допустимые значения или диапазон',
+  'metadata-changed': 'Изменены описание или смысл данных',
+  'additional-properties-changed': 'Изменён приём дополнительных полей',
 };
 
 function changeTarget(change: EventSchemaChange): string {
-  return change.afterWireKey ?? change.beforeWireKey ?? "Всё событие";
+  return change.afterWireKey ?? change.beforeWireKey ?? 'Всё событие';
 }
 
 function changeValues(change: EventSchemaChange): string | null {
-  if (change.beforeValue === undefined && change.afterValue === undefined)
-    return null;
-  return `${change.beforeValue ?? "—"} → ${change.afterValue ?? "—"}`;
+  if (change.beforeValue === undefined && change.afterValue === undefined) return null;
+  return `${change.beforeValue ?? '—'} → ${change.afterValue ?? '—'}`;
 }
 
 function validateSample() {
@@ -399,10 +353,10 @@ function validateSample() {
   } catch {
     sampleIssues.value = [
       {
-        path: "/",
-        expected: "корректный JSON",
-        actual: "пример не удалось прочитать",
-        explanation: "Проверьте кавычки, запятые и фигурные скобки в примере.",
+        path: '/',
+        expected: 'корректный JSON',
+        actual: 'пример не удалось прочитать',
+        explanation: 'Проверьте кавычки, запятые и фигурные скобки в примере.',
       },
     ];
   }
@@ -424,16 +378,11 @@ watch(
           <div>
             <strong>Поля события</strong>
             <span
-              >Добавьте только те данные, которые интеграция будет отправлять
-              вместе с событием.</span
+              >Добавьте только те данные, которые интеграция будет отправлять вместе с
+              событием.</span
             >
           </div>
-          <button
-            type="button"
-            class="secondary-button"
-            data-test="add-field"
-            @click="addField"
-          >
+          <button type="button" class="secondary-button" data-test="add-field" @click="addField">
             + Добавить поле
           </button>
         </header>
@@ -461,9 +410,7 @@ watch(
                         title: optionalInputWhileTyping($event),
                       })
                     "
-                    @change="
-                      updateField(field.id, { title: optionalInput($event) })
-                    "
+                    @change="updateField(field.id, { title: optionalInput($event) })"
                 /></label>
                 <label :for="`field-wire-${field.id}`"
                   >Имя в данных<input
@@ -479,9 +426,7 @@ watch(
                     "
                     class="mono"
                     placeholder="amountMinor"
-                    @input="
-                      updateField(field.id, { wireKey: inputValue($event) })
-                    "
+                    @input="updateField(field.id, { wireKey: inputValue($event) })"
                   /><small :id="`field-wire-help-${field.id}`"
                     >Латиницей, как его отправляет интеграция.</small
                   ></label
@@ -494,17 +439,11 @@ watch(
                     :aria-label="`Тип поля ${fieldLabel(field)}`"
                     @change="
                       updateField(field.id, {
-                        type: inputValue(
-                          $event,
-                        ) as EventSchemaFieldDraft['type'],
+                        type: inputValue($event) as EventSchemaFieldDraft['type'],
                       })
                     "
                   >
-                    <option
-                      v-for="type in eventSchemaFieldTypes"
-                      :key="type"
-                      :value="type"
-                    >
+                    <option v-for="type in eventSchemaFieldTypes" :key="type" :value="type">
                       {{ fieldTypeLabels[type] }}
                     </option>
                   </select></label
@@ -545,15 +484,10 @@ watch(
                     data-test="field-details"
                     :aria-expanded="expandedFieldId === field.id"
                     :aria-controls="`field-details-${field.id}`"
-                    @click="
-                      expandedFieldId =
-                        expandedFieldId === field.id ? null : field.id
-                    "
+                    @click="expandedFieldId = expandedFieldId === field.id ? null : field.id"
                   >
                     {{
-                      expandedFieldId === field.id
-                        ? "Скрыть настройки"
-                        : "Дополнительные настройки"
+                      expandedFieldId === field.id ? 'Скрыть настройки' : 'Дополнительные настройки'
                     }}
                   </button>
                   <button
@@ -593,10 +527,7 @@ watch(
                     @change="updateSemanticType(field, $event)"
                   >
                     <option
-                      v-for="option in optionsWithCurrent(
-                        semanticTypeOptions,
-                        field.semanticType,
-                      )"
+                      v-for="option in optionsWithCurrent(semanticTypeOptions, field.semanticType)"
                       :key="option.value"
                       :value="option.value"
                     >
@@ -611,19 +542,15 @@ watch(
                     @change="updateMoneyUnit(field, $event)"
                   >
                     <option
-                      v-for="option in optionsWithCurrent(
-                        unitOptions,
-                        field.unit,
-                      )"
+                      v-for="option in optionsWithCurrent(unitOptions, field.unit)"
                       :key="option.value"
                       :value="option.value"
                     >
                       {{ option.label }}
                     </option></select
                   ><small
-                    >В событии сохраняется исходное значение; интерфейс
-                    применяет заданный ниже масштаб только при показе и
-                    вводе.</small
+                    >В событии сохраняется исходное значение; интерфейс применяет заданный ниже
+                    масштаб только при показе и вводе.</small
                   ></label
                 >
                 <template v-if="field.semanticType?.includes('money')">
@@ -641,8 +568,8 @@ watch(
                         })
                       "
                     /><small
-                      >Показываемое значение = значение события × масштаб. Для
-                      центов обычно 0,01.</small
+                      >Показываемое значение = значение события × масштаб. Для центов обычно
+                      0,01.</small
                     ></label
                   >
                   <label
@@ -662,25 +589,19 @@ watch(
                     /><small>Допустимо от 0 до 12.</small></label
                   >
                 </template>
-                <label
-                  v-if="field.type === 'number' || field.type === 'integer'"
+                <label v-if="field.type === 'number' || field.type === 'integer'"
                   >Минимальное значение<input
                     type="number"
                     :value="field.minimum"
                     :aria-label="`Минимальное значение поля ${fieldLabel(field)}`"
-                    @input="
-                      updateField(field.id, { minimum: optionalNumber($event) })
-                    "
+                    @input="updateField(field.id, { minimum: optionalNumber($event) })"
                 /></label>
-                <label
-                  v-if="field.type === 'number' || field.type === 'integer'"
+                <label v-if="field.type === 'number' || field.type === 'integer'"
                   >Максимальное значение<input
                     type="number"
                     :value="field.maximum"
                     :aria-label="`Максимальное значение поля ${fieldLabel(field)}`"
-                    @input="
-                      updateField(field.id, { maximum: optionalNumber($event) })
-                    "
+                    @input="updateField(field.id, { maximum: optionalNumber($event) })"
                 /></label>
                 <label v-if="canEditEnum(field)" class="wide"
                   >Допустимые варианты<textarea
@@ -689,16 +610,11 @@ watch(
                     rows="3"
                     placeholder="Каждый вариант с новой строки"
                     @input="updateEnum(field, $event)"
-                  /><small
-                    >По одному варианту в строке — например EUR и USD.</small
-                  ></label
+                  /><small>По одному варианту в строке — например EUR и USD.</small></label
                 >
-                <div
-                  v-else-if="field.enumValues?.length"
-                  class="readonly-note wide"
-                >
-                  Список допустимых значений сохранён без изменений. Для этого
-                  типа он доступен только в технических деталях.
+                <div v-else-if="field.enumValues?.length" class="readonly-note wide">
+                  Список допустимых значений сохранён без изменений. Для этого типа он доступен
+                  только в технических деталях.
                 </div>
                 <div
                   v-if="hasIncompatibleConstraints(field)"
@@ -706,13 +622,9 @@ watch(
                   role="alert"
                 >
                   <span
-                    >Часть ограничений не подходит выбранному типу. Очистите их
-                    или верните прежний тип.</span
-                  ><button
-                    type="button"
-                    class="link-button"
-                    @click="clearFieldConstraints(field)"
-                  >
+                    >Часть ограничений не подходит выбранному типу. Очистите их или верните прежний
+                    тип.</span
+                  ><button type="button" class="link-button" @click="clearFieldConstraints(field)">
                     Очистить несовместимые ограничения
                   </button>
                 </div>
@@ -731,9 +643,7 @@ watch(
                 >
                 <div class="technical-identity wide">
                   <span>Технический идентификатор</span
-                  ><code>{{
-                    field.fieldKey || "будет создан при добавлении поля"
-                  }}</code
+                  ><code>{{ field.fieldKey || 'будет создан при добавлении поля' }}</code
                   ><small>Не меняется при обычном переименовании.</small>
                 </div>
               </div>
@@ -745,22 +655,16 @@ watch(
                   ><span>{{ field.unsupportedReason }}</span>
                 </div>
                 <span
-                  >Данные сохранены без изменений. Их можно посмотреть в
-                  технических деталях.</span
+                  >Данные сохранены без изменений. Их можно посмотреть в технических деталях.</span
                 >
               </div>
             </template>
           </article>
         </div>
-        <div v-else class="no-fields">
-          У события пока нет дополнительных данных.
-        </div>
+        <div v-else class="no-fields">У события пока нет дополнительных данных.</div>
 
         <div class="schema-options">
-          <label
-            v-if="typeof modelValue.additionalProperties !== 'object'"
-            class="checkbox-label"
-          >
+          <label v-if="typeof modelValue.additionalProperties !== 'object'" class="checkbox-label">
             <input
               type="checkbox"
               :checked="modelValue.additionalProperties === true"
@@ -770,8 +674,8 @@ watch(
             Принимать поля, которые не описаны выше
           </label>
           <span v-else
-            >Особое правило для дополнительных полей сохранено. Оно доступно в
-            технических деталях.</span
+            >Особое правило для дополнительных полей сохранено. Оно доступно в технических
+            деталях.</span
           >
         </div>
       </template>
@@ -787,18 +691,14 @@ watch(
         >
           {{
             advancedVisible
-              ? "Вернуться к визуальной настройке"
-              : "Технические детали · JSON Schema"
+              ? 'Вернуться к визуальной настройке'
+              : 'Технические детали · JSON Schema'
           }}
         </button>
-        <div
-          v-if="advancedVisible"
-          id="advanced-schema-editor"
-          class="advanced-editor"
-        >
+        <div v-if="advancedVisible" id="advanced-schema-editor" class="advanced-editor">
           <p>
-            Этот режим предназначен для разработчиков. Сначала схема проверяется
-            и показывает изменения; только потом её можно применить.
+            Этот режим предназначен для разработчиков. Сначала схема проверяется и показывает
+            изменения; только потом её можно применить.
           </p>
           <textarea
             :value="advancedText"
@@ -810,14 +710,8 @@ watch(
           <p v-if="advancedError" class="schema-error" role="alert">
             {{ advancedError }}
           </p>
-          <div
-            v-if="advancedDiscardPrompt"
-            class="constraint-warning"
-            role="alert"
-          >
-            <span
-              >В JSON есть неприменённые изменения. Проверить их или
-              отменить?</span
+          <div v-if="advancedDiscardPrompt" class="constraint-warning" role="alert">
+            <span>В JSON есть неприменённые изменения. Проверить их или отменить?</span
             ><button
               type="button"
               class="link-button"
@@ -830,19 +724,13 @@ watch(
           <div v-if="advancedCandidate" class="advanced-review" role="status">
             <strong>Проверка пройдена</strong>
             <span v-if="!advancedChanges.length"
-              >Изменений полей не найдено. Остальные технические параметры будут
-              сохранены как введены.</span
+              >Изменений полей не найдено. Остальные технические параметры будут сохранены как
+              введены.</span
             >
             <ul v-else>
-              <li
-                v-for="(change, index) in advancedChanges"
-                :key="`${change.kind}-${index}`"
-              >
-                {{ changeLabels[change.kind] }}:
-                <code>{{ changeTarget(change) }}</code
-                ><span v-if="changeValues(change)">
-                  · {{ changeValues(change) }}</span
-                >
+              <li v-for="(change, index) in advancedChanges" :key="`${change.kind}-${index}`">
+                {{ changeLabels[change.kind] }}: <code>{{ changeTarget(change) }}</code
+                ><span v-if="changeValues(change)"> · {{ changeValues(change) }}</span>
               </li>
             </ul>
           </div>
@@ -873,27 +761,18 @@ watch(
       <header>
         <div>
           <strong>Пример данных события</strong
-          ><span
-            >Так будет выглядеть заполненное событие с текущими полями и
-            ограничениями.</span
-          >
+          ><span>Так будет выглядеть заполненное событие с текущими полями и ограничениями.</span>
         </div>
-        <button
-          type="button"
-          class="link-button"
-          @click="sampleText = generatedSample"
-        >
+        <button type="button" class="link-button" @click="sampleText = generatedSample">
           Подставить пример для проверки
         </button>
       </header>
       <pre>{{ generatedSample }}</pre>
       <details class="sample-details">
-        <summary>
-          Проверить пример от интеграции <span>необязательно</span>
-        </summary>
+        <summary>Проверить пример от интеграции <span>необязательно</span></summary>
         <p>
-          Вставьте JSON, который прислал разработчик. Настраивать событие через
-          этот блок не требуется.
+          Вставьте JSON, который прислал разработчик. Настраивать событие через этот блок не
+          требуется.
         </p>
         <textarea
           v-model="sampleText"
@@ -911,11 +790,7 @@ watch(
           Проверить пример
         </button>
       </details>
-      <p
-        v-if="sampleIssues && !sampleIssues.length"
-        class="sample-success"
-        role="status"
-      >
+      <p v-if="sampleIssues && !sampleIssues.length" class="sample-success" role="status">
         Пример соответствует текущей настройке.
       </p>
       <table v-else-if="sampleIssues?.length" class="sample-issues">
@@ -928,10 +803,7 @@ watch(
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="(issue, index) in sampleIssues"
-            :key="`${issue.path}-${index}`"
-          >
+          <tr v-for="(issue, index) in sampleIssues" :key="`${issue.path}-${index}`">
             <td data-label="Поле">
               <code>{{ issue.path }}</code>
             </td>
@@ -945,31 +817,21 @@ watch(
       </table>
     </section>
 
-    <section
-      v-if="showReview"
-      class="schema-diff"
-      aria-label="Изменения данных события"
-    >
-      <strong>{{
-        baselineSchema ? "Что изменится" : "Настройка готова к созданию"
-      }}</strong>
+    <section v-if="showReview" class="schema-diff" aria-label="Изменения данных события">
+      <strong>{{ baselineSchema ? 'Что изменится' : 'Настройка готова к созданию' }}</strong>
       <p v-if="baselineSchema">
-        Показано локальное сравнение с открытой версией. Влияние на интеграции и
-        сценарии проверяется отдельно перед публикацией.
+        Показано локальное сравнение с открытой версией. Влияние на интеграции и сценарии
+        проверяется отдельно перед публикацией.
       </p>
       <p v-else>Проверьте название, поля и пример перед созданием события.</p>
       <ul v-if="changes.length">
         <li v-for="(change, index) in changes" :key="`${change.kind}-${index}`">
           <b>{{ changeLabels[change.kind] }}</b
           >: <code>{{ changeTarget(change) }}</code
-          ><span v-if="changeValues(change)">
-            · {{ changeValues(change) }}</span
-          >
+          ><span v-if="changeValues(change)"> · {{ changeValues(change) }}</span>
         </li>
       </ul>
-      <p v-else-if="baselineSchema" class="no-changes">
-        Изменений в полях нет.
-      </p>
+      <p v-else-if="baselineSchema" class="no-changes">Изменений в полях нет.</p>
     </section>
   </section>
 </template>

@@ -2,15 +2,15 @@ import {
   integrationEventIdentityPolicyCurrent,
   integrationEventIdentityPolicyPreview,
   integrationEventIdentityPolicyPublish,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   PreviewCanonicalIdentityPolicyDto,
   PublishCanonicalIdentityPolicyDto,
-} from "@/shared/api/generated/models";
-import { integrationEventRoutesApi } from "@/features/integration-event-routes/integration-event-routes.api";
+} from '@/shared/api/generated/models';
+import { integrationEventRoutesApi } from '@/features/integration-event-routes/integration-event-routes.api';
 
 const commandOptions = (idempotencyKey: string) => ({
-  headers: { "Idempotency-Key": idempotencyKey },
+  headers: { 'Idempotency-Key': idempotencyKey },
 });
 
 export const integrationCanonicalIdentityApi = {
@@ -18,10 +18,7 @@ export const integrationCanonicalIdentityApi = {
   listRoutes: integrationEventRoutesApi.list,
 
   current(projectId: string, eventDefinitionKeyId: string) {
-    return integrationEventIdentityPolicyCurrent(
-      projectId,
-      eventDefinitionKeyId,
-    );
+    return integrationEventIdentityPolicyCurrent(projectId, eventDefinitionKeyId);
   },
 
   preview(
@@ -29,11 +26,7 @@ export const integrationCanonicalIdentityApi = {
     eventDefinitionKeyId: string,
     input: PreviewCanonicalIdentityPolicyDto,
   ) {
-    return integrationEventIdentityPolicyPreview(
-      projectId,
-      eventDefinitionKeyId,
-      input,
-    );
+    return integrationEventIdentityPolicyPreview(projectId, eventDefinitionKeyId, input);
   },
 
   publish(

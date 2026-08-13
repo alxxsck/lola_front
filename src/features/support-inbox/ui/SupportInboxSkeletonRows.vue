@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { SupportInboxMode } from "@/features/support-workspace/api/support-workspace-source";
+import type { SupportInboxMode } from '@/features/support-workspace/api/support-workspace-source';
 
 defineProps<{
   mode: SupportInboxMode;
@@ -9,19 +9,13 @@ defineProps<{
 
 <template>
   <div
-    :class="[
-      'inbox-skeletons',
-      mode === 'CASES' ? 'is-case' : 'is-conversation',
-    ]"
+    :class="['inbox-skeletons', mode === 'CASES' ? 'is-case' : 'is-conversation']"
     aria-busy="true"
   >
     <div
       v-for="index in count"
       :key="index"
-      :class="[
-        'inbox-skeleton-row',
-        mode === 'CASES' ? 'is-case' : 'is-conversation',
-      ]"
+      :class="['inbox-skeleton-row', mode === 'CASES' ? 'is-case' : 'is-conversation']"
     >
       <span class="inbox-skeleton-marker support-loading-shimmer" />
       <span class="inbox-skeleton-body">

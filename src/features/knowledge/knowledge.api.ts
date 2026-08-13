@@ -1,6 +1,6 @@
-import type { AxiosProgressEvent } from 'axios'
-import { request } from '@/shared/api/http/orval-mutator'
-import { isMockMode } from '@/shared/config/data-mode'
+import type { AxiosProgressEvent } from 'axios';
+import { request } from '@/shared/api/http/orval-mutator';
+import { isMockMode } from '@/shared/config/data-mode';
 import {
   parseKnowledgeDocumentDetail,
   parseKnowledgeDocumentPage,
@@ -12,32 +12,30 @@ import {
   type KnowledgeDocumentPage,
   type KnowledgeFileInput,
   type KnowledgeTextInput,
-} from './knowledge.model'
+} from './knowledge.model';
 
-const DEMO_KEY = 'retenive-cms-demo-knowledge-v1'
-const DEMO_AUTH_KEY = 'retenive-cms-demo-auth-v1'
+const DEMO_KEY = 'retenive-cms-demo-knowledge-v1';
+const DEMO_AUTH_KEY = 'retenive-cms-demo-auth-v1';
 
 function demoStorageKey(): string {
   try {
     const auth = JSON.parse(sessionStorage.getItem(DEMO_AUTH_KEY) ?? '{}') as {
-      user?: { email?: unknown }
-    }
+      user?: { email?: unknown };
+    };
     const identity =
-      typeof auth.user?.email === 'string'
-        ? auth.user.email.toLowerCase()
-        : 'anonymous'
-    return `${DEMO_KEY}:${identity}`
+      typeof auth.user?.email === 'string' ? auth.user.email.toLowerCase() : 'anonymous';
+    return `${DEMO_KEY}:${identity}`;
   } catch {
-    return `${DEMO_KEY}:anonymous`
+    return `${DEMO_KEY}:anonymous`;
   }
 }
 
 function knowledgePath(projectId: string, suffix: string): string {
-  return `/api/v1/admin/projects/${encodeURIComponent(projectId)}/knowledge/${suffix}`
+  return `/api/v1/admin/projects/${encodeURIComponent(projectId)}/knowledge/${suffix}`;
 }
 
 function invalidResponse(): never {
-  throw new Error('Сервер вернул некорректные данные базы знаний')
+  throw new Error('Сервер вернул некорректные данные базы знаний');
 }
 
 function toSummary(document: KnowledgeDocumentDetail): KnowledgeDocument {
@@ -56,11 +54,11 @@ function toSummary(document: KnowledgeDocumentDetail): KnowledgeDocument {
     error: document.error,
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
-  }
+  };
 }
 
 function demoSeed(projectId: string): KnowledgeDocumentDetail[] {
-  const timestamp = new Date(Date.now() - 86_400_000).toISOString()
+  const timestamp = new Date(Date.now() - 86_400_000).toISOString();
   return [
     {
       id: 'demo-knowledge-ready',
@@ -97,33 +95,31 @@ function demoSeed(projectId: string): KnowledgeDocumentDetail[] {
       updatedAt: timestamp,
       contentText: null,
     },
-  ]
+  ];
 }
 
 function readDemo(projectId: string): KnowledgeDocumentDetail[] {
   try {
-    const parsed = JSON.parse(
-      sessionStorage.getItem(demoStorageKey()) ?? '{}',
-    ) as Record<string, KnowledgeDocumentDetail[]>
-    const documents = parsed[projectId] ?? demoSeed(projectId)
-    const now = Date.now()
-    let changed = false
+    const parsed = JSON.parse(sessionStorage.getItem(demoStorageKey()) ?? '{}') as Record<
+      string,
+      KnowledgeDocumentDetail[]
+    >;
+    const documents = parsed[projectId] ?? demoSeed(projectId);
+    const now = Date.now();
+    let changed = false;
     for (const document of documents) {
-      if (
-        document.status === 'INDEXING' &&
-        now - Date.parse(document.updatedAt) > 4_000
-      ) {
-        document.status = 'READY'
-        document.updatedAt = new Date().toISOString()
-        changed = true
+      if (document.status === 'INDEXING' && now - Date.parse(document.updatedAt) > 4_000) {
+        document.status = 'READY';
+        document.updatedAt = new Date().toISOString();
+        changed = true;
       }
     }
-    if (!parsed[projectId] || changed) writeDemo(projectId, documents, parsed)
-    return documents
+    if (!parsed[projectId] || changed) writeDemo(projectId, documents, parsed);
+    return documents;
   } catch {
-    const documents = demoSeed(projectId)
-    writeDemo(projectId, documents)
-    return documents
+    const documents = demoSeed(projectId);
+    writeDemo(projectId, documents);
+    return documents;
   }
 }
 
@@ -132,31 +128,27 @@ function writeDemo(
   documents: KnowledgeDocumentDetail[],
   current?: Record<string, KnowledgeDocumentDetail[]>,
 ) {
-  let data = current ?? {}
+  let data = current ?? {};
   if (!current) {
     try {
-      data = JSON.parse(
-        sessionStorage.getItem(demoStorageKey()) ?? '{}',
-      ) as Record<string, KnowledgeDocumentDetail[]>
+      data = JSON.parse(sessionStorage.getItem(demoStorageKey()) ?? '{}') as Record<
+        string,
+        KnowledgeDocumentDetail[]
+      >;
     } catch {
-      data = {}
+      data = {};
     }
   }
-  sessionStorage.setItem(
-    demoStorageKey(),
-    JSON.stringify({ ...data, [projectId]: documents }),
-  )
+  sessionStorage.setItem(demoStorageKey(), JSON.stringify({ ...data, [projectId]: documents }));
 }
 
 function newDemoDocument(
   projectId: string,
   input: KnowledgeTextInput | KnowledgeFileInput,
 ): KnowledgeDocumentDetail {
-  const now = new Date().toISOString()
-  const isFile = 'file' in input
-  const title =
-    input.title?.trim() ||
-    (isFile ? input.file.name.replace(/\.[^.]+$/, '') : '')
+  const now = new Date().toISOString();
+  const isFile = 'file' in input;
+  const title = input.title?.trim() || (isFile ? input.file.name.replace(/\.[^.]+$/, '') : '');
   return {
     id: globalThis.crypto.randomUUID(),
     projectId,
@@ -170,9 +162,7 @@ function newDemoDocument(
             .replace(/[^a-zа-яё0-9]+/giu, '-')
             .replace(/^-|-$/g, '') || 'knowledge'
         }.md`,
-    mimeType: isFile
-      ? input.file.type || 'application/octet-stream'
-      : 'text/markdown',
+    mimeType: isFile ? input.file.type || 'application/octet-stream' : 'text/markdown',
     sizeBytes: isFile ? input.file.size : new Blob([input.text]).size,
     status: 'INDEXING',
     locale: input.locale?.trim() || null,
@@ -182,7 +172,7 @@ function newDemoDocument(
     createdAt: now,
     updatedAt: now,
     contentText: isFile ? null : input.text.trim(),
-  }
+  };
 }
 
 export async function listKnowledgeDocuments(
@@ -191,24 +181,22 @@ export async function listKnowledgeDocuments(
   signal?: AbortSignal,
 ): Promise<KnowledgeDocumentPage> {
   if (isMockMode) {
-    const documents = readDemo(projectId)
-    const offset = query.cursor
-      ? documents.findIndex((item) => item.id === query.cursor) + 1
-      : 0
-    const limit = query.limit ?? 30
-    const items = documents.slice(offset, offset + limit).map(toSummary)
+    const documents = readDemo(projectId);
+    const offset = query.cursor ? documents.findIndex((item) => item.id === query.cursor) + 1 : 0;
+    const limit = query.limit ?? 30;
+    const items = documents.slice(offset, offset + limit).map(toSummary);
     return {
       items,
       nextCursor: documents[offset + limit] ? (items.at(-1)?.id ?? null) : null,
-    }
+    };
   }
   const response = await request<unknown>({
     url: knowledgePath(projectId, 'documents'),
     method: 'GET',
     params: query,
     signal,
-  })
-  return parseKnowledgeDocumentPage(response, projectId) ?? invalidResponse()
+  });
+  return parseKnowledgeDocumentPage(response, projectId) ?? invalidResponse();
 }
 
 export async function getKnowledgeDocument(
@@ -217,19 +205,16 @@ export async function getKnowledgeDocument(
   signal?: AbortSignal,
 ): Promise<KnowledgeDocumentDetail> {
   if (isMockMode) {
-    const document = readDemo(projectId).find((item) => item.id === documentId)
-    if (!document) throw new Error('Документ не найден')
-    return structuredClone(document)
+    const document = readDemo(projectId).find((item) => item.id === documentId);
+    if (!document) throw new Error('Документ не найден');
+    return structuredClone(document);
   }
   const response = await request<unknown>({
-    url: knowledgePath(
-      projectId,
-      `documents/${encodeURIComponent(documentId)}`,
-    ),
+    url: knowledgePath(projectId, `documents/${encodeURIComponent(documentId)}`),
     method: 'GET',
     signal,
-  })
-  return parseKnowledgeDocumentDetail(response, projectId) ?? invalidResponse()
+  });
+  return parseKnowledgeDocumentDetail(response, projectId) ?? invalidResponse();
 }
 
 export async function createKnowledgeText(
@@ -238,19 +223,19 @@ export async function createKnowledgeText(
   signal?: AbortSignal,
 ): Promise<KnowledgeDocumentMutation> {
   if (isMockMode) {
-    const documents = readDemo(projectId)
-    const document = newDemoDocument(projectId, input)
-    documents.unshift(document)
-    writeDemo(projectId, documents)
-    return { document, duplicate: false }
+    const documents = readDemo(projectId);
+    const document = newDemoDocument(projectId, input);
+    documents.unshift(document);
+    writeDemo(projectId, documents);
+    return { document, duplicate: false };
   }
   const response = await request<unknown>({
     url: knowledgePath(projectId, 'texts'),
     method: 'POST',
     data: input,
     signal,
-  })
-  return parseKnowledgeMutation(response, projectId) ?? invalidResponse()
+  });
+  return parseKnowledgeMutation(response, projectId) ?? invalidResponse();
 }
 
 export async function uploadKnowledgeFile(
@@ -260,18 +245,18 @@ export async function uploadKnowledgeFile(
   onProgress?: (progress: number) => void,
 ): Promise<KnowledgeDocumentMutation> {
   if (isMockMode) {
-    onProgress?.(100)
-    const documents = readDemo(projectId)
-    const document = newDemoDocument(projectId, input)
-    documents.unshift(document)
-    writeDemo(projectId, documents)
-    return { document, duplicate: false }
+    onProgress?.(100);
+    const documents = readDemo(projectId);
+    const document = newDemoDocument(projectId, input);
+    documents.unshift(document);
+    writeDemo(projectId, documents);
+    return { document, duplicate: false };
   }
-  const data = new FormData()
-  data.append('file', input.file, input.file.name)
-  if (input.title?.trim()) data.append('title', input.title.trim())
-  if (input.locale?.trim()) data.append('locale', input.locale.trim())
-  if (input.category?.trim()) data.append('category', input.category.trim())
+  const data = new FormData();
+  data.append('file', input.file, input.file.name);
+  if (input.title?.trim()) data.append('title', input.title.trim());
+  if (input.locale?.trim()) data.append('locale', input.locale.trim());
+  if (input.category?.trim()) data.append('category', input.category.trim());
   const response = await request<unknown>({
     url: knowledgePath(projectId, 'files'),
     method: 'POST',
@@ -280,13 +265,10 @@ export async function uploadKnowledgeFile(
     headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 300_000,
     onUploadProgress: (event: AxiosProgressEvent) => {
-      if (event.total)
-        onProgress?.(
-          Math.min(100, Math.round((event.loaded / event.total) * 100)),
-        )
+      if (event.total) onProgress?.(Math.min(100, Math.round((event.loaded / event.total) * 100)));
     },
-  })
-  return parseKnowledgeMutation(response, projectId) ?? invalidResponse()
+  });
+  return parseKnowledgeMutation(response, projectId) ?? invalidResponse();
 }
 
 export async function retryKnowledgeDocument(
@@ -295,25 +277,22 @@ export async function retryKnowledgeDocument(
   signal?: AbortSignal,
 ): Promise<KnowledgeDocumentMutation> {
   if (isMockMode) {
-    const documents = readDemo(projectId)
-    const document = documents.find((item) => item.id === documentId)
-    if (!document) throw new Error('Документ не найден')
-    document.status = 'INDEXING'
-    document.error = null
-    document.errorCode = null
-    document.updatedAt = new Date().toISOString()
-    writeDemo(projectId, documents)
-    return { document, duplicate: false }
+    const documents = readDemo(projectId);
+    const document = documents.find((item) => item.id === documentId);
+    if (!document) throw new Error('Документ не найден');
+    document.status = 'INDEXING';
+    document.error = null;
+    document.errorCode = null;
+    document.updatedAt = new Date().toISOString();
+    writeDemo(projectId, documents);
+    return { document, duplicate: false };
   }
   const response = await request<unknown>({
-    url: knowledgePath(
-      projectId,
-      `documents/${encodeURIComponent(documentId)}/retry`,
-    ),
+    url: knowledgePath(projectId, `documents/${encodeURIComponent(documentId)}/retry`),
     method: 'POST',
     signal,
-  })
-  return parseKnowledgeMutation(response, projectId) ?? invalidResponse()
+  });
+  return parseKnowledgeMutation(response, projectId) ?? invalidResponse();
 }
 
 export async function deleteKnowledgeDocument(
@@ -325,16 +304,13 @@ export async function deleteKnowledgeDocument(
     writeDemo(
       projectId,
       readDemo(projectId).filter((item) => item.id !== documentId),
-    )
-    return
+    );
+    return;
   }
   const response = await request<unknown>({
-    url: knowledgePath(
-      projectId,
-      `documents/${encodeURIComponent(documentId)}`,
-    ),
+    url: knowledgePath(projectId, `documents/${encodeURIComponent(documentId)}`),
     method: 'DELETE',
     signal,
-  })
-  if (!parseKnowledgeDelete(response, documentId)) invalidResponse()
+  });
+  if (!parseKnowledgeDelete(response, documentId)) invalidResponse();
 }

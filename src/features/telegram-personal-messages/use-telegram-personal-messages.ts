@@ -1,17 +1,17 @@
-import { ref } from "vue";
+import { ref } from 'vue';
 import type {
   TelegramPersonalMessageDetailResponseDto,
   TelegramPersonalMessageListResponseDto,
   TelegramPersonalMessageResponseDto,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
 import {
   telegramPersonalCreateErrorLabel,
   telegramPersonalSafeErrorPolicy,
   terminalTelegramPersonalStatus,
   type TelegramPersonalDraft,
   type TelegramPersonalLinkStatus,
-} from "./telegram-personal-message.model";
+} from './telegram-personal-message.model';
 
 export interface TelegramPersonalMessageRequestOptions {
   signal: AbortSignal;
@@ -54,18 +54,15 @@ interface Intent {
 
 const EMPTY_CONTEXT: TelegramPersonalMessagesContext = {
   visible: false,
-  projectId: "",
+  projectId: '',
   endUserId: null,
   canSend: false,
-  linkStatus: "UNLINKED",
+  linkStatus: 'UNLINKED',
 };
 
 const POLL_DELAYS = [500, 1_000, 2_000, 3_000, 5_000] as const;
 const MAX_POLLS = 20;
-const STATUS_PRECEDENCE: Record<
-  TelegramPersonalMessageResponseDto["status"],
-  number
-> = {
+const STATUS_PRECEDENCE: Record<TelegramPersonalMessageResponseDto['status'], number> = {
   QUEUED: 0,
   SENDING: 1,
   RETRY_WAIT: 2,
@@ -86,8 +83,8 @@ export function createTelegramPersonalMessagesController(options: {
   const submitting = ref(false);
   const polling = ref(false);
   const uploadProgress = ref(0);
-  const error = ref("");
-  const feedback = ref("");
+  const error = ref('');
+  const feedback = ref('');
   const transportRetryAvailable = ref(false);
   let context = EMPTY_CONTEXT;
   let generation = 0;
@@ -100,9 +97,7 @@ export function createTelegramPersonalMessagesController(options: {
   const controllers = new Set<AbortController>();
   const waits = new Set<{ timer: number; resolve: () => void }>();
 
-  function readable(
-    snapshot = context,
-  ): snapshot is TelegramPersonalMessagesContext & {
+  function readable(snapshot = context): snapshot is TelegramPersonalMessagesContext & {
     endUserId: string;
   } {
     return (
@@ -113,14 +108,11 @@ export function createTelegramPersonalMessagesController(options: {
     );
   }
 
-  function sendable(
-    snapshot = context,
-  ): snapshot is TelegramPersonalMessagesContext & {
+  function sendable(snapshot = context): snapshot is TelegramPersonalMessagesContext & {
     endUserId: string;
   } {
     return (
-      readable(snapshot) &&
-      (snapshot.linkStatus === "ACTIVE" || snapshot.linkStatus === "UNKNOWN")
+      readable(snapshot) && (snapshot.linkStatus === 'ACTIVE' || snapshot.linkStatus === 'UNKNOWN')
     );
   }
 
@@ -144,20 +136,15 @@ export function createTelegramPersonalMessagesController(options: {
     snapshot: TelegramPersonalMessagesContext & { endUserId: string },
     message: TelegramPersonalMessageResponseDto,
   ): boolean {
-    return (
-      message.projectId === snapshot.projectId &&
-      message.endUserId === snapshot.endUserId
-    );
+    return message.projectId === snapshot.projectId && message.endUserId === snapshot.endUserId;
   }
 
   function requestController(): AbortController {
     const controller = new AbortController();
     controllers.add(controller);
-    controller.signal.addEventListener(
-      "abort",
-      () => controllers.delete(controller),
-      { once: true },
-    );
+    controller.signal.addEventListener('abort', () => controllers.delete(controller), {
+      once: true,
+    });
     return controller;
   }
 
@@ -198,8 +185,8 @@ export function createTelegramPersonalMessagesController(options: {
     submitting.value = false;
     polling.value = false;
     uploadProgress.value = 0;
-    error.value = "";
-    feedback.value = "";
+    error.value = '';
+    feedback.value = '';
     transportRetryAvailable.value = false;
     retryIntent = null;
     reportedStaleMessages.clear();
@@ -228,12 +215,9 @@ export function createTelegramPersonalMessagesController(options: {
     if (incomingTime === existingTime) {
       const existingTerminal = terminalTelegramPersonalStatus(existing.status);
       const incomingTerminal = terminalTelegramPersonalStatus(incoming.status);
-      if (existingTerminal !== incomingTerminal)
-        return incomingTerminal ? incoming : existing;
+      if (existingTerminal !== incomingTerminal) return incomingTerminal ? incoming : existing;
       if (incoming.attemptCount !== existing.attemptCount)
-        return incoming.attemptCount > existing.attemptCount
-          ? incoming
-          : existing;
+        return incoming.attemptCount > existing.attemptCount ? incoming : existing;
       const incomingPrecedence = STATUS_PRECEDENCE[incoming.status];
       const existingPrecedence = STATUS_PRECEDENCE[existing.status];
       if (incomingPrecedence !== existingPrecedence)
@@ -243,9 +227,7 @@ export function createTelegramPersonalMessagesController(options: {
     return incoming;
   }
 
-  function reportStaleMessage(
-    message: TelegramPersonalMessageResponseDto,
-  ): void {
+  function reportStaleMessage(message: TelegramPersonalMessageResponseDto): void {
     if (
       telegramPersonalSafeErrorPolicy(message.errorCode).staleLinkState &&
       !reportedStaleMessages.has(`${message.id}:${message.errorCode}`)
@@ -260,26 +242,16 @@ export function createTelegramPersonalMessagesController(options: {
     activate = true,
   ): TelegramPersonalMessageResponseDto {
     const index = history.value.findIndex((item) => item.id === message.id);
-    const selected = newest(
-      index < 0 ? undefined : history.value[index],
-      message,
-    );
+    const selected = newest(index < 0 ? undefined : history.value[index], message);
     history.value =
       index < 0
         ? [selected, ...history.value]
-        : history.value.map((item, itemIndex) =>
-            itemIndex === index ? selected : item,
-          );
+        : history.value.map((item, itemIndex) => (itemIndex === index ? selected : item));
     if (activate) {
       activeMessage.value =
-        activeMessage.value?.id === selected.id
-          ? newest(activeMessage.value, selected)
-          : selected;
+        activeMessage.value?.id === selected.id ? newest(activeMessage.value, selected) : selected;
     }
-    if (
-      terminalTelegramPersonalStatus(selected.status) &&
-      pollTasks.has(selected.id)
-    ) {
+    if (terminalTelegramPersonalStatus(selected.status) && pollTasks.has(selected.id)) {
       pollTasks.delete(selected.id);
       polling.value = pollTasks.size > 0;
     }
@@ -309,9 +281,7 @@ export function createTelegramPersonalMessagesController(options: {
   ): Promise<void> {
     let exhausted = true;
     for (let attempt = 0; attempt < MAX_POLLS; attempt += 1) {
-      const currentMessage = history.value.find(
-        (message) => message.id === messageId,
-      );
+      const currentMessage = history.value.find((message) => message.id === messageId);
       if (
         pollTasks.get(messageId) !== token ||
         !current(snapshot, operationGeneration) ||
@@ -321,41 +291,26 @@ export function createTelegramPersonalMessagesController(options: {
         exhausted = false;
         break;
       }
-      const configuredDelay =
-        POLL_DELAYS[Math.min(attempt, POLL_DELAYS.length - 1)]!;
+      const configuredDelay = POLL_DELAYS[Math.min(attempt, POLL_DELAYS.length - 1)]!;
       const parsedNextAttempt = currentMessage.nextAttemptAt
         ? Date.parse(currentMessage.nextAttemptAt)
         : Number.NaN;
       const retryDelay =
-        currentMessage.status === "RETRY_WAIT" &&
-        Number.isFinite(parsedNextAttempt)
-          ? Math.max(
-              configuredDelay,
-              Math.min(10_000, parsedNextAttempt - Date.now()),
-            )
+        currentMessage.status === 'RETRY_WAIT' && Number.isFinite(parsedNextAttempt)
+          ? Math.max(configuredDelay, Math.min(10_000, parsedNextAttempt - Date.now()))
           : configuredDelay;
       await wait(Math.max(0, retryDelay));
-      if (
-        pollTasks.get(messageId) !== token ||
-        !current(snapshot, operationGeneration)
-      ) {
+      if (pollTasks.get(messageId) !== token || !current(snapshot, operationGeneration)) {
         exhausted = false;
         break;
       }
       await withGetMutex(async () => {
-        if (
-          pollTasks.get(messageId) !== token ||
-          !current(snapshot, operationGeneration)
-        )
-          return;
+        if (pollTasks.get(messageId) !== token || !current(snapshot, operationGeneration)) return;
         const controller = requestController();
         try {
-          const loaded = await options.api.get(
-            snapshot.projectId,
-            snapshot.endUserId,
-            messageId,
-            { signal: controller.signal },
-          );
+          const loaded = await options.api.get(snapshot.projectId, snapshot.endUserId, messageId, {
+            signal: controller.signal,
+          });
           if (
             current(snapshot, operationGeneration) &&
             owns(snapshot, loaded) &&
@@ -363,13 +318,10 @@ export function createTelegramPersonalMessagesController(options: {
           )
             merge(loaded, activeMessage.value?.id === messageId);
         } catch (cause) {
-          if (
-            current(snapshot, operationGeneration) &&
-            !controller.signal.aborted
-          ) {
+          if (current(snapshot, operationGeneration) && !controller.signal.aborted) {
             const apiError = normalizeApiError(cause);
             if (apiError.status === 403) {
-              error.value = "Недостаточно прав для просмотра отправки.";
+              error.value = 'Недостаточно прав для просмотра отправки.';
               pollTasks.delete(messageId);
               polling.value = pollTasks.size > 0;
             }
@@ -384,13 +336,10 @@ export function createTelegramPersonalMessagesController(options: {
       pollTasks.get(messageId) === token &&
       exhausted &&
       history.value.some(
-        (message) =>
-          message.id === messageId &&
-          !terminalTelegramPersonalStatus(message.status),
+        (message) => message.id === messageId && !terminalTelegramPersonalStatus(message.status),
       )
     )
-      feedback.value =
-        "Отправка продолжается в фоне. Статус восстановится из истории.";
+      feedback.value = 'Отправка продолжается в фоне. Статус восстановится из истории.';
     if (pollTasks.get(messageId) === token) {
       pollTasks.delete(messageId);
       polling.value = pollTasks.size > 0;
@@ -415,8 +364,8 @@ export function createTelegramPersonalMessagesController(options: {
     if (!sendable(snapshot) || submitting.value) return false;
     submitting.value = true;
     uploadProgress.value = 0;
-    error.value = "";
-    feedback.value = "";
+    error.value = '';
+    feedback.value = '';
     const controller = requestController();
     try {
       const created = await options.api.create(
@@ -427,36 +376,29 @@ export function createTelegramPersonalMessagesController(options: {
         {
           signal: controller.signal,
           onUploadProgress: (progress) => {
-            if (current(snapshot, operationGeneration))
-              uploadProgress.value = progress;
+            if (current(snapshot, operationGeneration)) uploadProgress.value = progress;
           },
         },
       );
-      if (!current(snapshot, operationGeneration) || !owns(snapshot, created))
-        return false;
+      if (!current(snapshot, operationGeneration) || !owns(snapshot, created)) return false;
       retryIntent = null;
       transportRetryAvailable.value = false;
       merge(created);
-      feedback.value = "Сообщение принято и поставлено в очередь.";
+      feedback.value = 'Сообщение принято и поставлено в очередь.';
       if (!terminalTelegramPersonalStatus(created.status))
         startPoll(snapshot, operationGeneration, created.id);
       return true;
     } catch (cause) {
-      if (!current(snapshot, operationGeneration) || controller.signal.aborted)
-        return false;
+      if (!current(snapshot, operationGeneration) || controller.signal.aborted) return false;
       const apiError = normalizeApiError(cause);
       if (apiError.status === 0) {
         retryIntent = intent;
         transportRetryAvailable.value = true;
-        error.value =
-          "Сервер не подтвердил приём. Проверьте историю или повторите тот же запрос.";
+        error.value = 'Сервер не подтвердил приём. Проверьте историю или повторите тот же запрос.';
       } else {
         retryIntent = null;
         transportRetryAvailable.value = false;
-        error.value = telegramPersonalCreateErrorLabel(
-          apiError.status,
-          apiError.code,
-        );
+        error.value = telegramPersonalCreateErrorLabel(apiError.status, apiError.code);
         if (telegramPersonalSafeErrorPolicy(apiError.code).staleLinkState)
           options.onLinkStateStale?.();
       }
@@ -484,7 +426,7 @@ export function createTelegramPersonalMessagesController(options: {
   function discardTransportRetry(): void {
     retryIntent = null;
     transportRetryAvailable.value = false;
-    error.value = "";
+    error.value = '';
   }
 
   async function loadHistory(): Promise<void> {
@@ -492,14 +434,13 @@ export function createTelegramPersonalMessagesController(options: {
     const operationGeneration = generation;
     if (!readable(snapshot) || historyLoading.value) return;
     historyLoading.value = true;
-    error.value = "";
+    error.value = '';
     const controller = requestController();
     try {
-      const loaded = await options.api.list(
-        snapshot.projectId,
-        snapshot.endUserId,
-        { signal: controller.signal, limit: 20 },
-      );
+      const loaded = await options.api.list(snapshot.projectId, snapshot.endUserId, {
+        signal: controller.signal,
+        limit: 20,
+      });
       if (!current(snapshot, operationGeneration)) return;
       const safeItems = loaded.items.filter((item) => owns(snapshot, item));
       for (const item of safeItems) merge(item, false);
@@ -507,31 +448,21 @@ export function createTelegramPersonalMessagesController(options: {
       history.value = history.value
         .filter(
           (item) =>
-            safeIds.has(item.id) ||
-            pollTasks.has(item.id) ||
-            item.id === activeMessage.value?.id,
+            safeIds.has(item.id) || pollTasks.has(item.id) || item.id === activeMessage.value?.id,
         )
-        .sort(
-          (left, right) =>
-            timestamp(right.createdAt) - timestamp(left.createdAt),
-        );
+        .sort((left, right) => timestamp(right.createdAt) - timestamp(left.createdAt));
       const recoverable = history.value.filter(
         (item) => !terminalTelegramPersonalStatus(item.status),
       );
-      if (!activeMessage.value)
-        activeMessage.value = recoverable[0] ?? history.value[0] ?? null;
-      for (const item of recoverable)
-        startPoll(snapshot, operationGeneration, item.id);
+      if (!activeMessage.value) activeMessage.value = recoverable[0] ?? history.value[0] ?? null;
+      for (const item of recoverable) startPoll(snapshot, operationGeneration, item.id);
     } catch (cause) {
-      if (
-        current(snapshot, operationGeneration) &&
-        !controller.signal.aborted
-      ) {
+      if (current(snapshot, operationGeneration) && !controller.signal.aborted) {
         const apiError = normalizeApiError(cause);
         error.value =
           apiError.status === 403
-            ? "Недостаточно прав для истории Telegram."
-            : "Не удалось загрузить историю Telegram.";
+            ? 'Недостаточно прав для истории Telegram.'
+            : 'Не удалось загрузить историю Telegram.';
       }
     } finally {
       finishController(controller);

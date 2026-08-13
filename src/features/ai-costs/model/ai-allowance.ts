@@ -1,25 +1,24 @@
-import type { DecimalString } from "@/shared/lib/decimal-money";
+import type { DecimalString } from '@/shared/lib/decimal-money';
 
-export type AiAllowanceEnforcementMode =
-  "DISABLED" | "SHADOW" | "SOFT" | "HARD";
-export type AiAllowancePeriodKind = "DAY" | "MONTH";
-export type AiAllowanceLowThresholdMode = "PERCENT" | "ABSOLUTE_USD";
+export type AiAllowanceEnforcementMode = 'DISABLED' | 'SHADOW' | 'SOFT' | 'HARD';
+export type AiAllowancePeriodKind = 'DAY' | 'MONTH';
+export type AiAllowanceLowThresholdMode = 'PERCENT' | 'ABSOLUTE_USD';
 export const AI_ALLOWANCE_CATEGORIES = [
-  "CHAT",
-  "VOICE",
-  "SPEECH",
-  "MEMORY",
-  "AI_REVIEW",
-  "AI_ANALYSIS",
-  "CMS_AGENT",
-  "CASE_INTELLIGENCE",
-  "PROJECT_OVERHEAD",
+  'CHAT',
+  'VOICE',
+  'SPEECH',
+  'MEMORY',
+  'AI_REVIEW',
+  'AI_ANALYSIS',
+  'CMS_AGENT',
+  'CASE_INTELLIGENCE',
+  'PROJECT_OVERHEAD',
 ] as const;
 export type AiAllowanceCategory = (typeof AI_ALLOWANCE_CATEGORIES)[number];
 export type AiAllowanceLocalizedContent =
-  | { mode: "SYSTEM" }
+  | { mode: 'SYSTEM' }
   | {
-      mode: "CUSTOM";
+      mode: 'CUSTOM';
       defaultLocale: string;
       translations: Record<string, string>;
     };
@@ -61,7 +60,7 @@ export interface AiAllowancePlanRevisionSummary {
 export interface AiAllowancePlanRevision extends AiAllowancePlanRevisionSummary {
   categoryRules: Array<{
     category: AiAllowanceCategory;
-    responsibility: "END_USER_ALLOWANCE" | "PROJECT_SPONSORED";
+    responsibility: 'END_USER_ALLOWANCE' | 'PROJECT_SPONSORED';
     capUsd: DecimalString | null;
   }>;
 }
@@ -70,7 +69,7 @@ export interface AiAllowancePlan {
   id: string;
   key: string;
   name: string;
-  status: "ACTIVE" | "ARCHIVED";
+  status: 'ACTIVE' | 'ARCHIVED';
   createdAt: string;
   updatedAt: string;
   revisions: AiAllowancePlanRevision[];
@@ -79,12 +78,12 @@ export interface AiAllowancePlan {
 
 export type AiAllowancePlanSummary = Pick<
   AiAllowancePlan,
-  "id" | "key" | "name" | "status" | "createdAt" | "updatedAt"
+  'id' | 'key' | 'name' | 'status' | 'createdAt' | 'updatedAt'
 >;
 
 export interface AiAllowanceAssignment {
   id: string;
-  scope: "PROJECT_DEFAULT" | "SEGMENT" | "LEVEL" | "END_USER";
+  scope: 'PROJECT_DEFAULT' | 'SEGMENT' | 'LEVEL' | 'END_USER';
   endUserId: string | null;
   planId: string;
   effectiveFrom: string;
@@ -110,7 +109,7 @@ export interface AiAllowanceProjectPolicyView {
 export interface AiAllowanceAccount {
   projectId: string;
   endUserId: string;
-  currency: "USD";
+  currency: 'USD';
   availableUsd: DecimalString;
   ledgerAvailableUsd?: DecimalString;
   reservedUsd: DecimalString;
@@ -127,7 +126,7 @@ export interface AiAllowancePeriod {
   startsAt: string;
   endsAt: string;
   baseAllocatedUsd: DecimalString;
-  status: "OPEN" | "CLOSED";
+  status: 'OPEN' | 'CLOSED';
   planRevision: AiAllowancePlanRevision | null;
 }
 
@@ -138,7 +137,7 @@ export interface AiAllowanceGrant {
   sourceId: string;
   validFrom: string;
   expiresAt: string;
-  status: "ACTIVE" | "REVERSED";
+  status: 'ACTIVE' | 'REVERSED';
   reason: string;
   actorType: string;
   actorId: string;
@@ -174,20 +173,20 @@ export interface AiAllowancePlanRevisionPage {
 export interface AiAllowanceJournalEntry {
   id: string;
   entryType:
-    | "PLAN_ALLOCATED"
-    | "GRANT_ALLOCATED"
-    | "RESERVED"
-    | "RELEASED"
-    | "SETTLED"
-    | "UNKNOWN_HELD"
-    | "EXPIRED"
-    | "CORRECTION";
+    | 'PLAN_ALLOCATED'
+    | 'GRANT_ALLOCATED'
+    | 'RESERVED'
+    | 'RELEASED'
+    | 'SETTLED'
+    | 'UNKNOWN_HELD'
+    | 'EXPIRED'
+    | 'CORRECTION';
   costQuality:
-    | "EXACT_PROVIDER_COST"
-    | "EXACT_PROVIDER_UNITS"
-    | "MEASURED_ESTIMATE"
-    | "RESERVED_ESTIMATE"
-    | "UNKNOWN"
+    | 'EXACT_PROVIDER_COST'
+    | 'EXACT_PROVIDER_UNITS'
+    | 'MEASURED_ESTIMATE'
+    | 'RESERVED_ESTIMATE'
+    | 'UNKNOWN'
     | null;
   deltaAvailableUsd: SignedDecimalString;
   deltaReservedUsd: SignedDecimalString;
@@ -216,7 +215,7 @@ export interface PutDefaultAllowancePlanInput {
   amountUsd: DecimalString;
   categoryRules: Array<{
     category: AiAllowanceCategory;
-    responsibility: "END_USER_ALLOWANCE" | "PROJECT_SPONSORED";
+    responsibility: 'END_USER_ALLOWANCE' | 'PROJECT_SPONSORED';
     capUsd?: DecimalString;
   }>;
   period: AiAllowancePeriodKind;
@@ -240,7 +239,7 @@ export interface PutAllowancePlanInput {
   dailyCapUsd?: DecimalString;
   categoryRules?: Array<{
     category: AiAllowanceCategory;
-    responsibility: "END_USER_ALLOWANCE" | "PROJECT_SPONSORED";
+    responsibility: 'END_USER_ALLOWANCE' | 'PROJECT_SPONSORED';
     capUsd?: DecimalString;
   }>;
   reason: string;
@@ -276,7 +275,7 @@ export interface AiAllowanceConfigurationMutationResult {
 }
 
 export type AiAllowanceReconciliationResolution =
-  "SETTLE_FROM_USAGE" | "HOLD_UNKNOWN" | "RELEASE_PROVEN_NON_BILLABLE";
+  'SETTLE_FROM_USAGE' | 'HOLD_UNKNOWN' | 'RELEASE_PROVEN_NON_BILLABLE';
 
 export interface ReconcileAiSpendReservationInput {
   reservationId: string;
@@ -304,18 +303,18 @@ export interface AiAllowanceReconciliationItem {
   modelAttemptId: string;
   usageGroupId: string;
   category: AiAllowanceCategory;
-  status: "RESERVED" | "UNKNOWN_HELD";
+  status: 'RESERVED' | 'UNKNOWN_HELD';
   quotedUpperBoundUsd: DecimalString;
   reservedUsd: DecimalString;
   settledUsd: DecimalString;
   unknownHeldUsd: DecimalString;
   overageUsd: DecimalString;
   costQuality:
-    | "EXACT_PROVIDER_COST"
-    | "EXACT_PROVIDER_UNITS"
-    | "MEASURED_ESTIMATE"
-    | "RESERVED_ESTIMATE"
-    | "UNKNOWN";
+    | 'EXACT_PROVIDER_COST'
+    | 'EXACT_PROVIDER_UNITS'
+    | 'MEASURED_ESTIMATE'
+    | 'RESERVED_ESTIMATE'
+    | 'UNKNOWN';
   usageRecordId: string | null;
   outcomeReason: string | null;
   reservedAt: string;
@@ -327,18 +326,14 @@ export interface AiAllowanceReconciliationPage {
   pageInfo: AiAllowanceCursorPageInfo;
 }
 
-export function parseSignedDecimal(
-  value: unknown,
-): SignedDecimalString | undefined {
-  return typeof value === "string" &&
-    /^-?(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$/.test(value)
+export function parseSignedDecimal(value: unknown): SignedDecimalString | undefined {
+  return typeof value === 'string' && /^-?(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$/.test(value)
     ? (value as SignedDecimalString)
     : undefined;
 }
 
 export function parseAllowanceUsd(value: unknown): DecimalString | undefined {
-  return typeof value === "string" &&
-    /^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$/.test(value)
+  return typeof value === 'string' && /^(?:0|[1-9]\d{0,11})(?:\.\d{1,12})?$/.test(value)
     ? (value as DecimalString)
     : undefined;
 }

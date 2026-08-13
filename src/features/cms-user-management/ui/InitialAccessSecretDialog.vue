@@ -1,36 +1,36 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import Button from 'primevue/button'
-import Dialog from 'primevue/dialog'
+import { ref } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
 
 const props = defineProps<{
-  secret: string
-  expiresAt: string
-  status: string
-}>()
+  secret: string;
+  expiresAt: string;
+  status: string;
+}>();
 
-const emit = defineEmits<{ acknowledged: [] }>()
-const acknowledged = ref(false)
-const copyState = ref<'IDLE' | 'COPIED' | 'FAILED'>('IDLE')
+const emit = defineEmits<{ acknowledged: [] }>();
+const acknowledged = ref(false);
+const copyState = ref<'IDLE' | 'COPIED' | 'FAILED'>('IDLE');
 
 async function copySecret(): Promise<void> {
   try {
-    await navigator.clipboard.writeText(props.secret)
-    copyState.value = 'COPIED'
+    await navigator.clipboard.writeText(props.secret);
+    copyState.value = 'COPIED';
   } catch {
-    copyState.value = 'FAILED'
+    copyState.value = 'FAILED';
   }
 }
 
 function finish(): void {
-  if (acknowledged.value) emit('acknowledged')
+  if (acknowledged.value) emit('acknowledged');
 }
 
 function expiryLabel(value: string): string {
-  const date = new Date(value)
+  const date = new Date(value);
   return Number.isFinite(date.getTime())
     ? new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short' }).format(date)
-    : 'срок не указан'
+    : 'срок не указан';
 }
 </script>
 
@@ -94,16 +94,69 @@ function expiryLabel(value: string): string {
 </template>
 
 <style scoped>
-.secret-dialog { display: grid; gap: 18px; }
-.warning { display: flex; gap: 12px; padding: 14px; border-radius: 14px; background: var(--status-warning-soft); color: var(--status-warning-text); }
-.warning i { margin-top: 3px; }
-.warning strong, .warning span { display: block; }
-.warning span { margin-top: 4px; font-size: .74rem; line-height: 1.45; }
-.secret-box { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; }
-.secret-box code { overflow: auto; padding: 14px; border: 1px solid var(--border-default); border-radius: 11px; background: var(--surface-subtle); font-size: .8rem; user-select: all; }
-.meta, .copy-result { margin: 0; color: var(--muted); font-size: .72rem; line-height: 1.5; }
-.copy-result { min-height: 1.1rem; color: var(--text-secondary); }
-.acknowledgement { display: flex; align-items: flex-start; gap: 9px; font-size: .75rem; line-height: 1.45; }
-.acknowledgement input { margin-top: 2px; }
-@media (max-width: 560px) { .secret-box { grid-template-columns: 1fr; } }
+.secret-dialog {
+  display: grid;
+  gap: 18px;
+}
+.warning {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--status-warning-soft);
+  color: var(--status-warning-text);
+}
+.warning i {
+  margin-top: 3px;
+}
+.warning strong,
+.warning span {
+  display: block;
+}
+.warning span {
+  margin-top: 4px;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+.secret-box {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+.secret-box code {
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid var(--border-default);
+  border-radius: 11px;
+  background: var(--surface-subtle);
+  font-size: 0.8rem;
+  user-select: all;
+}
+.meta,
+.copy-result {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+.copy-result {
+  min-height: 1.1rem;
+  color: var(--text-secondary);
+}
+.acknowledgement {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+.acknowledgement input {
+  margin-top: 2px;
+}
+@media (max-width: 560px) {
+  .secret-box {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

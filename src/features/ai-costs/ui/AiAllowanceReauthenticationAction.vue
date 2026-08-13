@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import { ALLOWANCE_REAUTHENTICATION_MESSAGE } from "../model/allowance-reauthentication";
+import { ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import { ALLOWANCE_REAUTHENTICATION_MESSAGE } from '../model/allowance-reauthentication';
 
 const props = defineProps<{ required: boolean }>();
-const emit = defineEmits<{ "fresh-login": [] }>();
+const emit = defineEmits<{ 'fresh-login': [] }>();
 const requested = ref(false);
 
 watch(
@@ -18,7 +18,7 @@ watch(
 function requestFreshLogin(): void {
   if (requested.value) return;
   requested.value = true;
-  emit("fresh-login");
+  emit('fresh-login');
 }
 </script>
 

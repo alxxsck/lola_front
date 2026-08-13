@@ -1,26 +1,24 @@
 <script setup lang="ts">
-import { computed, type CSSProperties } from 'vue'
-import {
-  BaseEdge,
-  EdgeLabelRenderer,
-  type EdgeProps,
-} from '@vue-flow/core'
-import { buildScenarioEdgeRoute } from './model/scenario-edge-route'
-import type { ScenarioGraphEdgeData } from './model/scenario-graph-view-model'
+import { computed, type CSSProperties } from 'vue';
+import { BaseEdge, EdgeLabelRenderer, type EdgeProps } from '@vue-flow/core';
+import { buildScenarioEdgeRoute } from './model/scenario-edge-route';
+import type { ScenarioGraphEdgeData } from './model/scenario-graph-view-model';
 
-const props = defineProps<EdgeProps<ScenarioGraphEdgeData>>()
+const props = defineProps<EdgeProps<ScenarioGraphEdgeData>>();
 
-const route = computed(() => buildScenarioEdgeRoute({
-  sourceX: props.sourceX,
-  sourceY: props.sourceY,
-  targetX: props.targetX,
-  targetY: props.targetY,
-  routeIndex: props.data.routeIndex,
-  routeCount: props.data.routeCount,
-  laneGap: props.data.laneGap,
-  layoutPoints: props.data.routePoints,
-  labelPosition: props.data.labelPosition,
-}))
+const route = computed(() =>
+  buildScenarioEdgeRoute({
+    sourceX: props.sourceX,
+    sourceY: props.sourceY,
+    targetX: props.targetX,
+    targetY: props.targetY,
+    routeIndex: props.data.routeIndex,
+    routeCount: props.data.routeCount,
+    laneGap: props.data.laneGap,
+    layoutPoints: props.data.routePoints,
+    labelPosition: props.data.labelPosition,
+  }),
+);
 
 const semanticStyle = computed<CSSProperties>(() => ({
   ...props.style,
@@ -29,14 +27,14 @@ const semanticStyle = computed<CSSProperties>(() => ({
     : props.data.kind === 'fallback'
       ? '2 5'
       : undefined,
-}))
+}));
 
 const icon = computed(() => {
-  if (['timeout', 'goal-timeout'].includes(props.data.kind)) return 'pi pi-clock'
-  if (props.data.kind === 'fallback') return 'pi pi-ellipsis-h'
-  if (props.data.kind === 'goal') return 'pi pi-check'
-  return ''
-})
+  if (['timeout', 'goal-timeout'].includes(props.data.kind)) return 'pi pi-clock';
+  if (props.data.kind === 'fallback') return 'pi pi-ellipsis-h';
+  if (props.data.kind === 'goal') return 'pi pi-check';
+  return '';
+});
 </script>
 
 <template>

@@ -1,65 +1,51 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed } from 'vue';
 import type {
   RequestedMessageTranslation,
   TranslatedMessageContent,
-} from "../model/translation-presentation";
-import { formatEmojiShortcodes } from "@/shared/lib/emoji-shortcodes";
+} from '../model/translation-presentation';
+import { formatEmojiShortcodes } from '@/shared/lib/emoji-shortcodes';
 
 const props = defineProps<{
   message: TranslatedMessageContent;
   requested?: RequestedMessageTranslation;
-  viewMode?: "ORIGINAL" | "TRANSLATED";
+  viewMode?: 'ORIGINAL' | 'TRANSLATED';
 }>();
-const outbound = computed(
-  () => props.message.translation?.direction === "OUTBOUND",
-);
-const originalVisible = computed(() => props.viewMode === "ORIGINAL");
+const outbound = computed(() => props.message.translation?.direction === 'OUTBOUND');
+const originalVisible = computed(() => props.viewMode === 'ORIGINAL');
 
-const status = computed(
-  () => props.requested?.state ?? props.message.translation?.status,
-);
+const status = computed(() => props.requested?.state ?? props.message.translation?.status);
 const translatedText = computed(
   () =>
     props.requested?.translatedText ??
-    (props.message.translation?.direction === "OUTBOUND"
-      ? (props.message.translation.deliveredText ??
-        props.message.translation.viewText)
+    (props.message.translation?.direction === 'OUTBOUND'
+      ? (props.message.translation.deliveredText ?? props.message.translation.viewText)
       : props.message.translation?.translatedText) ??
     null,
 );
-const originalText = computed(
-  () => props.message.translation?.originalText ?? props.message.text,
-);
+const originalText = computed(() => props.message.translation?.originalText ?? props.message.text);
 const displayText = computed(() => {
   let text: string | null;
   if (outbound.value) {
-    text = originalVisible.value
-      ? translatedText.value
-      : originalText.value || props.message.text;
+    text = originalVisible.value ? translatedText.value : originalText.value || props.message.text;
   } else if (originalVisible.value) {
     text = originalText.value;
   } else {
-    text =
-      translatedText.value ??
-      props.message.translation?.viewText ??
-      props.message.text;
+    text = translatedText.value ?? props.message.translation?.viewText ?? props.message.text;
   }
-  return formatEmojiShortcodes(text ?? "");
+  return formatEmojiShortcodes(text ?? '');
 });
 const skipReasonLabels = {
-  SAME_LANGUAGE: "Язык сообщения совпадает с рабочим — перевод не требуется.",
-  EMPTY_OR_NOISE: "В сообщении нет текста для перевода.",
-  UNSUPPORTED_ROLE: "Этот тип сообщения нельзя перевести.",
-  LANGUAGE_UNRESOLVED:
-    "Язык сообщения не удалось определить. Выберите язык диалога вручную.",
+  SAME_LANGUAGE: 'Язык сообщения совпадает с рабочим — перевод не требуется.',
+  EMPTY_OR_NOISE: 'В сообщении нет текста для перевода.',
+  UNSUPPORTED_ROLE: 'Этот тип сообщения нельзя перевести.',
+  LANGUAGE_UNRESOLVED: 'Язык сообщения не удалось определить. Выберите язык диалога вручную.',
 } as const;
 const skippedText = computed(() =>
-  props.requested?.state === "SKIPPED"
+  props.requested?.state === 'SKIPPED'
     ? props.requested.skipReason
-      ? (skipReasonLabels[props.requested.skipReason] ??
-        "Перевод пропущен без обращения к модели.")
-      : "Перевод пропущен без обращения к модели."
+      ? (skipReasonLabels[props.requested.skipReason] ?? 'Перевод пропущен без обращения к модели.')
+      : 'Перевод пропущен без обращения к модели.'
     : null,
 );
 </script>
@@ -69,9 +55,7 @@ const skippedText = computed(() =>
     <p>
       {{
         displayText ||
-        (message.status === "WRITING"
-          ? "Retenive печатает…"
-          : "Сообщение без текста")
+        (message.status === 'WRITING' ? 'Retenive печатает…' : 'Сообщение без текста')
       }}
     </p>
     <div
@@ -85,11 +69,7 @@ const skippedText = computed(() =>
       "
       class="translated-message__status"
     >
-      <span
-        v-if="status === 'PENDING' || status === 'RUNNING'"
-        role="status"
-        aria-live="polite"
-      >
+      <span v-if="status === 'PENDING' || status === 'RUNNING'" role="status" aria-live="polite">
         <i class="pi pi-spin pi-spinner" aria-hidden="true" />
         Переводим…
       </span>

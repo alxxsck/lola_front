@@ -1,19 +1,17 @@
-import { computed, ref } from "vue";
-import type {
-  ReplaceSupportSlaConfigurationDraftDto,
-} from "@/shared/api/generated/models";
-import { ApiError, normalizeApiError } from "@/shared/api/http/api-error";
+import { computed, ref } from 'vue';
+import type { ReplaceSupportSlaConfigurationDraftDto } from '@/shared/api/generated/models';
+import { ApiError, normalizeApiError } from '@/shared/api/http/api-error';
 import type {
   SupportSlaConfigurationSnapshot,
   SupportSlaConfigurationSource,
-} from "../api/support-sla-configuration-source";
+} from '../api/support-sla-configuration-source';
 import {
   createEmptySupportSlaConfigurationForm,
   createSupportSlaConfigurationForm,
   serializeSupportSlaConfiguration,
   type SupportSlaConfigurationForm,
   type SupportSlaFormIssue,
-} from "./support-sla-configuration-form";
+} from './support-sla-configuration-form';
 
 export interface SupportSlaConfigurationContext {
   actorId(): string | undefined;
@@ -24,7 +22,7 @@ export interface SupportSlaConfigurationContext {
   createIdempotencyKey?(): string;
 }
 
-type SupportSlaCommandKind = "SAVE" | "DISCARD" | "PUBLISH";
+type SupportSlaCommandKind = 'SAVE' | 'DISCARD' | 'PUBLISH';
 
 interface PendingSupportSlaCommand {
   kind: SupportSlaCommandKind;
@@ -34,7 +32,7 @@ interface PendingSupportSlaCommand {
   configuration?: ReplaceSupportSlaConfigurationDraftDto;
 }
 
-export type SupportSlaRecovery = "UNKNOWN_OUTCOME" | "RETRYABLE_FAILURE";
+export type SupportSlaRecovery = 'UNKNOWN_OUTCOME' | 'RETRYABLE_FAILURE';
 
 function publishedConfiguration(
   snapshot: SupportSlaConfigurationSnapshot,
@@ -43,10 +41,8 @@ function publishedConfiguration(
   const policy = snapshot.publishedConfiguration?.policyRevision.policy;
   const catalogRevisionId =
     snapshot.publishedConfiguration?.configurationRevision?.catalogRevisionId ??
-    "mock-sla-catalog-r1";
-  return calendar && policy
-    ? { calendar, policy, catalogRevisionId }
-    : null;
+    'mock-sla-catalog-r1';
+  return calendar && policy ? { calendar, policy, catalogRevisionId } : null;
 }
 
 function editableConfiguration(
@@ -60,9 +56,8 @@ function editableConfiguration(
       catalogRevisionId:
         draft.catalogRevisionId ??
         snapshot.draft?.catalogRevisionId ??
-        snapshot.publishedConfiguration?.configurationRevision
-          ?.catalogRevisionId ??
-        "mock-sla-catalog-r1",
+        snapshot.publishedConfiguration?.configurationRevision?.catalogRevisionId ??
+        'mock-sla-catalog-r1',
     };
   }
   return publishedConfiguration(snapshot);
@@ -78,36 +73,33 @@ function sameConfiguration(
 ): boolean {
   if (!left || !right) return false;
   const canonical = (value: ReplaceSupportSlaConfigurationDraftDto) =>
-    serializeSupportSlaConfiguration(
-      createSupportSlaConfigurationForm(value),
-    ).configuration;
+    serializeSupportSlaConfiguration(createSupportSlaConfigurationForm(value)).configuration;
   return JSON.stringify(canonical(left)) === JSON.stringify(canonical(right));
 }
 
 function conflictMessage(code: string | undefined): string {
-  if (code === "SLA_DRAFT_NOT_FOUND")
-    return "Черновик уже удалён. Локальные изменения сохранены — сравните их с состоянием сервера.";
-  if (code === "SLA_CONFIGURATION_DUPLICATE")
-    return "Такая конфигурация уже существует. Состояние перечитано с сервера.";
-  if (code === "SLA_CONFIGURATION_NOT_PUBLISHED")
-    return "Опубликованной конфигурации больше нет. Локальные изменения сохранены.";
-  if (code === "IDEMPOTENCY_KEY_REUSED")
-    return "Сервер отклонил повтор с другим содержимым. Новая команда не отправлена.";
-  return "SLA-конфигурация изменилась на сервере. Локальная форма сохранена для сравнения.";
+  if (code === 'SLA_DRAFT_NOT_FOUND')
+    return 'Черновик уже удалён. Локальные изменения сохранены — сравните их с состоянием сервера.';
+  if (code === 'SLA_CONFIGURATION_DUPLICATE')
+    return 'Такая конфигурация уже существует. Состояние перечитано с сервера.';
+  if (code === 'SLA_CONFIGURATION_NOT_PUBLISHED')
+    return 'Опубликованной конфигурации больше нет. Локальные изменения сохранены.';
+  if (code === 'IDEMPOTENCY_KEY_REUSED')
+    return 'Сервер отклонил повтор с другим содержимым. Новая команда не отправлена.';
+  return 'SLA-конфигурация изменилась на сервере. Локальная форма сохранена для сравнения.';
 }
 
 function validationMessage(code: string | undefined): string {
   const messages: Record<string, string> = {
-    SLA_CALENDAR_TIME_ZONE_INVALID: "Сервер не принял часовой пояс календаря.",
+    SLA_CALENDAR_TIME_ZONE_INVALID: 'Сервер не принял часовой пояс календаря.',
     SLA_CALENDAR_COVERAGE_INSUFFICIENT:
-      "Рабочий календарь не покрывает минимально допустимый период.",
-    SLA_CALENDAR_INTERVAL_OVERLAP: "Рабочие интервалы пересекаются.",
-    SLA_POLICY_FALLBACK_REQUIRED: "Добавьте обязательное правило для остальных обращений.",
-    SLA_POLICY_FALLBACK_NOT_LAST:
-      "Правило для остальных обращений должно быть последним.",
-    SLA_POLICY_TARGET_INVALID: "Проверьте сроки реакции и решения.",
+      'Рабочий календарь не покрывает минимально допустимый период.',
+    SLA_CALENDAR_INTERVAL_OVERLAP: 'Рабочие интервалы пересекаются.',
+    SLA_POLICY_FALLBACK_REQUIRED: 'Добавьте обязательное правило для остальных обращений.',
+    SLA_POLICY_FALLBACK_NOT_LAST: 'Правило для остальных обращений должно быть последним.',
+    SLA_POLICY_TARGET_INVALID: 'Проверьте сроки реакции и решения.',
   };
-  return messages[code ?? ""] ?? "Сервер не принял SLA-конфигурацию. Проверьте поля формы.";
+  return messages[code ?? ''] ?? 'Сервер не принял SLA-конфигурацию. Проверьте поля формы.';
 }
 
 /** Owns one Project-scoped SLA Configuration and one exact in-flight mutation. */
@@ -116,14 +108,12 @@ export function createSupportSlaConfigurationController(
   source: SupportSlaConfigurationSource,
 ) {
   const snapshot = ref<SupportSlaConfigurationSnapshot | null>(null);
-  const form = ref<SupportSlaConfigurationForm>(
-    createEmptySupportSlaConfigurationForm(),
-  );
+  const form = ref<SupportSlaConfigurationForm>(createEmptySupportSlaConfigurationForm());
   const validationIssues = ref<SupportSlaFormIssue[]>([]);
   const loading = ref(false);
   const mutating = ref(false);
-  const error = ref("");
-  const success = ref("");
+  const error = ref('');
+  const success = ref('');
   const conflict = ref(false);
   const recovery = ref<SupportSlaRecovery | null>(null);
   let baselineFingerprint = formFingerprint(form.value);
@@ -132,9 +122,7 @@ export function createSupportSlaConfigurationController(
   let mutationAbort: AbortController | null = null;
   let pendingCommand: PendingSupportSlaCommand | null = null;
 
-  const dirty = computed(
-    () => formFingerprint(form.value) !== baselineFingerprint,
-  );
+  const dirty = computed(() => formFingerprint(form.value) !== baselineFingerprint);
   const hasSavedDraft = computed(() => Boolean(snapshot.value?.draft));
   const canPublish = computed(
     () =>
@@ -149,16 +137,14 @@ export function createSupportSlaConfigurationController(
     const actorId = context.actorId();
     const projectId = context.projectId();
     if (!actorId || !projectId || !context.canRead()) return null;
-    return `${actorId}\u0000${projectId}\u0000${context.canManage() ? "manage" : "read"}`;
+    return `${actorId}\u0000${projectId}\u0000${context.canManage() ? 'manage' : 'read'}`;
   }
 
   function current(scope: string, requestGeneration: number): boolean {
     return scopeKey() === scope && generation === requestGeneration;
   }
 
-  function hydrateForm(
-    value: SupportSlaConfigurationSnapshot,
-  ): void {
+  function hydrateForm(value: SupportSlaConfigurationSnapshot): void {
     const configuration = editableConfiguration(value, context.canManage());
     form.value = configuration
       ? createSupportSlaConfigurationForm(configuration)
@@ -186,15 +172,14 @@ export function createSupportSlaConfigurationController(
     readAbort = null;
     mutationAbort = null;
     purge();
-    error.value = "";
-    success.value = "";
+    error.value = '';
+    success.value = '';
   }
 
   async function handleAccessError(cause: ApiError): Promise<boolean> {
     if (cause.status !== 403 && cause.status !== 404) return false;
     purge();
-    error.value =
-      "Настройка SLA недоступна для текущего проекта или роли.";
+    error.value = 'Настройка SLA недоступна для текущего проекта или роли.';
     await context.onForbidden?.();
     return true;
   }
@@ -217,7 +202,7 @@ export function createSupportSlaConfigurationController(
       const apiError = normalizeApiError(cause);
       if (options.signal?.aborted) return null;
       if (await handleAccessError(apiError)) return null;
-      error.value = "Не удалось загрузить SLA-конфигурацию. Повторите чтение.";
+      error.value = 'Не удалось загрузить SLA-конфигурацию. Повторите чтение.';
       return null;
     }
   }
@@ -234,8 +219,8 @@ export function createSupportSlaConfigurationController(
     const abort = new AbortController();
     readAbort = abort;
     loading.value = true;
-    error.value = "";
-    success.value = "";
+    error.value = '';
+    success.value = '';
     conflict.value = false;
     try {
       await readSnapshot(scope, requestGeneration, { signal: abort.signal });
@@ -249,24 +234,22 @@ export function createSupportSlaConfigurationController(
 
   function beginDraft(): void {
     if (!context.canManage() || mutating.value) return;
-    const configuration = snapshot.value
-      ? publishedConfiguration(snapshot.value)
-      : null;
+    const configuration = snapshot.value ? publishedConfiguration(snapshot.value) : null;
     form.value = configuration
       ? createSupportSlaConfigurationForm(configuration)
       : createEmptySupportSlaConfigurationForm();
     baselineFingerprint = formFingerprint(form.value);
     validationIssues.value = [];
-    error.value = "";
-    success.value = "";
+    error.value = '';
+    success.value = '';
   }
 
   function resetLocal(): void {
     const value = snapshot.value;
     if (!value) return;
     hydrateForm(value);
-    error.value = "";
-    success.value = "Локальные изменения отменены.";
+    error.value = '';
+    success.value = 'Локальные изменения отменены.';
     conflict.value = false;
   }
 
@@ -281,8 +264,7 @@ export function createSupportSlaConfigurationController(
       kind,
       projectId,
       actionEtag,
-      idempotencyKey:
-        context.createIdempotencyKey?.() ?? globalThis.crypto.randomUUID(),
+      idempotencyKey: context.createIdempotencyKey?.() ?? globalThis.crypto.randomUUID(),
       ...(configuration ? { configuration } : {}),
     };
   }
@@ -298,9 +280,9 @@ export function createSupportSlaConfigurationController(
     });
     if (!value) {
       pendingCommand = command;
-      recovery.value = "UNKNOWN_OUTCOME";
+      recovery.value = 'UNKNOWN_OUTCOME';
       error.value =
-        "Команда принята, но итоговое состояние не удалось перечитать. Доступен только точный повтор.";
+        'Команда принята, но итоговое состояние не удалось перечитать. Доступен только точный повтор.';
       return false;
     }
     pendingCommand = null;
@@ -327,7 +309,7 @@ export function createSupportSlaConfigurationController(
               catalogRevisionId:
                 value.draft.configuration.catalogRevisionId ??
                 value.draft.catalogRevisionId ??
-                "mock-sla-catalog-r1",
+                'mock-sla-catalog-r1',
             }
           : undefined,
         command.configuration,
@@ -336,8 +318,8 @@ export function createSupportSlaConfigurationController(
       hydrateForm(value);
       pendingCommand = null;
       recovery.value = null;
-      success.value = "Сохранение черновика подтверждено сверкой с сервером.";
-      error.value = "";
+      success.value = 'Сохранение черновика подтверждено сверкой с сервером.';
+      error.value = '';
       return true;
     }
     return false;
@@ -365,35 +347,29 @@ export function createSupportSlaConfigurationController(
       error.value = validationMessage(apiError.code);
       return;
     }
-    if (
-      command.kind === "SAVE" &&
-      (await reconcileUnknownSave(scope, requestGeneration, command))
-    )
+    if (command.kind === 'SAVE' && (await reconcileUnknownSave(scope, requestGeneration, command)))
       return;
     pendingCommand = command;
-    recovery.value = apiError.status === 0 ? "UNKNOWN_OUTCOME" : "RETRYABLE_FAILURE";
+    recovery.value = apiError.status === 0 ? 'UNKNOWN_OUTCOME' : 'RETRYABLE_FAILURE';
     error.value =
       apiError.status === 0
-        ? "Результат команды неизвестен. Новая команда заблокирована; можно повторить только исходную попытку."
-        : "Команда временно не выполнена. Сохранена исходная попытка для точного повтора.";
+        ? 'Результат команды неизвестен. Новая команда заблокирована; можно повторить только исходную попытку.'
+        : 'Команда временно не выполнена. Сохранена исходная попытка для точного повтора.';
   }
 
-  async function execute(
-    command: PendingSupportSlaCommand,
-    isRetry = false,
-  ): Promise<void> {
+  async function execute(command: PendingSupportSlaCommand, isRetry = false): Promise<void> {
     const scope = scopeKey();
     if (!scope || mutating.value) return;
     const requestGeneration = generation;
     const abort = new AbortController();
     mutationAbort = abort;
     mutating.value = true;
-    error.value = "";
-    success.value = "";
+    error.value = '';
+    success.value = '';
     conflict.value = false;
     if (!isRetry) pendingCommand = command;
     try {
-      if (command.kind === "SAVE") {
+      if (command.kind === 'SAVE') {
         await source.replaceDraft(
           command.projectId,
           command.configuration!,
@@ -405,21 +381,16 @@ export function createSupportSlaConfigurationController(
           scope,
           requestGeneration,
           command,
-          "Черновик сохранён и перечитан с сервера.",
+          'Черновик сохранён и перечитан с сервера.',
         );
-      } else if (command.kind === "DISCARD") {
+      } else if (command.kind === 'DISCARD') {
         await source.discardDraft(
           command.projectId,
           command.actionEtag,
           command.idempotencyKey,
           abort.signal,
         );
-        await reconcileAfterCommand(
-          scope,
-          requestGeneration,
-          command,
-          "Черновик удалён.",
-        );
+        await reconcileAfterCommand(scope, requestGeneration, command, 'Черновик удалён.');
       } else {
         await source.publish(
           command.projectId,
@@ -431,7 +402,7 @@ export function createSupportSlaConfigurationController(
           scope,
           requestGeneration,
           command,
-          "SLA-конфигурация опубликована. Состояние расчёта не изменено.",
+          'SLA-конфигурация опубликована. Состояние расчёта не изменено.',
         );
       }
     } catch (cause) {
@@ -449,35 +420,30 @@ export function createSupportSlaConfigurationController(
     if (recovery.value || !context.canManage()) return;
     const catalogRevisionId =
       snapshot.value?.draft?.catalogRevisionId ??
-      snapshot.value?.publishedConfiguration?.configurationRevision
-        ?.catalogRevisionId;
+      snapshot.value?.publishedConfiguration?.configurationRevision?.catalogRevisionId;
     if (!catalogRevisionId) {
-      error.value =
-        "Версия каталога SLA недоступна. Обновите конфигурацию перед сохранением.";
+      error.value = 'Версия каталога SLA недоступна. Обновите конфигурацию перед сохранением.';
       return;
     }
-    const serialized = serializeSupportSlaConfiguration(
-      form.value,
-      catalogRevisionId,
-    );
+    const serialized = serializeSupportSlaConfiguration(form.value, catalogRevisionId);
     validationIssues.value = serialized.issues;
     if (!serialized.configuration) {
-      error.value = "Проверьте календарь и правила перед сохранением.";
+      error.value = 'Проверьте календарь и правила перед сохранением.';
       return;
     }
-    const command = createCommand("SAVE", serialized.configuration);
+    const command = createCommand('SAVE', serialized.configuration);
     if (command) await execute(command);
   }
 
   async function discardDraft(): Promise<void> {
     if (recovery.value || !snapshot.value?.draft || dirty.value) return;
-    const command = createCommand("DISCARD");
+    const command = createCommand('DISCARD');
     if (command) await execute(command);
   }
 
   async function publish(): Promise<void> {
     if (!canPublish.value) return;
-    const command = createCommand("PUBLISH");
+    const command = createCommand('PUBLISH');
     if (command) await execute(command);
   }
 

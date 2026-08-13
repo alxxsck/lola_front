@@ -11,7 +11,7 @@ import {
   supportOperationalAlertCommandChangeOwner,
   supportOperationalAlertDetail,
   supportOperationalAlertList,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   SupportActivityResponseDto,
   SupportLeadAdmissionResponseDto,
@@ -22,13 +22,13 @@ import type {
   SupportOperationalAlertDetailResponseDto,
   SupportOperationalAlertCommandReceiptDto,
   SupportOperationalAlertListResponseDto,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
-import { isMockMode } from "@/shared/config/data-mode";
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
+import { isMockMode } from '@/shared/config/data-mode';
 
 export interface SupportLeadSummary {
   computedAt: string;
-  freshnessState: "BUILDING" | "READY" | "STALE" | "DEGRADED";
+  freshnessState: 'BUILDING' | 'READY' | 'STALE' | 'DEGRADED';
   actionableBacklog: {
     unassignedCount: number;
     oldestUnassignedAgeMs: number | null;
@@ -39,7 +39,7 @@ export interface SupportLeadSummary {
     oldestDueAgeMs: number | null;
   };
   workforce: {
-    availability: Record<"AVAILABLE" | "BUSY" | "AWAY" | "DRAINING" | "OFFLINE", number>;
+    availability: Record<'AVAILABLE' | 'BUSY' | 'AWAY' | 'DRAINING' | 'OFFLINE', number>;
     capacityGapUnits: number;
     currentWorkloadUnits: number;
     maximumCapacityUnits: number;
@@ -47,29 +47,29 @@ export interface SupportLeadSummary {
   delivery: {
     pendingCount: number;
     outcomeUnknownCount: number;
-    state: "AVAILABLE";
+    state: 'AVAILABLE';
   };
   projectionHealth: {
     deadLetterCount: number;
     retryCount: number;
-    state: "AVAILABLE";
+    state: 'AVAILABLE';
   };
 }
 
 export interface SupportLeadReadiness {
-  readinessState: "NOT_PROVISIONED" | "BUILDING" | "READY" | "STALE" | "DEGRADED";
+  readinessState: 'NOT_PROVISIONED' | 'BUILDING' | 'READY' | 'STALE' | 'DEGRADED';
   evaluatedAt: string;
   computedAt: string | null;
   projectionGeneration: number | null;
   checkpoint: string | null;
   sourceHighWater: string | null;
   capabilities: {
-    summary: "AVAILABLE" | "UNAVAILABLE";
-    caseRisks: "AVAILABLE" | "UNAVAILABLE";
-    capacityRisks: "AVAILABLE" | "UNAVAILABLE";
-    investigation: "AVAILABLE" | "OWNER_FALLBACK" | "UNAVAILABLE";
-    activity: "AVAILABLE" | "UNAVAILABLE";
-    realtime: "AVAILABLE" | "UNAVAILABLE";
+    summary: 'AVAILABLE' | 'UNAVAILABLE';
+    caseRisks: 'AVAILABLE' | 'UNAVAILABLE';
+    capacityRisks: 'AVAILABLE' | 'UNAVAILABLE';
+    investigation: 'AVAILABLE' | 'OWNER_FALLBACK' | 'UNAVAILABLE';
+    activity: 'AVAILABLE' | 'UNAVAILABLE';
+    realtime: 'AVAILABLE' | 'UNAVAILABLE';
   };
 }
 
@@ -86,8 +86,8 @@ export interface SupportLeadCapacityRisk {
 
 export interface SupportLeadCapacityRiskPage {
   computedAt: string;
-  freshnessState: "BUILDING" | "READY" | "STALE" | "DEGRADED";
-  state: "AVAILABLE" | "UNAVAILABLE";
+  freshnessState: 'BUILDING' | 'READY' | 'STALE' | 'DEGRADED';
+  state: 'AVAILABLE' | 'UNAVAILABLE';
   items: SupportLeadCapacityRisk[];
   nextCursor: string | null;
 }
@@ -119,9 +119,9 @@ export interface SupportLeadSafeFact {
 export interface SupportLeadInvestigation {
   caseId: string;
   computedAt: string;
-  freshnessState: "BUILDING" | "READY" | "STALE" | "DEGRADED";
+  freshnessState: 'BUILDING' | 'READY' | 'STALE' | 'DEGRADED';
   effectiveWindow: { from: string; to: string } | null;
-  evidenceSource: "PROJECTION_WITH_OWNER" | "OWNER_FALLBACK";
+  evidenceSource: 'PROJECTION_WITH_OWNER' | 'OWNER_FALLBACK';
   pinned: Record<string, string | null>;
   timelineSources: Record<string, string>;
   actionTokens: {
@@ -129,7 +129,7 @@ export interface SupportLeadInvestigation {
     caseReadToken: string;
     assignmentEtag: string | null;
   };
-  routingFactsState: "AVAILABLE" | "NOT_EVALUATED";
+  routingFactsState: 'AVAILABLE' | 'NOT_EVALUATED';
   routing: {
     assignmentState: string;
     reasonCode: string;
@@ -154,17 +154,17 @@ export interface SupportLeadInvestigation {
 
 export interface SupportLeadActivityPage {
   computedAt: string;
-  freshnessState: "BUILDING" | "READY" | "STALE" | "DEGRADED";
+  freshnessState: 'BUILDING' | 'READY' | 'STALE' | 'DEGRADED';
   effectiveWindow: { from: string; to: string } | null;
   facts: SupportLeadSafeFact[];
   nextCursor: string | null;
 }
 
 export const SUPPORT_LEAD_RISK_TYPES = [
-  "UNASSIGNED_AGED",
-  "SLA_AT_RISK",
-  "SLA_BREACHED",
-  "DELIVERY_OUTCOME_UNKNOWN",
+  'UNASSIGNED_AGED',
+  'SLA_AT_RISK',
+  'SLA_BREACHED',
+  'DELIVERY_OUTCOME_UNKNOWN',
 ] as const;
 
 export type SupportLeadRiskType = (typeof SUPPORT_LEAD_RISK_TYPES)[number];
@@ -183,7 +183,7 @@ export interface SupportLeadCaseRisk {
 
 export interface SupportLeadCaseRiskPage {
   computedAt: string;
-  freshnessState: "BUILDING" | "READY" | "STALE" | "DEGRADED";
+  freshnessState: 'BUILDING' | 'READY' | 'STALE' | 'DEGRADED';
   riskType: SupportLeadRiskType;
   items: SupportLeadCaseRisk[];
   nextCursor: string | null;
@@ -193,8 +193,8 @@ export interface SupportOperationalAlert {
   id: string;
   /** Monotonic server version used as the next command's If-Match value. */
   version: number;
-  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-  state: "NEW" | "ACKNOWLEDGED" | "RESOLVED";
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  state: 'NEW' | 'ACKNOWLEDGED' | 'RESOLVED';
   sourceKind: string;
   firstObservedAt: string;
   lastObservedAt: string;
@@ -211,7 +211,7 @@ export interface SupportLeadTarget {
 
 export interface SupportOperationalAlertPage {
   computedAt: string;
-  materializationState: "READY" | "DEGRADED";
+  materializationState: 'READY' | 'DEGRADED';
   items: SupportOperationalAlert[];
   nextCursor: string | null;
 }
@@ -219,16 +219,16 @@ export interface SupportOperationalAlertPage {
 export interface SupportOperationalAlertDetail {
   alert: SupportOperationalAlert;
   computedAt: string;
-  materializationState: "READY" | "DEGRADED";
+  materializationState: 'READY' | 'DEGRADED';
   effectiveWindow: { from: string; to: string };
   generation: number;
   policyRevisionId: string;
   nextCursor: string | null;
   timeline: Array<{
     id: string;
-    eventKind: "SOURCE_OBSERVED" | "OWNER_CHANGED" | "ACKNOWLEDGED" | "RESOLVED" | "REOPENED";
+    eventKind: 'SOURCE_OBSERVED' | 'OWNER_CHANGED' | 'ACKNOWLEDGED' | 'RESOLVED' | 'REOPENED';
     occurredAt: string;
-    actorType: "CMS_USER" | "SYSTEM" | "BREAK_GLASS";
+    actorType: 'CMS_USER' | 'SYSTEM' | 'BREAK_GLASS';
     beforeVersion: number | null;
     afterVersion: number;
     generation: number;
@@ -262,15 +262,12 @@ export interface SupportOperationalAlertsSource {
     request?: { cursor?: string; limit?: number; from?: string; to?: string },
     signal?: AbortSignal,
   ): Promise<SupportOperationalAlertDetail>;
-  readAlertOwnerTargets?(
-    projectId: string,
-    signal?: AbortSignal,
-  ): Promise<SupportLeadTarget[]>;
+  readAlertOwnerTargets?(projectId: string, signal?: AbortSignal): Promise<SupportLeadTarget[]>;
   acknowledge(
     projectId: string,
     alertId: string,
     input: {
-      reasonCode: "INVESTIGATING" | "OWNERSHIP_ACCEPTED" | "ESCALATED";
+      reasonCode: 'INVESTIGATING' | 'OWNERSHIP_ACCEPTED' | 'ESCALATED';
       expectedVersion: number;
       idempotencyKey: string;
     },
@@ -280,11 +277,7 @@ export interface SupportOperationalAlertsSource {
     alertId: string,
     input: {
       reasonCode:
-        | "RISK_CLEARED"
-        | "MITIGATED"
-        | "FALSE_POSITIVE"
-        | "DUPLICATE"
-        | "EXTERNAL_INCIDENT_HANDOFF";
+        'RISK_CLEARED' | 'MITIGATED' | 'FALSE_POSITIVE' | 'DUPLICATE' | 'EXTERNAL_INCIDENT_HANDOFF';
       expectedVersion: number;
       idempotencyKey: string;
     },
@@ -294,7 +287,8 @@ export interface SupportOperationalAlertsSource {
     alertId: string,
     input: {
       ownerCmsUserId: string | null;
-      reasonCode: "LEAD_ASSIGNMENT" | "LOAD_BALANCE" | "SHIFT_HANDOFF" | "SKILL_MATCH" | "OWNER_UNAVAILABLE";
+      reasonCode:
+        'LEAD_ASSIGNMENT' | 'LOAD_BALANCE' | 'SHIFT_HANDOFF' | 'SKILL_MATCH' | 'OWNER_UNAVAILABLE';
       expectedVersion: number;
       idempotencyKey: string;
     },
@@ -303,17 +297,16 @@ export interface SupportOperationalAlertsSource {
 
 export interface SupportOperationalAlertCommandReceipt {
   alertId: string;
-  state: "NEW" | "ACKNOWLEDGED" | "RESOLVED";
+  state: 'NEW' | 'ACKNOWLEDGED' | 'RESOLVED';
   version: number;
   occurredAt: string;
   replayed: boolean;
   ownerCmsUserId: string | null;
 }
 
-export type SupportLeadSource =
-  & SupportLeadSummarySource
-  & SupportLeadRisksSource
-  & SupportOperationalAlertsSource;
+export type SupportLeadSource = SupportLeadSummarySource &
+  SupportLeadRisksSource &
+  SupportOperationalAlertsSource;
 
 export interface SupportLeadDrilldownSource {
   readReadiness(projectId: string, signal?: AbortSignal): Promise<SupportLeadReadiness>;
@@ -348,7 +341,7 @@ function mapReadiness(response: SupportLeadAdmissionResponseDto): SupportLeadRea
   };
 }
 
-function mapFact(fact: SupportActivityResponseDto["data"]["facts"][number]): SupportLeadSafeFact {
+function mapFact(fact: SupportActivityResponseDto['data']['facts'][number]): SupportLeadSafeFact {
   return {
     id: fact.activityId,
     sequence: fact.activitySequence,
@@ -374,7 +367,9 @@ function mapFact(fact: SupportActivityResponseDto["data"]["facts"][number]): Sup
   };
 }
 
-function mapCapacityRisks(response: SupportLeadCapacityRisksResponseDto): SupportLeadCapacityRiskPage {
+function mapCapacityRisks(
+  response: SupportLeadCapacityRisksResponseDto,
+): SupportLeadCapacityRiskPage {
   return {
     computedAt: response.computedAt,
     freshnessState: response.freshnessState,
@@ -459,9 +454,7 @@ function mapSummary(response: SupportLeadSummaryResponseDto): SupportLeadSummary
   };
 }
 
-function mapCaseRisks(
-  response: SupportLeadCaseRisksResponseDto,
-): SupportLeadCaseRiskPage {
+function mapCaseRisks(response: SupportLeadCaseRisksResponseDto): SupportLeadCaseRiskPage {
   return {
     computedAt: response.computedAt,
     freshnessState: response.freshnessState,
@@ -481,7 +474,9 @@ function mapCaseRisks(
   };
 }
 
-function mapAlert(item: SupportOperationalAlertListResponseDto["items"][number]): SupportOperationalAlert {
+function mapAlert(
+  item: SupportOperationalAlertListResponseDto['items'][number],
+): SupportOperationalAlert {
   return {
     id: item.id,
     version: item.version,
@@ -509,9 +504,7 @@ function mapAlertCommandReceipt(
   };
 }
 
-function mapAlerts(
-  response: SupportOperationalAlertListResponseDto,
-): SupportOperationalAlertPage {
+function mapAlerts(response: SupportOperationalAlertListResponseDto): SupportOperationalAlertPage {
   return {
     computedAt: response.materialization.computedAt,
     materializationState: response.materialization.state,
@@ -640,7 +633,7 @@ const apiSource: SupportLeadSource & SupportLeadDrilldownSource = {
         await supportOperationalAlertList(
           projectId,
           {
-            active: "true",
+            active: 'true',
             limit: request?.limit ?? 25,
             ...(request?.cursor ? { cursor: request.cursor } : {}),
           },
@@ -674,7 +667,7 @@ const apiSource: SupportLeadSource & SupportLeadDrilldownSource = {
     try {
       const response = await supportLeadTargetList(
         projectId,
-        { purpose: "ALERT_OWNER" },
+        { purpose: 'ALERT_OWNER' },
         { signal },
       );
       return response.items
@@ -693,8 +686,8 @@ const apiSource: SupportLeadSource & SupportLeadDrilldownSource = {
           { reasonCode: input.reasonCode },
           {
             headers: {
-              "Idempotency-Key": input.idempotencyKey,
-              "If-Match": `"${input.expectedVersion}"`,
+              'Idempotency-Key': input.idempotencyKey,
+              'If-Match': `"${input.expectedVersion}"`,
             },
           },
         ),
@@ -712,8 +705,8 @@ const apiSource: SupportLeadSource & SupportLeadDrilldownSource = {
           { reasonCode: input.reasonCode },
           {
             headers: {
-              "Idempotency-Key": input.idempotencyKey,
-              "If-Match": `"${input.expectedVersion}"`,
+              'Idempotency-Key': input.idempotencyKey,
+              'If-Match': `"${input.expectedVersion}"`,
             },
           },
         ),
@@ -731,8 +724,8 @@ const apiSource: SupportLeadSource & SupportLeadDrilldownSource = {
           { ownerCmsUserId: input.ownerCmsUserId, reasonCode: input.reasonCode },
           {
             headers: {
-              "Idempotency-Key": input.idempotencyKey,
-              "If-Match": `"${input.expectedVersion}"`,
+              'Idempotency-Key': input.idempotencyKey,
+              'If-Match': `"${input.expectedVersion}"`,
             },
           },
         ),
@@ -747,19 +740,19 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
   async readReadiness(_, signal) {
     if (signal?.aborted) throw signal.reason;
     return {
-      readinessState: "READY",
+      readinessState: 'READY',
       evaluatedAt: new Date().toISOString(),
       computedAt: new Date().toISOString(),
       projectionGeneration: 7,
-      checkpoint: "141",
-      sourceHighWater: "141",
+      checkpoint: '141',
+      sourceHighWater: '141',
       capabilities: {
-        summary: "AVAILABLE",
-        caseRisks: "AVAILABLE",
-        capacityRisks: "AVAILABLE",
-        investigation: "AVAILABLE",
-        activity: "AVAILABLE",
-        realtime: "AVAILABLE",
+        summary: 'AVAILABLE',
+        caseRisks: 'AVAILABLE',
+        capacityRisks: 'AVAILABLE',
+        investigation: 'AVAILABLE',
+        activity: 'AVAILABLE',
+        realtime: 'AVAILABLE',
       },
     };
   },
@@ -767,7 +760,7 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
     if (signal?.aborted) throw signal.reason;
     return {
       computedAt: new Date().toISOString(),
-      freshnessState: "READY",
+      freshnessState: 'READY',
       actionableBacklog: { unassignedCount: 3, oldestUnassignedAgeMs: 1_080_000 },
       sla: { atRiskCount: 2, breachedCount: 1, oldestDueAgeMs: 420_000 },
       workforce: {
@@ -782,8 +775,8 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
         currentWorkloadUnits: 16,
         maximumCapacityUnits: 24,
       },
-      delivery: { pendingCount: 2, outcomeUnknownCount: 1, state: "AVAILABLE" },
-      projectionHealth: { deadLetterCount: 0, retryCount: 1, state: "AVAILABLE" },
+      delivery: { pendingCount: 2, outcomeUnknownCount: 1, state: 'AVAILABLE' },
+      projectionHealth: { deadLetterCount: 0, retryCount: 1, state: 'AVAILABLE' },
     };
   },
   async readCaseRisks(_, riskType, __, signal) {
@@ -792,7 +785,7 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
     const cases: Record<SupportLeadRiskType, SupportLeadCaseRisk[]> = {
       UNASSIGNED_AGED: [
         {
-          caseId: "case-demo-deposit",
+          caseId: 'case-demo-deposit',
           caseVersion: 4,
           assignmentVersion: null,
           deliveryVersion: null,
@@ -805,7 +798,7 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
       ],
       SLA_AT_RISK: [
         {
-          caseId: "case-demo-game",
+          caseId: 'case-demo-game',
           caseVersion: 7,
           assignmentVersion: 3,
           deliveryVersion: null,
@@ -818,7 +811,7 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
       ],
       SLA_BREACHED: [
         {
-          caseId: "case-demo-game",
+          caseId: 'case-demo-game',
           caseVersion: 2,
           assignmentVersion: null,
           deliveryVersion: null,
@@ -831,7 +824,7 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
       ],
       DELIVERY_OUTCOME_UNKNOWN: [
         {
-          caseId: "case-demo-deposit",
+          caseId: 'case-demo-deposit',
           caseVersion: 9,
           assignmentVersion: 4,
           deliveryVersion: 5,
@@ -845,7 +838,7 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
     };
     return {
       computedAt: now,
-      freshnessState: "READY",
+      freshnessState: 'READY',
       riskType,
       items: cases[riskType],
       nextCursor: null,
@@ -855,18 +848,20 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
     if (signal?.aborted) throw signal.reason;
     return {
       computedAt: new Date().toISOString(),
-      freshnessState: "READY",
-      state: "AVAILABLE",
-      items: [{
-        riskId: "capacity-risk-demo",
-        riskVersion: 1,
-        lastDecisionId: "routing-decision-demo",
-        observedAt: new Date().toISOString(),
-        requiredCapacityUnits: 3,
-        teamId: "team-payments",
-        queue: { id: "queue-payments", code: "PAYMENTS", name: "Платежи" },
-        exclusionCounts: { CAPACITY_EXHAUSTED: 2, AVAILABILITY_NOT_ROUTABLE: 1 },
-      }],
+      freshnessState: 'READY',
+      state: 'AVAILABLE',
+      items: [
+        {
+          riskId: 'capacity-risk-demo',
+          riskVersion: 1,
+          lastDecisionId: 'routing-decision-demo',
+          observedAt: new Date().toISOString(),
+          requiredCapacityUnits: 3,
+          teamId: 'team-payments',
+          queue: { id: 'queue-payments', code: 'PAYMENTS', name: 'Платежи' },
+          exclusionCounts: { CAPACITY_EXHAUSTED: 2, AVAILABILITY_NOT_ROUTABLE: 1 },
+        },
+      ],
       nextCursor: null,
     };
   },
@@ -876,43 +871,48 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
     return {
       caseId,
       computedAt: now,
-      freshnessState: "READY",
+      freshnessState: 'READY',
       effectiveWindow: { from: now, to: now },
-      evidenceSource: "PROJECTION_WITH_OWNER",
+      evidenceSource: 'PROJECTION_WITH_OWNER',
       pinned: {},
       timelineSources: {},
-      actionTokens: { caseVersion: 4, caseReadToken: "read-token-demo", assignmentEtag: null },
-      routingFactsState: "AVAILABLE",
+      actionTokens: { caseVersion: 4, caseReadToken: 'read-token-demo', assignmentEtag: null },
+      routingFactsState: 'AVAILABLE',
       routing: {
-        assignmentState: "RESERVED",
-        reasonCode: "ROUTING_OFFER_ACTIVE",
-        reservation: { expiresAt: new Date(Date.now() + 90_000).toISOString(), capacityWeightUnits: 1 },
+        assignmentState: 'RESERVED',
+        reasonCode: 'ROUTING_OFFER_ACTIVE',
+        reservation: {
+          expiresAt: new Date(Date.now() + 90_000).toISOString(),
+          capacityWeightUnits: 1,
+        },
         decision: null,
         fallback: null,
       },
-      facts: [{
-        id: "fact-demo-1",
-        sequence: "140",
-        occurredAt: now,
-        kind: "ASSIGNMENT",
-        eventCode: "SUPPORT_ASSIGNMENT_OFFERED",
-        actorType: "SYSTEM",
-        actorCmsUserId: null,
-        actorSystemCode: "support-routing",
-        caseId,
-        conversationId: null,
-        assignmentId: null,
-        messageId: null,
-        operatorCmsUserId: null,
-        targetTeamId: null,
-        ownerVersion: null,
-        eligibilityOverride: null,
-        reasonCode: null,
-        commandOutcome: null,
-        deliveryState: null,
-        deliveryId: null,
-        schemaVersion: 1,
-      }],
+      facts: [
+        {
+          id: 'fact-demo-1',
+          sequence: '140',
+          occurredAt: now,
+          kind: 'ASSIGNMENT',
+          eventCode: 'SUPPORT_ASSIGNMENT_OFFERED',
+          actorType: 'SYSTEM',
+          actorCmsUserId: null,
+          actorSystemCode: 'support-routing',
+          caseId,
+          conversationId: null,
+          assignmentId: null,
+          messageId: null,
+          operatorCmsUserId: null,
+          targetTeamId: null,
+          ownerVersion: null,
+          eligibilityOverride: null,
+          reasonCode: null,
+          commandOutcome: null,
+          deliveryState: null,
+          deliveryId: null,
+          schemaVersion: 1,
+        },
+      ],
       nextCursor: null,
     };
   },
@@ -932,14 +932,14 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
     const now = new Date().toISOString();
     return {
       computedAt: now,
-      materializationState: "READY",
+      materializationState: 'READY',
       items: [
         {
-          id: "alert-demo-1",
+          id: 'alert-demo-1',
           version: 1,
-          severity: "HIGH",
-          state: "NEW",
-          sourceKind: "UNASSIGNED_AGED",
+          severity: 'HIGH',
+          state: 'NEW',
+          sourceKind: 'UNASSIGNED_AGED',
           firstObservedAt: now,
           lastObservedAt: now,
           occurrenceCount: 2,
@@ -957,9 +957,9 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
       alert: {
         id: alertId,
         version: 1,
-        severity: "HIGH",
-        state: "NEW",
-        sourceKind: "UNASSIGNED_AGED",
+        severity: 'HIGH',
+        state: 'NEW',
+        sourceKind: 'UNASSIGNED_AGED',
         firstObservedAt: now,
         lastObservedAt: now,
         occurrenceCount: 2,
@@ -967,31 +967,31 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
         ownerCmsUserId: null,
       },
       computedAt: now,
-      materializationState: "READY",
+      materializationState: 'READY',
       effectiveWindow: { from: now, to: now },
       generation: 1,
-      policyRevisionId: "demo-policy-r1",
+      policyRevisionId: 'demo-policy-r1',
       nextCursor: null,
       timeline: [
         {
-          id: "alert-event-demo-1",
-          eventKind: "SOURCE_OBSERVED",
+          id: 'alert-event-demo-1',
+          eventKind: 'SOURCE_OBSERVED',
           occurredAt: now,
-          actorType: "SYSTEM",
+          actorType: 'SYSTEM',
           beforeVersion: null,
           afterVersion: 1,
           generation: 1,
-          policyRevisionId: "demo-policy-r1",
+          policyRevisionId: 'demo-policy-r1',
           reasonCode: null,
         },
       ],
     };
   },
   async acknowledge(_, alertId, input) {
-    if (input.expectedVersion < 1) throw new Error("Invalid alert version");
+    if (input.expectedVersion < 1) throw new Error('Invalid alert version');
     return {
       alertId,
-      state: "ACKNOWLEDGED",
+      state: 'ACKNOWLEDGED',
       version: input.expectedVersion + 1,
       occurredAt: new Date().toISOString(),
       replayed: false,
@@ -1001,15 +1001,15 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
   async readAlertOwnerTargets(_, signal) {
     if (signal?.aborted) throw signal.reason;
     return [
-      { id: "lead-demo", displayName: "Анна · лид поддержки", teamIds: ["team-payments"] },
-      { id: "operator-demo", displayName: "Максим · Support", teamIds: ["team-payments"] },
+      { id: 'lead-demo', displayName: 'Анна · лид поддержки', teamIds: ['team-payments'] },
+      { id: 'operator-demo', displayName: 'Максим · Support', teamIds: ['team-payments'] },
     ];
   },
   async resolve(_, alertId, input) {
-    if (input.expectedVersion < 1) throw new Error("Invalid alert version");
+    if (input.expectedVersion < 1) throw new Error('Invalid alert version');
     return {
       alertId,
-      state: "RESOLVED",
+      state: 'RESOLVED',
       version: input.expectedVersion + 1,
       occurredAt: new Date().toISOString(),
       replayed: false,
@@ -1019,7 +1019,7 @@ const mockSource: SupportLeadSource & SupportLeadDrilldownSource = {
   async changeOwner(_, alertId, input) {
     return {
       alertId,
-      state: "NEW",
+      state: 'NEW',
       version: input.expectedVersion + 1,
       occurredAt: new Date().toISOString(),
       replayed: false,

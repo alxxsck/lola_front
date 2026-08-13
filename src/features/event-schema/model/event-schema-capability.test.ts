@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest';
 
-import type { ScenarioAuthoringEvent } from '@/shared/api/repository/scenario-authoring'
-import { findCatalogEventForDefinition, findCatalogFieldForDraft, summarizeEventFieldCapability } from './event-schema-capability'
+import type { ScenarioAuthoringEvent } from '@/shared/api/repository/scenario-authoring';
+import {
+  findCatalogEventForDefinition,
+  findCatalogFieldForDraft,
+  summarizeEventFieldCapability,
+} from './event-schema-capability';
 
 function catalogEvent(definitionId: string): ScenarioAuthoringEvent {
   return {
@@ -12,16 +16,18 @@ function catalogEvent(definitionId: string): ScenarioAuthoringEvent {
     schemaVersion: definitionId === 'current-revision' ? 2 : 1,
     fields: [],
     aggregateMeasures: [],
-  }
+  };
 }
 
 describe('event schema catalog capabilities', () => {
   it('binds capabilities by exact definition revision instead of shared event code', () => {
-    const contract = { events: [catalogEvent('current-revision')] }
+    const contract = { events: [catalogEvent('current-revision')] };
 
-    expect(findCatalogEventForDefinition(contract, 'current-revision')?.definitionId).toBe('current-revision')
-    expect(findCatalogEventForDefinition(contract, 'old-revision')).toBeUndefined()
-  })
+    expect(findCatalogEventForDefinition(contract, 'current-revision')?.definitionId).toBe(
+      'current-revision',
+    );
+    expect(findCatalogEventForDefinition(contract, 'old-revision')).toBeUndefined();
+  });
 
   it('never inherits capabilities by path when stable field identities disagree', () => {
     const field = {
@@ -39,15 +45,17 @@ describe('event schema catalog capabilities', () => {
         aggregateFilter: { operators: ['eq' as const] },
         aggregateMeasure: { measures: ['sum' as const] },
       },
-    }
-    const event = { ...catalogEvent('current-revision'), fields: [field] }
+    };
+    const event = { ...catalogEvent('current-revision'), fields: [field] };
 
-    expect(findCatalogFieldForDraft(event, { fieldKey: 'other.amount', wireKey: 'amount' })).toBeUndefined()
-    expect(findCatalogFieldForDraft(event, { wireKey: 'amount' })).toBe(field)
-  })
+    expect(
+      findCatalogFieldForDraft(event, { fieldKey: 'other.amount', wireKey: 'amount' }),
+    ).toBeUndefined();
+    expect(findCatalogFieldForDraft(event, { wireKey: 'amount' })).toBe(field);
+  });
 
   it('explains current-event and history capabilities as separate contexts', () => {
-    const event = catalogEvent('current-revision')
+    const event = catalogEvent('current-revision');
     const field = {
       fieldKey: 'deposit.currency',
       label: 'Currency',
@@ -63,9 +71,11 @@ describe('event schema catalog capabilities', () => {
         aggregateFilter: { operators: [] },
         aggregateMeasure: { measures: [] },
       },
-    }
-    event.fields = [field]
+    };
+    event.fields = [field];
 
-    expect(summarizeEventFieldCapability(field, true).label).toBe('Событие запуска: можно сравнивать · История: пока недоступно')
-  })
-})
+    expect(summarizeEventFieldCapability(field, true).label).toBe(
+      'Событие запуска: можно сравнивать · История: пока недоступно',
+    );
+  });
+});

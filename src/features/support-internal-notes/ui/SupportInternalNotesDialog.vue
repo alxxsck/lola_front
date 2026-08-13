@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import Message from "primevue/message";
-import Tag from "primevue/tag";
+import { computed, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Message from 'primevue/message';
+import Tag from 'primevue/tag';
 import type {
   SupportInternalNote,
   SupportInternalNoteRevision,
-} from "@/features/support-internal-notes/api/support-internal-notes-source";
+} from '@/features/support-internal-notes/api/support-internal-notes-source';
 
 const props = withDefaults(
   defineProps<{
@@ -34,42 +34,37 @@ const props = withDefaults(
   {
     loading: false,
     loadingMore: false,
-    error: "",
+    error: '',
     canReadHistory: false,
     canCorrect: false,
     canRedact: false,
     canDownloadAttachments: false,
     correctingNoteId: null,
     tombstoningNoteId: null,
-    mutationError: "",
+    mutationError: '',
     historyLoading: false,
     historyLoadingMore: false,
-    historyError: "",
+    historyError: '',
   },
 );
 
 const emit = defineEmits<{
-  "update:visible": [value: boolean];
+  'update:visible': [value: boolean];
   reload: [];
   loadMore: [];
   openHistory: [noteId: string];
   closeHistory: [];
   loadHistoryMore: [];
-  correct: [
-    noteId: string,
-    body: string,
-    reasonCode: string,
-    onSucceeded: () => void,
-  ];
+  correct: [noteId: string, body: string, reasonCode: string, onSucceeded: () => void];
   tombstone: [noteId: string, reasonCode: string, onSucceeded: () => void];
   downloadAttachment: [attachmentId: string];
 }>();
 
 const correctionNoteId = ref<string | null>(null);
-const correctionBody = ref("");
-const correctionReason = ref("FACTUAL_CORRECTION");
+const correctionBody = ref('');
+const correctionReason = ref('FACTUAL_CORRECTION');
 const tombstoneNoteId = ref<string | null>(null);
-const tombstoneReason = ref("CREATED_IN_ERROR");
+const tombstoneReason = ref('CREATED_IN_ERROR');
 const correctionByteLength = computed(
   () => new TextEncoder().encode(correctionBody.value.trim()).byteLength,
 );
@@ -79,104 +74,99 @@ const correctionBodyInvalid = computed(
 
 const visibleModel = computed({
   get: () => props.visible,
-  set: (value: boolean) => emit("update:visible", value),
+  set: (value: boolean) => emit('update:visible', value),
 });
 
-function lifecycleLabel(value: SupportInternalNote["lifecycle"]): string {
+function lifecycleLabel(value: SupportInternalNote['lifecycle']): string {
   return {
-    ACTIVE: "Актуальна",
-    TOMBSTONED: "Удалена",
-    PURGED: "Недоступна",
+    ACTIVE: 'Актуальна',
+    TOMBSTONED: 'Удалена',
+    PURGED: 'Недоступна',
   }[value];
 }
 
 function lifecycleSeverity(
-  value: SupportInternalNote["lifecycle"],
-): "success" | "warn" | "secondary" {
-  if (value === "ACTIVE") return "success";
-  return value === "TOMBSTONED" ? "warn" : "secondary";
+  value: SupportInternalNote['lifecycle'],
+): 'success' | 'warn' | 'secondary' {
+  if (value === 'ACTIVE') return 'success';
+  return value === 'TOMBSTONED' ? 'warn' : 'secondary';
 }
 
 function dateTime(value: string): string {
-  return new Date(value).toLocaleString("ru-RU", {
-    dateStyle: "medium",
-    timeStyle: "short",
+  return new Date(value).toLocaleString('ru-RU', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
   });
 }
 
-function revisionReasonLabel(
-  value: SupportInternalNoteRevision["reasonCode"],
-): string {
+function revisionReasonLabel(value: SupportInternalNoteRevision['reasonCode']): string {
   return {
-    INITIAL: "Создание заметки",
-    FACTUAL_CORRECTION: "Исправление факта",
-    CLARIFICATION: "Уточнение",
-    REMOVE_SENSITIVE_DATA: "Удаление чувствительных данных",
-    LEGACY_OTHER: "Изменение из прежней версии",
+    INITIAL: 'Создание заметки',
+    FACTUAL_CORRECTION: 'Исправление факта',
+    CLARIFICATION: 'Уточнение',
+    REMOVE_SENSITIVE_DATA: 'Удаление чувствительных данных',
+    LEGACY_OTHER: 'Изменение из прежней версии',
   }[value];
 }
 
 function resetCorrection(): void {
   correctionNoteId.value = null;
-  correctionBody.value = "";
-  correctionReason.value = "FACTUAL_CORRECTION";
+  correctionBody.value = '';
+  correctionReason.value = 'FACTUAL_CORRECTION';
 }
 
 function resetTombstone(): void {
   tombstoneNoteId.value = null;
-  tombstoneReason.value = "CREATED_IN_ERROR";
+  tombstoneReason.value = 'CREATED_IN_ERROR';
 }
 
 watch(
   () => [props.visible, props.canCorrect, props.notes] as const,
   ([visible, canCorrect, notes]) => {
     const selected = notes.find((note) => note.id === correctionNoteId.value);
-    if (!visible || !canCorrect || !selected || selected.lifecycle !== "ACTIVE")
-      resetCorrection();
+    if (!visible || !canCorrect || !selected || selected.lifecycle !== 'ACTIVE') resetCorrection();
   },
-  { flush: "sync" },
+  { flush: 'sync' },
 );
 
 watch(
   () => [props.visible, props.canRedact, props.notes] as const,
   ([visible, canRedact, notes]) => {
     const selected = notes.find((note) => note.id === tombstoneNoteId.value);
-    if (!visible || !canRedact || !selected || selected.lifecycle !== "ACTIVE")
-      resetTombstone();
+    if (!visible || !canRedact || !selected || selected.lifecycle !== 'ACTIVE') resetTombstone();
   },
-  { flush: "sync" },
+  { flush: 'sync' },
 );
 
 function startCorrection(note: SupportInternalNote): void {
-  if (!props.canCorrect || note.lifecycle !== "ACTIVE" || !note.body) return;
+  if (!props.canCorrect || note.lifecycle !== 'ACTIVE' || !note.body) return;
   correctionNoteId.value = note.id;
   correctionBody.value = note.body;
-  correctionReason.value = "FACTUAL_CORRECTION";
+  correctionReason.value = 'FACTUAL_CORRECTION';
   tombstoneNoteId.value = null;
 }
 
 function submitCorrection(noteId: string): void {
   const body = correctionBody.value.trim();
   const reasonCode = correctionReason.value.trim().toUpperCase();
-  if (correctionBodyInvalid.value || !reasonCode || props.correctingNoteId)
-    return;
-  emit("correct", noteId, body, reasonCode, () => {
+  if (correctionBodyInvalid.value || !reasonCode || props.correctingNoteId) return;
+  emit('correct', noteId, body, reasonCode, () => {
     correctionNoteId.value = null;
-    correctionBody.value = "";
+    correctionBody.value = '';
   });
 }
 
 function startTombstone(noteId: string): void {
   if (!props.canRedact) return;
   tombstoneNoteId.value = noteId;
-  tombstoneReason.value = "CREATED_IN_ERROR";
+  tombstoneReason.value = 'CREATED_IN_ERROR';
   correctionNoteId.value = null;
 }
 
 function submitTombstone(noteId: string): void {
   const reasonCode = tombstoneReason.value.trim().toUpperCase();
   if (!reasonCode || props.tombstoningNoteId) return;
-  emit("tombstone", noteId, reasonCode, () => {
+  emit('tombstone', noteId, reasonCode, () => {
     tombstoneNoteId.value = null;
   });
 }
@@ -190,29 +180,17 @@ function submitTombstone(noteId: string): void {
     :style="{ width: 'min(780px, calc(100vw - 24px))' }"
   >
     <Message severity="info" :closable="false">
-      Внутреннюю заметку пользователь не увидит. Не вставляйте в неё секреты или
-      текст, который должен уйти в публичный ответ.
+      Внутреннюю заметку пользователь не увидит. Не вставляйте в неё секреты или текст, который
+      должен уйти в публичный ответ.
     </Message>
 
     <Message v-if="error" severity="error" :closable="false">
       {{ error }}
-      <Button
-        type="button"
-        label="Повторить"
-        size="small"
-        text
-        @click="emit('reload')"
-      />
+      <Button type="button" label="Повторить" size="small" text @click="emit('reload')" />
     </Message>
     <Message v-if="mutationError" severity="error" :closable="false">
       {{ mutationError }}
-      <Button
-        type="button"
-        label="Обновить список"
-        size="small"
-        text
-        @click="emit('reload')"
-      />
+      <Button type="button" label="Обновить список" size="small" text @click="emit('reload')" />
     </Message>
     <p v-if="loading" class="internal-notes-empty">Загружаем заметки…</p>
     <p v-else-if="!notes.length && !error" class="internal-notes-empty">
@@ -231,14 +209,14 @@ function submitTombstone(noteId: string): void {
               :severity="lifecycleSeverity(note.lifecycle)"
             />
           </header>
-          <p
-            v-if="note.body"
-            class="internal-note__body"
-            data-testid="internal-note-body"
-          >
+          <p v-if="note.body" class="internal-note__body" data-testid="internal-note-body">
             {{ note.body }}
           </p>
-          <ul v-if="note.attachments?.length" class="internal-note__attachments" aria-label="Вложения заметки">
+          <ul
+            v-if="note.attachments?.length"
+            class="internal-note__attachments"
+            aria-label="Вложения заметки"
+          >
             <li v-for="attachment in note.attachments" :key="attachment.id">
               <button
                 type="button"
@@ -246,32 +224,36 @@ function submitTombstone(noteId: string): void {
                 :title="canDownloadAttachments ? 'Скачать файл' : 'Скачивание недоступно'"
                 @click="emit('downloadAttachment', attachment.id)"
               >
-                <i :class="attachment.contentType.startsWith('image/') ? 'pi pi-image' : 'pi pi-file'" aria-hidden="true" />
+                <i
+                  :class="
+                    attachment.contentType.startsWith('image/') ? 'pi pi-image' : 'pi pi-file'
+                  "
+                  aria-hidden="true"
+                />
                 <span>
                   <strong>{{ attachment.filename }}</strong>
-                  <small>{{ Math.max(1, Math.ceil(attachment.sizeBytes / 1024)).toLocaleString('ru-RU') }} КБ</small>
+                  <small
+                    >{{
+                      Math.max(1, Math.ceil(attachment.sizeBytes / 1024)).toLocaleString('ru-RU')
+                    }}
+                    КБ</small
+                  >
                 </span>
                 <i class="pi pi-download" aria-hidden="true" />
               </button>
             </li>
           </ul>
           <p
-            v-if="
-              !note.body &&
-              (note.lifecycle !== 'ACTIVE' || !note.attachments?.length)
-            "
+            v-if="!note.body && (note.lifecycle !== 'ACTIVE' || !note.attachments?.length)"
             class="internal-note__unavailable"
           >
             {{
-              note.lifecycle === "TOMBSTONED"
-                ? "Текст заметки удалён."
-                : "Текст заметки недоступен."
+              note.lifecycle === 'TOMBSTONED'
+                ? 'Текст заметки удалён.'
+                : 'Текст заметки недоступен.'
             }}
           </p>
-          <p
-            v-if="note.hasUnavailableReferences"
-            class="internal-note__unavailable"
-          >
+          <p v-if="note.hasUnavailableReferences" class="internal-note__unavailable">
             Некоторые связанные объекты больше недоступны.
           </p>
           <form
@@ -292,20 +274,15 @@ function submitTombstone(noteId: string): void {
                 class="internal-note-correction__counter"
                 :class="{ 'is-invalid': correctionByteLength > 20480 }"
               >
-                {{ correctionByteLength.toLocaleString("ru-RU") }} / 20 480 байт
+                {{ correctionByteLength.toLocaleString('ru-RU') }} / 20 480 байт
               </small>
             </label>
             <label>
               <span>Код причины</span>
-              <select
-                v-model="correctionReason"
-                :disabled="correctingNoteId === note.id"
-              >
+              <select v-model="correctionReason" :disabled="correctingNoteId === note.id">
                 <option value="FACTUAL_CORRECTION">Исправление факта</option>
                 <option value="CLARIFICATION">Уточнение</option>
-                <option value="REMOVE_SENSITIVE_DATA">
-                  Удаление чувствительных данных
-                </option>
+                <option value="REMOVE_SENSITIVE_DATA">Удаление чувствительных данных</option>
               </select>
             </label>
             <div class="internal-note-correction__actions">
@@ -334,10 +311,7 @@ function submitTombstone(noteId: string): void {
             <p>Текст будет скрыт, но запись и причина удаления сохранятся в журнале.</p>
             <label>
               <span>Код причины</span>
-              <select
-                v-model="tombstoneReason"
-                :disabled="tombstoningNoteId === note.id"
-              >
+              <select v-model="tombstoneReason" :disabled="tombstoningNoteId === note.id">
                 <option value="CREATED_IN_ERROR">Создано по ошибке</option>
                 <option value="DUPLICATE">Дубликат</option>
                 <option value="POLICY_VIOLATION">Нарушение политики</option>
@@ -364,9 +338,7 @@ function submitTombstone(noteId: string): void {
             </div>
           </section>
           <footer>
-            <time :datetime="note.updatedAt">
-              Обновлено {{ dateTime(note.updatedAt) }}
-            </time>
+            <time :datetime="note.updatedAt"> Обновлено {{ dateTime(note.updatedAt) }} </time>
             <div class="internal-note__actions">
               <Button
                 v-if="canReadHistory"
@@ -435,9 +407,7 @@ function submitTombstone(noteId: string): void {
           @click="emit('openHistory', selectedHistoryNote.id)"
         />
       </Message>
-      <p v-else-if="historyLoading" class="internal-notes-empty">
-        Загружаем историю…
-      </p>
+      <p v-else-if="historyLoading" class="internal-notes-empty">Загружаем историю…</p>
       <p v-else-if="!history.length" class="internal-notes-empty">
         Сервер не вернул доступных версий этой заметки.
       </p>
@@ -512,12 +482,28 @@ function submitTombstone(noteId: string): void {
   text-align: left;
   cursor: pointer;
 }
-.internal-note__attachments span { min-width: 0; }
+.internal-note__attachments span {
+  min-width: 0;
+}
 .internal-note__attachments strong,
-.internal-note__attachments small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.internal-note__attachments small { color: var(--text-muted); font-size: 10px; }
-.internal-note__attachments button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
-.internal-note__attachments button:disabled { cursor: not-allowed; opacity: 0.62; }
+.internal-note__attachments small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.internal-note__attachments small {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+.internal-note__attachments button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.internal-note__attachments button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
 .internal-note-correction,
 .internal-note-tombstone {
   display: grid;
@@ -651,7 +637,7 @@ function submitTombstone(noteId: string): void {
   height: 10px;
   border-radius: 999px;
   background: var(--brand);
-  content: "";
+  content: '';
 }
 .internal-note-history__list article {
   padding-bottom: 2px;

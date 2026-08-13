@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import Listbox from "primevue/listbox";
+import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Listbox from 'primevue/listbox';
 
 export interface CatalogPickerMeta {
   label: string;
@@ -65,7 +65,7 @@ const props = withDefaults(
     applyLabel: string;
     multipleApplyLabel?: string;
     icon?: string;
-    layout?: "list" | "grid";
+    layout?: 'list' | 'grid';
     testIdPrefix: string;
     labelClass?: string;
   }>(),
@@ -76,27 +76,27 @@ const props = withDefaults(
     multiple: false,
     maxSelection: 50,
     allowEmpty: false,
-    scopeKey: "",
+    scopeKey: '',
     selectedOption: undefined,
     selectedOptions: () => [],
     filters: () => [],
-    allFilterLabel: "Все",
+    allFilterLabel: 'Все',
     multipleTitle: undefined,
     multipleApplyLabel: undefined,
-    icon: "pi pi-list",
-    layout: "list",
+    icon: 'pi pi-list',
+    layout: 'list',
     labelClass: undefined,
   },
 );
 
 const emit = defineEmits<{
-  "update:modelValue": [value: string | string[]];
+  'update:modelValue': [value: string | string[]];
   select: [option: CatalogPickerOption | CatalogPickerOption[]];
   closed: [];
 }>();
 
 const visible = ref(false);
-const appendTarget = import.meta.env.MODE === "test" ? "self" : "body";
+const appendTarget = import.meta.env.MODE === 'test' ? 'self' : 'body';
 const labelId = useId();
 const summaryId = useId();
 const requiredDescriptionId = useId();
@@ -106,19 +106,15 @@ const draftValues = ref<string[]>([]);
 const draftOptions = ref<CatalogPickerOption[]>([]);
 const chosenOptions = ref<CatalogPickerOption[]>([]);
 const loading = ref(false);
-const error = ref("");
-const query = ref("");
+const error = ref('');
+const query = ref('');
 const nextCursor = ref<string | null>(null);
 const activeFilter = ref<string>();
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
 let requestGeneration = 0;
 
 const modelValues = computed(() =>
-  Array.isArray(props.modelValue)
-    ? props.modelValue
-    : props.modelValue
-      ? [props.modelValue]
-      : [],
+  Array.isArray(props.modelValue) ? props.modelValue : props.modelValue ? [props.modelValue] : [],
 );
 const resolvedOptions = computed(() => {
   const candidates = [
@@ -134,26 +130,15 @@ const resolvedOptions = computed(() => {
 });
 const selected = computed(() => resolvedOptions.value[0]);
 const draftModel = computed<string | string[] | null>({
-  get: () =>
-    props.multiple ? [...draftValues.value] : (draftValues.value[0] ?? null),
+  get: () => (props.multiple ? [...draftValues.value] : (draftValues.value[0] ?? null)),
   set: (value) => {
-    if (
-      !props.multiple &&
-      !value &&
-      !props.allowEmpty &&
-      draftValues.value.length
-    )
-      return;
+    if (!props.multiple && !value && !props.allowEmpty && draftValues.value.length) return;
     const nextValues = Array.isArray(value)
       ? value.slice(0, props.maxSelection)
       : value
         ? [value]
         : [];
-    const candidates = [
-      ...draftOptions.value,
-      ...resolvedOptions.value,
-      ...options.value,
-    ];
+    const candidates = [...draftOptions.value, ...resolvedOptions.value, ...options.value];
     draftValues.value = nextValues;
     draftOptions.value = nextValues.flatMap((item) => {
       const option = candidates.find((candidate) => candidate.value === item);
@@ -165,10 +150,10 @@ const dialogTitle = computed(() =>
   props.multiple && props.multipleTitle ? props.multipleTitle : props.title,
 );
 const statusText = computed(() => {
-  if (loading.value && !options.value.length) return "Загружаем каталог…";
+  if (loading.value && !options.value.length) return 'Загружаем каталог…';
   if (error.value) return error.value;
   if (!options.value.length) return props.emptyMessage;
-  return `Показано: ${options.value.length}${nextCursor.value ? "+" : ""}`;
+  return `Показано: ${options.value.length}${nextCursor.value ? '+' : ''}`;
 });
 
 function testId(part: string): string {
@@ -180,7 +165,7 @@ async function open(): Promise<void> {
   visible.value = true;
   draftValues.value = [...modelValues.value];
   draftOptions.value = [...resolvedOptions.value];
-  query.value = "";
+  query.value = '';
   await loadPage(false);
   await nextTick();
   searchInput.value?.focus();
@@ -191,7 +176,7 @@ async function loadPage(append: boolean): Promise<void> {
   if (append && !cursor) return;
   const generation = ++requestGeneration;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const page = await props.load({
       query: query.value.trim(),
@@ -203,8 +188,7 @@ async function loadPage(append: boolean): Promise<void> {
     const combined = append ? [...options.value, ...page.items] : page.items;
     options.value = combined.filter(
       (option, index, all) =>
-        all.findIndex((candidate) => candidate.value === option.value) ===
-        index,
+        all.findIndex((candidate) => candidate.value === option.value) === index,
     );
     nextCursor.value = page.nextCursor;
   } catch (cause) {
@@ -229,7 +213,7 @@ function scheduleSearch(): void {
 
 function clearSearch(): void {
   if (searchTimer) clearTimeout(searchTimer);
-  query.value = "";
+  query.value = '';
   void loadPage(false);
   searchInput.value?.focus();
 }
@@ -244,27 +228,20 @@ function close(): void {
 }
 
 function afterHide(): void {
-  emit("closed");
+  emit('closed');
 }
 
 function apply(): void {
-  const candidates = [
-    ...draftOptions.value,
-    ...resolvedOptions.value,
-    ...options.value,
-  ];
+  const candidates = [...draftOptions.value, ...resolvedOptions.value, ...options.value];
   const picked = draftValues.value.flatMap((value) => {
     const option = candidates.find((candidate) => candidate.value === value);
     return option ? [option] : [];
   });
   if (!picked.length && !props.allowEmpty) return;
   chosenOptions.value = picked;
-  emit(
-    "update:modelValue",
-    props.multiple ? [...draftValues.value] : (draftValues.value[0] ?? ""),
-  );
-  if (props.multiple) emit("select", picked);
-  else if (picked[0]) emit("select", picked[0]);
+  emit('update:modelValue', props.multiple ? [...draftValues.value] : (draftValues.value[0] ?? ''));
+  if (props.multiple) emit('select', picked);
+  else if (picked[0]) emit('select', picked[0]);
   visible.value = false;
 }
 
@@ -284,8 +261,8 @@ watch(
     draftOptions.value = [];
     chosenOptions.value = [];
     loading.value = false;
-    error.value = "";
-    query.value = "";
+    error.value = '';
+    query.value = '';
     nextCursor.value = null;
     activeFilter.value = undefined;
   },
@@ -337,13 +314,13 @@ watch(
         <small v-if="selected">
           {{
             multiple && resolvedOptions.length > 1
-              ? resolvedOptions.map((option) => option.code).join(", ")
+              ? resolvedOptions.map((option) => option.code).join(', ')
               : selected.code
           }}
         </small>
       </span>
       <span class="catalog-picker__trigger-action">
-        <span>{{ selected ? "Изменить" : "Выбрать" }}</span>
+        <span>{{ selected ? 'Изменить' : 'Выбрать' }}</span>
         <i class="pi pi-arrow-right" aria-hidden="true" />
       </span>
     </button>
@@ -397,11 +374,7 @@ watch(
             role="group"
             aria-label="Фильтр каталога"
           >
-            <button
-              type="button"
-              :aria-pressed="!activeFilter"
-              @click="filterBy(undefined)"
-            >
+            <button type="button" :aria-pressed="!activeFilter" @click="filterBy(undefined)">
               {{ allFilterLabel }}
             </button>
             <button
@@ -420,18 +393,13 @@ watch(
 
         <div class="catalog-picker__list-head" aria-live="polite">
           <span>{{ statusText }}</span>
-          <strong v-if="draftValues.length">
-            Выбрано: {{ draftValues.length }}
-          </strong>
+          <strong v-if="draftValues.length"> Выбрано: {{ draftValues.length }} </strong>
         </div>
 
         <Listbox
           v-if="options.length"
           v-model="draftModel"
-          :class="[
-            'catalog-picker__options',
-            `catalog-picker__options--${layout}`,
-          ]"
+          :class="['catalog-picker__options', `catalog-picker__options--${layout}`]"
           :options="options"
           option-label="name"
           option-value="value"
@@ -439,15 +407,8 @@ watch(
           :aria-label="multiple ? `${title}: множественный выбор` : title"
         >
           <template #option="{ option, selected: optionSelected }">
-            <div
-              class="catalog-picker__option"
-              :data-testid="testId('option')"
-            >
-              <span
-                v-if="multiple"
-                class="catalog-picker__selection-mark"
-                aria-hidden="true"
-              >
+            <div class="catalog-picker__option" :data-testid="testId('option')">
+              <span v-if="multiple" class="catalog-picker__selection-mark" aria-hidden="true">
                 <i v-if="optionSelected" class="pi pi-check" />
               </span>
               <span class="catalog-picker__option-copy">
@@ -503,7 +464,7 @@ watch(
         <div class="catalog-picker__footer">
           <span>
             <strong>{{ draftValues.length }}</strong>
-            {{ multiple ? "выбрано" : draftValues.length ? "выбрано" : "— выбор не сделан" }}
+            {{ multiple ? 'выбрано' : draftValues.length ? 'выбрано' : '— выбор не сделан' }}
           </span>
           <div>
             <Button
@@ -620,7 +581,11 @@ watch(
 }
 .catalog-picker__trigger-copy small {
   color: var(--text-small-muted);
-  font: 0.68rem/1.15 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font:
+    0.68rem/1.15 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
 }
 .catalog-picker__trigger-action {
   display: inline-flex;
@@ -737,12 +702,8 @@ watch(
   font-size: 0.73rem;
   font-weight: 650;
 }
-.catalog-picker__filters button[aria-pressed="true"] {
-  border-color: color-mix(
-    in srgb,
-    var(--action-primary) 40%,
-    var(--border-default)
-  );
+.catalog-picker__filters button[aria-pressed='true'] {
+  border-color: color-mix(in srgb, var(--action-primary) 40%, var(--border-default));
   background: var(--surface-active);
   color: var(--action-primary);
 }
@@ -802,15 +763,10 @@ watch(
   outline: 2px solid var(--action-primary);
   outline-offset: 2px;
 }
-.catalog-picker__options :deep(.p-listbox-option[aria-selected="true"]) {
+.catalog-picker__options :deep(.p-listbox-option[aria-selected='true']) {
   border-color: var(--action-primary);
-  background: color-mix(
-    in srgb,
-    var(--action-primary) 4%,
-    var(--surface-card)
-  ) !important;
-  box-shadow: inset 0 0 0 1px
-    color-mix(in srgb, var(--action-primary) 34%, transparent);
+  background: color-mix(in srgb, var(--action-primary) 4%, var(--surface-card)) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--action-primary) 34%, transparent);
 }
 .catalog-picker__option {
   display: grid;
@@ -839,7 +795,7 @@ watch(
   color: var(--text-small-muted);
 }
 .catalog-picker__options
-  :deep(.p-listbox-option[aria-selected="true"] .catalog-picker__selection-mark) {
+  :deep(.p-listbox-option[aria-selected='true'] .catalog-picker__selection-mark) {
   background: var(--action-primary);
   color: var(--on-action-primary);
 }

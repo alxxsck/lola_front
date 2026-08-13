@@ -4,29 +4,19 @@ import {
   userMemoryFacts,
   userMemorySettings,
   userMemoryUpdateSettings,
-} from "@/shared/api/generated/retenive-backend";
-import { isMockMode } from "@/shared/config/data-mode";
+} from '@/shared/api/generated/retenive-backend';
+import { isMockMode } from '@/shared/config/data-mode';
 import type {
   UpdateUserMemorySettings,
   UserMemoryFact,
   UserMemorySettings,
-} from "../model/user-memory";
+} from '../model/user-memory';
 
 export interface UserMemoryRepository {
   getSettings(projectId: string): Promise<UserMemorySettings>;
-  updateSettings(
-    projectId: string,
-    input: UpdateUserMemorySettings,
-  ): Promise<UserMemorySettings>;
-  listFacts(
-    projectId: string,
-    endUserId: string,
-  ): Promise<{ items: UserMemoryFact[] }>;
-  deleteFact(
-    projectId: string,
-    endUserId: string,
-    factId: string,
-  ): Promise<void>;
+  updateSettings(projectId: string, input: UpdateUserMemorySettings): Promise<UserMemorySettings>;
+  listFacts(projectId: string, endUserId: string): Promise<{ items: UserMemoryFact[] }>;
+  deleteFact(projectId: string, endUserId: string, factId: string): Promise<void>;
   clearFacts(projectId: string, endUserId: string): Promise<number>;
 }
 
@@ -50,15 +40,15 @@ const apiRepository: UserMemoryRepository = {
 
 let mockFacts: UserMemoryFact[] = [
   {
-    id: "memory-demo-1",
-    category: "INTEREST",
-    key: "favorite_game",
-    value: "Любит шахматы",
-    sourceMessageId: "demo-message-1",
-    sourceObservedAt: "2026-07-20T12:00:00.000Z",
-    expiresAt: "2027-07-20T12:00:00.000Z",
-    createdAt: "2026-07-20T12:00:00.000Z",
-    updatedAt: "2026-07-20T12:00:00.000Z",
+    id: 'memory-demo-1',
+    category: 'INTEREST',
+    key: 'favorite_game',
+    value: 'Любит шахматы',
+    sourceMessageId: 'demo-message-1',
+    sourceObservedAt: '2026-07-20T12:00:00.000Z',
+    expiresAt: '2027-07-20T12:00:00.000Z',
+    createdAt: '2026-07-20T12:00:00.000Z',
+    updatedAt: '2026-07-20T12:00:00.000Z',
   },
 ];
 let mockSettings: UserMemorySettings = {

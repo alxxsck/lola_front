@@ -1,1 +1,1 @@
-export { default as ScenarioRuleBuilder } from './ScenarioRuleBuilder.vue'
+export { default as ScenarioRuleBuilder } from './ScenarioRuleBuilder.vue';

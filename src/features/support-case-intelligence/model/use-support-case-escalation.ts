@@ -1,38 +1,38 @@
-import { computed, ref, shallowRef, watch } from "vue";
-import { normalizeApiError } from "@/shared/api/http/api-error";
-import type { SupportCaseEscalationSource } from "../api/support-case-escalation-source";
-import { supportCaseEscalationSource } from "../api/support-case-escalation-source";
-import type { CaseIntelligenceAuthority } from "./use-support-case-intelligence";
+import { computed, ref, shallowRef, watch } from 'vue';
+import { normalizeApiError } from '@/shared/api/http/api-error';
+import type { SupportCaseEscalationSource } from '../api/support-case-escalation-source';
+import { supportCaseEscalationSource } from '../api/support-case-escalation-source';
+import type { CaseIntelligenceAuthority } from './use-support-case-intelligence';
 import {
   cloneEscalation,
   createDefaultEscalationPolicy,
   simulationStepSafetyIssue,
   simulationStepReferenceIssue,
   validateEscalationPolicy,
-} from "./support-case-escalation-policy";
+} from './support-case-escalation-policy';
 import type {
   EscalationPolicy,
   EscalationSafetyPolicy,
   EscalationSimulationResult,
   EscalationSimulationStep,
   EscalationWorkspaceSnapshot,
-} from "./support-case-escalation-domain";
+} from './support-case-escalation-domain';
 
 type PendingEscalationAttempt =
   | {
-      operation: "SAVE";
+      operation: 'SAVE';
       key: string;
       expectedVersion: number;
       definition: EscalationPolicy;
     }
   | {
-      operation: "DISCARD";
+      operation: 'DISCARD';
       key: string;
       expectedVersion: number;
       reason: string;
     }
   | {
-      operation: "PUBLISH";
+      operation: 'PUBLISH';
       key: string;
       expectedVersion: number;
       revisionId: string;
@@ -48,18 +48,15 @@ export type SupportCaseEscalationContext = {
 };
 
 const retained = new Map<string, PendingEscalationAttempt>();
-const storagePrefix = "support-case-escalation-command-v1:";
-const scopeKey = (scope: CaseIntelligenceAuthority) =>
-  `${scope.actorId}:${scope.projectId}`;
+const storagePrefix = 'support-case-escalation-command-v1:';
+const scopeKey = (scope: CaseIntelligenceAuthority) => `${scope.actorId}:${scope.projectId}`;
 const hasPermission = (scope: CaseIntelligenceAuthority | null, code: string) =>
   scope?.permissions.includes(code) === true;
 
-function readRetained(
-  scope: CaseIntelligenceAuthority,
-): PendingEscalationAttempt | null {
+function readRetained(scope: CaseIntelligenceAuthority): PendingEscalationAttempt | null {
   const memory = retained.get(scopeKey(scope));
   if (memory) return cloneEscalation(memory);
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   try {
     const raw = sessionStorage.getItem(`${storagePrefix}${scopeKey(scope)}`);
     if (!raw) return null;
@@ -72,14 +69,11 @@ function readRetained(
   }
 }
 
-function writeRetained(
-  scope: CaseIntelligenceAuthority,
-  attempt: PendingEscalationAttempt | null,
-) {
+function writeRetained(scope: CaseIntelligenceAuthority, attempt: PendingEscalationAttempt | null) {
   const key = scopeKey(scope);
   if (attempt) retained.set(key, cloneEscalation(attempt));
   else retained.delete(key);
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
     const storageKey = `${storagePrefix}${key}`;
     if (attempt) sessionStorage.setItem(storageKey, JSON.stringify(attempt));
@@ -96,9 +90,7 @@ function version(snapshot: EscalationWorkspaceSnapshot | null) {
   );
 }
 
-export function useSupportCaseEscalation(
-  context: SupportCaseEscalationContext,
-) {
+export function useSupportCaseEscalation(context: SupportCaseEscalationContext) {
   const source = context.source ?? supportCaseEscalationSource;
   const snapshot = shallowRef<EscalationWorkspaceSnapshot | null>(null);
   const safety = shallowRef<EscalationSafetyPolicy | null>(null);
@@ -110,8 +102,8 @@ export function useSupportCaseEscalation(
   const loading = ref(false);
   const mutating = ref(false);
   const simulating = ref(false);
-  const error = ref("");
-  const feedback = ref("");
+  const error = ref('');
+  const feedback = ref('');
   const generation = ref(0);
   let readAbort: AbortController | null = null;
   let compileAbort: AbortController | null = null;
@@ -121,33 +113,24 @@ export function useSupportCaseEscalation(
 
   const authority = computed(() => context.authority());
   const issues = computed(() => validateEscalationPolicy(policy.value));
-  const canRead = computed(() =>
-    hasPermission(authority.value, "project.case_intelligence.read"),
-  );
+  const canRead = computed(() => hasPermission(authority.value, 'project.case_intelligence.read'));
   const canPreview = computed(
     () =>
-      hasPermission(authority.value, "project.case_intelligence.preview") &&
-      snapshot.value?.allowedActions.includes("PREVIEW") === true,
+      hasPermission(authority.value, 'project.case_intelligence.preview') &&
+      snapshot.value?.allowedActions.includes('PREVIEW') === true,
   );
   const canManage = computed(
     () =>
-      hasPermission(
-        authority.value,
-        "project.case_intelligence.escalation.manage",
-      ) &&
-      snapshot.value?.allowedActions.includes("SAVE_ESCALATION_DRAFT") === true,
+      hasPermission(authority.value, 'project.case_intelligence.escalation.manage') &&
+      snapshot.value?.allowedActions.includes('SAVE_ESCALATION_DRAFT') === true,
   );
   const canPublish = computed(
     () =>
-      hasPermission(
-        authority.value,
-        "project.case_intelligence.release.manage",
-      ) && snapshot.value?.allowedActions.includes("PUBLISH") === true,
+      hasPermission(authority.value, 'project.case_intelligence.release.manage') &&
+      snapshot.value?.allowedActions.includes('PUBLISH') === true,
   );
   const draft = computed(() => snapshot.value?.escalation?.draft ?? null);
-  const published = computed(
-    () => snapshot.value?.escalation?.published ?? null,
-  );
+  const published = computed(() => snapshot.value?.escalation?.published ?? null);
   const hasUnknownOutcome = computed(() => pendingAttempt.value !== null);
 
   watch(
@@ -167,25 +150,19 @@ export function useSupportCaseEscalation(
     );
   }
 
-  function canRun(
-    scope: CaseIntelligenceAuthority,
-    attempt: PendingEscalationAttempt,
-  ) {
-    if (attempt.operation === "PUBLISH")
+  function canRun(scope: CaseIntelligenceAuthority, attempt: PendingEscalationAttempt) {
+    if (attempt.operation === 'PUBLISH')
       return (
-        hasPermission(scope, "project.case_intelligence.release.manage") &&
-        snapshot.value?.allowedActions.includes("PUBLISH") === true
+        hasPermission(scope, 'project.case_intelligence.release.manage') &&
+        snapshot.value?.allowedActions.includes('PUBLISH') === true
       );
     return (
-      hasPermission(scope, "project.case_intelligence.escalation.manage") &&
-      snapshot.value?.allowedActions.includes("SAVE_ESCALATION_DRAFT") === true
+      hasPermission(scope, 'project.case_intelligence.escalation.manage') &&
+      snapshot.value?.allowedActions.includes('SAVE_ESCALATION_DRAFT') === true
     );
   }
 
-  function applySnapshot(
-    value: EscalationWorkspaceSnapshot,
-    preservePolicy = false,
-  ) {
+  function applySnapshot(value: EscalationWorkspaceSnapshot, preservePolicy = false) {
     snapshot.value = value;
     if (!preservePolicy)
       policy.value = cloneEscalation(
@@ -195,10 +172,7 @@ export function useSupportCaseEscalation(
       );
   }
 
-  function purge(
-    forgetScope?: CaseIntelligenceAuthority | null,
-    forgetActive = false,
-  ) {
+  function purge(forgetScope?: CaseIntelligenceAuthority | null, forgetActive = false) {
     generation.value += 1;
     readAbort?.abort();
     compileAbort?.abort();
@@ -221,8 +195,8 @@ export function useSupportCaseEscalation(
     loading.value = false;
     mutating.value = false;
     simulating.value = false;
-    error.value = "";
-    feedback.value = "";
+    error.value = '';
+    feedback.value = '';
     activeScope = null;
   }
 
@@ -243,7 +217,7 @@ export function useSupportCaseEscalation(
 
   async function load(options: { preservePolicy?: boolean } = {}) {
     const scope = context.authority();
-    if (!scope || !hasPermission(scope, "project.case_intelligence.read")) {
+    if (!scope || !hasPermission(scope, 'project.case_intelligence.read')) {
       purge(scope);
       return;
     }
@@ -254,7 +228,7 @@ export function useSupportCaseEscalation(
     readAbort = new AbortController();
     loading.value = true;
     safetyUnavailable.value = false;
-    error.value = "";
+    error.value = '';
     pendingAttempt.value = readRetained(scope);
     let missingSafety = false;
     try {
@@ -262,10 +236,7 @@ export function useSupportCaseEscalation(
         source.read(scope.projectId, readAbort.signal),
         source.readSafety(scope.projectId, readAbort.signal).catch((cause) => {
           const value = normalizeApiError(cause);
-          if (
-            value.status === 404 &&
-            value.code === "CASE_INTELLIGENCE_SAFETY_NOT_CONFIGURED"
-          ) {
+          if (value.status === 404 && value.code === 'CASE_INTELLIGENCE_SAFETY_NOT_CONFIGURED') {
             missingSafety = true;
             return null;
           }
@@ -281,13 +252,8 @@ export function useSupportCaseEscalation(
         pendingAttempt.value = null;
       }
     } catch (cause) {
-      if (
-        !current(scope, captured) ||
-        normalizeApiError(cause).name === "AbortError"
-      )
-        return;
-      if (!terminal(cause, scope))
-        error.value = "Не удалось загрузить правила передачи оператору.";
+      if (!current(scope, captured) || normalizeApiError(cause).name === 'AbortError') return;
+      if (!terminal(cause, scope)) error.value = 'Не удалось загрузить правила передачи оператору.';
     } finally {
       if (current(scope, captured)) loading.value = false;
     }
@@ -307,10 +273,10 @@ export function useSupportCaseEscalation(
     operationAbort?.abort();
     operationAbort = new AbortController();
     mutating.value = true;
-    error.value = "";
-    feedback.value = "";
+    error.value = '';
+    feedback.value = '';
     try {
-      if (attempt.operation === "SAVE")
+      if (attempt.operation === 'SAVE')
         await source.saveDraft(
           scope.projectId,
           attempt.definition,
@@ -318,7 +284,7 @@ export function useSupportCaseEscalation(
           attempt.key,
           operationAbort.signal,
         );
-      if (attempt.operation === "DISCARD")
+      if (attempt.operation === 'DISCARD')
         await source.discardDraft(
           scope.projectId,
           attempt.expectedVersion,
@@ -326,7 +292,7 @@ export function useSupportCaseEscalation(
           attempt.key,
           operationAbort.signal,
         );
-      if (attempt.operation === "PUBLISH")
+      if (attempt.operation === 'PUBLISH')
         await source.publish(
           scope.projectId,
           attempt.revisionId,
@@ -345,19 +311,15 @@ export function useSupportCaseEscalation(
       return true;
     } catch (cause) {
       const value = normalizeApiError(cause);
-      if (!current(scope, captured) || value.name === "AbortError")
-        return false;
+      if (!current(scope, captured) || value.name === 'AbortError') return false;
       if (terminal(value, scope)) return false;
       if (value.status === 409) {
         writeRetained(scope, null);
         pendingAttempt.value = null;
         error.value =
-          "Правила уже изменились. Свежая версия загружена; проверьте черновик и подтвердите действие снова.";
+          'Правила уже изменились. Свежая версия загружена; проверьте черновик и подтвердите действие снова.';
         try {
-          const fresh = await source.read(
-            scope.projectId,
-            operationAbort.signal,
-          );
+          const fresh = await source.read(scope.projectId, operationAbort.signal);
           if (current(scope, captured)) applySnapshot(fresh, true);
         } catch {
           /* preserve local draft */
@@ -371,13 +333,12 @@ export function useSupportCaseEscalation(
         value.status >= 500
       ) {
         error.value =
-          "Результат команды неизвестен. Не создавайте новую команду — проверьте эту попытку.";
+          'Результат команды неизвестен. Не создавайте новую команду — проверьте эту попытку.';
         return false;
       }
       writeRetained(scope, null);
       pendingAttempt.value = null;
-      error.value =
-        "Команда не выполнена. Проверьте правила и попробуйте ещё раз.";
+      error.value = 'Команда не выполнена. Проверьте правила и попробуйте ещё раз.';
       return false;
     } finally {
       if (current(scope, captured)) mutating.value = false;
@@ -386,13 +347,7 @@ export function useSupportCaseEscalation(
 
   async function save() {
     const scope = context.authority();
-    if (
-      !scope ||
-      !canManage.value ||
-      issues.value.length ||
-      pendingAttempt.value
-    )
-      return false;
+    if (!scope || !canManage.value || issues.value.length || pendingAttempt.value) return false;
     const captured = generation.value;
     compileAbort?.abort();
     compileAbort = new AbortController();
@@ -402,97 +357,87 @@ export function useSupportCaseEscalation(
       if (!current(scope, captured)) return false;
     } catch (cause) {
       const value = normalizeApiError(cause);
-      if (!current(scope, captured) || value.name === "AbortError")
-        return false;
+      if (!current(scope, captured) || value.name === 'AbortError') return false;
       if (!terminal(value, scope))
-        error.value = "Сервер не принял правила. Проверьте отмеченные поля.";
+        error.value = 'Сервер не принял правила. Проверьте отмеченные поля.';
       return false;
     }
     return execute(
       {
-        operation: "SAVE",
+        operation: 'SAVE',
         key: key(),
         expectedVersion: version(snapshot.value),
         definition,
       },
-      "Черновик правил передачи сохранён.",
+      'Черновик правил передачи сохранён.',
     );
   }
 
   function discard(reason: string) {
     const value = draft.value;
-    if (!value || !canManage.value || pendingAttempt.value)
-      return Promise.resolve(false);
+    if (!value || !canManage.value || pendingAttempt.value) return Promise.resolve(false);
     return execute(
       {
-        operation: "DISCARD",
+        operation: 'DISCARD',
         key: key(),
         expectedVersion: value.version,
         reason,
       },
-      "Черновик удалён.",
+      'Черновик удалён.',
     );
   }
 
   function publish(reason: string) {
     const value = draft.value;
-    if (!value || !canPublish.value || pendingAttempt.value)
-      return Promise.resolve(false);
+    if (!value || !canPublish.value || pendingAttempt.value) return Promise.resolve(false);
     return execute(
       {
-        operation: "PUBLISH",
+        operation: 'PUBLISH',
         key: key(),
         expectedVersion: value.version,
         revisionId: value.id,
         reason,
       },
-      "Правила передачи опубликованы и готовы для следующей общей рабочей версии.",
+      'Правила передачи опубликованы и готовы для следующей общей рабочей версии.',
     );
   }
 
   async function retryPending() {
     const scope = context.authority();
     const attempt = pendingAttempt.value;
-    if (!scope || !attempt || !canRun(scope, attempt) || mutating.value)
-      return false;
+    if (!scope || !attempt || !canRun(scope, attempt) || mutating.value) return false;
     const captured = generation.value;
     activeScope = cloneEscalation(scope);
     operationAbort?.abort();
     operationAbort = new AbortController();
     mutating.value = true;
-    error.value = "";
-    feedback.value = "";
+    error.value = '';
+    feedback.value = '';
     let shouldReplay = false;
     try {
-      await source.lookupCommand(
-        scope.projectId,
-        attempt.key,
-        operationAbort.signal,
-      );
+      await source.lookupCommand(scope.projectId, attempt.key, operationAbort.signal);
       if (!current(scope, captured)) return false;
       const fresh = await source.read(scope.projectId, operationAbort.signal);
       if (!current(scope, captured)) return false;
       applySnapshot(fresh);
       writeRetained(scope, null);
       pendingAttempt.value = null;
-      feedback.value = "Результат команды подтверждён сервером.";
+      feedback.value = 'Результат команды подтверждён сервером.';
       return true;
     } catch (cause) {
       const value = normalizeApiError(cause);
-      if (!current(scope, captured) || value.name === "AbortError")
-        return false;
+      if (!current(scope, captured) || value.name === 'AbortError') return false;
       if (value.status === 404) {
         shouldReplay = true;
       } else {
         if (terminal(value, scope)) return false;
-        error.value =
-          "Сервер ещё не подтвердил результат. Повторите проверку позже.";
+        error.value = 'Сервер ещё не подтвердил результат. Повторите проверку позже.';
       }
     } finally {
       if (current(scope, captured)) mutating.value = false;
     }
     if (shouldReplay && current(scope, captured))
-      return execute(attempt, "Команда выполнена после точного повтора.");
+      return execute(attempt, 'Команда выполнена после точного повтора.');
     return false;
   }
 
@@ -506,8 +451,7 @@ export function useSupportCaseEscalation(
       !simulationSteps.value.length ||
       simulationSteps.value.some(
         (step) =>
-          simulationStepReferenceIssue(step, policy.value) ||
-          simulationStepSafetyIssue(step),
+          simulationStepReferenceIssue(step, policy.value) || simulationStepSafetyIssue(step),
       )
     )
       return false;
@@ -515,7 +459,7 @@ export function useSupportCaseEscalation(
     simulationAbort?.abort();
     simulationAbort = new AbortController();
     simulating.value = true;
-    error.value = "";
+    error.value = '';
     try {
       const result = await source.dryRun(
         scope.projectId,
@@ -528,8 +472,7 @@ export function useSupportCaseEscalation(
       return true;
     } catch (cause) {
       if (!current(scope, captured)) return false;
-      if (!terminal(cause, scope))
-        error.value = "Не удалось проверить сценарий.";
+      if (!terminal(cause, scope)) error.value = 'Не удалось проверить сценарий.';
       return false;
     } finally {
       if (current(scope, captured)) simulating.value = false;
@@ -564,9 +507,6 @@ export function useSupportCaseEscalation(
     retryPending,
     runSimulation,
     reset: (options: { forgetRetained?: boolean } = {}) =>
-      purge(
-        options.forgetRetained ? context.authority() : null,
-        options.forgetRetained === true,
-      ),
+      purge(options.forgetRetained ? context.authority() : null, options.forgetRetained === true),
   };
 }

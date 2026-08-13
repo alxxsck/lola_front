@@ -1,4 +1,4 @@
-import { onMounted, ref, type Ref } from "vue";
+import { onMounted, ref, type Ref } from 'vue';
 
 function message(cause: unknown, fallback: string): string {
   return cause instanceof Error ? cause.message : fallback;
@@ -13,19 +13,16 @@ export function useSettingsResource<T>(
   saving: Ref<boolean>;
   error: Ref<string>;
   reload: () => Promise<void>;
-  save: (
-    operation: () => Promise<T>,
-    fallback: string,
-  ) => Promise<T | undefined>;
+  save: (operation: () => Promise<T>, fallback: string) => Promise<T | undefined>;
 } {
   const resource = ref<T | null>(null) as Ref<T | null>;
   const loading = ref(true);
   const saving = ref(false);
-  const error = ref("");
+  const error = ref('');
 
   async function reload(): Promise<void> {
     loading.value = true;
-    error.value = "";
+    error.value = '';
     try {
       resource.value = await loadResource();
     } catch (cause) {
@@ -35,12 +32,9 @@ export function useSettingsResource<T>(
     }
   }
 
-  async function save(
-    operation: () => Promise<T>,
-    fallback: string,
-  ): Promise<T | undefined> {
+  async function save(operation: () => Promise<T>, fallback: string): Promise<T | undefined> {
     saving.value = true;
-    error.value = "";
+    error.value = '';
     try {
       const saved = await operation();
       resource.value = saved;

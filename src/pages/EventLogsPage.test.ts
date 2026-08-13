@@ -1,27 +1,27 @@
-import { flushPromises, shallowMount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import EventLogsPage from "./EventLogsPage.vue";
+import { flushPromises, shallowMount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import EventLogsPage from './EventLogsPage.vue';
 
 const log = {
-  id: "log-1",
-  eventCode: "deposit",
-  eventName: "Deposit",
-  eventDefinitionId: "event-1",
-  eventDefinitionKeyId: "event-key-1",
+  id: 'log-1',
+  eventCode: 'deposit',
+  eventName: 'Deposit',
+  eventDefinitionId: 'event-1',
+  eventDefinitionKeyId: 'event-key-1',
   eventVersion: 2,
   ingestionPolicyVersion: 3,
   ingestionPolicySnapshot: {
     enabled: true,
     clientIngestible: false,
     countsAsActivity: true,
-    source: "SERVER",
+    source: 'SERVER',
   },
-  userId: "user-1",
-  userExternalId: "customer-1",
-  source: "SERVER" as const,
-  status: "PROCESSED" as const,
-  occurredAt: "2026-07-16T10:00:00.000Z",
-  receivedAt: "2026-07-16T10:00:00.100Z",
+  userId: 'user-1',
+  userExternalId: 'customer-1',
+  source: 'SERVER' as const,
+  status: 'PROCESSED' as const,
+  occurredAt: '2026-07-16T10:00:00.000Z',
+  receivedAt: '2026-07-16T10:00:00.100Z',
   payload: { amount: 25 },
   context: {},
 };
@@ -42,22 +42,18 @@ function button(wrapper: ReturnType<typeof shallowMount>, label: string) {
   return value;
 }
 
-function updateModel(
-  wrapper: ReturnType<typeof shallowMount>,
-  selector: string,
-  value: unknown,
-) {
+function updateModel(wrapper: ReturnType<typeof shallowMount>, selector: string, value: unknown) {
   const component = wrapper.findComponent(selector) as unknown as {
     vm: { $emit: (event: string, value: unknown) => void };
   };
-  component.vm.$emit("update:modelValue", value);
+  component.vm.$emit('update:modelValue', value);
 }
 
 const mocks = vi.hoisted(() => ({
   auth: null as unknown as {
     project?: { id: string; effectivePermissionCodes: string[] };
   },
-  role: "OWNER" as "OWNER" | "VIEWER",
+  role: 'OWNER' as 'OWNER' | 'VIEWER',
   getEvents: vi.fn(),
   getEventLogPage: vi.fn(),
   getEventLog: vi.fn(),
@@ -66,12 +62,12 @@ const mocks = vi.hoisted(() => ({
   routeQuery: {} as Record<string, string | string[]>,
 }));
 
-vi.mock("@/features/auth/auth.store", async () => {
-  const { reactive } = await import("vue");
+vi.mock('@/features/auth/auth.store', async () => {
+  const { reactive } = await import('vue');
   mocks.auth = reactive({
     project: {
-      id: "project-1",
-      effectivePermissionCodes: ["project.event_logs.read"],
+      id: 'project-1',
+      effectivePermissionCodes: ['project.event_logs.read'],
     },
   });
   return {
@@ -88,7 +84,7 @@ vi.mock("@/features/auth/auth.store", async () => {
   };
 });
 
-vi.mock("@/shared/api/repository", () => ({
+vi.mock('@/shared/api/repository', () => ({
   repository: {
     getEvents: mocks.getEvents,
     getEventLogPage: mocks.getEventLogPage,
@@ -96,20 +92,20 @@ vi.mock("@/shared/api/repository", () => ({
   },
 }));
 
-vi.mock("primevue/usetoast", () => ({ useToast: () => ({ add: vi.fn() }) }));
-vi.mock("vue-router", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("vue-router")>()),
+vi.mock('primevue/usetoast', () => ({ useToast: () => ({ add: vi.fn() }) }));
+vi.mock('vue-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('vue-router')>()),
   useRoute: () => ({ query: mocks.routeQuery }),
   useRouter: () => ({ push: mocks.push, replace: mocks.replace }),
 }));
 
-describe("EventLogsPage", () => {
+describe('EventLogsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.role = "OWNER";
+    mocks.role = 'OWNER';
     mocks.auth.project = {
-      id: "project-1",
-      effectivePermissionCodes: ["project.event_logs.read"],
+      id: 'project-1',
+      effectivePermissionCodes: ['project.event_logs.read'],
     };
     mocks.getEvents.mockResolvedValue([]);
     mocks.getEventLogPage.mockResolvedValue({ items: [], nextCursor: null });
@@ -117,64 +113,57 @@ describe("EventLogsPage", () => {
     window.scrollTo = vi.fn();
   });
 
-  it("clears the old tenant and ignores its late page after a Project switch", async () => {
-    let resolveOld!: (value: {
-      items: (typeof log)[];
-      nextCursor: null;
-    }) => void;
-    const oldPage = new Promise<{ items: (typeof log)[]; nextCursor: null }>(
-      (resolve) => {
-        resolveOld = resolve;
-      },
-    );
-    const newLog = { ...log, id: "log-2", eventName: "New project event" };
+  it('clears the old tenant and ignores its late page after a Project switch', async () => {
+    let resolveOld!: (value: { items: (typeof log)[]; nextCursor: null }) => void;
+    const oldPage = new Promise<{ items: (typeof log)[]; nextCursor: null }>((resolve) => {
+      resolveOld = resolve;
+    });
+    const newLog = { ...log, id: 'log-2', eventName: 'New project event' };
     mocks.getEventLogPage.mockImplementation((projectId: string) =>
-      projectId === "project-1"
-        ? oldPage
-        : Promise.resolve({ items: [newLog], nextCursor: null }),
+      projectId === 'project-1' ? oldPage : Promise.resolve({ items: [newLog], nextCursor: null }),
     );
     const wrapper = shallowMount(EventLogsPage);
     await flushPromises();
 
     mocks.auth.project = {
-      id: "project-2",
-      effectivePermissionCodes: ["project.event_logs.read"],
+      id: 'project-2',
+      effectivePermissionCodes: ['project.event_logs.read'],
     };
     await flushPromises();
-    expect(mocks.getEventLogPage).toHaveBeenCalledWith("project-2", {
+    expect(mocks.getEventLogPage).toHaveBeenCalledWith('project-2', {
       limit: 25,
     });
 
     resolveOld({
-      items: [{ ...log, eventName: "Old project event" }],
+      items: [{ ...log, eventName: 'Old project event' }],
       nextCursor: null,
     });
     await flushPromises();
-    await wrapper.findAll(".view-switch button")[1]!.trigger("click");
-    expect(wrapper.text()).toContain("New project event");
-    expect(wrapper.text()).not.toContain("Old project event");
+    await wrapper.findAll('.view-switch button')[1]!.trigger('click');
+    expect(wrapper.text()).toContain('New project event');
+    expect(wrapper.text()).not.toContain('Old project event');
     wrapper.unmount();
     mocks.auth.project = {
-      id: "project-1",
-      effectivePermissionCodes: ["project.event_logs.read"],
+      id: 'project-1',
+      effectivePermissionCodes: ['project.event_logs.read'],
     };
   });
 
-  it("loads the first snapshot page through the filtered CMS endpoint", async () => {
+  it('loads the first snapshot page through the filtered CMS endpoint', async () => {
     const wrapper = shallowMount(EventLogsPage);
     await flushPromises();
 
-    expect(mocks.getEventLogPage).toHaveBeenCalledWith("project-1", {
+    expect(mocks.getEventLogPage).toHaveBeenCalledWith('project-1', {
       limit: 25,
     });
-    expect(mocks.getEvents).toHaveBeenCalledWith("project-1");
-    expect(wrapper.get(".stream-summary").attributes()).toMatchObject({
-      tabindex: "0",
-      "aria-label": "Сводка потока событий",
+    expect(mocks.getEvents).toHaveBeenCalledWith('project-1');
+    expect(wrapper.get('.stream-summary').attributes()).toMatchObject({
+      tabindex: '0',
+      'aria-label': 'Сводка потока событий',
     });
   });
 
-  it("lets users choose table or timeline when the journal is embedded", async () => {
+  it('lets users choose table or timeline when the journal is embedded', async () => {
     mocks.getEventLogPage.mockResolvedValue({ items: [log], nextCursor: null });
     const wrapper = shallowMount(EventLogsPage, {
       props: { embedded: true },
@@ -182,22 +171,22 @@ describe("EventLogsPage", () => {
     await flushPromises();
 
     const viewControl = wrapper.get('[aria-label="Вид журнала"]');
-    const [tableButton, timelineButton] = viewControl.findAll("button");
-    expect(viewControl.text()).toContain("Таблица");
-    expect(viewControl.text()).toContain("Путь");
-    expect(wrapper.find("data-table-stub").exists()).toBe(true);
+    const [tableButton, timelineButton] = viewControl.findAll('button');
+    expect(viewControl.text()).toContain('Таблица');
+    expect(viewControl.text()).toContain('Путь');
+    expect(wrapper.find('data-table-stub').exists()).toBe(true);
 
-    await timelineButton!.trigger("click");
-    expect(wrapper.find(".timeline").exists()).toBe(true);
+    await timelineButton!.trigger('click');
+    expect(wrapper.find('.timeline').exists()).toBe(true);
 
-    await tableButton!.trigger("click");
-    expect(wrapper.find("data-table-stub").exists()).toBe(true);
+    await tableButton!.trigger('click');
+    expect(wrapper.find('data-table-stub').exists()).toBe(true);
   });
 
-  it("does not request sensitive logs for a viewer", async () => {
-    mocks.role = "VIEWER";
+  it('does not request sensitive logs for a viewer', async () => {
+    mocks.role = 'VIEWER';
     mocks.auth.project = {
-      id: "project-1",
+      id: 'project-1',
       effectivePermissionCodes: [],
     };
     const wrapper = shallowMount(EventLogsPage);
@@ -207,155 +196,142 @@ describe("EventLogsPage", () => {
     expect(wrapper.find('message-stub[severity="warn"]').exists()).toBe(true);
   });
 
-  it("shows all-value defaults and sends multiple selected filters", async () => {
+  it('shows all-value defaults and sends multiple selected filters', async () => {
     const wrapper = shallowMount(EventLogsPage);
     await flushPromises();
 
-    expect(wrapper.find("event-picker-stub").attributes("placeholder")).toBe(
-      "Все события",
+    expect(wrapper.find('event-picker-stub').attributes('placeholder')).toBe('Все события');
+    expect(wrapper.find('multi-select-stub#status-filter').attributes('placeholder')).toBe(
+      'Все статусы',
     );
-    expect(
-      wrapper.find("multi-select-stub#status-filter").attributes("placeholder"),
-    ).toBe("Все статусы");
-    expect(
-      wrapper.find("multi-select-stub#source-filter").attributes("placeholder"),
-    ).toBe("Все источники");
-    expect(
-      wrapper
-        .find("multi-select-stub#source-filter")
-        .attributes("selection-limit"),
-    ).toBe("4");
+    expect(wrapper.find('multi-select-stub#source-filter').attributes('placeholder')).toBe(
+      'Все источники',
+    );
+    expect(wrapper.find('multi-select-stub#source-filter').attributes('selection-limit')).toBe('4');
 
-    updateModel(wrapper, "event-picker-stub", ["deposit", "purchase"]);
-    updateModel(wrapper, "multi-select-stub#status-filter", [
-      "FAILED",
-      "PROCESSED",
-    ]);
-    updateModel(wrapper, "multi-select-stub#source-filter", [
-      "SERVER",
-      "FRONTEND",
-      "INTEGRATION",
-    ]);
-    await button(wrapper, "Применить").trigger("click");
+    updateModel(wrapper, 'event-picker-stub', ['deposit', 'purchase']);
+    updateModel(wrapper, 'multi-select-stub#status-filter', ['FAILED', 'PROCESSED']);
+    updateModel(wrapper, 'multi-select-stub#source-filter', ['SERVER', 'FRONTEND', 'INTEGRATION']);
+    await button(wrapper, 'Применить').trigger('click');
     await flushPromises();
 
-    expect(mocks.getEventLogPage).toHaveBeenLastCalledWith("project-1", {
-      eventCode: ["deposit", "purchase"],
-      status: ["FAILED", "PROCESSED"],
-      source: ["SERVER", "FRONTEND", "INTEGRATION"],
+    expect(mocks.getEventLogPage).toHaveBeenLastCalledWith('project-1', {
+      eventCode: ['deposit', 'purchase'],
+      status: ['FAILED', 'PROCESSED'],
+      source: ['SERVER', 'FRONTEND', 'INTEGRATION'],
       limit: 25,
     });
     expect(mocks.replace).toHaveBeenCalledWith({
       query: {
-        eventCode: ["deposit", "purchase"],
-        status: ["FAILED", "PROCESSED"],
-        source: ["SERVER", "FRONTEND", "INTEGRATION"],
+        eventCode: ['deposit', 'purchase'],
+        status: ['FAILED', 'PROCESSED'],
+        source: ['SERVER', 'FRONTEND', 'INTEGRATION'],
       },
     });
   });
 
-  it("restores repeated and legacy single filters from the URL", async () => {
+  it('restores repeated and legacy single filters from the URL', async () => {
     mocks.routeQuery = {
-      eventCode: ["deposit", "purchase"],
-      status: "FAILED",
-      source: ["SERVER", "FRONTEND"],
+      eventCode: ['deposit', 'purchase'],
+      status: 'FAILED',
+      source: ['SERVER', 'FRONTEND'],
     };
     shallowMount(EventLogsPage);
     await flushPromises();
 
-    expect(mocks.getEventLogPage).toHaveBeenCalledWith("project-1", {
-      eventCode: ["deposit", "purchase"],
-      status: ["FAILED"],
-      source: ["SERVER", "FRONTEND"],
+    expect(mocks.getEventLogPage).toHaveBeenCalledWith('project-1', {
+      eventCode: ['deposit', 'purchase'],
+      status: ['FAILED'],
+      source: ['SERVER', 'FRONTEND'],
       limit: 25,
     });
   });
 
-  it("opens a project-scoped Event Log linked from Run Explain", async () => {
-    mocks.routeQuery = { eventId: "log-1" };
+  it('opens a project-scoped Event Log linked from Run Explain', async () => {
+    mocks.routeQuery = { eventId: 'log-1' };
     mocks.getEventLog.mockResolvedValue(log);
 
     const wrapper = shallowMount(EventLogsPage);
     await flushPromises();
 
-    expect(mocks.getEventLog).toHaveBeenCalledWith("project-1", "log-1");
-    expect(wrapper.find("drawer-stub").attributes()).toHaveProperty("visible");
+    expect(mocks.getEventLog).toHaveBeenCalledWith('project-1', 'log-1');
+    expect(wrapper.find('drawer-stub').attributes()).toHaveProperty('visible');
   });
 
-  it("retries a failed refresh from page one and resets cursor history only after success", async () => {
+  it('retries a failed refresh from page one and resets cursor history only after success', async () => {
     mocks.getEventLogPage
-      .mockResolvedValueOnce({ items: [log], nextCursor: "cursor-2" })
-      .mockResolvedValueOnce({ items: [log], nextCursor: "cursor-3" })
-      .mockRejectedValueOnce(new Error("refresh failed"))
-      .mockResolvedValueOnce({ items: [log], nextCursor: "fresh-cursor" });
+      .mockResolvedValueOnce({ items: [log], nextCursor: 'cursor-2' })
+      .mockResolvedValueOnce({ items: [log], nextCursor: 'cursor-3' })
+      .mockRejectedValueOnce(new Error('refresh failed'))
+      .mockResolvedValueOnce({ items: [log], nextCursor: 'fresh-cursor' });
     const wrapper = mountWithMessageSlots();
     await flushPromises();
 
-    await button(wrapper, "Дальше").trigger("click");
+    await button(wrapper, 'Дальше').trigger('click');
     await flushPromises();
-    await button(wrapper, "Обновить").trigger("click");
+    await button(wrapper, 'Обновить').trigger('click');
     await flushPromises();
 
-    expect(wrapper.text()).toContain("refresh failed");
-    await button(wrapper, "Повторить").trigger("click");
+    expect(wrapper.text()).toContain('refresh failed');
+    await button(wrapper, 'Повторить').trigger('click');
     await flushPromises();
 
     expect(mocks.getEventLogPage.mock.calls.slice(1)).toEqual([
-      ["project-1", { limit: 25, cursor: "cursor-2" }],
-      ["project-1", { limit: 25 }],
-      ["project-1", { limit: 25 }],
+      ['project-1', { limit: 25, cursor: 'cursor-2' }],
+      ['project-1', { limit: 25 }],
+      ['project-1', { limit: 25 }],
     ]);
-    expect(wrapper.text()).toContain("Страница 1");
+    expect(wrapper.text()).toContain('Страница 1');
   });
 
-  it("retries the exact failed filter request and commits its URL state after success", async () => {
+  it('retries the exact failed filter request and commits its URL state after success', async () => {
     mocks.getEventLogPage
       .mockResolvedValueOnce({ items: [], nextCursor: null })
-      .mockRejectedValueOnce(new Error("filter failed"))
+      .mockRejectedValueOnce(new Error('filter failed'))
       .mockResolvedValueOnce({ items: [], nextCursor: null });
     const wrapper = mountWithMessageSlots();
     await flushPromises();
 
-    updateModel(wrapper, "input-text-stub#user-filter", " customer-42 ");
-    await button(wrapper, "Применить").trigger("click");
+    updateModel(wrapper, 'input-text-stub#user-filter', ' customer-42 ');
+    await button(wrapper, 'Применить').trigger('click');
     await flushPromises();
-    await button(wrapper, "Повторить").trigger("click");
+    await button(wrapper, 'Повторить').trigger('click');
     await flushPromises();
 
     expect(mocks.getEventLogPage.mock.calls.slice(1)).toEqual([
-      ["project-1", { externalUserId: "customer-42", limit: 25 }],
-      ["project-1", { externalUserId: "customer-42", limit: 25 }],
+      ['project-1', { externalUserId: 'customer-42', limit: 25 }],
+      ['project-1', { externalUserId: 'customer-42', limit: 25 }],
     ]);
     expect(mocks.replace).toHaveBeenCalledWith({
-      query: { user: "customer-42" },
+      query: { user: 'customer-42' },
     });
   });
 
-  it("shows loading and empty states", async () => {
+  it('shows loading and empty states', async () => {
     mocks.getEventLogPage.mockReturnValue(new Promise(() => {}));
     const loadingWrapper = shallowMount(EventLogsPage);
 
-    expect(loadingWrapper.findAll("skeleton-stub")).toHaveLength(8);
+    expect(loadingWrapper.findAll('skeleton-stub')).toHaveLength(8);
     loadingWrapper.unmount();
 
     mocks.getEventLogPage.mockResolvedValue({ items: [], nextCursor: null });
     const emptyWrapper = shallowMount(EventLogsPage);
     await flushPromises();
 
-    expect(emptyWrapper.get(".empty").text()).toContain("События не найдены");
+    expect(emptyWrapper.get('.empty').text()).toContain('События не найдены');
   });
 
-  it("switches to the timeline and opens a detail drawer", async () => {
+  it('switches to the timeline and opens a detail drawer', async () => {
     mocks.getEventLogPage.mockResolvedValue({
       items: [
         {
           ...log,
-          source: "FRONTEND",
+          source: 'FRONTEND',
           payload: {
-            method: "real",
-            currency: "usdt",
-            provider: "plp",
-            game: "roulette",
+            method: 'real',
+            currency: 'usdt',
+            provider: 'plp',
+            game: 'roulette',
           },
         },
       ],
@@ -366,29 +342,21 @@ describe("EventLogsPage", () => {
     });
     await flushPromises();
 
-    await wrapper.findAll(".view-switch button")[1]!.trigger("click");
-    expect(wrapper.find(".timeline").exists()).toBe(true);
-    expect(wrapper.findAll(".timeline-payload > span")).toHaveLength(4);
-    expect(wrapper.get(".timeline-source-icon").classes()).toContain(
-      "pi-desktop",
-    );
+    await wrapper.findAll('.view-switch button')[1]!.trigger('click');
+    expect(wrapper.find('.timeline').exists()).toBe(true);
+    expect(wrapper.findAll('.timeline-payload > span')).toHaveLength(4);
+    expect(wrapper.get('.timeline-source-icon').classes()).toContain('pi-desktop');
 
-    await wrapper.get(".timeline-item").trigger("click");
-    expect(wrapper.find("drawer-stub").attributes()).toHaveProperty("visible");
-    expect(wrapper.get('[data-test="policy-snapshot"]').text()).toContain(
-      "Приём включёнДа",
-    );
-    expect(wrapper.get('[data-test="policy-snapshot"]').text()).toContain(
-      "Из браузераНет",
-    );
-    expect(wrapper.get('[data-test="policy-snapshot"]').text()).toContain(
-      "ИсточникSERVER",
-    );
-    await button(wrapper, "Открыть event").trigger("click");
+    await wrapper.get('.timeline-item').trigger('click');
+    expect(wrapper.find('drawer-stub').attributes()).toHaveProperty('visible');
+    expect(wrapper.get('[data-test="policy-snapshot"]').text()).toContain('Приём включёнДа');
+    expect(wrapper.get('[data-test="policy-snapshot"]').text()).toContain('Из браузераНет');
+    expect(wrapper.get('[data-test="policy-snapshot"]').text()).toContain('ИсточникSERVER');
+    await button(wrapper, 'Открыть event').trigger('click');
     expect(mocks.push).toHaveBeenCalledWith({
-      name: "event-definition-workspace",
-      params: { definitionKeyId: "event-key-1" },
-      query: { revisionId: "event-1" },
+      name: 'event-definition-workspace',
+      params: { definitionKeyId: 'event-key-1' },
+      query: { revisionId: 'event-1' },
     });
   });
 });

@@ -19,9 +19,9 @@ let snapshot: RootScrollSnapshot | null = null;
 
 export function acquireRootScrollLock(): void {
   ownerCount += 1;
-  if (ownerCount !== 1 || typeof document === "undefined") return;
+  if (ownerCount !== 1 || typeof document === 'undefined') return;
 
-  const app = document.querySelector<HTMLElement>("#app");
+  const app = document.querySelector<HTMLElement>('#app');
   snapshot = {
     app,
     appWasInert: app?.inert ?? false,
@@ -39,21 +39,17 @@ export function acquireRootScrollLock(): void {
   };
 
   if (app) app.inert = true;
-  const scrollbarWidth = Math.max(
-    0,
-    window.innerWidth - document.documentElement.clientWidth,
-  );
-  document.documentElement.style.overflow = "hidden";
-  document.body.style.overflow = "hidden";
-  document.body.style.overscrollBehavior = "none";
-  document.body.style.position = "fixed";
+  const scrollbarWidth = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
+  document.body.style.overscrollBehavior = 'none';
+  document.body.style.position = 'fixed';
   document.body.style.top = `${-snapshot.scrollY}px`;
   document.body.style.left = `${-snapshot.scrollX}px`;
-  document.body.style.right = "0";
-  document.body.style.width = "100%";
+  document.body.style.right = '0';
+  document.body.style.width = '100%';
   if (scrollbarWidth > 0) {
-    const currentPadding =
-      Number.parseFloat(getComputedStyle(document.body).paddingRight) || 0;
+    const currentPadding = Number.parseFloat(getComputedStyle(document.body).paddingRight) || 0;
     document.body.style.paddingRight = `${currentPadding + scrollbarWidth}px`;
   }
 }
@@ -61,7 +57,7 @@ export function acquireRootScrollLock(): void {
 export function releaseRootScrollLock(): void {
   if (ownerCount === 0) return;
   ownerCount -= 1;
-  if (ownerCount !== 0 || typeof document === "undefined" || !snapshot) return;
+  if (ownerCount !== 0 || typeof document === 'undefined' || !snapshot) return;
 
   if (snapshot.app) snapshot.app.inert = snapshot.appWasInert;
   document.documentElement.style.overflow = snapshot.htmlOverflow;

@@ -1,15 +1,15 @@
-import { describe, expect, it, vi } from "vitest";
-import { ReportingRunCoordinator } from "./reporting-run-coordinator";
+import { describe, expect, it, vi } from 'vitest';
+import { ReportingRunCoordinator } from './reporting-run-coordinator';
 
-describe("ReportingRunCoordinator", () => {
-  it("limits analytical work to six active runs", async () => {
+describe('ReportingRunCoordinator', () => {
+  it('limits analytical work to six active runs', async () => {
     const coordinator = new ReportingRunCoordinator(6);
-    coordinator.beginScope("project-1:dashboard-1:last-30-days");
+    coordinator.beginScope('project-1:dashboard-1:last-30-days');
     const releases: Array<() => void> = [];
     const task = vi.fn(
       () =>
         new Promise<string>((resolve) => {
-          releases.push(() => resolve("complete"));
+          releases.push(() => resolve('complete'));
         }),
     );
 
@@ -24,9 +24,9 @@ describe("ReportingRunCoordinator", () => {
     await Promise.all(runs);
   });
 
-  it("does not commit a late response from an obsolete scope", async () => {
+  it('does not commit a late response from an obsolete scope', async () => {
     const coordinator = new ReportingRunCoordinator();
-    coordinator.beginScope("project-1:report-1:last-30-days");
+    coordinator.beginScope('project-1:report-1:last-30-days');
     let resolveOld!: (value: string) => void;
     const oldRun = coordinator.schedule(
       () =>
@@ -36,15 +36,15 @@ describe("ReportingRunCoordinator", () => {
     );
     await Promise.resolve();
 
-    coordinator.beginScope("project-2:report-1:last-30-days");
-    resolveOld("sensitive old result");
+    coordinator.beginScope('project-2:report-1:last-30-days');
+    resolveOld('sensitive old result');
 
-    await expect(oldRun).resolves.toEqual({ status: "obsolete" });
+    await expect(oldRun).resolves.toEqual({ status: 'obsolete' });
   });
 
-  it("aborts active work when the scope is purged", async () => {
+  it('aborts active work when the scope is purged', async () => {
     const coordinator = new ReportingRunCoordinator();
-    coordinator.beginScope("project-1:dashboard-1:last-7-days");
+    coordinator.beginScope('project-1:dashboard-1:last-7-days');
     let observedSignal: AbortSignal | undefined;
     const run = coordinator.schedule((signal) => {
       observedSignal = signal;
@@ -55,12 +55,12 @@ describe("ReportingRunCoordinator", () => {
     coordinator.purge();
 
     expect(observedSignal?.aborted).toBe(true);
-    await expect(run).resolves.toEqual({ status: "obsolete" });
+    await expect(run).resolves.toEqual({ status: 'obsolete' });
   });
 
-  it("keeps a fifty-Widget dashboard inside the browser concurrency budget", async () => {
+  it('keeps a fifty-Widget dashboard inside the browser concurrency budget', async () => {
     const coordinator = new ReportingRunCoordinator(6);
-    coordinator.beginScope("project-1:dashboard-50:last-30-days");
+    coordinator.beginScope('project-1:dashboard-50:last-30-days');
     let active = 0;
     let maximumActive = 0;
 
@@ -77,19 +77,17 @@ describe("ReportingRunCoordinator", () => {
     );
 
     expect(maximumActive).toBe(6);
-    expect(outcomes.every((outcome) => outcome.status === "committed")).toBe(
-      true,
-    );
+    expect(outcomes.every((outcome) => outcome.status === 'committed')).toBe(true);
   });
 
-  it("coalesces duplicate Widget query descriptors into one cold run", async () => {
+  it('coalesces duplicate Widget query descriptors into one cold run', async () => {
     const coordinator = new ReportingRunCoordinator(6);
-    coordinator.beginScope("project-1:dashboard-duplicates");
-    const task = vi.fn(async () => "shared result");
+    coordinator.beginScope('project-1:dashboard-duplicates');
+    const task = vi.fn(async () => 'shared result');
 
     const outcomes = await Promise.all(
       Array.from({ length: 12 }, () =>
-        coordinator.schedule(task, "query-active-users-r2:last-30-days"),
+        coordinator.schedule(task, 'query-active-users-r2:last-30-days'),
       ),
     );
 

@@ -1,27 +1,23 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import Button from "primevue/button";
-import Column from "primevue/column";
-import DataTable from "primevue/datatable";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Tag from "primevue/tag";
-import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
-import { useRouter } from "vue-router";
-import { DocumentationCallout } from "@/features/documentation/ui";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { scenarioApiErrorMessage } from "@/features/scenarios/scenario-api-error";
-import { importanceClassPresentation } from "@/features/scenario-admission/scenario-admission.model";
-import { repository } from "@/shared/api/repository";
-import { formatDate } from "@/shared/lib/format";
-import type {
-  EventDefinition,
-  Scenario,
-  ScenarioStatus,
-} from "@/shared/types/domain";
+import { computed, onMounted, ref } from 'vue';
+import Button from 'primevue/button';
+import Column from 'primevue/column';
+import DataTable from 'primevue/datatable';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Tag from 'primevue/tag';
+import { useConfirm } from 'primevue/useconfirm';
+import { useToast } from 'primevue/usetoast';
+import { useRouter } from 'vue-router';
+import { DocumentationCallout } from '@/features/documentation/ui';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { scenarioApiErrorMessage } from '@/features/scenarios/scenario-api-error';
+import { importanceClassPresentation } from '@/features/scenario-admission/scenario-admission.model';
+import { repository } from '@/shared/api/repository';
+import { formatDate } from '@/shared/lib/format';
+import type { EventDefinition, Scenario, ScenarioStatus } from '@/shared/types/domain';
 
 const auth = useAuthStore();
 const toast = useToast();
@@ -31,36 +27,33 @@ const router = useRouter();
 const scenarios = ref<Scenario[]>([]);
 const events = ref<EventDefinition[]>([]);
 const loading = ref(true);
-const loadError = ref("");
-const search = ref("");
-const statusFilter = ref<ScenarioStatus | "ALL">("ALL");
+const loadError = ref('');
+const search = ref('');
+const statusFilter = ref<ScenarioStatus | 'ALL'>('ALL');
 const pendingIds = ref(new Set<string>());
-const projectPermissions = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
+const projectPermissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
 const canWrite = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.scenarios.write"),
+  hasProjectPermission(projectPermissions.value, 'project.scenarios.write'),
 );
 const canPublish = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.scenarios.publish"),
+  hasProjectPermission(projectPermissions.value, 'project.scenarios.publish'),
 );
 const canReadEvents = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.event_catalog.read"),
+  hasProjectPermission(projectPermissions.value, 'project.event_catalog.read'),
 );
 
-const statusOptions: { label: string; value: ScenarioStatus | "ALL" }[] = [
-  { label: "Все статусы", value: "ALL" },
-  { label: "Активные", value: "ACTIVE" },
-  { label: "Черновики", value: "DRAFT" },
-  { label: "На паузе", value: "PAUSED" },
-  { label: "Архив", value: "ARCHIVED" },
+const statusOptions: { label: string; value: ScenarioStatus | 'ALL' }[] = [
+  { label: 'Все статусы', value: 'ALL' },
+  { label: 'Активные', value: 'ACTIVE' },
+  { label: 'Черновики', value: 'DRAFT' },
+  { label: 'На паузе', value: 'PAUSED' },
+  { label: 'Архив', value: 'ARCHIVED' },
 ];
 
 const filteredScenarios = computed(() => {
   const query = search.value.trim().toLowerCase();
   return scenarios.value.filter((scenario) => {
-    const matchesStatus =
-      statusFilter.value === "ALL" || scenario.status === statusFilter.value;
+    const matchesStatus = statusFilter.value === 'ALL' || scenario.status === statusFilter.value;
     const trigger = eventName(scenario).toLowerCase();
     const matchesSearch =
       !query ||
@@ -72,12 +65,10 @@ const filteredScenarios = computed(() => {
 });
 
 const activeCount = computed(
-  () =>
-    scenarios.value.filter((scenario) => scenario.status === "ACTIVE").length,
+  () => scenarios.value.filter((scenario) => scenario.status === 'ACTIVE').length,
 );
 const draftCount = computed(
-  () =>
-    scenarios.value.filter((scenario) => scenario.status === "DRAFT").length,
+  () => scenarios.value.filter((scenario) => scenario.status === 'DRAFT').length,
 );
 
 onMounted(load);
@@ -86,19 +77,16 @@ async function load() {
   const projectId = auth.project?.id;
   if (!projectId) return;
   loading.value = true;
-  loadError.value = "";
+  loadError.value = '';
   try {
     const [scenarioItems, eventItems] = await Promise.all([
       repository.getScenarios(projectId),
-      canReadEvents.value
-        ? repository.getEvents(projectId)
-        : Promise.resolve([]),
+      canReadEvents.value ? repository.getEvents(projectId) : Promise.resolve([]),
     ]);
     scenarios.value = scenarioItems;
     events.value = eventItems;
   } catch (cause) {
-    loadError.value =
-      cause instanceof Error ? cause.message : "Не удалось загрузить сценарии";
+    loadError.value = cause instanceof Error ? cause.message : 'Не удалось загрузить сценарии';
   } finally {
     loading.value = false;
   }
@@ -106,58 +94,50 @@ async function load() {
 
 function openCreate() {
   if (!canWrite.value) return;
-  router.push({ name: "scenario-create" });
+  router.push({ name: 'scenario-create' });
 }
 
 function openEdit(scenario: Scenario) {
-  router.push({ name: "scenario-edit", params: { scenarioId: scenario.id } });
+  router.push({ name: 'scenario-edit', params: { scenarioId: scenario.id } });
 }
 
 async function toggleScenario(scenario: Scenario) {
   const projectId = auth.project?.id;
-  if (!projectId || pendingIds.value.has(scenario.id) || !canWrite.value)
-    return;
-  if (scenario.status === "DRAFT") {
+  if (!projectId || pendingIds.value.has(scenario.id) || !canWrite.value) return;
+  if (scenario.status === 'DRAFT') {
     if (!canPublish.value) return;
     openEdit(scenario);
     toast.add({
-      severity: "info",
-      summary: "Публикация выполняется в Studio",
-      detail: "Проверьте условия, Actions и Delivery перед запуском.",
+      severity: 'info',
+      summary: 'Публикация выполняется в Studio',
+      detail: 'Проверьте условия, Actions и Delivery перед запуском.',
       life: 4200,
     });
     return;
   }
-  if (scenario.status === "ARCHIVED") return;
-  const resuming = scenario.status === "PAUSED";
-  const nextStatus: ScenarioStatus = resuming ? "ACTIVE" : "PAUSED";
+  if (scenario.status === 'ARCHIVED') return;
+  const resuming = scenario.status === 'PAUSED';
+  const nextStatus: ScenarioStatus = resuming ? 'ACTIVE' : 'PAUSED';
   pendingIds.value.add(scenario.id);
   try {
-    if (!scenario.updatedAt)
-      throw new Error("Не удалось определить версию сценария");
-    const saved = await repository.updateScenarioMetadata(
-      projectId,
-      scenario.id,
-      {
-        status: nextStatus,
-        expectedUpdatedAt: scenario.updatedAt,
-        reason: resuming
-          ? "Resume scenario from CMS list"
-          : "Pause scenario from CMS list",
-      },
-    );
+    if (!scenario.updatedAt) throw new Error('Не удалось определить версию сценария');
+    const saved = await repository.updateScenarioMetadata(projectId, scenario.id, {
+      status: nextStatus,
+      expectedUpdatedAt: scenario.updatedAt,
+      reason: resuming ? 'Resume scenario from CMS list' : 'Pause scenario from CMS list',
+    });
     replaceScenario(saved);
     toast.add({
-      severity: resuming ? "success" : "secondary",
-      summary: resuming ? "Сценарий запущен" : "Сценарий приостановлен",
+      severity: resuming ? 'success' : 'secondary',
+      summary: resuming ? 'Сценарий запущен' : 'Сценарий приостановлен',
       detail: scenario.name,
       life: 2600,
     });
   } catch (cause) {
     toast.add({
-      severity: "error",
-      summary: "Не удалось изменить статус",
-      detail: scenarioApiErrorMessage(cause, "Попробуйте ещё раз"),
+      severity: 'error',
+      summary: 'Не удалось изменить статус',
+      detail: scenarioApiErrorMessage(cause, 'Попробуйте ещё раз'),
       life: 4500,
     });
   } finally {
@@ -168,12 +148,12 @@ async function toggleScenario(scenario: Scenario) {
 function requestDelete(scenario: Scenario) {
   if (!canWrite.value) return;
   confirm.require({
-    header: "Удалить сценарий?",
+    header: 'Удалить сценарий?',
     message: `«${scenario.name}» будет удалён без возможности восстановления.`,
-    icon: "pi pi-exclamation-triangle",
-    rejectLabel: "Отмена",
-    acceptLabel: "Удалить",
-    acceptProps: { severity: "danger" },
+    icon: 'pi pi-exclamation-triangle',
+    rejectLabel: 'Отмена',
+    acceptLabel: 'Удалить',
+    acceptProps: { severity: 'danger' },
     accept: () => deleteScenario(scenario),
   });
 }
@@ -183,23 +163,22 @@ async function deleteScenario(scenario: Scenario) {
   if (!projectId || !canWrite.value) return;
   pendingIds.value.add(scenario.id);
   try {
-    if (!scenario.updatedAt)
-      throw new Error("Не удалось определить версию сценария");
+    if (!scenario.updatedAt) throw new Error('Не удалось определить версию сценария');
     await repository.deleteScenario(projectId, scenario.id, {
       expectedUpdatedAt: scenario.updatedAt,
-      reason: "Archive scenario from CMS list",
+      reason: 'Archive scenario from CMS list',
     });
     scenarios.value = scenarios.value.filter((item) => item.id !== scenario.id);
     toast.add({
-      severity: "success",
-      summary: "Сценарий удалён",
+      severity: 'success',
+      summary: 'Сценарий удалён',
       detail: scenario.name,
       life: 2800,
     });
   } catch (cause) {
     toast.add({
-      severity: "error",
-      summary: "Не удалось удалить",
+      severity: 'error',
+      summary: 'Не удалось удалить',
       detail: errorMessage(cause),
       life: 4500,
     });
@@ -209,52 +188,46 @@ async function deleteScenario(scenario: Scenario) {
 }
 
 function replaceScenario(saved: Scenario) {
-  const index = scenarios.value.findIndex(
-    (scenario) => scenario.id === saved.id,
-  );
+  const index = scenarios.value.findIndex((scenario) => scenario.id === saved.id);
   if (index >= 0) scenarios.value.splice(index, 1, saved);
 }
 
 function eventName(scenario: Scenario) {
   return (
     scenario.eventDefinition?.name ??
-    events.value.find((event) => event.id === scenario.eventDefinitionId)
-      ?.name ??
-    "Событие не найдено"
+    events.value.find((event) => event.id === scenario.eventDefinitionId)?.name ??
+    'Событие не найдено'
   );
 }
 
 function eventCode(scenario: Scenario) {
   return (
     scenario.eventDefinition?.code ??
-    events.value.find((event) => event.id === scenario.eventDefinitionId)
-      ?.code ??
-    "—"
+    events.value.find((event) => event.id === scenario.eventDefinitionId)?.code ??
+    '—'
   );
 }
 
 function statusLabel(status: ScenarioStatus) {
   return {
-    DRAFT: "Черновик",
-    ACTIVE: "Активен",
-    PAUSED: "На паузе",
-    ARCHIVED: "Архив",
+    DRAFT: 'Черновик',
+    ACTIVE: 'Активен',
+    PAUSED: 'На паузе',
+    ARCHIVED: 'Архив',
   }[status];
 }
 
-function statusSeverity(
-  status: ScenarioStatus,
-): "success" | "secondary" | "warn" | "contrast" {
+function statusSeverity(status: ScenarioStatus): 'success' | 'secondary' | 'warn' | 'contrast' {
   return {
-    DRAFT: "secondary",
-    ACTIVE: "success",
-    PAUSED: "warn",
-    ARCHIVED: "contrast",
-  }[status] as "success" | "secondary" | "warn" | "contrast";
+    DRAFT: 'secondary',
+    ACTIVE: 'success',
+    PAUSED: 'warn',
+    ARCHIVED: 'contrast',
+  }[status] as 'success' | 'secondary' | 'warn' | 'contrast';
 }
 
 function errorMessage(cause: unknown) {
-  return cause instanceof Error ? cause.message : "Попробуйте ещё раз";
+  return cause instanceof Error ? cause.message : 'Попробуйте ещё раз';
 }
 </script>
 
@@ -265,16 +238,11 @@ function errorMessage(cause: unknown) {
         <div class="eyebrow">Automation studio</div>
         <h1>Сценарии</h1>
         <p class="subtitle">
-          Собирайте реакции Retenive как наглядный граф: вопросы, условия, ветки и
-          безопасные действия.
+          Собирайте реакции Retenive как наглядный граф: вопросы, условия, ветки и безопасные
+          действия.
         </p>
       </div>
-      <Button
-        v-if="canWrite"
-        label="Создать сценарий"
-        icon="pi pi-plus"
-        @click="openCreate"
-      />
+      <Button v-if="canWrite" label="Создать сценарий" icon="pi pi-plus" @click="openCreate" />
     </header>
 
     <DocumentationCallout
@@ -299,8 +267,8 @@ function errorMessage(cause: unknown) {
         </div>
       </div>
       <p>
-        <i class="pi pi-info-circle" /> Граф начинается с события; переходы идут
-        вперёд, а вопросы и условия выбирают ветку во время выполнения.
+        <i class="pi pi-info-circle" /> Граф начинается с события; переходы идут вперёд, а вопросы и
+        условия выбирают ветку во время выполнения.
       </p>
     </section>
 
@@ -324,9 +292,7 @@ function errorMessage(cause: unknown) {
           option-value="value"
           class="status-filter"
         />
-        <span class="result-count"
-          >{{ filteredScenarios.length }} из {{ scenarios.length }}</span
-        >
+        <span class="result-count">{{ filteredScenarios.length }} из {{ scenarios.length }}</span>
       </div>
 
       <DataTable
@@ -344,15 +310,13 @@ function errorMessage(cause: unknown) {
           <div class="empty">
             <i class="pi pi-sitemap" />
             <strong>{{
-              scenarios.length
-                ? "Ничего не найдено"
-                : "Создайте первый сценарий"
+              scenarios.length ? 'Ничего не найдено' : 'Создайте первый сценарий'
             }}</strong>
             <p>
               {{
                 scenarios.length
-                  ? "Измените поиск или фильтр статуса."
-                  : "Выберите событие и добавьте действия Retenive."
+                  ? 'Измените поиск или фильтр статуса.'
+                  : 'Выберите событие и добавьте действия Retenive.'
               }}
             </p>
             <Button
@@ -395,13 +359,8 @@ function errorMessage(cause: unknown) {
         <Column header="Важность" style="min-width: 150px">
           <template #body="{ data }">
             <Tag
-              :value="
-                importanceClassPresentation(data.importanceClass ?? 'GENERAL')
-                  .title
-              "
-              :severity="
-                data.importanceClass === 'SECURITY' ? 'danger' : 'secondary'
-              "
+              :value="importanceClassPresentation(data.importanceClass ?? 'GENERAL').title"
+              :severity="data.importanceClass === 'SECURITY' ? 'danger' : 'secondary'"
             />
           </template>
         </Column>
@@ -409,20 +368,18 @@ function errorMessage(cause: unknown) {
           <template #body="{ data }">
             <span class="updated-at">
               {{
-                data.importanceClass === "SECURITY"
-                  ? "Вне режима"
+                data.importanceClass === 'SECURITY'
+                  ? 'Вне режима'
                   : data.respectsQuietHours
-                    ? "Соблюдает"
-                    : "Игнорирует"
+                    ? 'Соблюдает'
+                    : 'Игнорирует'
               }}
             </span>
           </template>
         </Column>
         <Column header="Статус" style="width: 130px">
           <template #body="{ data }"
-            ><Tag
-              :value="statusLabel(data.status)"
-              :severity="statusSeverity(data.status)"
+            ><Tag :value="statusLabel(data.status)" :severity="statusSeverity(data.status)"
           /></template>
         </Column>
         <Column header="Обновлён" style="min-width: 150px">
@@ -437,10 +394,7 @@ function errorMessage(cause: unknown) {
             <div class="row-actions" @click.stop>
               <Button
                 v-if="
-                  canWrite &&
-                  (data.status === 'ACTIVE' ||
-                    data.status === 'PAUSED' ||
-                    canPublish)
+                  canWrite && (data.status === 'ACTIVE' || data.status === 'PAUSED' || canPublish)
                 "
                 :icon="
                   data.status === 'ACTIVE'

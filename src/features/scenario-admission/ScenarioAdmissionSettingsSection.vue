@@ -1,25 +1,22 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
-import Button from "primevue/button";
-import Checkbox from "primevue/checkbox";
-import Dialog from "primevue/dialog";
-import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import ToggleSwitch from "primevue/toggleswitch";
-import { useToast } from "primevue/usetoast";
+import { computed, onMounted, reactive, ref } from 'vue';
+import Button from 'primevue/button';
+import Checkbox from 'primevue/checkbox';
+import Dialog from 'primevue/dialog';
+import InputNumber from 'primevue/inputnumber';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import ToggleSwitch from 'primevue/toggleswitch';
+import { useToast } from 'primevue/usetoast';
 import type {
   ScenarioAdmissionSettingsResponseDto,
   UpdateScenarioAdmissionSettingsDto,
-} from "@/shared/api/generated/models";
-import { ApiError } from "@/shared/api/http/api-error";
-import ProjectSettingsSectionHeader from "@/shared/ui/ProjectSettingsSectionHeader.vue";
-import { scenarioAdmissionApi } from "./scenario-admission.api";
-import {
-  formatAdmissionSummary,
-  formatQuietHoursPreview,
-} from "./scenario-admission.model";
+} from '@/shared/api/generated/models';
+import { ApiError } from '@/shared/api/http/api-error';
+import ProjectSettingsSectionHeader from '@/shared/ui/ProjectSettingsSectionHeader.vue';
+import { scenarioAdmissionApi } from './scenario-admission.api';
+import { formatAdmissionSummary, formatQuietHoursPreview } from './scenario-admission.model';
 
 const props = defineProps<{
   projectId: string;
@@ -31,29 +28,29 @@ const toast = useToast();
 const loading = ref(true);
 const saving = ref(false);
 const expanded = ref(false);
-const error = ref("");
+const error = ref('');
 const settings = ref<ScenarioAdmissionSettingsResponseDto | null>(null);
 const acknowledgeOpen = ref(false);
 const acknowledgeChecked = ref(false);
 const impactedScenarios = ref(0);
 const form = reactive({
-  mode: "LEGACY_PER_SCENARIO" as UpdateScenarioAdmissionSettingsDto["mode"],
+  mode: 'LEGACY_PER_SCENARIO' as UpdateScenarioAdmissionSettingsDto['mode'],
   maxStartsPerLocalDay: null as number | null,
   maxStartsPerVisit: null as number | null,
   minimumIntervalSeconds: 0,
   quietHoursEnabled: false,
-  quietHoursStart: "00:00",
-  quietHoursEnd: "08:00",
+  quietHoursStart: '00:00',
+  quietHoursEnd: '08:00',
 });
 
 const modeOptions = [
   {
-    value: "PROJECT_GLOBAL_V1",
-    label: "Общие ограничения",
+    value: 'PROJECT_GLOBAL_V1',
+    label: 'Общие ограничения',
   },
   {
-    value: "LEGACY_PER_SCENARIO",
-    label: "По каждому сценарию (legacy)",
+    value: 'LEGACY_PER_SCENARIO',
+    label: 'По каждому сценарию (legacy)',
   },
 ];
 const summary = computed(() => formatAdmissionSummary(form));
@@ -71,14 +68,12 @@ onMounted(load);
 
 async function load() {
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     fill(await scenarioAdmissionApi.get(props.projectId));
   } catch (cause) {
     error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить ограничения сценариев";
+      cause instanceof Error ? cause.message : 'Не удалось загрузить ограничения сценариев';
   } finally {
     loading.value = false;
   }
@@ -97,10 +92,8 @@ function fill(value: ScenarioAdmissionSettingsResponseDto) {
   });
 }
 
-function body(
-  acknowledgeLegacyScenarioLimits = false,
-): UpdateScenarioAdmissionSettingsDto {
-  if (!settings.value) throw new Error("Настройки ещё не загружены");
+function body(acknowledgeLegacyScenarioLimits = false): UpdateScenarioAdmissionSettingsDto {
+  if (!settings.value) throw new Error('Настройки ещё не загружены');
   return {
     expectedVersion: settings.value.projectVersion,
     mode: form.mode,
@@ -112,60 +105,49 @@ function body(
       startLocalTime: form.quietHoursStart,
       endLocalTime: form.quietHoursEnd,
     },
-    ...(acknowledgeLegacyScenarioLimits
-      ? { acknowledgeLegacyScenarioLimits: true }
-      : {}),
-    reason: "Update Scenario Admission settings from CMS",
+    ...(acknowledgeLegacyScenarioLimits ? { acknowledgeLegacyScenarioLimits: true } : {}),
+    reason: 'Update Scenario Admission settings from CMS',
   };
 }
 
 async function save(acknowledge = false) {
   if (!props.editable || !settings.value || !quietHoursValid.value) {
     if (!quietHoursValid.value) {
-      error.value =
-        "Проверьте время: нужен формат HH:mm, начало и конец должны отличаться.";
+      error.value = 'Проверьте время: нужен формат HH:mm, начало и конец должны отличаться.';
     }
     return;
   }
   saving.value = true;
-  error.value = "";
+  error.value = '';
   try {
     fill(await scenarioAdmissionApi.update(props.projectId, body(acknowledge)));
     acknowledgeOpen.value = false;
     acknowledgeChecked.value = false;
     toast.add({
-      severity: "success",
-      summary: "Ограничения сценариев сохранены",
+      severity: 'success',
+      summary: 'Ограничения сценариев сохранены',
       life: 2800,
     });
   } catch (cause) {
-    if (
-      cause instanceof ApiError ||
-      (cause && typeof cause === "object" && "code" in cause)
-    ) {
+    if (cause instanceof ApiError || (cause && typeof cause === 'object' && 'code' in cause)) {
       const candidate = cause as { code?: string; details?: unknown };
-      if (candidate.code === "PROJECT_VERSION_CONFLICT") {
+      if (candidate.code === 'PROJECT_VERSION_CONFLICT') {
         error.value =
-          "Настройки уже изменили в другом окне. Ваши значения сохранены в форме; откройте актуальную версию в другой вкладке и сравните изменения перед повторным сохранением.";
+          'Настройки уже изменили в другом окне. Ваши значения сохранены в форме; откройте актуальную версию в другой вкладке и сравните изменения перед повторным сохранением.';
         return;
       }
-      if (candidate.code === "LEGACY_SCENARIO_LIMITS_REQUIRE_ACKNOWLEDGEMENT") {
+      if (candidate.code === 'LEGACY_SCENARIO_LIMITS_REQUIRE_ACKNOWLEDGEMENT') {
         const details =
-          candidate.details && typeof candidate.details === "object"
+          candidate.details && typeof candidate.details === 'object'
             ? (candidate.details as { activeScenarioCount?: unknown })
             : {};
         impactedScenarios.value =
-          typeof details.activeScenarioCount === "number"
-            ? details.activeScenarioCount
-            : 0;
+          typeof details.activeScenarioCount === 'number' ? details.activeScenarioCount : 0;
         acknowledgeOpen.value = true;
         return;
       }
     }
-    error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось сохранить ограничения";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось сохранить ограничения';
   } finally {
     saving.value = false;
   }
@@ -173,10 +155,7 @@ async function save(acknowledge = false) {
 </script>
 
 <template>
-  <section
-    class="settings-section card admission-settings"
-    :class="{ collapsed: !expanded }"
-  >
+  <section class="settings-section card admission-settings" :class="{ collapsed: !expanded }">
     <ProjectSettingsSectionHeader
       v-model:expanded="expanded"
       title="Частота и тихие часы"
@@ -185,14 +164,8 @@ async function save(acknowledge = false) {
       tone="accent"
       content-id="scenario-admission-settings"
     />
-    <div
-      id="scenario-admission-settings"
-      v-show="expanded"
-      class="admission-content"
-    >
-      <Message v-if="error" severity="error" :closable="false">{{
-        error
-      }}</Message>
+    <div id="scenario-admission-settings" v-show="expanded" class="admission-content">
+      <Message v-if="error" severity="error" :closable="false">{{ error }}</Message>
       <p v-if="loading" class="loading">
         <i class="pi pi-spin pi-spinner" /> Загружаем правила запуска…
       </p>
@@ -249,13 +222,11 @@ async function save(acknowledge = false) {
                 :disabled="!editable || form.mode !== 'PROJECT_GLOBAL_V1'"
               />
               <small
-                >Визит — непрерывный период активности. Новая вкладка и короткое
-                переподключение не создают новый визит.</small
+                >Визит — непрерывный период активности. Новая вкладка и короткое переподключение не
+                создают новый визит.</small
               >
             </label>
-            <p class="summary">
-              <i class="pi pi-check-circle" /> {{ summary }}
-            </p>
+            <p class="summary"><i class="pi pi-check-circle" /> {{ summary }}</p>
           </article>
 
           <article class="setting-card">
@@ -271,10 +242,7 @@ async function save(acknowledge = false) {
                 ><strong>Использовать тихие часы</strong
                 ><small>Сообщения безопасности всегда проходят.</small></span
               >
-              <ToggleSwitch
-                v-model="form.quietHoursEnabled"
-                :disabled="!editable"
-              />
+              <ToggleSwitch v-model="form.quietHoursEnabled" :disabled="!editable" />
             </label>
             <div class="two-columns">
               <label>
@@ -296,9 +264,8 @@ async function save(acknowledge = false) {
             </div>
             <p class="summary"><i class="pi pi-clock" /> {{ quietPreview }}</p>
             <small class="helper"
-              >Событие будет записано, но сценарий не запустится и не
-              израсходует лимит. После окончания тихих часов автоматического
-              запуска не будет.</small
+              >Событие будет записано, но сценарий не запустится и не израсходует лимит. После
+              окончания тихих часов автоматического запуска не будет.</small
             >
           </article>
 
@@ -320,8 +287,7 @@ async function save(acknowledge = false) {
                 ><small>Настройка активности: {{ fallbackTimeZone }}</small>
               </li>
               <li>
-                <strong>UTC</strong
-                ><small>Безопасный fallback для legacy-конфигурации.</small>
+                <strong>UTC</strong><small>Безопасный fallback для legacy-конфигурации.</small>
               </li>
             </ol>
             <RouterLink
@@ -337,8 +303,8 @@ async function save(acknowledge = false) {
         </div>
         <footer v-if="editable" class="actions">
           <p>
-            <i class="pi pi-info-circle" /> Изменение версионируется и влияет на
-            все активные сценарии проекта.
+            <i class="pi pi-info-circle" /> Изменение версионируется и влияет на все активные
+            сценарии проекта.
           </p>
           <Button
             data-testid="admission-save"
@@ -359,28 +325,15 @@ async function save(acknowledge = false) {
       :style="{ width: 'min(540px, calc(100vw - 24px))' }"
     >
       <p class="dialog-copy">
-        <strong>{{ impactedScenarios }} активных сценария</strong> содержат
-        индивидуальные cooldown или максимум запусков. В общем режиме они
-        перестанут применяться.
+        <strong>{{ impactedScenarios }} активных сценария</strong> содержат индивидуальные cooldown
+        или максимум запусков. В общем режиме они перестанут применяться.
       </p>
       <label class="confirm-row">
-        <Checkbox
-          v-model="acknowledgeChecked"
-          binary
-          input-id="acknowledge-legacy-limits"
-        />
-        <span
-          >Я понимаю, что индивидуальные ограничения будут заменены
-          общими.</span
-        >
+        <Checkbox v-model="acknowledgeChecked" binary input-id="acknowledge-legacy-limits" />
+        <span>Я понимаю, что индивидуальные ограничения будут заменены общими.</span>
       </label>
       <template #footer>
-        <Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="acknowledgeOpen = false"
-        />
+        <Button label="Отмена" severity="secondary" text @click="acknowledgeOpen = false" />
         <Button
           label="Подтвердить и сохранить"
           :disabled="!acknowledgeChecked"

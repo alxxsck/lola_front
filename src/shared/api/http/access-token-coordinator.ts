@@ -1,13 +1,7 @@
 export interface AccessTokenChannel {
   postMessage(message: unknown): void;
-  addEventListener(
-    type: "message",
-    listener: (event: MessageEvent<unknown>) => void,
-  ): void;
-  removeEventListener(
-    type: "message",
-    listener: (event: MessageEvent<unknown>) => void,
-  ): void;
+  addEventListener(type: 'message', listener: (event: MessageEvent<unknown>) => void): void;
+  removeEventListener(type: 'message', listener: (event: MessageEvent<unknown>) => void): void;
   close(): void;
 }
 
@@ -16,18 +10,18 @@ export interface AccessTokenLock {
 }
 
 interface AccessTokenMessage {
-  type: "ACCESS_TOKEN";
+  type: 'ACCESS_TOKEN';
   accessToken: string;
   expiresAt: number;
   issuedAt: number;
 }
 
 interface AccessTokenRequestMessage {
-  type: "ACCESS_TOKEN_REQUEST";
+  type: 'ACCESS_TOKEN_REQUEST';
 }
 
 interface AuthSessionClearedMessage {
-  type: "AUTH_SESSION_CLEARED";
+  type: 'AUTH_SESSION_CLEARED';
 }
 
 type AuthSessionMessage =
@@ -43,10 +37,8 @@ interface AccessTokenCoordinatorOptions {
 
 export class CrossContextAuthLockUnavailableError extends Error {
   constructor() {
-    super(
-      "Браузер не поддерживает безопасную межвкладочную блокировку авторизации.",
-    );
-    this.name = "CrossContextAuthLockUnavailableError";
+    super('Браузер не поддерживает безопасную межвкладочную блокировку авторизации.');
+    this.name = 'CrossContextAuthLockUnavailableError';
   }
 }
 
@@ -64,7 +56,7 @@ export interface AccessTokenCoordinator {
   close(): void;
 }
 
-const REFRESH_LOCK_NAME = "retenive-cms-access-token-refresh-v1";
+const REFRESH_LOCK_NAME = 'retenive-cms-access-token-refresh-v1';
 
 export function createAccessTokenCoordinator({
   channel,
@@ -97,8 +89,7 @@ export function createAccessTokenCoordinator({
       message.expiresAt <= now() ||
       (accessToken !== null &&
         (message.issuedAt < accessIssuedAt ||
-          (message.issuedAt === accessIssuedAt &&
-            message.accessToken !== accessToken))) ||
+          (message.issuedAt === accessIssuedAt && message.accessToken !== accessToken))) ||
       (accessToken === message.accessToken &&
         accessExpiresAt === message.expiresAt &&
         accessIssuedAt === message.issuedAt)
@@ -116,7 +107,7 @@ export function createAccessTokenCoordinator({
     acceptsRemoteTokens = true;
     const issuedAt = Math.max(now(), accessIssuedAt + 1);
     const message: AccessTokenMessage = {
-      type: "ACCESS_TOKEN",
+      type: 'ACCESS_TOKEN',
       accessToken: tokens.accessToken,
       expiresAt: issuedAt + tokens.expiresIn * 1_000,
       issuedAt,
@@ -138,40 +129,38 @@ export function createAccessTokenCoordinator({
 
   function clear(): void {
     clearLocal();
-    channel?.postMessage({ type: "AUTH_SESSION_CLEARED" });
+    channel?.postMessage({ type: 'AUTH_SESSION_CLEARED' });
   }
 
   function isMessage(value: unknown): value is AuthSessionMessage {
-    if (!value || typeof value !== "object" || !("type" in value)) return false;
-    if (value.type === "ACCESS_TOKEN_REQUEST")
-      return Object.keys(value).length === 1;
-    if (value.type === "AUTH_SESSION_CLEARED")
-      return Object.keys(value).length === 1;
+    if (!value || typeof value !== 'object' || !('type' in value)) return false;
+    if (value.type === 'ACCESS_TOKEN_REQUEST') return Object.keys(value).length === 1;
+    if (value.type === 'AUTH_SESSION_CLEARED') return Object.keys(value).length === 1;
     return (
-      value.type === "ACCESS_TOKEN" &&
-      "accessToken" in value &&
-      typeof value.accessToken === "string" &&
-      "expiresAt" in value &&
-      typeof value.expiresAt === "number" &&
-      "issuedAt" in value &&
-      typeof value.issuedAt === "number"
+      value.type === 'ACCESS_TOKEN' &&
+      'accessToken' in value &&
+      typeof value.accessToken === 'string' &&
+      'expiresAt' in value &&
+      typeof value.expiresAt === 'number' &&
+      'issuedAt' in value &&
+      typeof value.issuedAt === 'number'
     );
   }
 
   function receive(event: MessageEvent<unknown>): void {
     if (!isMessage(event.data)) return;
-    if (event.data.type === "ACCESS_TOKEN_REQUEST") {
+    if (event.data.type === 'ACCESS_TOKEN_REQUEST') {
       const token = get();
       if (token)
         channel?.postMessage({
-          type: "ACCESS_TOKEN",
+          type: 'ACCESS_TOKEN',
           accessToken: token,
           expiresAt: accessExpiresAt,
           issuedAt: accessIssuedAt,
         });
       return;
     }
-    if (event.data.type === "ACCESS_TOKEN") {
+    if (event.data.type === 'ACCESS_TOKEN') {
       applyToken(event.data, true);
       return;
     }
@@ -179,7 +168,7 @@ export function createAccessTokenCoordinator({
     for (const listener of remoteClearListeners) listener();
   }
 
-  channel?.addEventListener("message", receive);
+  channel?.addEventListener('message', receive);
 
   async function adoptSharedToken(): Promise<boolean> {
     if (get()) return true;
@@ -194,7 +183,7 @@ export function createAccessTokenCoordinator({
       };
       tokenWaiters.add(finish);
       setTimeout(() => finish(Boolean(get())), responseTimeoutMs);
-      channel.postMessage({ type: "ACCESS_TOKEN_REQUEST" });
+      channel.postMessage({ type: 'ACCESS_TOKEN_REQUEST' });
     });
   }
 
@@ -213,11 +202,8 @@ export function createAccessTokenCoordinator({
     }
   }
 
-  async function runSessionReplacement<T>(
-    operation: () => Promise<T>,
-  ): Promise<T> {
-    if (requireCrossContextLock && !lock)
-      throw new CrossContextAuthLockUnavailableError();
+  async function runSessionReplacement<T>(operation: () => Promise<T>): Promise<T> {
+    if (requireCrossContextLock && !lock) throw new CrossContextAuthLockUnavailableError();
     return runExclusive(operation);
   }
 
@@ -238,7 +224,7 @@ export function createAccessTokenCoordinator({
   }
 
   function close(): void {
-    channel?.removeEventListener("message", receive);
+    channel?.removeEventListener('message', receive);
     channel?.close();
     tokenWaiters.clear();
     remoteClearListeners.clear();

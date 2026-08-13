@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import Dialog from "primevue/dialog";
+import { computed, ref, watch } from 'vue';
+import Dialog from 'primevue/dialog';
 import {
   NOTIFICATION_OPERATIONS_QUARANTINE_REASONS,
   type NotificationOperationsIntegration,
   type NotificationOperationsQuarantineReason,
-} from "../model/notification-operations";
+} from '../model/notification-operations';
 
 const props = defineProps<{
   target: NotificationOperationsIntegration | null;
@@ -13,32 +13,27 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  confirm: [
-    reason: NotificationOperationsQuarantineReason,
-    confirmation: string,
-  ];
+  confirm: [reason: NotificationOperationsQuarantineReason, confirmation: string];
   cancel: [];
 }>();
 
-const reason = ref<NotificationOperationsQuarantineReason | "">("");
-const confirmation = ref("");
+const reason = ref<NotificationOperationsQuarantineReason | ''>('');
+const confirmation = ref('');
 const valid = computed(
-  () =>
-    Boolean(reason.value) &&
-    confirmation.value === props.target?.maskedIdentity,
+  () => Boolean(reason.value) && confirmation.value === props.target?.maskedIdentity,
 );
 
 watch(
   () => props.target,
   () => {
-    reason.value = "";
-    confirmation.value = "";
+    reason.value = '';
+    confirmation.value = '';
   },
 );
 
 function submit(): void {
   if (!valid.value || !reason.value) return;
-  emit("confirm", reason.value, confirmation.value);
+  emit('confirm', reason.value, confirmation.value);
 }
 </script>
 
@@ -54,10 +49,9 @@ function submit(): void {
   >
     <div v-if="target" class="dialog-stack">
       <p class="warning">
-        Credential будет отозван, queued и claimed pre-dispatch work этого
-        канала будет подавлен. Post-dispatch и ambiguous outcomes не изменятся.
-        Повторное включение возможно только после rotation и provider test в
-        Project settings.
+        Credential будет отозван, queued и claimed pre-dispatch work этого канала будет подавлен.
+        Post-dispatch и ambiguous outcomes не изменятся. Повторное включение возможно только после
+        rotation и provider test в Project settings.
       </p>
       <dl>
         <div>
@@ -101,20 +95,10 @@ function submit(): void {
       </label>
     </div>
     <template #footer>
-      <button
-        type="button"
-        class="secondary-button"
-        :disabled="submitting"
-        @click="emit('cancel')"
-      >
+      <button type="button" class="secondary-button" :disabled="submitting" @click="emit('cancel')">
         Назад
       </button>
-      <button
-        type="button"
-        class="danger-button"
-        :disabled="!valid || submitting"
-        @click="submit"
-      >
+      <button type="button" class="danger-button" :disabled="!valid || submitting" @click="submit">
         Поместить в карантин
       </button>
     </template>

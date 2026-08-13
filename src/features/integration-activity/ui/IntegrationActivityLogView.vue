@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import Column from "primevue/column";
-import DataTable from "primevue/datatable";
-import Drawer from "primevue/drawer";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import MultiSelect from "primevue/multiselect";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { integrationActivityRepository } from "../api";
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Column from 'primevue/column';
+import DataTable from 'primevue/datatable';
+import Drawer from 'primevue/drawer';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import MultiSelect from 'primevue/multiselect';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { integrationActivityRepository } from '../api';
 import {
   activityOriginLabel,
   activityStateLabel,
@@ -27,8 +27,8 @@ import {
   type IntegrationActivityItem,
   type IntegrationActivityStatus,
   type IntegrationActivityType,
-} from "../model/integration-activity";
-import { formatDate, relativeTime } from "@/shared/lib/format";
+} from '../model/integration-activity';
+import { formatDate, relativeTime } from '@/shared/lib/format';
 
 interface FailedPageRequest {
   cursor: string | undefined;
@@ -39,17 +39,14 @@ interface FailedPageRequest {
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
-const providerValues = ["TELEGRAM"];
-const typeValues: IntegrationActivityType[] = [
-  "CONNECTION",
-  "PERSONAL_MESSAGE",
-];
+const providerValues = ['TELEGRAM'];
+const typeValues: IntegrationActivityType[] = ['CONNECTION', 'PERSONAL_MESSAGE'];
 const statusValues: IntegrationActivityStatus[] = [
-  "PENDING",
-  "SUCCEEDED",
-  "FAILED",
-  "CANCELLED",
-  "OUTCOME_UNKNOWN",
+  'PENDING',
+  'SUCCEEDED',
+  'FAILED',
+  'CANCELLED',
+  'OUTCOME_UNKNOWN',
 ];
 const items = ref<IntegrationActivityItem[]>([]);
 const nextCursor = ref<string | null>(null);
@@ -58,45 +55,39 @@ const pageIndex = ref(0);
 const loading = ref(false);
 const detailLoading = ref(false);
 const contentLoading = ref(false);
-const error = ref("");
-const detailError = ref("");
-const contentError = ref("");
-const filterError = ref("");
+const error = ref('');
+const detailError = ref('');
+const contentError = ref('');
+const filterError = ref('');
 const selectedItem = ref<IntegrationActivityItem | null>(null);
 const detail = ref<IntegrationActivityDetail | null>(null);
 const content = ref<IntegrationActivityContent | null>(null);
 const advancedFilters = ref(false);
 const failedRequest = ref<FailedPageRequest | null>(null);
 const filters = reactive({
-  provider: queryValues("provider").filter((value) =>
-    providerValues.includes(value),
+  provider: queryValues('provider').filter((value) => providerValues.includes(value)),
+  activityType: queryValues('activityType').filter((value): value is IntegrationActivityType =>
+    typeValues.includes(value as IntegrationActivityType),
   ),
-  activityType: queryValues("activityType").filter(
-    (value): value is IntegrationActivityType =>
-      typeValues.includes(value as IntegrationActivityType),
+  status: queryValues('activityStatus').filter((value): value is IntegrationActivityStatus =>
+    statusValues.includes(value as IntegrationActivityStatus),
   ),
-  status: queryValues("activityStatus").filter(
-    (value): value is IntegrationActivityStatus =>
-      statusValues.includes(value as IntegrationActivityStatus),
-  ),
-  externalUserId: queryValue("user"),
-  createdFrom: queryValue("createdFrom"),
-  createdTo: queryValue("createdTo"),
-  limit: [25, 50, 100].includes(Number(queryValue("limit")))
-    ? Number(queryValue("limit"))
-    : 25,
+  externalUserId: queryValue('user'),
+  createdFrom: queryValue('createdFrom'),
+  createdTo: queryValue('createdTo'),
+  limit: [25, 50, 100].includes(Number(queryValue('limit'))) ? Number(queryValue('limit')) : 25,
 });
 const appliedFilters = ref<IntegrationActivityFilters>({});
 const canRead = computed(() =>
   hasProjectPermission(
     auth.project?.effectivePermissionCodes ?? [],
-    "project.integration_activity.read",
+    'project.integration_activity.read',
   ),
 );
 const canReadContent = computed(() =>
   hasProjectPermission(
     auth.project?.effectivePermissionCodes ?? [],
-    "project.integration_message_content.read",
+    'project.integration_message_content.read',
   ),
 );
 const activeFilterCount = computed(
@@ -112,17 +103,14 @@ const activeFilterCount = computed(
 );
 const failedCount = computed(
   () =>
-    items.value.filter(
-      (item) => item.status === "FAILED" || item.status === "OUTCOME_UNKNOWN",
-    ).length,
+    items.value.filter((item) => item.status === 'FAILED' || item.status === 'OUTCOME_UNKNOWN')
+      .length,
 );
-const pendingCount = computed(
-  () => items.value.filter((item) => item.status === "PENDING").length,
-);
-const providerOptions = [{ label: "Telegram", value: "TELEGRAM" }];
+const pendingCount = computed(() => items.value.filter((item) => item.status === 'PENDING').length);
+const providerOptions = [{ label: 'Telegram', value: 'TELEGRAM' }];
 const typeOptions = [
-  { label: "Подключение", value: "CONNECTION" },
-  { label: "Личное сообщение", value: "PERSONAL_MESSAGE" },
+  { label: 'Подключение', value: 'CONNECTION' },
+  { label: 'Личное сообщение', value: 'PERSONAL_MESSAGE' },
 ];
 const limitOptions = [25, 50, 100].map((value) => ({
   label: `${value} на странице`,
@@ -134,7 +122,7 @@ let detailSequence = 0;
 let contentSequence = 0;
 
 function queryValue(key: string): string {
-  return typeof route.query[key] === "string" ? route.query[key] : "";
+  return typeof route.query[key] === 'string' ? route.query[key] : '';
 }
 
 function queryValues(key: string): string[] {
@@ -142,10 +130,7 @@ function queryValues(key: string): string[] {
   const values = Array.isArray(raw) ? raw : [raw];
   return [
     ...new Set(
-      values.filter(
-        (value): value is string =>
-          typeof value === "string" && value.length > 0,
-      ),
+      values.filter((value): value is string => typeof value === 'string' && value.length > 0),
     ),
   ];
 }
@@ -153,13 +138,9 @@ function queryValues(key: string): string[] {
 function buildFilters(): IntegrationActivityFilters {
   return {
     ...(filters.provider.length ? { provider: [...filters.provider] } : {}),
-    ...(filters.activityType.length
-      ? { activityType: [...filters.activityType] }
-      : {}),
+    ...(filters.activityType.length ? { activityType: [...filters.activityType] } : {}),
     ...(filters.status.length ? { status: [...filters.status] } : {}),
-    ...(filters.externalUserId.trim()
-      ? { externalUserId: filters.externalUserId.trim() }
-      : {}),
+    ...(filters.externalUserId.trim() ? { externalUserId: filters.externalUserId.trim() } : {}),
     ...(filters.createdFrom ? { createdFrom: toIso(filters.createdFrom) } : {}),
     ...(filters.createdTo ? { createdTo: toIso(filters.createdTo) } : {}),
     limit: filters.limit,
@@ -194,17 +175,16 @@ function resetProjectState() {
   loading.value = false;
   detailLoading.value = false;
   contentLoading.value = false;
-  error.value = "";
-  detailError.value = "";
-  contentError.value = "";
+  error.value = '';
+  detailError.value = '';
+  contentError.value = '';
 }
 
 onMounted(initializeProject);
 watch(
   () => [auth.project?.id, canRead.value] as const,
   ([projectId, readable], [previousProjectId, previousReadable]) => {
-    if (projectId === previousProjectId && readable === previousReadable)
-      return;
+    if (projectId === previousProjectId && readable === previousReadable) return;
     void initializeProject();
   },
 );
@@ -213,7 +193,7 @@ watch(canReadContent, (readable, previousReadable) => {
   contentSequence += 1;
   content.value = null;
   contentLoading.value = false;
-  contentError.value = "";
+  contentError.value = '';
 });
 
 async function loadPage(
@@ -226,7 +206,7 @@ async function loadPage(
   const generation = projectGeneration;
   const sequence = ++listSequence;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const page = await integrationActivityRepository.list(projectId, {
       ...requestFilters,
@@ -242,7 +222,7 @@ async function loadPage(
     nextCursor.value = page.nextCursor;
     pageIndex.value = index;
     failedRequest.value = null;
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     return true;
   } catch (cause) {
     if (
@@ -251,10 +231,7 @@ async function loadPage(
       auth.project?.id !== projectId
     )
       return false;
-    error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить журнал интеграций";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить журнал интеграций';
     failedRequest.value = {
       cursor,
       index,
@@ -262,20 +239,15 @@ async function loadPage(
     };
     return false;
   } finally {
-    if (sequence === listSequence && generation === projectGeneration)
-      loading.value = false;
+    if (sequence === listSequence && generation === projectGeneration) loading.value = false;
   }
 }
 
 function validateDates(): boolean {
-  const from = filters.createdFrom
-    ? new Date(filters.createdFrom).getTime()
-    : null;
+  const from = filters.createdFrom ? new Date(filters.createdFrom).getTime() : null;
   const to = filters.createdTo ? new Date(filters.createdTo).getTime() : null;
   filterError.value =
-    from !== null && to !== null && from >= to
-      ? "Дата «с» должна быть раньше даты «по»."
-      : "";
+    from !== null && to !== null && from >= to ? 'Дата «с» должна быть раньше даты «по».' : '';
   return !filterError.value;
 }
 
@@ -288,7 +260,7 @@ async function applyFilters() {
   pageCursors.value = [undefined];
   void router.replace({
     query: {
-      tab: "integrations",
+      tab: 'integrations',
       ...(next.provider ? { provider: next.provider } : {}),
       ...(next.activityType ? { activityType: next.activityType } : {}),
       ...(next.status ? { activityStatus: next.status } : {}),
@@ -305,12 +277,12 @@ function resetFilters() {
     provider: [],
     activityType: [],
     status: [],
-    externalUserId: "",
-    createdFrom: "",
-    createdTo: "",
+    externalUserId: '',
+    createdFrom: '',
+    createdTo: '',
     limit: 25,
   });
-  filterError.value = "";
+  filterError.value = '';
   return applyFilters();
 }
 
@@ -346,8 +318,8 @@ async function openDetail(item: IntegrationActivityItem) {
   selectedItem.value = item;
   detail.value = null;
   content.value = null;
-  detailError.value = "";
-  contentError.value = "";
+  detailError.value = '';
+  contentError.value = '';
   detailLoading.value = true;
   try {
     const loaded = await integrationActivityRepository.get(projectId, item.id);
@@ -359,8 +331,7 @@ async function openDetail(item: IntegrationActivityItem) {
       detail.value = loaded;
   } catch (cause) {
     if (sequence === detailSequence)
-      detailError.value =
-        cause instanceof Error ? cause.message : "Детали не загружены";
+      detailError.value = cause instanceof Error ? cause.message : 'Детали не загружены';
   } finally {
     if (sequence === detailSequence) detailLoading.value = false;
   }
@@ -369,21 +340,13 @@ async function openDetail(item: IntegrationActivityItem) {
 async function revealContent() {
   const projectId = auth.project?.id;
   const current = detail.value;
-  if (
-    !projectId ||
-    !current ||
-    !canReadContent.value ||
-    current.contentState !== "AVAILABLE"
-  )
+  if (!projectId || !current || !canReadContent.value || current.contentState !== 'AVAILABLE')
     return;
   const sequence = ++contentSequence;
   contentLoading.value = true;
-  contentError.value = "";
+  contentError.value = '';
   try {
-    const loaded = await integrationActivityRepository.content(
-      projectId,
-      current.id,
-    );
+    const loaded = await integrationActivityRepository.content(projectId, current.id);
     if (
       sequence === contentSequence &&
       detail.value?.id === current.id &&
@@ -393,8 +356,7 @@ async function revealContent() {
       content.value = loaded;
   } catch (cause) {
     if (sequence === contentSequence)
-      contentError.value =
-        cause instanceof Error ? cause.message : "Содержимое не загружено";
+      contentError.value = cause instanceof Error ? cause.message : 'Содержимое не загружено';
   } finally {
     if (sequence === contentSequence) contentLoading.value = false;
   }
@@ -406,16 +368,16 @@ function closeDetail() {
   selectedItem.value = null;
   detail.value = null;
   content.value = null;
-  detailError.value = "";
-  contentError.value = "";
+  detailError.value = '';
+  contentError.value = '';
 }
 
 function providerLabel(provider: string): string {
-  return provider === "TELEGRAM" ? "Telegram" : provider;
+  return provider === 'TELEGRAM' ? 'Telegram' : provider;
 }
 
 function providerIcon(provider: string): string {
-  return provider === "TELEGRAM" ? "pi pi-send" : "pi pi-link";
+  return provider === 'TELEGRAM' ? 'pi pi-send' : 'pi pi-link';
 }
 
 function formatBytes(value: number): string {
@@ -434,8 +396,7 @@ function formatBytes(value: number): string {
           ><i class="pi pi-clock" /> {{ pendingCount }} ожидают</span
         >
         <span v-if="failedCount" class="danger"
-          ><i class="pi pi-exclamation-circle" /> {{ failedCount }} требуют
-          внимания</span
+          ><i class="pi pi-exclamation-circle" /> {{ failedCount }} требуют внимания</span
         >
       </div>
       <Button
@@ -522,23 +483,13 @@ function formatBytes(value: number): string {
             />
           </div>
         </div>
-        <Message
-          v-if="filterError"
-          severity="warn"
-          size="small"
-          :closable="false"
-          >{{ filterError }}</Message
-        >
+        <Message v-if="filterError" severity="warn" size="small" :closable="false">{{
+          filterError
+        }}</Message>
         <footer>
-          <button
-            type="button"
-            class="advanced-button"
-            @click="advancedFilters = !advancedFilters"
-          >
-            <i
-              :class="advancedFilters ? 'pi pi-chevron-up' : 'pi pi-calendar'"
-            />
-            {{ advancedFilters ? "Скрыть даты" : "Период создания" }}
+          <button type="button" class="advanced-button" @click="advancedFilters = !advancedFilters">
+            <i :class="advancedFilters ? 'pi pi-chevron-up' : 'pi pi-calendar'" />
+            {{ advancedFilters ? 'Скрыть даты' : 'Период создания' }}
           </button>
           <span v-if="activeFilterCount" class="filter-count"
             >{{ activeFilterCount }} активных</span
@@ -565,19 +516,14 @@ function formatBytes(value: number): string {
       <div class="snapshot-note" tabindex="0">
         <i class="pi pi-lock" />
         <span
-          ><strong>Стабильный снимок</strong> Новые записи появятся после
-          обновления; статусы текущих записей остаются актуальными.</span
+          ><strong>Стабильный снимок</strong> Новые записи появятся после обновления; статусы
+          текущих записей остаются актуальными.</span
         >
       </div>
       <Message v-if="error" severity="error" :closable="false">
         <div class="message-row">
           <span>{{ error }}</span>
-          <Button
-            label="Повторить"
-            size="small"
-            text
-            @click="retryFailedRequest"
-          />
+          <Button label="Повторить" size="small" text @click="retryFailedRequest" />
         </div>
       </Message>
 
@@ -607,9 +553,7 @@ function formatBytes(value: number): string {
           <Column header="Активность">
             <template #body="{ data }">
               <div class="activity-cell">
-                <span class="provider-mark"
-                  ><i :class="providerIcon(data.provider)"
-                /></span>
+                <span class="provider-mark"><i :class="providerIcon(data.provider)" /></span>
                 <div>
                   <strong>{{ activityStateLabel(data.state) }}</strong>
                   <small
@@ -622,9 +566,7 @@ function formatBytes(value: number): string {
           </Column>
           <Column header="Пользователь">
             <template #body="{ data }">
-              <strong class="mono user-id">{{
-                data.endUser.externalId
-              }}</strong>
+              <strong class="mono user-id">{{ data.endUser.externalId }}</strong>
             </template>
           </Column>
           <Column header="Источник">
@@ -659,9 +601,9 @@ function formatBytes(value: number): string {
                   relativeTime(data.createdAt)
                 }}</strong>
                 <small>{{
-                  new Date(data.createdAt).toLocaleTimeString("ru-RU", {
-                    hour: "2-digit",
-                    minute: "2-digit",
+                  new Date(data.createdAt).toLocaleTimeString('ru-RU', {
+                    hour: '2-digit',
+                    minute: '2-digit',
                   })
                 }}</small>
               </div>
@@ -691,8 +633,7 @@ function formatBytes(value: number): string {
           @click="openDetail(item)"
         >
           <span class="card-top"
-            ><span class="provider-mark"
-              ><i :class="providerIcon(item.provider)" /></span
+            ><span class="provider-mark"><i :class="providerIcon(item.provider)" /></span
             ><span class="card-title"
               ><strong>{{ activityStateLabel(item.state) }}</strong
               ><small
@@ -705,12 +646,8 @@ function formatBytes(value: number): string {
               rounded
           /></span>
           <span class="card-meta"
-            ><span class="mono"
-              ><i class="pi pi-user" /> {{ item.endUser.externalId }}</span
-            ><span
-              ><i class="pi pi-clock" />
-              {{ relativeTime(item.createdAt) }}</span
-            ></span
+            ><span class="mono"><i class="pi pi-user" /> {{ item.endUser.externalId }}</span
+            ><span><i class="pi pi-clock" /> {{ relativeTime(item.createdAt) }}</span></span
           >
         </button>
       </div>
@@ -747,9 +684,7 @@ function formatBytes(value: number): string {
     <template #header>
       <div v-if="selectedItem" class="drawer-title">
         <div class="drawer-provider">
-          <span class="provider-mark"
-            ><i :class="providerIcon(selectedItem.provider)"
-          /></span>
+          <span class="provider-mark"><i :class="providerIcon(selectedItem.provider)" /></span>
           <div>
             <div class="eyebrow">
               {{ providerLabel(selectedItem.provider) }} · Integration activity
@@ -788,47 +723,29 @@ function formatBytes(value: number): string {
           </div>
         </section>
 
-        <Message
-          v-if="detail.status === 'OUTCOME_UNKNOWN'"
-          severity="warn"
-          :closable="false"
-        >
-          Retenive не может доказать итог доставки. Это не означает, что сообщение
-          точно не доставлено.
+        <Message v-if="detail.status === 'OUTCOME_UNKNOWN'" severity="warn" :closable="false">
+          Retenive не может доказать итог доставки. Это не означает, что сообщение точно не
+          доставлено.
         </Message>
-        <Message
-          v-else-if="detail.status === 'FAILED'"
-          severity="error"
-          :closable="false"
-        >
+        <Message v-else-if="detail.status === 'FAILED'" severity="error" :closable="false">
           <strong>Операция завершилась ошибкой</strong>
-          <span v-if="detail.errorCode" class="mono">{{
-            detail.errorCode
-          }}</span>
+          <span v-if="detail.errorCode" class="mono">{{ detail.errorCode }}</span>
         </Message>
 
-        <section
-          v-if="detail.milestones.length || detail.attempts.length"
-          class="detail-section"
-        >
+        <section v-if="detail.milestones.length || detail.attempts.length" class="detail-section">
           <header>
             <span class="section-index">01</span>
             <div>
               <h3>Технический путь</h3>
               <p>
                 {{
-                  detail.activityType === "CONNECTION"
-                    ? "Этапы подключения"
-                    : "Попытки доставки"
+                  detail.activityType === 'CONNECTION' ? 'Этапы подключения' : 'Попытки доставки'
                 }}
               </p>
             </div>
           </header>
           <ol v-if="detail.milestones.length" class="history-list">
-            <li
-              v-for="milestone in detail.milestones"
-              :key="`${milestone.state}-${milestone.at}`"
-            >
+            <li v-for="milestone in detail.milestones" :key="`${milestone.state}-${milestone.at}`">
               <i class="pi pi-check-circle" />
               <span
                 ><strong>{{ activityStateLabel(milestone.state) }}</strong
@@ -838,26 +755,16 @@ function formatBytes(value: number): string {
           </ol>
           <ol v-else class="history-list">
             <li v-for="attempt in detail.attempts" :key="attempt.attemptNumber">
-              <i
-                :class="
-                  attempt.outcome === 'ACCEPTED'
-                    ? 'pi pi-check-circle'
-                    : 'pi pi-refresh'
-                "
-              />
+              <i :class="attempt.outcome === 'ACCEPTED' ? 'pi pi-check-circle' : 'pi pi-refresh'" />
               <span
-                ><strong
-                  >Попытка {{ attempt.attemptNumber }} ·
-                  {{ attempt.outcome }}</strong
+                ><strong>Попытка {{ attempt.attemptNumber }} · {{ attempt.outcome }}</strong
                 ><small
                   >{{ formatDate(attempt.finishedAt)
                   }}<template v-if="attempt.retryAfterMs">
                     · повтор через
                     {{ Math.ceil(attempt.retryAfterMs / 1000) }} сек.</template
                   ></small
-                ><code v-if="attempt.errorCode">{{
-                  attempt.errorCode
-                }}</code></span
+                ><code v-if="attempt.errorCode">{{ attempt.errorCode }}</code></span
               >
             </li>
           </ol>
@@ -866,7 +773,7 @@ function formatBytes(value: number): string {
         <section class="detail-section content-section">
           <header>
             <span class="section-index">{{
-              detail.milestones.length || detail.attempts.length ? "02" : "01"
+              detail.milestones.length || detail.attempts.length ? '02' : '01'
             }}</span>
             <div>
               <h3>Содержимое сообщения</h3>
@@ -886,18 +793,13 @@ function formatBytes(value: number): string {
             </div>
           </template>
           <template v-else-if="content">
-            <div
-              v-if="content.state === 'REDACTED'"
-              class="content-placeholder"
-            >
+            <div v-if="content.state === 'REDACTED'" class="content-placeholder">
               <i class="pi pi-clock" />
               Содержимое удалено по политике хранения.
             </div>
             <div v-else class="message-preview">
               <div class="message-preview-head">
-                <span
-                  ><i class="pi pi-lock-open" /> Раскрыто для этой сессии</span
-                >
+                <span><i class="pi pi-lock-open" /> Раскрыто для этой сессии</span>
                 <Tag :value="content.kind" severity="secondary" />
               </div>
               <p v-if="content.text" class="message-content">
@@ -924,20 +826,10 @@ function formatBytes(value: number): string {
               :loading="contentLoading"
               @click="revealContent"
             />
-            <Message
-              v-if="contentError"
-              severity="error"
-              size="small"
-              :closable="false"
-            >
+            <Message v-if="contentError" severity="error" size="small" :closable="false">
               <div class="message-row">
                 <span>{{ contentError }}</span>
-                <Button
-                  label="Повторить"
-                  text
-                  size="small"
-                  @click="revealContent"
-                />
+                <Button label="Повторить" text size="small" @click="revealContent" />
               </div>
             </Message>
           </template>
@@ -950,7 +842,7 @@ function formatBytes(value: number): string {
         <section class="detail-section technical-section">
           <header>
             <span class="section-index">{{
-              detail.milestones.length || detail.attempts.length ? "03" : "02"
+              detail.milestones.length || detail.attempts.length ? '03' : '02'
             }}</span>
             <div>
               <h3>Диагностика</h3>
@@ -1166,11 +1058,7 @@ function formatBytes(value: number): string {
   width: 34px;
   height: 34px;
   border-radius: 11px;
-  background: linear-gradient(
-    145deg,
-    var(--status-info),
-    var(--action-primary)
-  );
+  background: linear-gradient(145deg, var(--status-info), var(--action-primary));
   color: var(--on-status-info);
   box-shadow: var(--shadow-raised);
 }
@@ -1350,7 +1238,7 @@ function formatBytes(value: number): string {
   left: 7px;
   width: 1px;
   background: var(--line);
-  content: "";
+  content: '';
 }
 .history-list li:last-child {
   padding-bottom: 0;
@@ -1386,11 +1274,7 @@ function formatBytes(value: number): string {
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--status-info) 24%, var(--line));
   border-radius: 14px;
-  background: color-mix(
-    in srgb,
-    var(--status-info-soft) 45%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--status-info-soft) 45%, var(--surface-card));
 }
 .message-preview-head {
   display: flex;

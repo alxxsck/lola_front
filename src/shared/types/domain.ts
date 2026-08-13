@@ -1,29 +1,28 @@
-import type { AdminMessageAISuspensionDto } from "@/shared/api/generated/models";
+import type { AdminMessageAISuspensionDto } from '@/shared/api/generated/models';
 
-export type EntityKind = "BUTTON" | "MODAL" | "PAGE" | "ELEMENT" | "HANDLER";
-export type ScenarioStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "ARCHIVED";
-export type ConversationPolicy = "reuse_active" | "create_new";
+export type EntityKind = 'BUTTON' | 'MODAL' | 'PAGE' | 'ELEMENT' | 'HANDLER';
+export type ScenarioStatus = 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
+export type ConversationPolicy = 'reuse_active' | 'create_new';
 export type ActionType = string;
-export type ActionExecutor = "SERVER" | "FRONTEND";
+export type ActionExecutor = 'SERVER' | 'FRONTEND';
 export type ActionControl =
-  | "text"
-  | "textarea"
-  | "number"
-  | "select"
-  | "target"
-  | "event"
-  | "json"
-  | "boolean"
-  | "goal-builder"
-  | "duration"
-  | "node";
+  | 'text'
+  | 'textarea'
+  | 'number'
+  | 'select'
+  | 'target'
+  | 'event'
+  | 'json'
+  | 'boolean'
+  | 'goal-builder'
+  | 'duration'
+  | 'node';
 
 export type JsonPrimitive = string | number | boolean | null;
-export type JsonValue =
-  JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
+export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 
 export interface ActionConfigPropertySchema extends Record<string, unknown> {
-  type?: "string" | "number" | "integer" | "boolean" | "object" | "array";
+  type?: 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array';
   title?: string;
   description?: string;
   default?: JsonValue;
@@ -42,7 +41,7 @@ export interface ActionConfigPropertySchema extends Record<string, unknown> {
 }
 
 export interface ActionConfigSchema extends Record<string, unknown> {
-  type: "object";
+  type: 'object';
   properties: Record<string, ActionConfigPropertySchema>;
   required: string[];
   additionalProperties?: boolean | ActionConfigPropertySchema;
@@ -86,7 +85,7 @@ export interface AuthProject {
   id: string;
   name: string;
   slug: string;
-  status: "ACTIVE" | "SUSPENDED" | "ARCHIVED";
+  status: 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
   version?: number;
   publicKey?: string;
   defaultLocale?: string;
@@ -104,7 +103,7 @@ export interface AuthProject {
   organization?: Organization;
   _count?: { users: number; scenarios: number; eventLogs: number };
   membershipId?: string;
-  membershipStatus?: "ACTIVE" | "REMOVED";
+  membershipStatus?: 'ACTIVE' | 'REMOVED';
   membershipVersion?: number;
   roleKeys?: string[];
   effectivePermissionCodes?: string[];
@@ -118,7 +117,7 @@ export interface Project extends AuthProject {
   assistantName: string;
   systemPrompt: string;
   voiceInstructions: string;
-  settings: NonNullable<AuthProject["settings"]>;
+  settings: NonNullable<AuthProject['settings']>;
 }
 
 export interface CmsUser {
@@ -156,12 +155,12 @@ export interface EventDefinition {
   definitionKeyId?: string;
   currentRevisionId?: string | null;
   isCurrent?: boolean;
-  origin?: "CUSTOM" | "RETENIVE_MANAGED";
+  origin?: 'CUSTOM' | 'RETENIVE_MANAGED';
   readOnly?: boolean;
   policyVersion?: number;
   policyUpdatedAt?: string;
   metadataUpdatedAt?: string;
-  lifecycle?: "ACTIVE" | "ARCHIVED";
+  lifecycle?: 'ACTIVE' | 'ARCHIVED';
   archivedAt?: string | null;
   projectId: string;
   code: string;
@@ -180,10 +179,10 @@ export interface EventDefinitionRevision extends EventDefinition {
   definitionKeyId: string;
   currentRevisionId: string | null;
   isCurrent: boolean;
-  origin: "CUSTOM" | "RETENIVE_MANAGED";
+  origin: 'CUSTOM' | 'RETENIVE_MANAGED';
   readOnly: boolean;
   pinnedScenarioRevisionCount: number;
-  compatibility: "CURRENT" | "PINNED" | "SUPERSEDED";
+  compatibility: 'CURRENT' | 'PINNED' | 'SUPERSEDED';
 }
 
 export interface ActivitySettingLimit {
@@ -201,18 +200,18 @@ export interface ActivitySettings {
     reconnectGraceSeconds: ActivitySettingLimit;
   };
   semantics: {
-    timezone: "IANA_TIME_ZONE_FOR_ACTIVITY_DAY";
-    visitInactivitySeconds: "START_NEW_VISIT_AFTER_GAP";
-    reconnectGraceSeconds: "DEFER_OFFLINE_TRANSITION";
+    timezone: 'IANA_TIME_ZONE_FOR_ACTIVITY_DAY';
+    visitInactivitySeconds: 'START_NEW_VISIT_AFTER_GAP';
+    reconnectGraceSeconds: 'DEFER_OFFLINE_TRANSITION';
   };
 }
 
 export type UpdateActivitySettings = Pick<
   ActivitySettings,
-  "timezone" | "visitInactivitySeconds" | "reconnectGraceSeconds"
+  'timezone' | 'visitInactivitySeconds' | 'reconnectGraceSeconds'
 > & { expectedVersion: number };
 
-export type UserAttributeType = "STRING" | "NUMBER" | "BOOLEAN" | "DATETIME";
+export type UserAttributeType = 'STRING' | 'NUMBER' | 'BOOLEAN' | 'DATETIME';
 export type UserAttributeAllowedValue = string | number | boolean;
 
 export interface UserAttributeValidation {
@@ -269,8 +268,7 @@ export interface ScenarioAction {
 
 export interface ScenarioCondition {
   path: string;
-  operator:
-    "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "in" | "exists" | "contains";
+  operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'exists' | 'contains';
   value?: unknown;
 }
 
@@ -285,8 +283,7 @@ export interface Scenario {
   status: ScenarioStatus;
   conversationPolicy: ConversationPolicy;
   priority: number;
-  importanceClass?:
-    "SECURITY" | "ACTION_RESPONSE" | "REMINDER" | "PROMOTION" | "GENERAL";
+  importanceClass?: 'SECURITY' | 'ACTION_RESPONSE' | 'REMINDER' | 'PROMOTION' | 'GENERAL';
   respectsQuietHours?: boolean;
   cooldownSeconds?: number;
   maxRunsPerUser?: number;
@@ -317,20 +314,20 @@ export interface ActiveSession {
   userName: string;
   currentPage?: string;
   device: string;
-  transport?: "SOCKET_IO" | "ANY_CABLE";
+  transport?: 'SOCKET_IO' | 'ANY_CABLE';
   connectionCount?: number;
   sessionCount?: number;
   currentConversationId?: string | null;
   startedAt: string;
   lastSeenAt: string;
-  status: "ONLINE" | "STALE";
+  status: 'ONLINE' | 'STALE';
 }
 
 export interface Conversation {
   id: string;
   userId: string;
   title: string;
-  status: "ACTIVE" | "ARCHIVED";
+  status: 'ACTIVE' | 'ARCHIVED';
   updatedAt?: string;
   lastMessageAt: string;
   messageCount: number;
@@ -339,13 +336,12 @@ export interface Conversation {
   aiSuspension: ConversationAISuspensionSummary;
 }
 
-export type ConversationAISuspensionLifecycle =
-  "NONE" | "ACTIVE" | "EXPIRED" | "RESUMED";
+export type ConversationAISuspensionLifecycle = 'NONE' | 'ACTIVE' | 'EXPIRED' | 'RESUMED';
 export type SuspensionReason =
-  "OPERATOR_TAKEOVER" | "MANUAL_REVIEW" | "INCIDENT_RESPONSE" | "OTHER";
+  'OPERATOR_TAKEOVER' | 'MANUAL_REVIEW' | 'INCIDENT_RESPONSE' | 'OTHER';
 
 export interface ConversationAISuspensionSummary {
-  mode: "AUTOMATIC" | "SUSPENDED";
+  mode: 'AUTOMATIC' | 'SUSPENDED';
   lifecycle: ConversationAISuspensionLifecycle;
   version: string;
   suspendedUntil: string | null;
@@ -366,10 +362,10 @@ export interface ConversationMessage {
   conversationId: string;
   /** Server-defined canonical order when the current chat contract provides it. */
   ordinal?: number;
-  author: "USER" | "ASSISTANT" | "ADMIN" | "SCENARIO" | "SYSTEM";
+  author: 'USER' | 'ASSISTANT' | 'ADMIN' | 'SCENARIO' | 'SYSTEM';
   /** Immutable author data captured when the message was accepted. */
   authorSnapshot?: {
-    type: "CMS_USER" | "SYSTEM" | "BREAK_GLASS" | "UNKNOWN";
+    type: 'CMS_USER' | 'SYSTEM' | 'BREAK_GLASS' | 'UNKNOWN';
     cmsUserId: string | null;
     displayName: string;
     avatarUrl: string | null;
@@ -394,28 +390,22 @@ export interface ConversationMessage {
     documentId: string;
     revisionId: string;
     revisionNumber: number;
-    mode: "QUOTE" | "LINK";
+    mode: 'QUOTE' | 'LINK';
     edited: boolean;
     citedAt: string;
   };
-  status: "PENDING" | "WRITING" | "COMPLETED" | "FAILED" | "CANCELLED";
+  status: 'PENDING' | 'WRITING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
   /** Current server-confirmed delivery state for a public outbound message. */
   delivery?: {
     id?: string;
-    channel?: "SDK_REALTIME";
+    channel?: 'SDK_REALTIME';
     status:
-      | "PENDING"
-      | "DELIVERING"
-      | "DELIVERED"
-      | "READ"
-      | "FAILED"
-      | "CANCELLED"
-      | "NOT_REDELIVERED";
+      'PENDING' | 'DELIVERING' | 'DELIVERED' | 'READ' | 'FAILED' | 'CANCELLED' | 'NOT_REDELIVERED';
     generation: number;
     version: number;
     errorCode: string | null;
     retryEligible: boolean;
-    allowedActions: Array<"RETRY_FAILED_DELIVERY">;
+    allowedActions: Array<'RETRY_FAILED_DELIVERY'>;
     acceptedAt?: string;
     interactionSessionId?: string | null;
     commandIds: string[];
@@ -424,8 +414,8 @@ export interface ConversationMessage {
   updatedAt?: string;
   translation?: {
     id: string;
-    direction: "INBOUND" | "OUTBOUND";
-    status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
+    direction: 'INBOUND' | 'OUTBOUND';
+    status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
     originalText: string;
     translatedText: string | null;
     deliveredText: string | null;
@@ -451,7 +441,7 @@ export interface SupportInboxConversation {
   projectId: string;
   endUser: { id: string; externalId: string };
   title: string;
-  status: Conversation["status"];
+  status: Conversation['status'];
   createdAt: string;
   updatedAt: string;
   messageCount: number;
@@ -459,7 +449,7 @@ export interface SupportInboxConversation {
   currentInteractionSessionCount: number;
   lastMessage: {
     id: string;
-    role: ConversationMessage["author"];
+    role: ConversationMessage['author'];
     text: string;
     createdAt: string;
   } | null;
@@ -468,7 +458,7 @@ export interface SupportInboxConversation {
 export interface ActivityItem {
   id: string;
   userId: string;
-  type: "EVENT" | "MESSAGE" | "SCENARIO" | "COMMAND" | "ERROR";
+  type: 'EVENT' | 'MESSAGE' | 'SCENARIO' | 'COMMAND' | 'ERROR';
   title: string;
   description: string;
   timestamp: string;
@@ -476,22 +466,22 @@ export interface ActivityItem {
 }
 
 export type ManualAction =
-  | { type: "TEXT"; text: string }
-  | { type: "VOICE"; text: string; voice?: string }
+  | { type: 'TEXT'; text: string }
+  | { type: 'VOICE'; text: string; voice?: string }
   | {
-      type: "BUTTON";
+      type: 'BUTTON';
       label: string;
-      action: "OPEN_PAGE" | "OPEN_MODAL" | "HIGHLIGHT_ELEMENT";
+      action: 'OPEN_PAGE' | 'OPEN_MODAL' | 'HIGHLIGHT_ELEMENT';
       target: string;
     }
-  | { type: "ANIMATION"; animation: string }
+  | { type: 'ANIMATION'; animation: string }
   | {
-      type: "COMMAND";
-      action: "OPEN_PAGE" | "OPEN_MODAL" | "HIGHLIGHT_ELEMENT";
+      type: 'COMMAND';
+      action: 'OPEN_PAGE' | 'OPEN_MODAL' | 'HIGHLIGHT_ELEMENT';
       target: string;
     }
   | {
-      type: "BONUS";
+      type: 'BONUS';
       integrationCode: string;
       amount: number;
       currency: string;
@@ -507,7 +497,7 @@ export interface DashboardStats {
   integrationErrors: number;
 }
 
-export type EventLogStatus = "RECEIVED" | "PROCESSED" | "FAILED";
+export type EventLogStatus = 'RECEIVED' | 'PROCESSED' | 'FAILED';
 export interface EventLog {
   id: string;
   eventCode: string;
@@ -519,7 +509,7 @@ export interface EventLog {
   ingestionPolicySnapshot: Record<string, unknown>;
   userId: string;
   userExternalId: string;
-  source: "SERVER" | "FRONTEND" | "INTERNAL" | "INTEGRATION";
+  source: 'SERVER' | 'FRONTEND' | 'INTERNAL' | 'INTEGRATION';
   status: EventLogStatus;
   externalEventId?: string;
   message?: string;
@@ -550,16 +540,16 @@ export interface ScenarioRunStep {
   actionType: string;
   executor: ActionExecutor;
   status:
-    | "PENDING"
-    | "RUNNING"
-    | "WAITING_TIME"
-    | "WAITING_ACK"
-    | "WAITING_INPUT"
-    | "WAITING_DELIVERY"
-    | "SUCCEEDED"
-    | "FAILED"
-    | "EXPIRED"
-    | "SKIPPED";
+    | 'PENDING'
+    | 'RUNNING'
+    | 'WAITING_TIME'
+    | 'WAITING_ACK'
+    | 'WAITING_INPUT'
+    | 'WAITING_DELIVERY'
+    | 'SUCCEEDED'
+    | 'FAILED'
+    | 'EXPIRED'
+    | 'SKIPPED';
   errorCode?: string;
   startedAt?: string;
   finishedAt?: string;
@@ -575,8 +565,7 @@ export interface ScenarioRun {
   eventLogId: string;
   userId: string;
   userExternalId: string;
-  status:
-    "RUNNING" | "COMPLETED" | "FAILED" | "SKIPPED" | "CANCELLED" | "EXPIRED";
+  status: 'RUNNING' | 'COMPLETED' | 'FAILED' | 'SKIPPED' | 'CANCELLED' | 'EXPIRED';
   conversationPolicy: ConversationPolicy;
   conversationId?: string;
   endUserCaseId?: string;
@@ -592,7 +581,7 @@ export interface ScenarioRun {
 export interface AuditEvent {
   id: string;
   actor: {
-    type: "CMS_USER" | "SYSTEM" | "BREAK_GLASS";
+    type: 'CMS_USER' | 'SYSTEM' | 'BREAK_GLASS';
     id: string;
     email?: string;
     name?: string;
@@ -603,7 +592,7 @@ export interface AuditEvent {
   };
   eventType: string;
   eventVersion: number;
-  outcome: "SUCCESS" | "DENIED" | "FAILED";
+  outcome: 'SUCCESS' | 'DENIED' | 'FAILED';
   operation?: string;
   resourceType?: string;
   resourceId?: string;
@@ -630,7 +619,7 @@ export interface ProductApiRequestLog {
   path: string;
   payloadBytes: number;
   statusCode: number;
-  outcome: "SUCCEEDED" | "FAILED";
+  outcome: 'SUCCEEDED' | 'FAILED';
   durationMs: number;
   receivedAt: string;
   retainUntil: string;
@@ -641,16 +630,16 @@ export interface ProductApiRequestLogDetail extends ProductApiRequestLog {
 }
 
 export type DirectAdminActionType =
-  | "SHOW_ASSISTANT"
-  | "HIDE_ASSISTANT"
-  | "OPEN_CHAT"
-  | "CLOSE_CHAT"
-  | "PLAY_ANIMATION"
-  | "HIGHLIGHT_ELEMENT"
-  | "REMOVE_HIGHLIGHT"
-  | "SHOW_CTA"
-  | "OPEN_PAGE"
-  | "OPEN_MODAL";
+  | 'SHOW_ASSISTANT'
+  | 'HIDE_ASSISTANT'
+  | 'OPEN_CHAT'
+  | 'CLOSE_CHAT'
+  | 'PLAY_ANIMATION'
+  | 'HIGHLIGHT_ELEMENT'
+  | 'REMOVE_HIGHLIGHT'
+  | 'SHOW_CTA'
+  | 'OPEN_PAGE'
+  | 'OPEN_MODAL';
 export interface DirectAdminAction {
   type: DirectAdminActionType;
   config: Record<string, unknown>;
@@ -678,16 +667,10 @@ export interface AdminMessageResult {
   commandIds: string[];
   status: string;
   deliveryStatus?:
-    | "PENDING"
-    | "DELIVERING"
-    | "DELIVERED"
-    | "READ"
-    | "FAILED"
-    | "CANCELLED"
-    | "NOT_REDELIVERED";
+    'PENDING' | 'DELIVERING' | 'DELIVERED' | 'READ' | 'FAILED' | 'CANCELLED' | 'NOT_REDELIVERED';
   aiSuspension?: {
     state: ConversationAISuspensionDetail;
     replayed: boolean;
-    inFlightCancellation?: { status?: "NOT_REQUIRED" | "REQUESTED" };
+    inFlightCancellation?: { status?: 'NOT_REQUIRED' | 'REQUESTED' };
   };
 }

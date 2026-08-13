@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest';
 
 import {
   buildEventSchemaExample,
@@ -8,7 +8,7 @@ import {
   validateEventSchemaDraft,
   validateEventSchemaDefinition,
   validateEventSchemaSample,
-} from './event-schema'
+} from './event-schema';
 
 describe('event schema model', () => {
   it('round-trips Retenive metadata, constraints and unknown JSON Schema keywords', () => {
@@ -41,10 +41,10 @@ describe('event schema model', () => {
           'x-retenive-semantic-type': 'currency',
         },
       },
-    }
+    };
 
-    expect(serializeEventSchema(parseEventSchema(schema))).toEqual(schema)
-  })
+    expect(serializeEventSchema(parseEventSchema(schema))).toEqual(schema);
+  });
 
   it('keeps legacy Lola metadata read-only and serializes it without changing its hash', () => {
     const schema = {
@@ -57,18 +57,18 @@ describe('event schema model', () => {
           'x-lola-sensitive': true,
         },
       },
-    }
+    };
 
-    const draft = parseEventSchema(schema)
+    const draft = parseEventSchema(schema);
 
     expect(draft.fields[0]).toMatchObject({
       fieldKey: 'profile.email',
       semanticType: 'email',
       sensitive: true,
       visuallyEditable: false,
-    })
-    expect(serializeEventSchema(draft)).toEqual(schema)
-  })
+    });
+    expect(serializeEventSchema(draft)).toEqual(schema);
+  });
 
   it('keeps unsupported property schemas opaque instead of replacing them', () => {
     const schema = {
@@ -77,22 +77,24 @@ describe('event schema model', () => {
         actor: { oneOf: [{ type: 'string' }, { type: 'object' }] },
         legacy: true,
       },
-    }
+    };
 
-    const draft = parseEventSchema(schema)
+    const draft = parseEventSchema(schema);
 
-    expect(draft.fields.map(({ wireKey, visuallyEditable }) => ({ wireKey, visuallyEditable }))).toEqual([
+    expect(
+      draft.fields.map(({ wireKey, visuallyEditable }) => ({ wireKey, visuallyEditable })),
+    ).toEqual([
       { wireKey: 'actor', visuallyEditable: false },
       { wireKey: 'legacy', visuallyEditable: false },
-    ])
-    expect(serializeEventSchema(draft)).toEqual(schema)
-  })
+    ]);
+    expect(serializeEventSchema(draft)).toEqual(schema);
+  });
 
   it('preserves required keys that are intentionally absent from properties', () => {
-    const schema = { type: 'object', required: ['tenantId'] }
+    const schema = { type: 'object', required: ['tenantId'] };
 
-    expect(serializeEventSchema(parseEventSchema(schema))).toEqual(schema)
-  })
+    expect(serializeEventSchema(parseEventSchema(schema))).toEqual(schema);
+  });
 
   it('keeps local row identity unique when a broken schema repeats a stable field key', () => {
     const draft = parseEventSchema({
@@ -101,11 +103,11 @@ describe('event schema model', () => {
         amount: { type: 'integer', 'x-retenive-field-key': 'deposit.value' },
         fee: { type: 'integer', 'x-retenive-field-key': 'deposit.value' },
       },
-    })
+    });
 
-    expect(draft.fields.map((field) => field.fieldKey)).toEqual(['deposit.value', 'deposit.value'])
-    expect(new Set(draft.fields.map((field) => field.id)).size).toBe(2)
-  })
+    expect(draft.fields.map((field) => field.fieldKey)).toEqual(['deposit.value', 'deposit.value']);
+    expect(new Set(draft.fields.map((field) => field.id)).size).toBe(2);
+  });
 
   it('applies visual edits without changing stable identity or unknown annotations', () => {
     const draft = parseEventSchema({
@@ -120,20 +122,20 @@ describe('event schema model', () => {
         },
       },
       required: ['amount'],
-    })
-    const amount = draft.fields[0]
-    if (!amount) throw new Error('Expected amount field')
+    });
+    const amount = draft.fields[0];
+    if (!amount) throw new Error('Expected amount field');
 
-    amount.wireKey = 'amountMinor'
-    amount.title = 'Amount in minor units'
-    amount.minimum = 1
-    amount.maximum = 500_000
-    amount.semanticType = 'money'
-    amount.unit = 'minor'
-    amount.displayScale = 0.01
-    amount.displayPrecision = 2
-    amount.sensitive = true
-    draft.additionalProperties = true
+    amount.wireKey = 'amountMinor';
+    amount.title = 'Amount in minor units';
+    amount.minimum = 1;
+    amount.maximum = 500_000;
+    amount.semanticType = 'money';
+    amount.unit = 'minor';
+    amount.displayScale = 0.01;
+    amount.displayPrecision = 2;
+    amount.sensitive = true;
+    draft.additionalProperties = true;
 
     expect(serializeEventSchema(draft)).toEqual({
       type: 'object',
@@ -154,8 +156,8 @@ describe('event schema model', () => {
         },
       },
       required: ['amountMinor'],
-    })
-  })
+    });
+  });
 
   it('builds a sample payload without converting declared units', () => {
     const draft = parseEventSchema({
@@ -165,16 +167,19 @@ describe('event schema model', () => {
         amountMinor: { type: 'integer', minimum: 125, 'x-retenive-unit': 'minor' },
         currency: { type: 'string', enum: ['EUR', 'USD'] },
       },
-    })
+    });
 
-    expect(buildEventSchemaExample(draft)).toEqual({ amountMinor: 125, currency: 'EUR' })
-  })
+    expect(buildEventSchemaExample(draft)).toEqual({ amountMinor: 125, currency: 'EUR' });
+  });
 
   it('uses a declared maximum when a numeric field has no minimum', () => {
-    const draft = parseEventSchema({ type: 'object', properties: { score: { type: 'integer', maximum: 10 } } })
+    const draft = parseEventSchema({
+      type: 'object',
+      properties: { score: { type: 'integer', maximum: 10 } },
+    });
 
-    expect(buildEventSchemaExample(draft)).toEqual({ score: 10 })
-  })
+    expect(buildEventSchemaExample(draft)).toEqual({ score: 10 });
+  });
 
   it('validates pasted sample payloads with backend-compatible JSON Schema rules', () => {
     const draft = parseEventSchema({
@@ -184,36 +189,60 @@ describe('event schema model', () => {
         amountMinor: { type: 'integer', minimum: 1 },
         currency: { type: 'string', enum: ['EUR', 'USD'] },
       },
-    })
+    });
 
-    expect(validateEventSchemaSample(draft, { amountMinor: 0, currency: 'GBP', extra: true })).toEqual([
-      { path: '/extra', expected: 'поле описано в настройке', actual: 'true', explanation: 'Поле не описано. Удалите его или разрешите дополнительные поля.' },
-      { path: '/amountMinor', expected: 'не меньше 1', actual: '0', explanation: 'Значение слишком маленькое. Укажите не меньше 1.' },
-      { path: '/currency', expected: 'одно из: EUR, USD', actual: '"GBP"', explanation: 'Выберите один из допустимых вариантов.' },
-    ])
-    expect(validateEventSchemaSample(draft, { amountMinor: 125, currency: 'EUR' })).toEqual([])
-  })
+    expect(
+      validateEventSchemaSample(draft, { amountMinor: 0, currency: 'GBP', extra: true }),
+    ).toEqual([
+      {
+        path: '/extra',
+        expected: 'поле описано в настройке',
+        actual: 'true',
+        explanation: 'Поле не описано. Удалите его или разрешите дополнительные поля.',
+      },
+      {
+        path: '/amountMinor',
+        expected: 'не меньше 1',
+        actual: '0',
+        explanation: 'Значение слишком маленькое. Укажите не меньше 1.',
+      },
+      {
+        path: '/currency',
+        expected: 'одно из: EUR, USD',
+        actual: '"GBP"',
+        explanation: 'Выберите один из допустимых вариантов.',
+      },
+    ]);
+    expect(validateEventSchemaSample(draft, { amountMinor: 125, currency: 'EUR' })).toEqual([]);
+  });
 
   it('rejects a malformed visual schema before it replaces the current draft', () => {
-    const malformed = { type: 'object', properties: 'not-an-object' }
+    const malformed = { type: 'object', properties: 'not-an-object' };
 
     expect(validateEventSchemaDefinition(malformed)).toEqual([
       { message: 'Раздел properties должен быть объектом с описанием полей.' },
-    ])
-  })
+    ]);
+  });
 
   it('keeps draft validation and array normalization inside the schema model', () => {
-    const draft = parseEventSchema({ type: 'object', properties: { amount: { type: 'string' } } })
-    const amount = draft.fields[0]
-    if (!amount) throw new Error('Expected amount field')
+    const draft = parseEventSchema({ type: 'object', properties: { amount: { type: 'string' } } });
+    const amount = draft.fields[0];
+    if (!amount) throw new Error('Expected amount field');
 
-    amount.wireKey = ' amount'
-    expect(validateEventSchemaDraft(draft)).toEqual([{ fieldId: amount.id, message: 'Wire key должны начинаться с буквы и содержать только допустимые символы.' }])
+    amount.wireKey = ' amount';
+    expect(validateEventSchemaDraft(draft)).toEqual([
+      {
+        fieldId: amount.id,
+        message: 'Wire key должны начинаться с буквы и содержать только допустимые символы.',
+      },
+    ]);
 
-    amount.wireKey = 'items'
-    amount.type = 'array'
-    expect(serializeEventSchema(draft)).toMatchObject({ properties: { items: { type: 'array', items: {} } } })
-  })
+    amount.wireKey = 'items';
+    amount.type = 'array';
+    expect(serializeEventSchema(draft)).toMatchObject({
+      properties: { items: { type: 'array', items: {} } },
+    });
+  });
 
   it('rejects constraints that cannot match the selected field type', () => {
     const draft = parseEventSchema({
@@ -221,13 +250,13 @@ describe('event schema model', () => {
       properties: {
         amount: { type: 'integer', enum: ['1', '2'], minimum: 10, maximum: 5 },
       },
-    })
+    });
 
     expect(validateEventSchemaDraft(draft).map((issue) => issue.message)).toEqual([
       'Допустимые варианты должны соответствовать типу поля «amount».',
       'Минимальное значение поля «amount» не может быть больше максимального.',
-    ])
-  })
+    ]);
+  });
 
   it('requires the complete money display contract and preserves it losslessly', () => {
     const draft = parseEventSchema({
@@ -241,19 +270,19 @@ describe('event schema model', () => {
           'x-retenive-display-precision': 2,
         },
       },
-    })
+    });
 
-    expect(validateEventSchemaDraft(draft)).toEqual([])
-    expect(serializeEventSchema(draft)).toEqual(draft.source)
+    expect(validateEventSchemaDraft(draft)).toEqual([]);
+    expect(serializeEventSchema(draft)).toEqual(draft.source);
 
-    const amount = draft.fields[0]!
-    amount.displayScale = 0
-    amount.displayPrecision = 13
+    const amount = draft.fields[0]!;
+    amount.displayScale = 0;
+    amount.displayPrecision = 13;
     expect(validateEventSchemaDraft(draft).map((issue) => issue.message)).toEqual([
       'Масштаб отображения поля «amount-minor» должен быть положительным числом.',
       'Точность отображения поля «amount-minor» должна быть целым числом от 0 до 12.',
-    ])
-  })
+    ]);
+  });
 
   it('distinguishes a wire rename from changing stable field identity', () => {
     const before = {
@@ -263,7 +292,7 @@ describe('event schema model', () => {
         currency: { type: 'string', 'x-retenive-field-key': 'deposit.currency' },
       },
       required: ['amount'],
-    }
+    };
     const after = {
       type: 'object',
       properties: {
@@ -271,7 +300,7 @@ describe('event schema model', () => {
         currency: { type: 'string', 'x-retenive-field-key': 'payment.currency' },
       },
       required: ['amountMinor'],
-    }
+    };
 
     expect(diffEventSchemas(before, after)).toEqual([
       {
@@ -296,8 +325,8 @@ describe('event schema model', () => {
         beforeFieldKey: 'deposit.currency',
         afterFieldKey: 'payment.currency',
       },
-    ])
-  })
+    ]);
+  });
 
   it('reports persisted constraint, metadata and root policy changes', () => {
     const before = {
@@ -306,21 +335,32 @@ describe('event schema model', () => {
       properties: {
         amount: { type: 'integer', minimum: 1, title: 'Amount', 'x-retenive-unit': 'minor' },
       },
-    }
+    };
     const after = {
       type: 'object',
       additionalProperties: true,
       required: ['amount'],
       properties: {
-        amount: { type: 'integer', minimum: 5, title: 'Deposit amount', 'x-retenive-unit': 'major' },
+        amount: {
+          type: 'integer',
+          minimum: 5,
+          title: 'Deposit amount',
+          'x-retenive-unit': 'major',
+        },
       },
-    }
+    };
 
-    expect(diffEventSchemas(before, after)).toEqual(expect.arrayContaining([
-      expect.objectContaining({ kind: 'required-changed', beforeValue: 'нет', afterValue: 'да' }),
-      expect.objectContaining({ kind: 'constraint-changed' }),
-      expect.objectContaining({ kind: 'metadata-changed' }),
-      expect.objectContaining({ kind: 'additional-properties-changed', beforeValue: 'нет', afterValue: 'да' }),
-    ]))
-  })
-})
+    expect(diffEventSchemas(before, after)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'required-changed', beforeValue: 'нет', afterValue: 'да' }),
+        expect.objectContaining({ kind: 'constraint-changed' }),
+        expect.objectContaining({ kind: 'metadata-changed' }),
+        expect.objectContaining({
+          kind: 'additional-properties-changed',
+          beforeValue: 'нет',
+          afterValue: 'да',
+        }),
+      ]),
+    );
+  });
+});

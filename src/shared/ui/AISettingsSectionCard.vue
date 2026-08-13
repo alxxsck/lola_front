@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, useId } from "vue";
-import Message from "primevue/message";
-import ProjectSettingsSectionHeader from "./ProjectSettingsSectionHeader.vue";
+import { ref, useId } from 'vue';
+import Message from 'primevue/message';
+import ProjectSettingsSectionHeader from './ProjectSettingsSectionHeader.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -13,9 +13,9 @@ const props = withDefaults(
     loadingLabel?: string;
   }>(),
   {
-    error: "",
-    icon: "pi pi-sparkles",
-    loadingLabel: "Загружаем настройки…",
+    error: '',
+    icon: 'pi pi-sparkles',
+    loadingLabel: 'Загружаем настройки…',
   },
 );
 const expanded = ref(false);
@@ -23,10 +23,7 @@ const contentId = `${useId()}-content`;
 </script>
 
 <template>
-  <section
-    class="settings-section card ai-settings"
-    :class="{ collapsed: !expanded }"
-  >
+  <section class="settings-section card ai-settings" :class="{ collapsed: !expanded }">
     <ProjectSettingsSectionHeader
       v-model:expanded="expanded"
       :title="props.title"
@@ -36,12 +33,8 @@ const contentId = `${useId()}-content`;
       :content-id="contentId"
     />
     <div v-show="expanded" :id="contentId">
-      <Message v-if="error" severity="error" :closable="false">{{
-        error
-      }}</Message>
-      <p v-if="loading" class="loading">
-        <i class="pi pi-spin pi-spinner" /> {{ loadingLabel }}
-      </p>
+      <Message v-if="error" severity="error" :closable="false">{{ error }}</Message>
+      <p v-if="loading" class="loading"><i class="pi pi-spin pi-spinner" /> {{ loadingLabel }}</p>
       <slot v-else />
     </div>
   </section>
@@ -84,16 +77,8 @@ const contentId = `${useId()}-content`;
   justify-content: space-between;
   gap: 20px;
   padding: 19px 20px;
-  border-color: color-mix(
-    in srgb,
-    var(--status-accent) 18%,
-    var(--border-subtle)
-  );
-  background: color-mix(
-    in srgb,
-    var(--status-accent-soft) 48%,
-    var(--surface-card)
-  );
+  border-color: color-mix(in srgb, var(--status-accent) 18%, var(--border-subtle));
+  background: color-mix(in srgb, var(--status-accent-soft) 48%, var(--surface-card));
 }
 .ai-settings :deep(.feature-toggle > span) {
   display: grid;

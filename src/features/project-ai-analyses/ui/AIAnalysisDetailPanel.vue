@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import { cmsUserDetailRoute } from "@/features/cms-user-management/model/cms-user-route";
+import { computed, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import { cmsUserDetailRoute } from '@/features/cms-user-management/model/cms-user-route';
 import type {
   ProjectAIAnalysisDetailResponseDto,
   ProjectAIAnalysisErrorPresentationDto,
-} from "@/shared/api/generated/models";
-import TechnicalIdentifier from "@/shared/ui/TechnicalIdentifier.vue";
-import { aiErrorMessage } from "@/features/ai-errors/model/ai-error-message";
+} from '@/shared/api/generated/models';
+import TechnicalIdentifier from '@/shared/ui/TechnicalIdentifier.vue';
+import { aiErrorMessage } from '@/features/ai-errors/model/ai-error-message';
 import {
   formatUsdTicks,
   presentAnalysisCostStatus,
   presentAnalysisStatus,
-} from "../model/project-ai-analysis-presentation";
-import AIAnalysisResultView from "./AIAnalysisResultView.vue";
+} from '../model/project-ai-analysis-presentation';
+import AIAnalysisResultView from './AIAnalysisResultView.vue';
 
 const props = defineProps<{
   projectId: string;
@@ -41,9 +41,9 @@ const cancelTarget = ref<AIAnalysisCancelTarget | null>(null);
 
 const latestRun = computed(() => props.detail?.runs[0] ?? null);
 const effectiveStatus = computed(() => {
-  if (props.detail?.analysis.state === "PAUSED") return "PAUSED";
-  if (props.detail?.schedule && !latestRun.value) return "SCHEDULED";
-  return latestRun.value?.status ?? props.detail?.analysis.state ?? "ACTIVE";
+  if (props.detail?.analysis.state === 'PAUSED') return 'PAUSED';
+  if (props.detail?.schedule && !latestRun.value) return 'SCHEDULED';
+  return latestRun.value?.status ?? props.detail?.analysis.state ?? 'ACTIVE';
 });
 const status = computed(() => presentAnalysisStatus(effectiveStatus.value));
 const canCancel = computed(
@@ -51,22 +51,22 @@ const canCancel = computed(
     props.canManage &&
     Boolean(props.detail) &&
     !props.detail!.analysis.compatibility?.readOnly &&
-    !["COMPLETED", "CANCELLED"].includes(props.detail!.analysis.state),
+    !['COMPLETED', 'CANCELLED'].includes(props.detail!.analysis.state),
 );
 const analysisAuthor = computed(() => {
   const analysis = props.detail?.analysis;
   if (analysis?.createdByCmsUserId) return analysis.createdByCmsUserId;
-  return analysis?.compatibility?.attributionStatus === "REQUESTER_UNKNOWN"
-    ? "Автор неизвестен (историческая запись)"
-    : "Автор не указан";
+  return analysis?.compatibility?.attributionStatus === 'REQUESTER_UNKNOWN'
+    ? 'Автор неизвестен (историческая запись)'
+    : 'Автор не указан';
 });
-const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
-  dateStyle: "medium",
-  timeStyle: "short",
+const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
 });
 
 function formatDate(value?: string | null): string {
-  return value ? dateFormatter.format(new Date(value)) : "—";
+  return value ? dateFormatter.format(new Date(value)) : '—';
 }
 
 function limitationMessages(
@@ -74,13 +74,13 @@ function limitationMessages(
   codes: string[],
 ): string[] {
   if (limitations.length) return limitations.map(({ message }) => message);
-  return codes.length ? ["Данные получены с ограничениями."] : [];
+  return codes.length ? ['Данные получены с ограничениями.'] : [];
 }
 
 function confirmCancel(): void {
   const target = cancelTarget.value;
   cancelTarget.value = null;
-  if (target) emit("cancel", target);
+  if (target) emit('cancel', target);
 }
 
 function requestCancel(): void {
@@ -94,11 +94,7 @@ function requestCancel(): void {
 }
 
 watch(
-  () => [
-    props.projectId,
-    props.detail?.analysis.analysisId,
-    props.detail?.analysis.version,
-  ],
+  () => [props.projectId, props.detail?.analysis.analysisId, props.detail?.analysis.version],
   () => {
     cancelTarget.value = null;
   },
@@ -133,16 +129,11 @@ watch(
       />
     </div>
 
-    <Message
-      v-if="cancelTarget"
-      severity="warn"
-      :closable="false"
-      class="cancel-confirmation"
-    >
+    <Message v-if="cancelTarget" severity="warn" :closable="false" class="cancel-confirmation">
       <div>
         <span
-          ><strong>Отменить этот анализ?</strong> Активный или отложенный запуск
-          будет остановлен.</span
+          ><strong>Отменить этот анализ?</strong> Активный или отложенный запуск будет
+          остановлен.</span
         >
         <span class="cancel-actions">
           <Button
@@ -171,9 +162,7 @@ watch(
     <Message v-else-if="error" severity="error">{{ error }}</Message>
     <template v-else-if="detail">
       <header>
-        <div class="detail-eyebrow">
-          AI-анализ #{{ detail.analysis.projectSequence ?? "—" }}
-        </div>
+        <div class="detail-eyebrow">AI-анализ #{{ detail.analysis.projectSequence ?? '—' }}</div>
         <div class="title-row">
           <h2>{{ detail.analysis.title }}</h2>
           <Tag :value="status.label" :severity="status.severity" rounded />
@@ -184,17 +173,10 @@ watch(
       </header>
 
       <section class="identity-grid" aria-label="Сводка анализа">
-        <span
-          ><small>Затронуто пользователей</small
-          >{{ detail.subjectEvidence.total }}</span
-        >
-        <span
-          ><small>Создан</small
-          >{{ formatDate(detail.analysis.createdAt) }}</span
-        >
+        <span><small>Затронуто пользователей</small>{{ detail.subjectEvidence.total }}</span>
+        <span><small>Создан</small>{{ formatDate(detail.analysis.createdAt) }}</span>
         <span v-if="detail.analysis.retentionUntil"
-          ><small>Хранение до</small
-          >{{ formatDate(detail.analysis.retentionUntil) }}</span
+          ><small>Хранение до</small>{{ formatDate(detail.analysis.retentionUntil) }}</span
         >
       </section>
 
@@ -204,19 +186,13 @@ watch(
           <i class="pi pi-chevron-down" />
         </summary>
         <div class="technical-grid">
-          <TechnicalIdentifier
-            label="Analysis ID"
-            :value="detail.analysis.analysisId"
-          />
+          <TechnicalIdentifier label="Analysis ID" :value="detail.analysis.analysisId" />
           <TechnicalIdentifier
             label="Создал администратор"
             :value="analysisAuthor"
             :to="
               detail.analysis.createdByCmsUserId
-                ? cmsUserDetailRoute(
-                    detail.analysis.createdByCmsUserId,
-                    Boolean(canReadCmsUsers),
-                  )
+                ? cmsUserDetailRoute(detail.analysis.createdByCmsUserId, Boolean(canReadCmsUsers))
                 : undefined
             "
           />
@@ -234,29 +210,18 @@ watch(
       </details>
 
       <section v-if="detail.schedule" class="schedule-block">
-        <div class="section-title">
-          <i class="pi pi-clock" /> Отложенный запуск
-        </div>
+        <div class="section-title"><i class="pi pi-clock" /> Отложенный запуск</div>
         <div class="schedule-grid">
           <span><small>Состояние</small>{{ detail.schedule.state }}</span>
           <span
             ><small>Запуск</small
-            >{{
-              formatDate(detail.schedule.nextRunAt ?? detail.schedule.runAt)
-            }}
+            >{{ formatDate(detail.schedule.nextRunAt ?? detail.schedule.runAt) }}
             <em>{{ detail.schedule.timezone }}</em></span
           >
-          <span
-            ><small>Локальное время</small
-            >{{ detail.schedule.localDateTime }}</span
-          >
-          <span
-            v-if="detail.schedule.failureMessage || detail.schedule.failureCode"
+          <span><small>Локальное время</small>{{ detail.schedule.localDateTime }}</span>
+          <span v-if="detail.schedule.failureMessage || detail.schedule.failureCode"
             ><small>Причина остановки</small
-            >{{
-              detail.schedule.failureMessage ??
-              "Отложенный запуск не удалось выполнить."
-            }}</span
+            >{{ detail.schedule.failureMessage ?? 'Отложенный запуск не удалось выполнить.' }}</span
           >
         </div>
         <details v-if="detail.schedule.failureCode" class="technical-section">
@@ -264,10 +229,7 @@ watch(
             <span><i class="pi pi-code" /> Технические данные остановки</span>
             <i class="pi pi-chevron-down" />
           </summary>
-          <TechnicalIdentifier
-            label="Код остановки"
-            :value="detail.schedule.failureCode"
-          />
+          <TechnicalIdentifier label="Код остановки" :value="detail.schedule.failureCode" />
         </details>
       </section>
 
@@ -283,13 +245,11 @@ watch(
         <div class="run-facts">
           <span><small>Инициатор</small>{{ run.initiatedBy }}</span>
           <span v-if="canReadCost && run.actualAiCostUsdTicks"
-            ><small>Фактическая AI-стоимость</small
-            >{{ formatUsdTicks(run.actualAiCostUsdTicks)
+            ><small>Фактическая AI-стоимость</small>{{ formatUsdTicks(run.actualAiCostUsdTicks)
             }}<em>{{ presentAnalysisCostStatus(run.costStatus) }}</em></span
           >
           <span v-if="canReadCost && run.reservedAiCostUsdTicks"
-            ><small>Зарезервировано</small
-            >{{ formatUsdTicks(run.reservedAiCostUsdTicks) }}</span
+            ><small>Зарезервировано</small>{{ formatUsdTicks(run.reservedAiCostUsdTicks) }}</span
           >
           <span v-if="canReadCost && run.actualDbWorkUnits"
             ><small>DB work units</small>{{ run.actualDbWorkUnits }}</span
@@ -313,23 +273,13 @@ watch(
               v-if="run.initiatedByCmsUserId"
               label="Инициатор"
               :value="run.initiatedByCmsUserId"
-              :to="
-                cmsUserDetailRoute(
-                  run.initiatedByCmsUserId,
-                  Boolean(canReadCmsUsers),
-                )
-              "
+              :to="cmsUserDetailRoute(run.initiatedByCmsUserId, Boolean(canReadCmsUsers))"
             />
             <TechnicalIdentifier
               v-if="canReadCost && run.costAttributedToCmsUserId"
               label="Расход администратора"
               :value="run.costAttributedToCmsUserId"
-              :to="
-                cmsUserDetailRoute(
-                  run.costAttributedToCmsUserId,
-                  Boolean(canReadCmsUsers),
-                )
-              "
+              :to="cmsUserDetailRoute(run.costAttributedToCmsUserId, Boolean(canReadCmsUsers))"
             />
             <TechnicalIdentifier
               v-if="run.rootAiOperationId"
@@ -383,10 +333,7 @@ watch(
         />
 
         <Message
-          v-for="message in limitationMessages(
-            run.limitations,
-            run.limitationCodes,
-          )"
+          v-for="message in limitationMessages(run.limitations, run.limitationCodes)"
           :key="message"
           severity="warn"
           :closable="false"
@@ -395,9 +342,7 @@ watch(
         </Message>
 
         <div v-if="run.receipts.length" class="receipts">
-          <div class="section-title">
-            <i class="pi pi-database" /> Использованные данные
-          </div>
+          <div class="section-title"><i class="pi pi-database" /> Использованные данные</div>
           <article v-for="receipt in run.receipts" :key="receipt.id">
             <span
               ><small>Запрос #{{ receipt.ordinal }}</small
@@ -405,41 +350,32 @@ watch(
             >
             <span
               ><small>Строк просмотрено</small
-              >{{ receipt.examinedRows.toLocaleString("ru-RU") }}</span
+              >{{ receipt.examinedRows.toLocaleString('ru-RU') }}</span
             >
             <span
               ><small>Пользователей</small>{{ receipt.matchedEndUserCount
-              }}{{ receipt.matchedEndUserCountExact ? "" : "+" }}</span
+              }}{{ receipt.matchedEndUserCountExact ? '' : '+' }}</span
             >
             <span
               ><small>Период</small>{{ formatDate(receipt.rangeStartedAt) }} —
               {{ formatDate(receipt.rangeEndedAt) }}</span
             >
             <span
-              ><small>Полнота</small
-              >{{ receipt.complete ? "Полный" : "Неполный"
-              }}{{ receipt.truncated ? " · усечён" : "" }}</span
+              ><small>Полнота</small>{{ receipt.complete ? 'Полный' : 'Неполный'
+              }}{{ receipt.truncated ? ' · усечён' : '' }}</span
             >
             <span
-              v-for="message in limitationMessages(
-                receipt.limitations,
-                receipt.limitationCodes,
-              )"
+              v-for="message in limitationMessages(receipt.limitations, receipt.limitationCodes)"
               :key="message"
               ><small>Ограничение</small>{{ message }}</span
             >
             <span v-if="receipt.rejectionMessage || receipt.rejectionCode"
               ><small>Причина отклонения</small
-              >{{
-                receipt.rejectionMessage ?? "Запрос к данным был отклонён."
-              }}</span
+              >{{ receipt.rejectionMessage ?? 'Запрос к данным был отклонён.' }}</span
             >
             <details class="receipt-technical">
               <summary>Технические данные запроса</summary>
-              <TechnicalIdentifier
-                label="Query hash"
-                :value="receipt.queryHash"
-              />
+              <TechnicalIdentifier label="Query hash" :value="receipt.queryHash" />
               <TechnicalIdentifier
                 v-if="receipt.limitationCodes.length"
                 label="Коды ограничений"
@@ -454,16 +390,12 @@ watch(
           </article>
         </div>
 
-        <Message
-          v-if="run.errorMessage || run.errorCode"
-          severity="error"
-          :closable="false"
-        >
+        <Message v-if="run.errorMessage || run.errorCode" severity="error" :closable="false">
           {{
             run.errorMessage ??
             aiErrorMessage(
               run.errorCode,
-              "Запуск завершился с ошибкой. Технический код доступен в данных запуска.",
+              'Запуск завершился с ошибкой. Технический код доступен в данных запуска.',
             )
           }}
         </Message>
@@ -475,20 +407,19 @@ watch(
           <strong>Исторический результат — только чтение</strong>
           Источник:
           {{
-            detail.analysis.compatibility.sourceKind === "AI_REVIEW"
-              ? "AI Review"
-              : "исторический AI-результат"
+            detail.analysis.compatibility.sourceKind === 'AI_REVIEW'
+              ? 'AI Review'
+              : 'исторический AI-результат'
           }}.
           {{
-            detail.analysis.compatibility.attributionStatus ===
-            "REQUESTER_UNKNOWN"
-              ? "Автор запроса неизвестен."
-              : "Атрибуция автора сохранена."
+            detail.analysis.compatibility.attributionStatus === 'REQUESTER_UNKNOWN'
+              ? 'Автор запроса неизвестен.'
+              : 'Атрибуция автора сохранена.'
           }}
           {{
-            detail.analysis.compatibility.provenanceStatus === "PARTIAL"
-              ? "Provenance сохранён частично."
-              : "Provenance неизвестен."
+            detail.analysis.compatibility.provenanceStatus === 'PARTIAL'
+              ? 'Provenance сохранён частично.'
+              : 'Provenance неизвестен.'
           }}
         </span>
       </section>

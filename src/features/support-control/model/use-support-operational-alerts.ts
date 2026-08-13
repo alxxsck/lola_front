@@ -1,11 +1,11 @@
-import { ref } from "vue";
-import { ApiError } from "@/shared/api/http/api-error";
+import { ref } from 'vue';
+import { ApiError } from '@/shared/api/http/api-error';
 import type {
   SupportOperationalAlertsSource,
   SupportOperationalAlertDetail,
   SupportOperationalAlertPage,
   SupportLeadTarget,
-} from "@/features/support-control/api/support-lead-source";
+} from '@/features/support-control/api/support-lead-source';
 
 export interface SupportOperationalAlertsContext {
   projectId(): string | undefined;
@@ -21,16 +21,16 @@ export function createSupportOperationalAlertsController(
 ) {
   const page = ref<SupportOperationalAlertPage | null>(null);
   const loading = ref(false);
-  const error = ref("");
+  const error = ref('');
   const detail = ref<SupportOperationalAlertDetail | null>(null);
   const detailLoading = ref(false);
-  const detailError = ref("");
+  const detailError = ref('');
   const detailAlertId = ref<string | null>(null);
   const ownerTargets = ref<SupportLeadTarget[]>([]);
   const ownerTargetsLoading = ref(false);
-  const mutating = ref<"ACKNOWLEDGE" | "RESOLVE" | "OWNER" | null>(null);
-  const mutationError = ref("");
-  const mutationNotice = ref("");
+  const mutating = ref<'ACKNOWLEDGE' | 'RESOLVE' | 'OWNER' | null>(null);
+  const mutationError = ref('');
+  const mutationNotice = ref('');
   const appliedReceiptVersion = ref<number | null>(null);
   let generation = 0;
   let detailGeneration = 0;
@@ -49,25 +49,23 @@ export function createSupportOperationalAlertsController(
     detailAbort = null;
     page.value = null;
     loading.value = false;
-    error.value = "";
+    error.value = '';
     detail.value = null;
     detailLoading.value = false;
-    detailError.value = "";
+    detailError.value = '';
     detailAlertId.value = null;
     ownerTargets.value = [];
     ownerTargetsLoading.value = false;
     mutating.value = null;
-    mutationError.value = "";
-    mutationNotice.value = "";
+    mutationError.value = '';
+    mutationNotice.value = '';
     appliedReceiptVersion.value = null;
     attempts.clear();
   }
 
   function isCurrent(projectId: string, requestGeneration: number): boolean {
     return (
-      requestGeneration === generation &&
-      context.canRead() &&
-      context.projectId() === projectId
+      requestGeneration === generation && context.canRead() && context.projectId() === projectId
     );
   }
 
@@ -79,10 +77,7 @@ export function createSupportOperationalAlertsController(
     );
   }
 
-  async function load(
-    cursor?: string,
-    options: { retainDetail?: boolean } = {},
-  ): Promise<void> {
+  async function load(cursor?: string, options: { retainDetail?: boolean } = {}): Promise<void> {
     const projectId = context.projectId();
     const append = Boolean(cursor);
     if (!append && !options.retainDetail) closeDetail();
@@ -90,7 +85,7 @@ export function createSupportOperationalAlertsController(
     const requestGeneration = ++generation;
     const abort = new AbortController();
     listAbort = abort;
-    error.value = "";
+    error.value = '';
     if (!projectId || !context.canRead()) {
       loading.value = false;
       listAbort = null;
@@ -116,15 +111,12 @@ export function createSupportOperationalAlertsController(
       };
     } catch (cause) {
       if (!isCurrent(projectId, requestGeneration)) return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         reset();
         await context.onForbidden?.();
         return;
       }
-      error.value = "Не удалось загрузить операционные сигналы";
+      error.value = 'Не удалось загрузить операционные сигналы';
     } finally {
       if (requestGeneration === generation) {
         loading.value = false;
@@ -148,7 +140,7 @@ export function createSupportOperationalAlertsController(
     detailAbort = abort;
     if (!append) detail.value = null;
     detailAlertId.value = alertId;
-    detailError.value = "";
+    detailError.value = '';
     if (!projectId || !context.canRead()) {
       detailLoading.value = false;
       detailAbort = null;
@@ -160,9 +152,7 @@ export function createSupportOperationalAlertsController(
       const result = await source.readAlertDetail(
         projectId,
         alertId,
-        cursor
-          ? { cursor, ...(detail.value?.effectiveWindow ?? {}) }
-          : undefined,
+        cursor ? { cursor, ...(detail.value?.effectiveWindow ?? {}) } : undefined,
         abort.signal,
       );
       if (!isCurrentDetail(projectId, requestGeneration)) return;
@@ -185,15 +175,12 @@ export function createSupportOperationalAlertsController(
       };
     } catch (cause) {
       if (!isCurrentDetail(projectId, requestGeneration)) return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         reset();
         await context.onForbidden?.();
         return;
       }
-      detailError.value = "Не удалось загрузить историю сигнала";
+      detailError.value = 'Не удалось загрузить историю сигнала';
     } finally {
       if (requestGeneration === detailGeneration) {
         detailLoading.value = false;
@@ -224,7 +211,10 @@ export function createSupportOperationalAlertsController(
         return;
       ownerTargets.value = result;
     } catch (cause) {
-      if (!isCurrentDetail(projectId, requestGeneration) || targetGeneration !== ownerTargetsGeneration)
+      if (
+        !isCurrentDetail(projectId, requestGeneration) ||
+        targetGeneration !== ownerTargetsGeneration
+      )
         return;
       if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         ownerTargets.value = [];
@@ -241,8 +231,8 @@ export function createSupportOperationalAlertsController(
     ownerTargets.value = [];
     ownerTargetsLoading.value = false;
     mutating.value = null;
-    mutationError.value = "";
-    mutationNotice.value = "";
+    mutationError.value = '';
+    mutationNotice.value = '';
     appliedReceiptVersion.value = null;
     attempts.clear();
   }
@@ -260,11 +250,11 @@ export function createSupportOperationalAlertsController(
     detailAbort = null;
     detail.value = null;
     detailLoading.value = false;
-    detailError.value = "";
+    detailError.value = '';
     detailAlertId.value = null;
     mutating.value = null;
-    mutationError.value = "";
-    mutationNotice.value = "";
+    mutationError.value = '';
+    mutationNotice.value = '';
     appliedReceiptVersion.value = null;
   }
 
@@ -280,10 +270,7 @@ export function createSupportOperationalAlertsController(
     return next;
   }
 
-  async function command(
-    kind: "ACKNOWLEDGE" | "RESOLVE",
-    reasonCode: string,
-  ): Promise<boolean> {
+  async function command(kind: 'ACKNOWLEDGE' | 'RESOLVE', reasonCode: string): Promise<boolean> {
     const projectId = context.projectId();
     const current = detail.value;
     const alertId = detailAlertId.value;
@@ -305,18 +292,27 @@ export function createSupportOperationalAlertsController(
       reasonCode,
     };
     mutating.value = kind;
-    mutationError.value = "";
+    mutationError.value = '';
     try {
-      const receipt = kind === "ACKNOWLEDGE"
-        ? await source.acknowledge(projectId, alertId, input as Parameters<
-          SupportOperationalAlertsSource["acknowledge"]
-        >[2])
-        : await source.resolve(projectId, alertId, input as Parameters<
-          SupportOperationalAlertsSource["resolve"]
-        >[2]);
-      const expectedState = kind === "ACKNOWLEDGE" ? "ACKNOWLEDGED" : "RESOLVED";
-      if (receipt.alertId !== alertId || receipt.state !== expectedState || receipt.version <= current.alert.version)
-        throw new ApiError(0, "Сервер вернул некорректное подтверждение команды");
+      const receipt =
+        kind === 'ACKNOWLEDGE'
+          ? await source.acknowledge(
+              projectId,
+              alertId,
+              input as Parameters<SupportOperationalAlertsSource['acknowledge']>[2],
+            )
+          : await source.resolve(
+              projectId,
+              alertId,
+              input as Parameters<SupportOperationalAlertsSource['resolve']>[2],
+            );
+      const expectedState = kind === 'ACKNOWLEDGE' ? 'ACKNOWLEDGED' : 'RESOLVED';
+      if (
+        receipt.alertId !== alertId ||
+        receipt.state !== expectedState ||
+        receipt.version <= current.alert.version
+      )
+        throw new ApiError(0, 'Сервер вернул некорректное подтверждение команды');
       appliedReceiptVersion.value = receipt.version;
       if (
         detailRequestGeneration !== detailGeneration ||
@@ -326,12 +322,9 @@ export function createSupportOperationalAlertsController(
       )
         return false;
       attempts.delete(identity);
-      await Promise.all([
-        load(undefined, { retainDetail: true }),
-        loadDetail(alertId),
-      ]);
+      await Promise.all([load(undefined, { retainDetail: true }), loadDetail(alertId)]);
       if (error.value || detailError.value)
-        mutationNotice.value = "Команда применена, но свежий снимок пока не загрузился.";
+        mutationNotice.value = 'Команда применена, но свежий снимок пока не загрузился.';
       return true;
     } catch (cause) {
       if (
@@ -347,8 +340,8 @@ export function createSupportOperationalAlertsController(
       }
       mutationError.value =
         cause instanceof ApiError && cause.status === 409
-          ? "Сигнал уже изменился на сервере. Обновите его перед следующим действием."
-          : "Не удалось выполнить действие с сигналом. Ничего не считается подтверждённым.";
+          ? 'Сигнал уже изменился на сервере. Обновите его перед следующим действием.'
+          : 'Не удалось выполнить действие с сигналом. Ничего не считается подтверждённым.';
       if (cause instanceof ApiError && cause.status === 409)
         await Promise.all([load(undefined, { retainDetail: true }), loadDetail(alertId)]);
       return false;
@@ -363,25 +356,22 @@ export function createSupportOperationalAlertsController(
   }
 
   function acknowledge(
-    reasonCode: "INVESTIGATING" | "OWNERSHIP_ACCEPTED" | "ESCALATED",
+    reasonCode: 'INVESTIGATING' | 'OWNERSHIP_ACCEPTED' | 'ESCALATED',
   ): Promise<boolean> {
-    return command("ACKNOWLEDGE", reasonCode);
+    return command('ACKNOWLEDGE', reasonCode);
   }
 
   function resolve(
     reasonCode:
-      | "RISK_CLEARED"
-      | "MITIGATED"
-      | "FALSE_POSITIVE"
-      | "DUPLICATE"
-      | "EXTERNAL_INCIDENT_HANDOFF",
+      'RISK_CLEARED' | 'MITIGATED' | 'FALSE_POSITIVE' | 'DUPLICATE' | 'EXTERNAL_INCIDENT_HANDOFF',
   ): Promise<boolean> {
-    return command("RESOLVE", reasonCode);
+    return command('RESOLVE', reasonCode);
   }
 
   async function changeOwner(
     ownerCmsUserId: string | null,
-    reasonCode: "LEAD_ASSIGNMENT" | "LOAD_BALANCE" | "SHIFT_HANDOFF" | "SKILL_MATCH" | "OWNER_UNAVAILABLE",
+    reasonCode:
+      'LEAD_ASSIGNMENT' | 'LOAD_BALANCE' | 'SHIFT_HANDOFF' | 'SKILL_MATCH' | 'OWNER_UNAVAILABLE',
   ): Promise<boolean> {
     const projectId = context.projectId();
     const current = detail.value;
@@ -397,10 +387,10 @@ export function createSupportOperationalAlertsController(
     )
       return false;
     const requestGeneration = detailGeneration;
-    const identity = `${projectId}\u001f${alertId}\u001fOWNER\u001f${current.alert.version}\u001f${ownerCmsUserId ?? "none"}\u001f${reasonCode}`;
-    mutating.value = "OWNER";
-    mutationError.value = "";
-    mutationNotice.value = "";
+    const identity = `${projectId}\u001f${alertId}\u001fOWNER\u001f${current.alert.version}\u001f${ownerCmsUserId ?? 'none'}\u001f${reasonCode}`;
+    mutating.value = 'OWNER';
+    mutationError.value = '';
+    mutationNotice.value = '';
     try {
       const receipt = await source.changeOwner(projectId, alertId, {
         ownerCmsUserId,
@@ -413,13 +403,13 @@ export function createSupportOperationalAlertsController(
         receipt.ownerCmsUserId !== ownerCmsUserId ||
         receipt.version <= current.alert.version
       )
-        throw new ApiError(0, "Сервер вернул некорректное подтверждение смены владельца");
+        throw new ApiError(0, 'Сервер вернул некорректное подтверждение смены владельца');
       appliedReceiptVersion.value = receipt.version;
       if (!isCurrentDetail(projectId, requestGeneration) || !canManage()) return false;
       attempts.delete(identity);
       await Promise.all([load(undefined, { retainDetail: true }), loadDetail(alertId)]);
       if (error.value || detailError.value)
-        mutationNotice.value = "Владелец изменён, но свежий снимок пока не загрузился.";
+        mutationNotice.value = 'Владелец изменён, но свежий снимок пока не загрузился.';
       return true;
     } catch (cause) {
       if (!isCurrentDetail(projectId, requestGeneration)) return false;
@@ -430,12 +420,16 @@ export function createSupportOperationalAlertsController(
       }
       mutationError.value =
         cause instanceof ApiError && cause.status === 409
-          ? "Владелец сигнала уже изменился. Данные обновлены — выберите владельца заново."
-          : "Не удалось изменить владельца сигнала.";
+          ? 'Владелец сигнала уже изменился. Данные обновлены — выберите владельца заново.'
+          : 'Не удалось изменить владельца сигнала.';
       if (cause instanceof ApiError && cause.status === 409) await loadDetail(alertId);
       return false;
     } finally {
-      if (context.projectId() === projectId && detailAlertId.value === alertId && mutating.value === "OWNER")
+      if (
+        context.projectId() === projectId &&
+        detailAlertId.value === alertId &&
+        mutating.value === 'OWNER'
+      )
         mutating.value = null;
     }
   }

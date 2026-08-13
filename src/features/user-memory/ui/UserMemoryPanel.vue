@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import Message from "primevue/message";
-import { userMemoryRepository } from "../api/user-memory-repository";
-import type { UserMemoryCategory, UserMemoryFact } from "../model/user-memory";
+import { onMounted, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Message from 'primevue/message';
+import { userMemoryRepository } from '../api/user-memory-repository';
+import type { UserMemoryCategory, UserMemoryFact } from '../model/user-memory';
 
 const props = defineProps<{
   projectId: string;
@@ -14,18 +14,18 @@ const props = defineProps<{
 }>();
 const loading = ref(true);
 const mutating = ref(false);
-const error = ref("");
+const error = ref('');
 const facts = ref<UserMemoryFact[]>([]);
 const clearVisible = ref(false);
 let loadGeneration = 0;
 let mutationGeneration = 0;
 
 const labels: Record<UserMemoryCategory, string> = {
-  PREFERENCE: "Предпочтение",
-  LOCATION: "Местоположение",
-  COMMUNICATION_PREFERENCE: "Общение",
-  INTEREST: "Интерес",
-  PERSONAL_CONTEXT: "Личный контекст",
+  PREFERENCE: 'Предпочтение',
+  LOCATION: 'Местоположение',
+  COMMUNICATION_PREFERENCE: 'Общение',
+  INTEREST: 'Интерес',
+  PERSONAL_CONTEXT: 'Личный контекст',
 };
 
 onMounted(load);
@@ -39,7 +39,7 @@ async function load() {
   mutating.value = false;
   clearVisible.value = false;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const response = await userMemoryRepository.listFacts(projectId, endUserId);
     if (
@@ -51,8 +51,7 @@ async function load() {
     facts.value = response.items;
   } catch (cause) {
     if (generation !== loadGeneration) return;
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось загрузить память";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить память';
   } finally {
     if (generation === loadGeneration) loading.value = false;
   }
@@ -75,8 +74,7 @@ async function remove(factId: string) {
     facts.value = facts.value.filter((fact) => fact.id !== factId);
   } catch (cause) {
     if (generation !== mutationGeneration) return;
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось удалить факт";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось удалить факт';
   } finally {
     if (generation === mutationGeneration) mutating.value = false;
   }
@@ -100,17 +98,14 @@ async function clear() {
     clearVisible.value = false;
   } catch (cause) {
     if (generation !== mutationGeneration) return;
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось очистить память";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось очистить память';
   } finally {
     if (generation === mutationGeneration) mutating.value = false;
   }
 }
 
 function date(value: string): string {
-  return new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" }).format(
-    new Date(value),
-  );
+  return new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium' }).format(new Date(value));
 }
 </script>
 
@@ -134,20 +129,13 @@ function date(value: string): string {
       {{ error }}
       <Button label="Повторить" text size="small" @click="load" />
     </Message>
-    <p v-else-if="loading" class="state">
-      <i class="pi pi-spin pi-spinner" /> Загружаем память…
-    </p>
-    <p v-else-if="!facts.length" class="state">
-      Retenive пока ничего не сохранила.
-    </p>
+    <p v-else-if="loading" class="state"><i class="pi pi-spin pi-spinner" /> Загружаем память…</p>
+    <p v-else-if="!facts.length" class="state">Retenive пока ничего не сохранила.</p>
     <article v-for="fact in facts" v-else :key="fact.id">
       <div>
         <span>{{ labels[fact.category] }}</span>
         <strong>{{ fact.value }}</strong>
-        <small
-          >Источник: {{ date(fact.sourceObservedAt) }} · до
-          {{ date(fact.expiresAt) }}</small
-        >
+        <small>Источник: {{ date(fact.sourceObservedAt) }} · до {{ date(fact.expiresAt) }}</small>
       </div>
       <Button
         v-if="editable"
@@ -168,22 +156,12 @@ function date(value: string): string {
     :style="{ width: 'min(440px, 94vw)' }"
   >
     <p>
-      Все сохранённые факты пользователя «{{ userLabel }}» будут удалены без
-      возможности восстановления.
+      Все сохранённые факты пользователя «{{ userLabel }}» будут удалены без возможности
+      восстановления.
     </p>
     <template #footer>
-      <Button
-        label="Отмена"
-        severity="secondary"
-        text
-        @click="clearVisible = false"
-      />
-      <Button
-        label="Очистить память"
-        severity="danger"
-        :loading="mutating"
-        @click="clear"
-      />
+      <Button label="Отмена" severity="secondary" text @click="clearVisible = false" />
+      <Button label="Очистить память" severity="danger" :loading="mutating" @click="clear" />
     </template>
   </Dialog>
 </template>

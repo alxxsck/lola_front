@@ -1,38 +1,38 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from "vue";
-import { RouterLink } from "vue-router";
-import Button from "primevue/button";
-import type { createSupportAssignmentController } from "@/features/support-case-assignment/model/use-support-assignment";
-import SupportAssignmentDesk from "@/features/support-case-assignment/ui/SupportAssignmentDesk.vue";
-import type { createSupportLeadAssignmentController } from "@/features/support-lead-assignment/model/use-support-lead-assignment";
-import SupportLeadAssignmentDesk from "@/features/support-lead-assignment/ui/SupportLeadAssignmentDesk.vue";
-import { createSupportCaseDeskController } from "@/features/support-case-desk/model/use-support-case-desk";
-import SupportCaseDesk from "@/features/support-case-desk/ui/SupportCaseDesk.vue";
-import SupportCaseBrief from "@/features/support-case-desk/ui/SupportCaseBrief.vue";
-import SupportCaseOperationsContext from "@/features/support-case-operations/ui/SupportCaseOperationsContext.vue";
-import SupportCaseDecisionExplain from "@/features/support-case-intelligence/ui/SupportCaseDecisionExplain.vue";
-import type { createSupportInspectorController } from "@/features/support-inspector/model/use-support-inspector";
-import SupportInspectorState from "@/features/support-inspector/ui/SupportInspectorState.vue";
-import type { createSupportInternalKnowledgeController } from "@/features/support-internal-knowledge/model/use-support-internal-knowledge";
-import SupportInternalKnowledgePane from "@/features/support-internal-knowledge/ui/SupportInternalKnowledgePane.vue";
+import { computed, nextTick, onMounted, ref } from 'vue';
+import { RouterLink } from 'vue-router';
+import Button from 'primevue/button';
+import type { createSupportAssignmentController } from '@/features/support-case-assignment/model/use-support-assignment';
+import SupportAssignmentDesk from '@/features/support-case-assignment/ui/SupportAssignmentDesk.vue';
+import type { createSupportLeadAssignmentController } from '@/features/support-lead-assignment/model/use-support-lead-assignment';
+import SupportLeadAssignmentDesk from '@/features/support-lead-assignment/ui/SupportLeadAssignmentDesk.vue';
+import { createSupportCaseDeskController } from '@/features/support-case-desk/model/use-support-case-desk';
+import SupportCaseDesk from '@/features/support-case-desk/ui/SupportCaseDesk.vue';
+import SupportCaseBrief from '@/features/support-case-desk/ui/SupportCaseBrief.vue';
+import SupportCaseOperationsContext from '@/features/support-case-operations/ui/SupportCaseOperationsContext.vue';
+import SupportCaseDecisionExplain from '@/features/support-case-intelligence/ui/SupportCaseDecisionExplain.vue';
+import type { createSupportInspectorController } from '@/features/support-inspector/model/use-support-inspector';
+import SupportInspectorState from '@/features/support-inspector/ui/SupportInspectorState.vue';
+import type { createSupportInternalKnowledgeController } from '@/features/support-internal-knowledge/model/use-support-internal-knowledge';
+import SupportInternalKnowledgePane from '@/features/support-internal-knowledge/ui/SupportInternalKnowledgePane.vue';
 import type {
   createSupportCaseExternalWorkController,
   SupportCaseExternalWorkPermissions,
-} from "@/features/support-external-work/model/use-support-case-external-work";
-import SupportCaseExternalWorkPane from "@/features/support-external-work/ui/SupportCaseExternalWorkPane.vue";
+} from '@/features/support-external-work/model/use-support-case-external-work';
+import SupportCaseExternalWorkPane from '@/features/support-external-work/ui/SupportCaseExternalWorkPane.vue';
 import type {
   ProfileProjectionFieldResponseDto,
   SupportLeadSafeFactDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 import {
   formatProfileValue,
   profileValueStateLabel,
-} from "@/features/end-user-profile/model/profile-value";
-import { relativeTime } from "@/shared/lib/format";
+} from '@/features/end-user-profile/model/profile-value';
+import { relativeTime } from '@/shared/lib/format';
 import type {
   SupportWorkspaceConversation,
   SupportWorkspaceSelection,
-} from "@/features/support-workspace/api/support-workspace-source";
+} from '@/features/support-workspace/api/support-workspace-source';
 
 const props = withDefaults(
   defineProps<{
@@ -47,21 +47,15 @@ const props = withDefaults(
     reservationReconcileAttempt?: number;
     reservationReconcileInFlight?: boolean;
     assignmentController?: ReturnType<typeof createSupportAssignmentController>;
-    leadAssignmentController?: ReturnType<
-      typeof createSupportLeadAssignmentController
-    >;
+    leadAssignmentController?: ReturnType<typeof createSupportLeadAssignmentController>;
     availabilityLabel?: string;
     canReadInternalNotes?: boolean;
     canManageTranslation?: boolean;
     translationLocale?: string | null;
     inspector: ReturnType<typeof createSupportInspectorController>;
-    knowledgeController?: ReturnType<
-      typeof createSupportInternalKnowledgeController
-    >;
+    knowledgeController?: ReturnType<typeof createSupportInternalKnowledgeController>;
     caseDesk?: ReturnType<typeof createSupportCaseDeskController>;
-    externalWorkController?: ReturnType<
-      typeof createSupportCaseExternalWorkController
-    >;
+    externalWorkController?: ReturnType<typeof createSupportCaseExternalWorkController>;
     externalWorkPermissions?: SupportCaseExternalWorkPermissions;
   }>(),
   {
@@ -69,17 +63,18 @@ const props = withDefaults(
     canReadCaseDesk: false,
     canReadSlaContext: false,
     canReadRoutingContext: false,
-    projectId: "",
+    projectId: '',
     canExplainCase: false,
     reservationReconcileAttempt: 0,
     reservationReconcileInFlight: false,
     assignmentController: undefined,
     leadAssignmentController: undefined,
-    availabilityLabel: "Недоступность не загружена",
+    availabilityLabel: 'Недоступность не загружена',
     canReadInternalNotes: false,
     canManageTranslation: false,
     translationLocale: null,
     knowledgeController: undefined,
+    caseDesk: undefined,
     externalWorkController: undefined,
     externalWorkPermissions: undefined,
   },
@@ -96,79 +91,71 @@ const caseDeskView = ref<InstanceType<typeof SupportCaseDesk> | null>(null);
 const inspectorTabList = ref<HTMLElement | null>(null);
 const activeTab = computed(() => props.inspector.activeTab.value);
 const inspectorTabs = computed(() => props.inspector.tabs.value);
-const canOpenFullProfile = computed(() =>
-  inspectorTabs.value.some((tab) => tab.id === "DATA"),
-);
+const canOpenFullProfile = computed(() => inspectorTabs.value.some((tab) => tab.id === 'DATA'));
 const profile = computed(() => props.inspector.profile.data.value);
 
 const userLabel = computed(() =>
-  props.selection.endUser.isGuest ? "Гостевой пользователь" : "Пользователь",
+  props.selection.endUser.isGuest ? 'Гостевой пользователь' : 'Пользователь',
 );
 const userInitial = computed(() => userLabel.value.slice(0, 1).toUpperCase());
 const claimantLabel = computed(() => {
   if (!props.caseDesk?.detail.value)
-    return props.caseDesk?.loading.value ? "Загружается…" : "Не загружен";
+    return props.caseDesk?.loading.value ? 'Загружается…' : 'Не загружен';
   const items = props.caseDesk?.detail.value?.escalations.items ?? [];
   const active = [...items]
     .reverse()
-    .find(
-      (item) =>
-        item.claimant &&
-        item.status !== "CLOSED" &&
-        item.status !== "CANCELLED",
-    );
+    .find((item) => item.claimant && item.status !== 'CLOSED' && item.status !== 'CANCELLED');
   return active?.claimant
     ? `${active.claimant.displayName} · эскалация`
-    : "Никто не взял эскалацию в работу";
+    : 'Никто не взял эскалацию в работу';
 });
 
 function labelCaseStatus(value: string): string {
   return (
     {
-      OPEN: "Открыт",
-      IN_PROGRESS: "В работе",
-      PENDING: "Ожидает",
-      WAITING_END_USER: "Ожидает пользователя",
-      WAITING_SYSTEM: "Ожидает системы",
-      WAITING_ADMIN: "Ожидает оператора",
-      RESOLVED: "Решён",
-      UNRESOLVED: "Не решён",
-      CANCELLED: "Отменён",
-    }[value] ?? "Состояние снимка не распознано"
+      OPEN: 'Открыт',
+      IN_PROGRESS: 'В работе',
+      PENDING: 'Ожидает',
+      WAITING_END_USER: 'Ожидает пользователя',
+      WAITING_SYSTEM: 'Ожидает системы',
+      WAITING_ADMIN: 'Ожидает оператора',
+      RESOLVED: 'Решён',
+      UNRESOLVED: 'Не решён',
+      CANCELLED: 'Отменён',
+    }[value] ?? 'Состояние снимка не распознано'
   );
 }
 
 function labelCasePriority(value: string): string {
   return (
     {
-      LOW: "Низкий",
-      NORMAL: "Обычный",
-      HIGH: "Высокий",
-      URGENT: "Срочный",
-      CRITICAL: "Критический",
-    }[value] ?? "Приоритет не распознан"
+      LOW: 'Низкий',
+      NORMAL: 'Обычный',
+      HIGH: 'Высокий',
+      URGENT: 'Срочный',
+      CRITICAL: 'Критический',
+    }[value] ?? 'Приоритет не распознан'
   );
 }
 
 const visibleProfileFields = computed(
-  () =>
-    profile.value?.fields.filter((field) => field.access !== "FORBIDDEN") ?? [],
+  () => profile.value?.fields.filter((field) => field.access !== 'FORBIDDEN') ?? [],
 );
 const profileEmptyState = computed(() =>
   profile.value?.fields.length
     ? {
-        title: "Данные профиля недоступны",
-        copy: "Сервер не разрешил показать ни одного значения профиля.",
+        title: 'Данные профиля недоступны',
+        copy: 'Сервер не разрешил показать ни одного значения профиля.',
       }
     : {
-        title: "Данные профиля не переданы",
-        copy: "Для этого пользователя проект пока не передал опубликованные поля профиля.",
+        title: 'Данные профиля не переданы',
+        copy: 'Для этого пользователя проект пока не передал опубликованные поля профиля.',
       },
 );
 
 function profileFieldValue(field: ProfileProjectionFieldResponseDto): string {
-  if (field.access === "REDACTED") return "Скрыто";
-  if (field.availability !== "AVAILABLE" || !field.value)
+  if (field.access === 'REDACTED') return 'Скрыто';
+  if (field.availability !== 'AVAILABLE' || !field.value)
     return profileValueStateLabel(field.availability);
   return formatProfileValue(field.value);
 }
@@ -176,48 +163,48 @@ function profileFieldValue(field: ProfileProjectionFieldResponseDto): string {
 function profileSyncStatusLabel(value: string): string {
   return (
     {
-      VALID: "Снимок проверен",
-      VALID_WITH_WARNINGS: "Снимок с предупреждениями",
-      NO_VALID_SNAPSHOT: "Нет проверенного снимка",
-    }[value] ?? "Состояние снимка не распознано"
+      VALID: 'Снимок проверен',
+      VALID_WITH_WARNINGS: 'Снимок с предупреждениями',
+      NO_VALID_SNAPSHOT: 'Нет проверенного снимка',
+    }[value] ?? 'Состояние снимка не распознано'
   );
 }
 
 function profileProvenanceLabel(value: string): string {
-  if (value === "PRODUCT_PROFILE") return "Профиль продукта";
-  if (value === "SUPPORT_OVERRIDE") return "Уточнено поддержкой";
-  return "Источник не распознан";
+  if (value === 'PRODUCT_PROFILE') return 'Профиль продукта';
+  if (value === 'SUPPORT_OVERRIDE') return 'Уточнено поддержкой';
+  return 'Источник не распознан';
 }
 
 function profileClassificationLabel(
-  value: ProfileProjectionFieldResponseDto["classification"],
+  value: ProfileProjectionFieldResponseDto['classification'],
 ): string {
   return (
     {
-      INTERNAL: "Внутреннее",
-      PERSONAL: "Персональное",
-      SENSITIVE: "Чувствительное",
-    }[value] ?? "Класс данных не распознан"
+      INTERNAL: 'Внутреннее',
+      PERSONAL: 'Персональное',
+      SENSITIVE: 'Чувствительное',
+    }[value] ?? 'Класс данных не распознан'
   );
 }
 
 function requestClassification(): void {
-  void props.inspector.open("CASE");
+  void props.inspector.open('CASE');
   if (props.caseDesk) {
     caseDeskView.value?.requestClassification();
     return;
   }
-  emit("classifyCase");
+  emit('classifyCase');
 }
 
 function moveInspectorTab(event: KeyboardEvent, currentIndex: number): void {
   const count = inspectorTabs.value.length;
   if (!count) return;
   let nextIndex: number | null = null;
-  if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % count;
-  if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + count) % count;
-  if (event.key === "Home") nextIndex = 0;
-  if (event.key === "End") nextIndex = count - 1;
+  if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % count;
+  if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + count) % count;
+  if (event.key === 'Home') nextIndex = 0;
+  if (event.key === 'End') nextIndex = count - 1;
   if (nextIndex === null) return;
   event.preventDefault();
   const tab = inspectorTabs.value[nextIndex];
@@ -228,118 +215,112 @@ function moveInspectorTab(event: KeyboardEvent, currentIndex: number): void {
       `#support-inspector-tab-${tab.id.toLowerCase()}`,
     );
     element?.focus();
-    element?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    element?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   });
 }
 
-function activityTypeLabel(value: SupportLeadSafeFactDto["eventCode"]): string {
+function activityTypeLabel(value: SupportLeadSafeFactDto['eventCode']): string {
   return (
     {
-      CASE_CHANGED: "Обращение изменено",
-      ADMIN_REPLY_ACCEPTED: "Ответ принят",
-      SUPPORT_CASE_ASSIGNMENT_CLAIMED: "Обращение принято оператором",
-      SUPPORT_CASE_ASSIGNMENT_ASSIGNED: "Оператор назначен",
-      SUPPORT_CASE_ASSIGNMENT_RELEASED: "Назначение освобождено",
-      SUPPORT_CASE_ASSIGNMENT_TRANSFERRED: "Обращение передано",
-      SUPPORT_CASE_ASSIGNMENT_COMPLETED: "Работа завершена",
-      SUPPORT_ASSIGNMENT_RESERVED: "Работа зарезервирована",
-      SUPPORT_ASSIGNMENT_OFFERED: "Оператору предложена работа",
-      SUPPORT_ASSIGNMENT_OFFER_ACCEPTED: "Предложение принято",
-      SUPPORT_ASSIGNMENT_OFFER_DECLINED: "Предложение отклонено",
-      SUPPORT_ASSIGNMENT_RESERVATION_EXPIRED: "Резерв истёк",
-      SUPPORT_ASSIGNMENT_RESERVATION_CANCELLED: "Резерв отменён",
-      SUPPORT_ASSIGNMENT_AUTO_ASSIGNED: "Назначено автоматически",
-      SUPPORT_ASSIGNMENT_ROUTING_FALLBACK_SCHEDULED:
-        "Запланирован повторный подбор",
-      OPERATOR_AVAILABILITY_CHANGED: "Доступность оператора изменилась",
-      SUPPORT_WORKFORCE_REVISION_PUBLISHED: "Состав поддержки обновлён",
-      SUPPORT_TEAM_CREATED: "Команда создана",
-      SUPPORT_TEAM_RENAMED: "Команда переименована",
-      SUPPORT_TEAM_ARCHIVED: "Команда архивирована",
-      SUPPORT_SKILL_CREATED: "Навык создан",
-      SUPPORT_SKILL_RENAMED: "Навык переименован",
-      SUPPORT_SKILL_ARCHIVED: "Навык архивирован",
-      SLA_CLOCK_CHANGED: "SLA обновлён",
-      SLA_CLOCK_CORRECTED: "SLA скорректирован",
-      SLA_POLICY_MIGRATED: "SLA перенесён на новую политику",
-      CONVERSATION_DELIVERY_CHANGED: "Доставка сообщения изменилась",
-    }[value] ?? "Активность поддержки"
+      CASE_CHANGED: 'Обращение изменено',
+      ADMIN_REPLY_ACCEPTED: 'Ответ принят',
+      SUPPORT_CASE_ASSIGNMENT_CLAIMED: 'Обращение принято оператором',
+      SUPPORT_CASE_ASSIGNMENT_ASSIGNED: 'Оператор назначен',
+      SUPPORT_CASE_ASSIGNMENT_RELEASED: 'Назначение освобождено',
+      SUPPORT_CASE_ASSIGNMENT_TRANSFERRED: 'Обращение передано',
+      SUPPORT_CASE_ASSIGNMENT_COMPLETED: 'Работа завершена',
+      SUPPORT_ASSIGNMENT_RESERVED: 'Работа зарезервирована',
+      SUPPORT_ASSIGNMENT_OFFERED: 'Оператору предложена работа',
+      SUPPORT_ASSIGNMENT_OFFER_ACCEPTED: 'Предложение принято',
+      SUPPORT_ASSIGNMENT_OFFER_DECLINED: 'Предложение отклонено',
+      SUPPORT_ASSIGNMENT_RESERVATION_EXPIRED: 'Резерв истёк',
+      SUPPORT_ASSIGNMENT_RESERVATION_CANCELLED: 'Резерв отменён',
+      SUPPORT_ASSIGNMENT_AUTO_ASSIGNED: 'Назначено автоматически',
+      SUPPORT_ASSIGNMENT_ROUTING_FALLBACK_SCHEDULED: 'Запланирован повторный подбор',
+      OPERATOR_AVAILABILITY_CHANGED: 'Доступность оператора изменилась',
+      SUPPORT_WORKFORCE_REVISION_PUBLISHED: 'Состав поддержки обновлён',
+      SUPPORT_TEAM_CREATED: 'Команда создана',
+      SUPPORT_TEAM_RENAMED: 'Команда переименована',
+      SUPPORT_TEAM_ARCHIVED: 'Команда архивирована',
+      SUPPORT_SKILL_CREATED: 'Навык создан',
+      SUPPORT_SKILL_RENAMED: 'Навык переименован',
+      SUPPORT_SKILL_ARCHIVED: 'Навык архивирован',
+      SLA_CLOCK_CHANGED: 'SLA обновлён',
+      SLA_CLOCK_CORRECTED: 'SLA скорректирован',
+      SLA_POLICY_MIGRATED: 'SLA перенесён на новую политику',
+      CONVERSATION_DELIVERY_CHANGED: 'Доставка сообщения изменилась',
+    }[value] ?? 'Активность поддержки'
   );
 }
 
-function activityActorLabel(actor: SupportLeadSafeFactDto["actor"]): string {
-  if (actor.type === "CMS_USER") return "Оператор";
-  if (actor.type === "BREAK_GLASS") return "Аварийный доступ";
-  return "Система";
+function activityActorLabel(actor: SupportLeadSafeFactDto['actor']): string {
+  if (actor.type === 'CMS_USER') return 'Оператор';
+  if (actor.type === 'BREAK_GLASS') return 'Аварийный доступ';
+  return 'Система';
 }
 
-function activityFactKindLabel(
-  value: SupportLeadSafeFactDto["factKind"],
-): string {
+function activityFactKindLabel(value: SupportLeadSafeFactDto['factKind']): string {
   const labels: Record<string, string> = {
-    ASSIGNMENT: "Назначение",
-    AVAILABILITY: "Доступность",
-    CASE: "Обращение",
-    DEPENDENCY: "Зависимость",
-    DELIVERY: "Доставка",
-    INTERVENTION: "Вмешательство",
-    REPLY: "Ответ",
-    SLA: "SLA",
-    WORKFORCE: "Команда поддержки",
+    ASSIGNMENT: 'Назначение',
+    AVAILABILITY: 'Доступность',
+    CASE: 'Обращение',
+    DEPENDENCY: 'Зависимость',
+    DELIVERY: 'Доставка',
+    INTERVENTION: 'Вмешательство',
+    REPLY: 'Ответ',
+    SLA: 'SLA',
+    WORKFORCE: 'Команда поддержки',
   };
-  return labels[value] ?? "Изменение";
+  return labels[value] ?? 'Изменение';
 }
 
-function activityReasonLabel(
-  value: SupportLeadSafeFactDto["reasonCode"],
-): string | null {
+function activityReasonLabel(value: SupportLeadSafeFactDto['reasonCode']): string | null {
   if (!value) return null;
   const labels: Record<string, string> = {
-    SELF_CLAIM: "Оператор взял обращение",
-    SKILL_MATCH: "Подобран по навыкам",
-    LOAD_BALANCE: "Балансировка нагрузки",
-    LEAD_INTERVENTION: "Решение лида",
-    WORK_RETURNED: "Работа возвращена в очередь",
-    SHIFT_END: "Смена завершена",
-    LEAD_REBALANCE: "Лид перераспределил нагрузку",
-    SKILL_HANDOFF: "Передача по компетенции",
-    CASE_RESOLVED: "Обращение решено",
-    CASE_UNRESOLVED: "Обращение не решено",
-    CASE_CANCELLED: "Обращение отменено",
-    ROUTING_AUTO_ASSIGN: "Автоматическая маршрутизация",
-    ROUTING_OFFER_ACCEPTED: "Оператор принял предложение",
-    OPERATOR_DECLINED: "Оператор отказался",
-    RESERVATION_EXPIRED: "Истёк резерв",
-    END_USER_CASE_CREATED: "Создано новое обращение",
-    END_USER_CASE_MESSAGE_LINKED: "Сообщение связано с обращением",
-    END_USER_CASE_REOPENED: "Обращение переоткрыто",
-    END_USER_CASE_UPDATED: "Данные обращения обновлены",
-    END_USER_CASE_STATUS_CHANGED: "Изменён статус",
-    END_USER_CASE_ASSIGNED: "Изменено назначение",
-    END_USER_CASE_CORRECTED: "Исправлена классификация",
-    END_USER_CASE_MERGED: "Обращения объединены",
-    END_USER_CASE_SPLIT: "Обращение разделено",
-    OTHER: "Другая причина",
+    SELF_CLAIM: 'Оператор взял обращение',
+    SKILL_MATCH: 'Подобран по навыкам',
+    LOAD_BALANCE: 'Балансировка нагрузки',
+    LEAD_INTERVENTION: 'Решение лида',
+    WORK_RETURNED: 'Работа возвращена в очередь',
+    SHIFT_END: 'Смена завершена',
+    LEAD_REBALANCE: 'Лид перераспределил нагрузку',
+    SKILL_HANDOFF: 'Передача по компетенции',
+    CASE_RESOLVED: 'Обращение решено',
+    CASE_UNRESOLVED: 'Обращение не решено',
+    CASE_CANCELLED: 'Обращение отменено',
+    ROUTING_AUTO_ASSIGN: 'Автоматическая маршрутизация',
+    ROUTING_OFFER_ACCEPTED: 'Оператор принял предложение',
+    OPERATOR_DECLINED: 'Оператор отказался',
+    RESERVATION_EXPIRED: 'Истёк резерв',
+    END_USER_CASE_CREATED: 'Создано новое обращение',
+    END_USER_CASE_MESSAGE_LINKED: 'Сообщение связано с обращением',
+    END_USER_CASE_REOPENED: 'Обращение переоткрыто',
+    END_USER_CASE_UPDATED: 'Данные обращения обновлены',
+    END_USER_CASE_STATUS_CHANGED: 'Изменён статус',
+    END_USER_CASE_ASSIGNED: 'Изменено назначение',
+    END_USER_CASE_CORRECTED: 'Исправлена классификация',
+    END_USER_CASE_MERGED: 'Обращения объединены',
+    END_USER_CASE_SPLIT: 'Обращение разделено',
+    OTHER: 'Другая причина',
   };
-  return labels[value] ?? "Причина не распознана";
+  return labels[value] ?? 'Причина не распознана';
 }
 
 function eventSourceLabel(value: string): string {
   return (
     {
-      SERVER: "Серверная часть продукта",
-      FRONTEND: "Интерфейс продукта",
-      INTERNAL: "Lola",
-      INTEGRATION: "Интеграция",
-    }[value] ?? "Источник события не распознан"
+      SERVER: 'Серверная часть продукта',
+      FRONTEND: 'Интерфейс продукта',
+      INTERNAL: 'Lola',
+      INTEGRATION: 'Интеграция',
+    }[value] ?? 'Источник события не распознан'
   );
 }
 
 function eventStatusLabel(value: string): string {
   return (
-    { RECEIVED: "Получено", PROCESSED: "Обработано", FAILED: "Ошибка" }[
-      value
-    ] ?? "Состояние события не распознано"
+    { RECEIVED: 'Получено', PROCESSED: 'Обработано', FAILED: 'Ошибка' }[value] ??
+    'Состояние события не распознано'
   );
 }
 
@@ -395,17 +376,11 @@ defineExpose({ requestClassification });
           />
           <template v-else-if="selection.case">
             <header class="case-header">
-              <span class="section-kicker"
-                >Обращение #{{ selection.case.projectSequence }}</span
-              >
+              <span class="section-kicker">Обращение #{{ selection.case.projectSequence }}</span>
               <h3>{{ selection.case.title }}</h3>
               <div class="case-badges">
-                <span class="status-badge">{{
-                  labelCaseStatus(selection.case.status)
-                }}</span>
-                <span class="priority-badge">{{
-                  labelCasePriority(selection.case.priority)
-                }}</span>
+                <span class="status-badge">{{ labelCaseStatus(selection.case.status) }}</span>
+                <span class="priority-badge">{{ labelCasePriority(selection.case.priority) }}</span>
               </div>
             </header>
             <SupportCaseBrief
@@ -425,14 +400,11 @@ defineExpose({ requestClassification });
                   {{
                     selection.case.assignment?.operatorName ??
                     selection.case.assignee?.displayName ??
-                    "Не назначен"
+                    'Не назначен'
                   }}
                 </dd>
               </div>
-              <div
-                v-if="selection.case.assignment"
-                class="context-field context-field--wide"
-              >
+              <div v-if="selection.case.assignment" class="context-field context-field--wide">
                 <dt>Команда</dt>
                 <dd>{{ selection.case.assignment.teamName }}</dd>
               </div>
@@ -506,9 +478,7 @@ defineExpose({ requestClassification });
                 :can-read="canExplainCase"
               />
             </div>
-            <p v-else class="empty-copy">
-              Для этого обращения сейчас нет доступных действий.
-            </p>
+            <p v-else class="empty-copy">Для этого обращения сейчас нет доступных действий.</p>
           </div>
         </section>
 
@@ -550,7 +520,7 @@ defineExpose({ requestClassification });
                   {{
                     translationLocale?.toUpperCase() ??
                     selection.endUser.locale?.toUpperCase() ??
-                    "Не указан"
+                    'Не указан'
                   }}
                 </span>
                 <Button
@@ -568,16 +538,16 @@ defineExpose({ requestClassification });
               <dd>
                 {{
                   !conversation
-                    ? "Нет связанного чата"
-                    : conversation.status === "OPEN"
-                      ? "Активный"
-                      : "Закрыт"
+                    ? 'Нет связанного чата'
+                    : conversation.status === 'OPEN'
+                      ? 'Активный'
+                      : 'Закрыт'
                 }}
               </dd>
             </div>
             <div>
               <dt>Сообщений</dt>
-              <dd>{{ conversation?.messageCount ?? "—" }}</dd>
+              <dd>{{ conversation?.messageCount ?? '—' }}</dd>
             </div>
             <div>
               <dt>В проекте с</dt>
@@ -599,9 +569,7 @@ defineExpose({ requestClassification });
 
         <section
           v-else-if="
-            activeTab === 'INTEGRATIONS' &&
-            externalWorkController &&
-            externalWorkPermissions
+            activeTab === 'INTEGRATIONS' && externalWorkController && externalWorkPermissions
           "
           class="inspector-section integrations-section"
           aria-label="Интеграции обращения"
@@ -622,8 +590,7 @@ defineExpose({ requestClassification });
               <span class="section-kicker">Данные из продукта</span>
               <h3>Профиль пользователя</h3>
               <p class="section-description">
-                Поля, переданные проектом. Доступ и свежесть проверяются для
-                каждого значения.
+                Поля, переданные проектом. Доступ и свежесть проверяются для каждого значения.
               </p>
             </div>
             <Button
@@ -641,9 +608,7 @@ defineExpose({ requestClassification });
             :loading="inspector.profile.loading.value"
             :error="inspector.profile.error.value"
             :has-content="Boolean(profile)"
-            :empty="
-              inspector.profile.loaded.value && !visibleProfileFields.length
-            "
+            :empty="inspector.profile.loaded.value && !visibleProfileFields.length"
             :empty-title="profileEmptyState.title"
             :empty-copy="profileEmptyState.copy"
             empty-icon="pi pi-database"
@@ -656,18 +621,12 @@ defineExpose({ requestClassification });
                 <span>{{
                   profile.observedAt
                     ? `Наблюдалось ${relativeTime(profile.observedAt)}`
-                    : "Время не передано"
+                    : 'Время не передано'
                 }}</span>
-                <span
-                  >Источник:
-                  {{ profileProvenanceLabel(profile.provenance) }}</span
-                >
+                <span>Источник: {{ profileProvenanceLabel(profile.provenance) }}</span>
               </div>
               <dl class="profile-fields">
-                <div
-                  v-for="field in visibleProfileFields"
-                  :key="field.definitionId"
-                >
+                <div v-for="field in visibleProfileFields" :key="field.definitionId">
                   <dt>{{ field.label }}</dt>
                   <dd>{{ profileFieldValue(field) }}</dd>
                   <small>
@@ -676,9 +635,7 @@ defineExpose({ requestClassification });
                     <template v-if="field.observedAt">
                       · {{ relativeTime(field.observedAt) }}</template
                     >
-                    <template v-if="field.untrustedData">
-                      · требует проверки</template
-                    >
+                    <template v-if="field.untrustedData"> · требует проверки</template>
                   </small>
                 </div>
               </dl>
@@ -711,32 +668,21 @@ defineExpose({ requestClassification });
             :loading="inspector.events.loading.value"
             :error="inspector.events.error.value"
             :has-content="Boolean(inspector.events.data.value?.items.length)"
-            :empty="
-              inspector.events.loaded.value &&
-              !inspector.events.data.value?.items.length
-            "
+            :empty="inspector.events.loaded.value && !inspector.events.data.value?.items.length"
             empty-title="Событий пока нет"
             empty-copy="В защищённом наборе данных для этого обращения ничего не найдено."
             empty-icon="pi pi-bolt"
             @retry="inspector.reloadActiveTab()"
           >
             <ol class="event-list">
-              <li
-                v-for="event in inspector.events.data.value?.items ?? []"
-                :key="event.id"
-              >
-                <span
-                  class="event-icon"
-                  :class="`status-${event.status.toLowerCase()}`"
-                >
+              <li v-for="event in inspector.events.data.value?.items ?? []" :key="event.id">
+                <span class="event-icon" :class="`status-${event.status.toLowerCase()}`">
                   <i class="pi pi-wave-pulse" aria-hidden="true" />
                 </span>
                 <div>
                   <header>
                     <strong>{{ event.name }}</strong>
-                    <time :datetime="event.occurredAt">{{
-                      relativeTime(event.occurredAt)
-                    }}</time>
+                    <time :datetime="event.occurredAt">{{ relativeTime(event.occurredAt) }}</time>
                   </header>
                   <p>
                     {{ eventSourceLabel(event.source) }} ·
@@ -783,12 +729,9 @@ defineExpose({ requestClassification });
           <SupportInspectorState
             :loading="inspector.activity.loading.value"
             :error="inspector.activity.error.value"
-            :has-content="
-              Boolean(inspector.activity.data.value?.data.facts.length)
-            "
+            :has-content="Boolean(inspector.activity.data.value?.data.facts.length)"
             :empty="
-              inspector.activity.loaded.value &&
-              !inspector.activity.data.value?.data.facts.length
+              inspector.activity.loaded.value && !inspector.activity.data.value?.data.facts.length
             "
             empty-title="Активности пока нет"
             empty-copy="Серверная причинная лента ещё не содержит фактов по обращению."
@@ -797,16 +740,11 @@ defineExpose({ requestClassification });
           >
             <div v-if="inspector.activity.data.value" class="projection-meta">
               <span>{{
-                inspector.activity.data.value.freshnessState === "READY"
-                  ? "Данные актуальны"
+                inspector.activity.data.value.freshnessState === 'READY'
+                  ? 'Данные актуальны'
                   : inspector.activity.data.value.freshnessState
               }}</span>
-              <span
-                >Рассчитано
-                {{
-                  relativeTime(inspector.activity.data.value.computedAt)
-                }}</span
-              >
+              <span>Рассчитано {{ relativeTime(inspector.activity.data.value.computedAt) }}</span>
             </div>
             <ol class="activity-list">
               <li
@@ -817,18 +755,13 @@ defineExpose({ requestClassification });
                 <div>
                   <header>
                     <strong>{{ activityTypeLabel(fact.eventCode) }}</strong>
-                    <time :datetime="fact.occurredAt">{{
-                      relativeTime(fact.occurredAt)
-                    }}</time>
+                    <time :datetime="fact.occurredAt">{{ relativeTime(fact.occurredAt) }}</time>
                   </header>
                   <p>
                     {{ activityActorLabel(fact.actor) }} ·
                     {{ activityFactKindLabel(fact.factKind) }}
                   </p>
-                  <p
-                    v-if="activityReasonLabel(fact.reasonCode)"
-                    class="activity-reason"
-                  >
+                  <p v-if="activityReasonLabel(fact.reasonCode)" class="activity-reason">
                     {{ activityReasonLabel(fact.reasonCode) }}
                   </p>
                 </div>
@@ -1221,7 +1154,7 @@ defineExpose({ requestClassification });
   padding-bottom: 18px;
 }
 .activity-list li:not(:last-child)::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 11px;
   bottom: 0;

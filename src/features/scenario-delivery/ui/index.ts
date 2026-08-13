@@ -1,1 +1,1 @@
-export { default as DeliveryPolicyEditor } from './DeliveryPolicyEditor.vue'
+export { default as DeliveryPolicyEditor } from './DeliveryPolicyEditor.vue';

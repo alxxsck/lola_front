@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import { endUserStateRepository } from "../api/end-user-state-repository";
-import type {
-  EndUserAttributeHistory,
-  EndUserOperationalState,
-} from "../model/end-user-state";
+import { computed, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import { endUserStateRepository } from '../api/end-user-state-repository';
+import type { EndUserAttributeHistory, EndUserOperationalState } from '../model/end-user-state';
 const props = defineProps<{
   projectId: string;
   endUserId: string;
@@ -17,13 +14,13 @@ const props = defineProps<{
 const state = ref<EndUserOperationalState | null>(null);
 const loading = ref(false);
 const saving = ref(false);
-const error = ref("");
-const loadedContext = ref("");
-const editKey = ref("");
-const raw = ref("");
-const reason = ref("");
-const idem = ref("");
-const formError = ref("");
+const error = ref('');
+const loadedContext = ref('');
+const editKey = ref('');
+const raw = ref('');
+const reason = ref('');
+const idem = ref('');
+const formError = ref('');
 const history = ref<EndUserAttributeHistory | null>(null);
 const historyOpen = ref(false);
 const historyLoading = ref(false);
@@ -40,8 +37,8 @@ watch(
     generation += 1;
     historyGeneration += 1;
     state.value = null;
-    loadedContext.value = "";
-    editKey.value = "";
+    loadedContext.value = '';
+    editKey.value = '';
     historyOpen.value = false;
     history.value = null;
     historyLoading.value = false;
@@ -54,9 +51,9 @@ watch(
   () => props.canManage,
   (canManage) => {
     if (canManage) return;
-    editKey.value = "";
+    editKey.value = '';
     saving.value = false;
-    formError.value = "";
+    formError.value = '';
   },
 );
 watch(historyOpen, (open) => {
@@ -70,12 +67,9 @@ async function load() {
   const requestedEndUserId = props.endUserId;
   const requestedContext = `${requestedProjectId}:${requestedEndUserId}`;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
-    const next = await endUserStateRepository.get(
-      requestedProjectId,
-      requestedEndUserId,
-    );
+    const next = await endUserStateRepository.get(requestedProjectId, requestedEndUserId);
     if (
       current === generation &&
       requestedContext === contextKey.value &&
@@ -87,42 +81,33 @@ async function load() {
     }
   } catch (cause) {
     if (current === generation)
-      error.value =
-        cause instanceof Error
-          ? cause.message
-          : "Не удалось загрузить внутренние поля";
+      error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить внутренние поля';
   } finally {
     if (current === generation) loading.value = false;
   }
 }
 function openEdit(key: string) {
   if (!props.canManage || !contextReady.value) return;
-  const item = state.value?.items.find(
-    (candidate) => candidate.definition.key === key,
-  );
+  const item = state.value?.items.find((candidate) => candidate.definition.key === key);
   if (!item?.definition.writable) return;
   editKey.value = key;
   raw.value =
-    editorKind(item) === "string-array"
+    editorKind(item) === 'string-array'
       ? Array.isArray(item?.current?.value)
-        ? item.current.value.join(", ")
-        : ""
-      : editorKind(item) === "string" &&
-          typeof item?.current?.value === "string"
+        ? item.current.value.join(', ')
+        : ''
+      : editorKind(item) === 'string' && typeof item?.current?.value === 'string'
         ? item.current.value
         : item?.current?.value == null
-          ? ""
+          ? ''
           : JSON.stringify(item.current.value, null, 2);
-  reason.value = "";
+  reason.value = '';
   idem.value = newIdempotencyKey();
-  formError.value = "";
+  formError.value = '';
 }
-async function save(operation: "SET" | "UNSET") {
-  if (!props.canManage || !contextReady.value)
-    return fail("Операция больше недоступна.");
-  const item = state.value?.items.find(
-    (candidate) => candidate.definition.key === editKey.value,
-  );
+async function save(operation: 'SET' | 'UNSET') {
+  if (!props.canManage || !contextReady.value) return fail('Операция больше недоступна.');
+  const item = state.value?.items.find((candidate) => candidate.definition.key === editKey.value);
   if (
     !item ||
     !item.definition.writable ||
@@ -130,14 +115,14 @@ async function save(operation: "SET" | "UNSET") {
     reason.value.trim().length < 10 ||
     reason.value.trim().length > 500
   )
-    return fail("Укажите причину от 10 до 500 символов.");
+    return fail('Укажите причину от 10 до 500 символов.');
   let value: unknown;
   const kind = editorKind(item);
-  if (operation === "SET" && kind === "string-array") {
+  if (operation === 'SET' && kind === 'string-array') {
     const tags = [
       ...new Set(
         raw.value
-          .split(",")
+          .split(',')
           .map((tag) => tag.trim())
           .filter(Boolean),
       ),
@@ -147,19 +132,17 @@ async function save(operation: "SET" | "UNSET") {
       tags.length > 50 ||
       tags.some((tag) => tag.length > 64 || hasControlCharacters(tag))
     )
-      return fail(
-        "Теги: 1–50 уникальных значений, каждое до 64 символов без управляющих знаков.",
-      );
+      return fail('Теги: 1–50 уникальных значений, каждое до 64 символов без управляющих знаков.');
     value = tags;
-  } else if (operation === "SET" && kind === "string") {
+  } else if (operation === 'SET' && kind === 'string') {
     value = raw.value.trim();
     if (!value || (value as string).length > 1000)
-      return fail("Заметка должна содержать 1–1000 символов.");
-  } else if (operation === "SET") {
+      return fail('Заметка должна содержать 1–1000 символов.');
+  } else if (operation === 'SET') {
     try {
       value = JSON.parse(raw.value);
     } catch {
-      return fail("Введите корректный JSON согласно schema поля.");
+      return fail('Введите корректный JSON согласно schema поля.');
     }
   }
   const requestGeneration = generation;
@@ -174,7 +157,7 @@ async function save(operation: "SET" | "UNSET") {
       requestEditKey,
       {
         operation,
-        ...(operation === "SET" ? { value } : {}),
+        ...(operation === 'SET' ? { value } : {}),
         expectedVersion: item.current?.version ?? 0,
         reason: reason.value.trim(),
       },
@@ -188,7 +171,7 @@ async function save(operation: "SET" | "UNSET") {
       !props.canManage
     )
       return;
-    editKey.value = "";
+    editKey.value = '';
     saving.value = false;
     await load();
   } catch (cause) {
@@ -201,7 +184,7 @@ async function save(operation: "SET" | "UNSET") {
     formError.value =
       cause instanceof Error
         ? `${cause.message}. Состояние будет перечитано перед повтором.`
-        : "Не удалось сохранить";
+        : 'Не удалось сохранить';
     saving.value = false;
     await load();
     if (httpStatus(cause) === 409) idem.value = newIdempotencyKey();
@@ -218,9 +201,9 @@ function newIdempotencyKey(): string {
   return globalThis.crypto?.randomUUID?.() ?? `end-user-state-${Date.now()}`;
 }
 function httpStatus(cause: unknown): number | undefined {
-  if (!cause || typeof cause !== "object") return undefined;
+  if (!cause || typeof cause !== 'object') return undefined;
   const response = (cause as { response?: unknown }).response;
-  return response && typeof response === "object"
+  return response && typeof response === 'object'
     ? (response as { status?: number }).status
     : undefined;
 }
@@ -240,11 +223,7 @@ async function showHistory(key: string) {
   historyLoading.value = true;
   history.value = null;
   try {
-    const next = await endUserStateRepository.history(
-      requestedProjectId,
-      requestedEndUserId,
-      key,
-    );
+    const next = await endUserStateRepository.history(requestedProjectId, requestedEndUserId, key);
     if (
       requestGeneration === historyGeneration &&
       requestedContext === contextKey.value &&
@@ -255,12 +234,8 @@ async function showHistory(key: string) {
     )
       history.value = next;
   } catch (cause) {
-    if (
-      requestGeneration === historyGeneration &&
-      requestedContext === contextKey.value
-    ) {
-      error.value =
-        cause instanceof Error ? cause.message : "Не удалось загрузить историю";
+    if (requestGeneration === historyGeneration && requestedContext === contextKey.value) {
+      error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить историю';
       historyOpen.value = false;
     }
   } finally {
@@ -301,14 +276,9 @@ async function loadMoreHistory() {
       };
     }
   } catch (cause) {
-    if (
-      requestGeneration === historyGeneration &&
-      requestedContext === contextKey.value
-    )
+    if (requestGeneration === historyGeneration && requestedContext === contextKey.value)
       error.value =
-        cause instanceof Error
-          ? cause.message
-          : "Не удалось загрузить продолжение истории";
+        cause instanceof Error ? cause.message : 'Не удалось загрузить продолжение истории';
   } finally {
     if (requestGeneration === historyGeneration) historyLoading.value = false;
   }
@@ -316,39 +286,38 @@ async function loadMoreHistory() {
 function fail(value: string) {
   formError.value = value;
 }
-function display(item: EndUserOperationalState["items"][number]) {
-  if (item.current?.state === "SCHEDULED")
-    return `Запланировано с ${new Date(item.current.effectiveAt).toLocaleString("ru-RU")}`;
-  if (item.current?.state !== "ACTIVE") return "Не задано";
+function display(item: EndUserOperationalState['items'][number]) {
+  if (item.current?.state === 'SCHEDULED')
+    return `Запланировано с ${new Date(item.current.effectiveAt).toLocaleString('ru-RU')}`;
+  if (item.current?.state !== 'ACTIVE') return 'Не задано';
   return Array.isArray(item.current.value)
-    ? item.current.value.join(", ")
-    : String(item.current.value ?? "Не задано");
+    ? item.current.value.join(', ')
+    : String(item.current.value ?? 'Не задано');
 }
 function editorKind(
-  item: EndUserOperationalState["items"][number] | undefined,
-): "string" | "string-array" | "json" {
+  item: EndUserOperationalState['items'][number] | undefined,
+): 'string' | 'string-array' | 'json' {
   const schema = item?.definition.schema;
-  if (!schema || typeof schema !== "object" || Array.isArray(schema))
-    return "json";
+  if (!schema || typeof schema !== 'object' || Array.isArray(schema)) return 'json';
   const source = schema as Record<string, unknown>;
-  if (source.type === "string") return "string";
-  if (source.type === "array") {
+  if (source.type === 'string') return 'string';
+  if (source.type === 'array') {
     const items = source.items;
     if (
       items &&
-      typeof items === "object" &&
+      typeof items === 'object' &&
       !Array.isArray(items) &&
-      (items as Record<string, unknown>).type === "string"
+      (items as Record<string, unknown>).type === 'string'
     )
-      return "string-array";
+      return 'string-array';
   }
-  return "json";
+  return 'json';
 }
 function localized(value: Record<string, string>, fallback: string): string {
   const locale =
-    typeof navigator === "undefined"
-      ? "ru"
-      : (navigator.language.toLowerCase().split("-")[0] ?? "ru");
+    typeof navigator === 'undefined'
+      ? 'ru'
+      : (navigator.language.toLowerCase().split('-')[0] ?? 'ru');
   return (
     value[locale] ||
     value.ru ||
@@ -365,10 +334,7 @@ function localized(value: Record<string, string>, fallback: string): string {
       <div>
         <span class="eyebrow">Internal operational state</span>
         <h3>Внутренние поля</h3>
-        <p>
-          Служебные CMS-данные отделены от продуктового профиля и имеют
-          версионную историю.
-        </p>
+        <p>Служебные CMS-данные отделены от продуктового профиля и имеют версионную историю.</p>
       </div>
     </header>
     <Skeleton v-if="loading && !state" height="90px" /><Message
@@ -380,15 +346,14 @@ function localized(value: Record<string, string>, fallback: string): string {
     <div v-if="known.length" class="attributes">
       <article v-for="item in known" :key="item.definition.key">
         <div>
-          <strong>{{
-            localized(item.definition.label, item.definition.key)
-          }}</strong
+          <strong>{{ localized(item.definition.label, item.definition.key) }}</strong
           ><small
-            >{{ item.definition.key }} · {{ item.definition.classification }} ·
-            v{{ item.current?.version ?? 0 }}</small
+            >{{ item.definition.key }} · {{ item.definition.classification }} · v{{
+              item.current?.version ?? 0
+            }}</small
           >
           <p>{{ display(item) }}</p>
-          <small>{{ localized(item.definition.description, "") }}</small>
+          <small>{{ localized(item.definition.description, '') }}</small>
         </div>
         <div class="actions">
           <Button
@@ -417,44 +382,29 @@ function localized(value: Record<string, string>, fallback: string): string {
     :style="{ width: 'min(650px,94vw)' }"
     @update:visible="!$event && (editKey = '')"
     ><form class="form" @submit.prevent="save('SET')">
-      <Message
-        v-if="editKey === 'cms.support_note'"
-        severity="warn"
-        :closable="false"
-        >Поле SENSITIVE. Не добавляйте платёжные данные, пароли или другие
-        секреты.</Message
+      <Message v-if="editKey === 'cms.support_note'" severity="warn" :closable="false"
+        >Поле SENSITIVE. Не добавляйте платёжные данные, пароли или другие секреты.</Message
       ><label
         >{{
-          editorKind(
-            state?.items.find((item) => item.definition.key === editKey),
-          ) === "string-array"
-            ? "Значения через запятую"
-            : editorKind(
-                  state?.items.find((item) => item.definition.key === editKey),
-                ) === "json"
-              ? "JSON-значение"
-              : "Значение"
+          editorKind(state?.items.find((item) => item.definition.key === editKey)) ===
+          'string-array'
+            ? 'Значения через запятую'
+            : editorKind(state?.items.find((item) => item.definition.key === editKey)) === 'json'
+              ? 'JSON-значение'
+              : 'Значение'
         }}<textarea
           v-model="raw"
           rows="5"
           :maxlength="
-            editorKind(
-              state?.items.find((item) => item.definition.key === editKey),
-            ) === 'string-array'
+            editorKind(state?.items.find((item) => item.definition.key === editKey)) ===
+            'string-array'
               ? 3300
               : 10000
           "
         /></label
-      ><label
-        >Причина изменения<textarea
-          v-model="reason"
-          rows="3"
-          maxlength="500"
-        /></label
+      ><label>Причина изменения<textarea v-model="reason" rows="3" maxlength="500" /></label
       ><label>Idempotency-Key<input v-model="idem" readonly /></label
-      ><small v-if="formError" class="error" role="alert">{{
-        formError
-      }}</small>
+      ><small v-if="formError" class="error" role="alert">{{ formError }}</small>
       <footer>
         <Button
           label="Снять значение"
@@ -463,12 +413,11 @@ function localized(value: Record<string, string>, fallback: string): string {
           type="button"
           :loading="saving"
           @click="save('UNSET')"
-        /><span /><Button
-          label="Отмена"
-          text
-          type="button"
-          @click="editKey = ''"
-        /><Button label="Сохранить" type="submit" :loading="saving" />
+        /><span /><Button label="Отмена" text type="button" @click="editKey = ''" /><Button
+          label="Сохранить"
+          type="submit"
+          :loading="saving"
+        />
       </footer></form></Dialog
   ><Dialog
     v-model:visible="historyOpen"
@@ -480,13 +429,12 @@ function localized(value: Record<string, string>, fallback: string): string {
       <article v-for="event in history.items" :key="event.id">
         <strong>v{{ event.version }} · {{ event.operation }}</strong
         ><small
-          >{{ new Date(event.createdAt).toLocaleString("ru-RU") }} ·
-          {{ event.actor.type }}:{{ event.actor.id }}</small
+          >{{ new Date(event.createdAt).toLocaleString('ru-RU') }} · {{ event.actor.type }}:{{
+            event.actor.id
+          }}</small
         >
         <p>{{ event.reason }}</p>
-        <pre v-if="event.operation === 'SET'">{{
-          JSON.stringify(event.value, null, 2)
-        }}</pre>
+        <pre v-if="event.operation === 'SET'">{{ JSON.stringify(event.value, null, 2) }}</pre>
       </article>
       <p v-if="!history.items.length">История пуста.</p>
       <Button

@@ -1,56 +1,45 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { reportingRepository } from "@/features/reporting/api/reporting-repository";
+import { computed, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { reportingRepository } from '@/features/reporting/api/reporting-repository';
 import {
   canCreateDashboard,
   canCreateSavedReport,
   canEditDashboard,
   canEditSavedReport,
   canReadReporting,
-} from "@/features/reporting/model/reporting-permissions";
-import type { ReportingArtifactSummary } from "@/features/reporting/model/reporting-types";
-import { reportingSpaceLabel } from "@/features/reporting/model/reporting-options";
+} from '@/features/reporting/model/reporting-permissions';
+import type { ReportingArtifactSummary } from '@/features/reporting/model/reporting-types';
+import { reportingSpaceLabel } from '@/features/reporting/model/reporting-options';
 
 const auth = useAuthStore();
 const router = useRouter();
 const route = useRoute();
 const artifacts = ref<ReportingArtifactSummary[]>([]);
 const loading = ref(true);
-const error = ref("");
-const search = ref(
-  typeof route.query.search === "string" ? route.query.search : "",
-);
-const activeTab = ref<"dashboards" | "reports">(
-  route.query.tab === "reports" ? "reports" : "dashboards",
+const error = ref('');
+const search = ref(typeof route.query.search === 'string' ? route.query.search : '');
+const activeTab = ref<'dashboards' | 'reports'>(
+  route.query.tab === 'reports' ? 'reports' : 'dashboards',
 );
 const collection = ref(
-  typeof route.query.collection === "string"
-    ? route.query.collection
-    : "Все коллекции",
+  typeof route.query.collection === 'string' ? route.query.collection : 'Все коллекции',
 );
 let catalogGeneration = 0;
 const catalogCollections = ref<string[]>([]);
 const dashboardCount = ref(0);
 const reportCount = ref(0);
 
-const permissions = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
+const permissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
 const canCreateReport = computed(() => canCreateSavedReport(permissions.value));
-const canCreateDashboardArtifact = computed(() =>
-  canCreateDashboard(permissions.value),
-);
-const collections = computed(() => [
-  "Все коллекции",
-  ...catalogCollections.value,
-]);
+const canCreateDashboardArtifact = computed(() => canCreateDashboard(permissions.value));
+const collections = computed(() => ['Все коллекции', ...catalogCollections.value]);
 const visibleArtifacts = computed(() => artifacts.value);
 
 async function loadArtifacts(): Promise<void> {
@@ -59,20 +48,18 @@ async function loadArtifacts(): Promise<void> {
   if (!projectId || !canReadReporting(permissions.value)) {
     artifacts.value = [];
     loading.value = false;
-    await router.replace({ name: "overview" });
+    await router.replace({ name: 'overview' });
     return;
   }
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const catalog = await reportingRepository.listArtifacts(projectId, {
-      kind: activeTab.value === "dashboards" ? "DASHBOARD" : "SAVED_REPORT",
+      kind: activeTab.value === 'dashboards' ? 'DASHBOARD' : 'SAVED_REPORT',
       search: search.value,
-      collection:
-        collection.value === "Все коллекции" ? null : collection.value,
+      collection: collection.value === 'Все коллекции' ? null : collection.value,
     });
-    if (generation !== catalogGeneration || auth.project?.id !== projectId)
-      return;
+    if (generation !== catalogGeneration || auth.project?.id !== projectId) return;
     artifacts.value = catalog.items;
     dashboardCount.value = catalog.counts.dashboards;
     reportCount.value = catalog.counts.savedReports;
@@ -80,85 +67,71 @@ async function loadArtifacts(): Promise<void> {
   } catch (cause) {
     if (generation !== catalogGeneration) return;
     artifacts.value = [];
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось загрузить отчёты";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить отчёты';
   } finally {
     if (generation === catalogGeneration) loading.value = false;
   }
 }
 
-function artifactPath(
-  artifact: ReportingArtifactSummary,
-  edit = false,
-): string {
+function artifactPath(artifact: ReportingArtifactSummary, edit = false): string {
   const base =
-    artifact.kind === "DASHBOARD"
-      ? `/dashboards/${artifact.id}`
-      : `/reports/${artifact.id}`;
+    artifact.kind === 'DASHBOARD' ? `/dashboards/${artifact.id}` : `/reports/${artifact.id}`;
   return edit ? `${base}/edit` : base;
 }
 
 function canEditArtifact(artifact: ReportingArtifactSummary): boolean {
-  if (!artifact.allowedActions.includes("EDIT")) return false;
-  return artifact.kind === "DASHBOARD"
+  if (!artifact.allowedActions.includes('EDIT')) return false;
+  return artifact.kind === 'DASHBOARD'
     ? canEditDashboard(permissions.value)
     : canEditSavedReport(permissions.value);
 }
 
-async function archiveArtifact(
-  artifact: ReportingArtifactSummary,
-): Promise<void> {
+async function archiveArtifact(artifact: ReportingArtifactSummary): Promise<void> {
   const projectId = auth.project?.id;
-  if (!projectId || !artifact.allowedActions.includes("ARCHIVE")) return;
-  await reportingRepository.archiveArtifact(
-    projectId,
-    artifact.kind,
-    artifact.id,
-  );
+  if (!projectId || !artifact.allowedActions.includes('ARCHIVE')) return;
+  await reportingRepository.archiveArtifact(projectId, artifact.kind, artifact.id);
   await loadArtifacts();
 }
 
-function lifecycleLabel(
-  lifecycle: ReportingArtifactSummary["lifecycle"],
-): string {
-  if (lifecycle === "PUBLISHED") return "Опубликован";
-  if (lifecycle === "DRAFT") return "Черновик";
-  return "В архиве";
+function lifecycleLabel(lifecycle: ReportingArtifactSummary['lifecycle']): string {
+  if (lifecycle === 'PUBLISHED') return 'Опубликован';
+  if (lifecycle === 'DRAFT') return 'Черновик';
+  return 'В архиве';
 }
 
 function lifecycleSeverity(
-  lifecycle: ReportingArtifactSummary["lifecycle"],
-): "success" | "secondary" | "warn" {
-  if (lifecycle === "PUBLISHED") return "success";
-  if (lifecycle === "DRAFT") return "secondary";
-  return "warn";
+  lifecycle: ReportingArtifactSummary['lifecycle'],
+): 'success' | 'secondary' | 'warn' {
+  if (lifecycle === 'PUBLISHED') return 'success';
+  if (lifecycle === 'DRAFT') return 'secondary';
+  return 'warn';
 }
 
 function formatUpdatedAt(value: string): string {
-  return new Intl.DateTimeFormat("ru", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
+  return new Intl.DateTimeFormat('ru', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(new Date(value));
 }
 
-let previousProjectId = auth.project?.id ?? "";
+let previousProjectId = auth.project?.id ?? '';
 watch(
-  () => auth.project?.id ?? "",
+  () => auth.project?.id ?? '',
   (nextProjectId) => {
     if (nextProjectId === previousProjectId) return;
     previousProjectId = nextProjectId;
-    search.value = "";
-    collection.value = "Все коллекции";
-    activeTab.value = "dashboards";
+    search.value = '';
+    collection.value = 'Все коллекции';
+    activeTab.value = 'dashboards';
   },
 );
 
 watch(
   () => [
-    auth.project?.id ?? "",
-    [...permissions.value].sort().join(","),
+    auth.project?.id ?? '',
+    [...permissions.value].sort().join(','),
     activeTab.value,
     search.value,
     collection.value,
@@ -166,11 +139,9 @@ watch(
   () => {
     void router.replace({
       query: {
-        ...(activeTab.value === "reports" ? { tab: "reports" } : {}),
+        ...(activeTab.value === 'reports' ? { tab: 'reports' } : {}),
         ...(search.value ? { search: search.value } : {}),
-        ...(collection.value !== "Все коллекции"
-          ? { collection: collection.value }
-          : {}),
+        ...(collection.value !== 'Все коллекции' ? { collection: collection.value } : {}),
       },
     });
     void loadArtifacts();
@@ -187,10 +158,7 @@ watch(
         <h1 id="reports-title">Отчёты</h1>
         <p>Сохранённые ответы и дашборды с понятным происхождением данных.</p>
       </div>
-      <div
-        v-if="canCreateReport || canCreateDashboardArtifact"
-        class="header-actions"
-      >
+      <div v-if="canCreateReport || canCreateDashboardArtifact" class="header-actions">
         <Button
           v-if="canCreateReport"
           label="Создать отчёт"
@@ -236,17 +204,9 @@ watch(
           <label class="search-control">
             <i class="pi pi-search" aria-hidden="true" />
             <span class="sr-only">Поиск по отчётам</span>
-            <InputText
-              v-model="search"
-              type="search"
-              placeholder="Название, владелец…"
-            />
+            <InputText v-model="search" type="search" placeholder="Название, владелец…" />
           </label>
-          <Select
-            v-model="collection"
-            :options="collections"
-            aria-label="Коллекция"
-          />
+          <Select v-model="collection" :options="collections" aria-label="Коллекция" />
         </div>
       </div>
 
@@ -283,19 +243,9 @@ watch(
           class="artifact-row"
           :style="{ '--row-index': index }"
         >
-          <button
-            type="button"
-            class="artifact-main"
-            @click="router.push(artifactPath(artifact))"
-          >
+          <button type="button" class="artifact-main" @click="router.push(artifactPath(artifact))">
             <span class="artifact-icon" aria-hidden="true">
-              <i
-                :class="
-                  artifact.kind === 'DASHBOARD'
-                    ? 'pi pi-th-large'
-                    : 'pi pi-chart-line'
-                "
-              />
+              <i :class="artifact.kind === 'DASHBOARD' ? 'pi pi-th-large' : 'pi pi-chart-line'" />
             </span>
             <span class="artifact-copy">
               <span class="artifact-title-line">
@@ -305,9 +255,7 @@ watch(
                   :severity="lifecycleSeverity(artifact.lifecycle)"
                 />
               </span>
-              <span class="artifact-description">{{
-                artifact.description
-              }}</span>
+              <span class="artifact-description">{{ artifact.description }}</span>
             </span>
           </button>
           <dl class="artifact-meta">

@@ -1,12 +1,7 @@
-import type { DecimalString } from "@/shared/lib/decimal-money";
+import type { DecimalString } from '@/shared/lib/decimal-money';
 
-export type AccrualLifecycle = "ACTIVE" | "PAUSED" | "ARCHIVED";
-export const ACCRUAL_SOURCES = [
-  "SERVER",
-  "FRONTEND",
-  "INTERNAL",
-  "INTEGRATION",
-] as const;
+export type AccrualLifecycle = 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
+export const ACCRUAL_SOURCES = ['SERVER', 'FRONTEND', 'INTERNAL', 'INTEGRATION'] as const;
 export type AccrualSource = (typeof ACCRUAL_SOURCES)[number];
 
 export function isAccrualSource(value: unknown): value is AccrualSource {
@@ -63,7 +58,7 @@ export interface PutAiAllowanceAccrualRuleInput {
 export interface AiAllowanceAccrualReceipt {
   id: string;
   endUserId: string;
-  status: "GRANTED" | "REJECTED";
+  status: 'GRANTED' | 'REJECTED';
   rejectionReason: string | null;
   rewardUsd: DecimalString;
   evaluatedAt: string;

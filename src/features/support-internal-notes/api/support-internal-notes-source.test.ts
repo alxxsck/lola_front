@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   SupportInternalNoteResponseDto,
   SupportInternalNoteRevisionResponseDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 const generated = vi.hoisted(() => ({
   list: vi.fn(),
@@ -12,7 +12,7 @@ const generated = vi.hoisted(() => ({
   tombstone: vi.fn(),
 }));
 
-vi.mock("@/shared/api/generated/retenive-backend", () => ({
+vi.mock('@/shared/api/generated/retenive-backend', () => ({
   supportInternalNoteList: generated.list,
   supportInternalNoteCreate: generated.create,
   supportInternalNoteCorrect: generated.correct,
@@ -20,12 +20,12 @@ vi.mock("@/shared/api/generated/retenive-backend", () => ({
   supportInternalNoteTombstone: generated.tombstone,
 }));
 
-vi.mock("@/shared/config/data-mode", () => ({ isMockMode: false }));
+vi.mock('@/shared/config/data-mode', () => ({ isMockMode: false }));
 
 import {
   SupportInternalNotesContractError,
   supportInternalNotesSource,
-} from "./support-internal-notes-source";
+} from './support-internal-notes-source';
 
 function note(
   overrides: Partial<SupportInternalNoteResponseDto> = {},
@@ -33,20 +33,20 @@ function note(
   return {
     actionEtag: '"sin1.opaque"',
     attachments: [],
-    body: "Проверить историю платежа",
+    body: 'Проверить историю платежа',
     conversationId: null,
-    createdAt: "2026-08-06T10:00:00.000Z",
-    creator: { actorId: "operator-1", displayName: "Алина" },
+    createdAt: '2026-08-06T10:00:00.000Z',
+    creator: { actorId: 'operator-1', displayName: 'Алина' },
     currentRevisionNumber: 2,
-    endUserCaseId: "case-1",
+    endUserCaseId: 'case-1',
     hasUnavailableReferences: false,
-    id: "note-1",
+    id: 'note-1',
     knowledgeDocumentId: null,
-    lifecycle: "ACTIVE",
+    lifecycle: 'ACTIVE',
     macroRevisionId: null,
     messageId: null,
     tombstonedAt: null,
-    updatedAt: "2026-08-06T10:10:00.000Z",
+    updatedAt: '2026-08-06T10:10:00.000Z',
     version: 2,
     ...overrides,
   };
@@ -56,24 +56,24 @@ function revision(
   overrides: Partial<SupportInternalNoteRevisionResponseDto> = {},
 ): SupportInternalNoteRevisionResponseDto {
   return {
-    author: { actorId: "operator-2", displayName: "Борис" },
-    body: "Уточнить номер заказа",
-    createdAt: "2026-08-06T10:05:00.000Z",
-    id: "revision-1",
-    noteId: "note-1",
-    reasonCode: "CLARIFICATION",
+    author: { actorId: 'operator-2', displayName: 'Борис' },
+    body: 'Уточнить номер заказа',
+    createdAt: '2026-08-06T10:05:00.000Z',
+    id: 'revision-1',
+    noteId: 'note-1',
+    reasonCode: 'CLARIFICATION',
     revisionNumber: 1,
     ...overrides,
   };
 }
 
-describe("support internal notes source", () => {
+describe('support internal notes source', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("uses the generated Case-scoped read endpoints and retains only mutation-safe note metadata", async () => {
+  it('uses the generated Case-scoped read endpoints and retains only mutation-safe note metadata', async () => {
     generated.list.mockResolvedValue({
       items: [note()],
-      nextCursor: "notes-2",
+      nextCursor: 'notes-2',
     });
     generated.revisions.mockResolvedValue({
       items: [revision()],
@@ -83,147 +83,140 @@ describe("support internal notes source", () => {
 
     await expect(
       supportInternalNotesSource.list(
-        "project-1",
-        "case-1",
-        { cursor: "notes-1", limit: 10 },
+        'project-1',
+        'case-1',
+        { cursor: 'notes-1', limit: 10 },
         signal,
       ),
     ).resolves.toEqual({
       items: [
         {
-          id: "note-1",
-          caseId: "case-1",
+          id: 'note-1',
+          caseId: 'case-1',
           actionEtag: '"sin1.opaque"',
-          body: "Проверить историю платежа",
-          lifecycle: "ACTIVE",
+          body: 'Проверить историю платежа',
+          lifecycle: 'ACTIVE',
           currentRevisionNumber: 2,
-          creatorName: "Алина",
-          createdAt: "2026-08-06T10:00:00.000Z",
-          updatedAt: "2026-08-06T10:10:00.000Z",
+          creatorName: 'Алина',
+          createdAt: '2026-08-06T10:00:00.000Z',
+          updatedAt: '2026-08-06T10:10:00.000Z',
           tombstonedAt: null,
           hasUnavailableReferences: false,
           attachments: [],
         },
       ],
-      nextCursor: "notes-2",
+      nextCursor: 'notes-2',
     });
     await expect(
-      supportInternalNotesSource.revisions("project-1", "case-1", "note-1"),
+      supportInternalNotesSource.revisions('project-1', 'case-1', 'note-1'),
     ).resolves.toMatchObject({
       items: [
         {
-          id: "revision-1",
-          noteId: "note-1",
+          id: 'revision-1',
+          noteId: 'note-1',
           revisionNumber: 1,
-          body: "Уточнить номер заказа",
-          reasonCode: "CLARIFICATION",
-          authorName: "Борис",
-          createdAt: "2026-08-06T10:05:00.000Z",
+          body: 'Уточнить номер заказа',
+          reasonCode: 'CLARIFICATION',
+          authorName: 'Борис',
+          createdAt: '2026-08-06T10:05:00.000Z',
         },
       ],
       nextCursor: null,
     });
 
     expect(generated.list).toHaveBeenCalledWith(
-      "project-1",
-      "case-1",
-      { cursor: "notes-1", limit: 10 },
+      'project-1',
+      'case-1',
+      { cursor: 'notes-1', limit: 10 },
       { signal },
     );
     expect(generated.revisions).toHaveBeenCalledWith(
-      "project-1",
-      "case-1",
-      "note-1",
+      'project-1',
+      'case-1',
+      'note-1',
       { limit: 20 },
       { signal: undefined },
     );
   });
 
-  it("passes idempotency and the latest action etag for note mutations", async () => {
+  it('passes idempotency and the latest action etag for note mutations', async () => {
     generated.create.mockResolvedValue(note());
     generated.correct.mockResolvedValue(note({ currentRevisionNumber: 3 }));
-    generated.tombstone.mockResolvedValue(
-      note({ body: null, lifecycle: "TOMBSTONED" }),
-    );
+    generated.tombstone.mockResolvedValue(note({ body: null, lifecycle: 'TOMBSTONED' }));
 
-    await supportInternalNotesSource.create("project-1", "case-1", {
-      body: "Проверить оплату",
-      conversationId: "conversation-1",
-      macroDraftId: "macro-note-draft-1",
-      idempotencyKey: "create-note-1",
+    await supportInternalNotesSource.create('project-1', 'case-1', {
+      body: 'Проверить оплату',
+      conversationId: 'conversation-1',
+      macroDraftId: 'macro-note-draft-1',
+      idempotencyKey: 'create-note-1',
     });
-    await supportInternalNotesSource.correct("project-1", "case-1", "note-1", {
-      body: "Проверить оплату повторно",
-      reasonCode: "FACTUAL_CORRECTION",
+    await supportInternalNotesSource.correct('project-1', 'case-1', 'note-1', {
+      body: 'Проверить оплату повторно',
+      reasonCode: 'FACTUAL_CORRECTION',
       actionEtag: '"sin1.opaque"',
-      idempotencyKey: "correct-note-1",
+      idempotencyKey: 'correct-note-1',
     });
-    await supportInternalNotesSource.tombstone(
-      "project-1",
-      "case-1",
-      "note-1",
-      {
-        reasonCode: "PRIVACY_REQUEST",
-        actionEtag: '"sin1.opaque"',
-        idempotencyKey: "tombstone-note-1",
-      },
-    );
+    await supportInternalNotesSource.tombstone('project-1', 'case-1', 'note-1', {
+      reasonCode: 'PRIVACY_REQUEST',
+      actionEtag: '"sin1.opaque"',
+      idempotencyKey: 'tombstone-note-1',
+    });
 
     expect(generated.create).toHaveBeenCalledWith(
-      "project-1",
-      "case-1",
+      'project-1',
+      'case-1',
       {
-        body: "Проверить оплату",
-        conversationId: "conversation-1",
-        macroDraftId: "macro-note-draft-1",
+        body: 'Проверить оплату',
+        conversationId: 'conversation-1',
+        macroDraftId: 'macro-note-draft-1',
       },
-      { headers: { "Idempotency-Key": "create-note-1" } },
+      { headers: { 'Idempotency-Key': 'create-note-1' } },
     );
     expect(generated.correct).toHaveBeenCalledWith(
-      "project-1",
-      "case-1",
-      "note-1",
-      { body: "Проверить оплату повторно", reasonCode: "FACTUAL_CORRECTION" },
+      'project-1',
+      'case-1',
+      'note-1',
+      { body: 'Проверить оплату повторно', reasonCode: 'FACTUAL_CORRECTION' },
       {
         headers: {
-          "Idempotency-Key": "correct-note-1",
-          "If-Match": '"sin1.opaque"',
+          'Idempotency-Key': 'correct-note-1',
+          'If-Match': '"sin1.opaque"',
         },
       },
     );
     expect(generated.tombstone).toHaveBeenCalledWith(
-      "project-1",
-      "case-1",
-      "note-1",
-      { reasonCode: "PRIVACY_REQUEST" },
+      'project-1',
+      'case-1',
+      'note-1',
+      { reasonCode: 'PRIVACY_REQUEST' },
       {
         headers: {
-          "Idempotency-Key": "tombstone-note-1",
-          "If-Match": '"sin1.opaque"',
+          'Idempotency-Key': 'tombstone-note-1',
+          'If-Match': '"sin1.opaque"',
         },
       },
     );
   });
 
-  it("rejects a note with an untyped actor snapshot instead of rendering unknown data", async () => {
+  it('rejects a note with an untyped actor snapshot instead of rendering unknown data', async () => {
     generated.list.mockResolvedValue({
-      items: [note({ creator: { actorId: "operator-1" } })],
+      items: [note({ creator: { actorId: 'operator-1' } })],
       nextCursor: null,
     });
 
-    await expect(
-      supportInternalNotesSource.list("project-1", "case-1"),
-    ).rejects.toBeInstanceOf(SupportInternalNotesContractError);
+    await expect(supportInternalNotesSource.list('project-1', 'case-1')).rejects.toBeInstanceOf(
+      SupportInternalNotesContractError,
+    );
   });
 
-  it("rejects history that is not for the requested note", async () => {
+  it('rejects history that is not for the requested note', async () => {
     generated.revisions.mockResolvedValue({
-      items: [revision({ noteId: "other-note" })],
+      items: [revision({ noteId: 'other-note' })],
       nextCursor: null,
     });
 
     await expect(
-      supportInternalNotesSource.revisions("project-1", "case-1", "note-1"),
+      supportInternalNotesSource.revisions('project-1', 'case-1', 'note-1'),
     ).rejects.toBeInstanceOf(SupportInternalNotesContractError);
   });
 });

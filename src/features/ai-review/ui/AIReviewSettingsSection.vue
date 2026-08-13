@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { reactive } from "vue";
-import Button from "primevue/button";
-import InputNumber from "primevue/inputnumber";
-import ToggleSwitch from "primevue/toggleswitch";
-import { useSettingsResource } from "@/shared/lib/use-settings-resource";
-import AISettingsSectionCard from "@/shared/ui/AISettingsSectionCard.vue";
-import { aiReviewRepository } from "../api/ai-review-repository";
+import { reactive } from 'vue';
+import Button from 'primevue/button';
+import InputNumber from 'primevue/inputnumber';
+import ToggleSwitch from 'primevue/toggleswitch';
+import { useSettingsResource } from '@/shared/lib/use-settings-resource';
+import AISettingsSectionCard from '@/shared/ui/AISettingsSectionCard.vue';
+import { aiReviewRepository } from '../api/ai-review-repository';
 
 const props = defineProps<{
   projectId: string;
@@ -24,7 +24,7 @@ const {
   form.enabled = loaded.enabled;
   form.dailyRunLimit = loaded.dailyRunLimit;
   return loaded;
-}, "Не удалось загрузить AI Review");
+}, 'Не удалось загрузить AI Review');
 
 async function save() {
   const current = settings.value;
@@ -36,9 +36,9 @@ async function save() {
         enabled: form.enabled,
         dailyRunLimit: form.dailyRunLimit,
       }),
-    "Не удалось сохранить AI Review",
+    'Не удалось сохранить AI Review',
   );
-  if (saved) emit("changed", saved.projectVersion);
+  if (saved) emit('changed', saved.projectVersion);
 }
 </script>
 
@@ -54,9 +54,7 @@ async function save() {
       <div class="settings-fields single-column">
         <label class="setting-card feature-toggle">
           <span>
-            <strong>{{
-              form.enabled ? "AI Review включён" : "AI Review выключен"
-            }}</strong>
+            <strong>{{ form.enabled ? 'AI Review включён' : 'AI Review выключен' }}</strong>
             <small>При выключении новые платные запуски недоступны.</small>
           </span>
           <ToggleSwitch v-model="form.enabled" :disabled="!editable" />
@@ -70,9 +68,7 @@ async function save() {
             :use-grouping="false"
             :disabled="!editable"
           />
-          <small class="field-hint"
-            >Общий суточный лимит ручных AI-анализов событий.</small
-          >
+          <small class="field-hint">Общий суточный лимит ручных AI-анализов событий.</small>
         </label>
       </div>
       <footer class="settings-actions">

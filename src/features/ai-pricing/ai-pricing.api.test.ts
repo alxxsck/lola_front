@@ -1,31 +1,31 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   aiPricingRevisionGet,
   aiPricingRevisionPublish,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import {
   fetchTextToSpeechPricing,
   parseTextToSpeechPricing,
   publishTextToSpeechPricing,
-} from "./ai-pricing.api";
+} from './ai-pricing.api';
 
-vi.mock("@/shared/api/generated/retenive-backend", () => ({
+vi.mock('@/shared/api/generated/retenive-backend', () => ({
   aiPricingRevisionGet: vi.fn(),
   aiPricingRevisionPublish: vi.fn(),
 }));
 
 const revision = {
-  id: "00000000-0000-4000-8000-000000000001",
-  provider: "xai",
-  operation: "speech",
-  currency: "usd",
-  unit: "per_million_input_characters",
-  rate: "15",
-  effectiveFrom: "2026-07-29T10:00:00.000Z",
-  sourceUrl: "https://docs.x.ai/developers/pricing",
-  changeReason: "Initial verified public rate",
-  createdBy: { type: "CMS_USER", id: "operator-1" },
-  createdAt: "2026-07-29T10:00:00.000Z",
+  id: '00000000-0000-4000-8000-000000000001',
+  provider: 'xai',
+  operation: 'speech',
+  currency: 'usd',
+  unit: 'per_million_input_characters',
+  rate: '15',
+  effectiveFrom: '2026-07-29T10:00:00.000Z',
+  sourceUrl: 'https://docs.x.ai/developers/pricing',
+  changeReason: 'Initial verified public rate',
+  createdBy: { type: 'CMS_USER', id: 'operator-1' },
+  createdAt: '2026-07-29T10:00:00.000Z',
 } as const;
 
 const state = {
@@ -33,16 +33,16 @@ const state = {
   history: [revision],
   hasMore: false,
   nextCursor: null,
-  sourceUrl: "https://docs.x.ai/developers/pricing",
+  sourceUrl: 'https://docs.x.ai/developers/pricing',
 };
 
-describe("xAI Text-to-Speech pricing API", () => {
+describe('xAI Text-to-Speech pricing API', () => {
   beforeEach(() => {
     vi.mocked(aiPricingRevisionGet).mockReset();
     vi.mocked(aiPricingRevisionPublish).mockReset();
   });
 
-  it("loads cursor-paginated immutable pricing state", async () => {
+  it('loads cursor-paginated immutable pricing state', async () => {
     vi.mocked(aiPricingRevisionGet).mockResolvedValue(state);
     const signal = new AbortController().signal;
 
@@ -55,44 +55,44 @@ describe("xAI Text-to-Speech pricing API", () => {
     );
   });
 
-  it("publishes only the decimal rate and mandatory reason", async () => {
+  it('publishes only the decimal rate and mandatory reason', async () => {
     vi.mocked(aiPricingRevisionPublish).mockResolvedValue(state);
 
     await expect(
       publishTextToSpeechPricing({
-        ratePerMillionCharacters: "16.5",
-        changeReason: "Public pricing changed",
+        ratePerMillionCharacters: '16.5',
+        changeReason: 'Public pricing changed',
       }),
     ).resolves.toEqual(state);
     expect(aiPricingRevisionPublish).toHaveBeenCalledWith({
-      ratePerMillionCharacters: "16.5",
-      changeReason: "Public pricing changed",
+      ratePerMillionCharacters: '16.5',
+      changeReason: 'Public pricing changed',
     });
   });
 
-  it("rejects a mutable or provider-confused pricing response", () => {
+  it('rejects a mutable or provider-confused pricing response', () => {
     expect(
       parseTextToSpeechPricing({
         ...state,
-        current: { ...revision, provider: "other" },
+        current: { ...revision, provider: 'other' },
       }),
     ).toBeUndefined();
     expect(
       parseTextToSpeechPricing({
         ...state,
-        current: { ...revision, rate: "-15" },
+        current: { ...revision, rate: '-15' },
       }),
     ).toBeUndefined();
     expect(
       parseTextToSpeechPricing({
         ...state,
-        sourceUrl: "javascript:alert(1)",
+        sourceUrl: 'javascript:alert(1)',
       }),
     ).toBeUndefined();
     expect(
       parseTextToSpeechPricing({
         ...state,
-        sourceUrl: "https://user:secret@docs.x.ai/developers/pricing",
+        sourceUrl: 'https://user:secret@docs.x.ai/developers/pricing',
       }),
     ).toBeUndefined();
   });

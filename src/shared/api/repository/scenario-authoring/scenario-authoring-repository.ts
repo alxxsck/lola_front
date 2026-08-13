@@ -22,7 +22,7 @@ import {
   scenarioAuthoringValidate,
   scenarioAuthoringValidateScenarioDraft,
   scenarioRunsExplain,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   AudienceRuleDto,
   CreateScenarioAuthoringDto,
@@ -38,30 +38,22 @@ import type {
   ScenarioRuleDto,
   UpdateScenarioAuthoringMetadataDto,
   ValidateScenarioDraftDto,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
 
-import { adaptScenarioAuthoringContract } from "./scenario-authoring-contract";
+import { adaptScenarioAuthoringContract } from './scenario-authoring-contract';
 
 export type ScenarioPublishInput = Required<
-  Pick<
-    PublishScenarioDto,
-    "catalogRevision" | "deliveryPolicy" | "expectedCurrentRevisionId"
-  >
+  Pick<PublishScenarioDto, 'catalogRevision' | 'deliveryPolicy' | 'expectedCurrentRevisionId'>
 > &
   Pick<
     PublishScenarioDto,
-    | "audience"
-    | "expectedDraftVersion"
-    | "localization"
-    | "profileFreshness"
-    | "reason"
-    | "rule"
+    'audience' | 'expectedDraftVersion' | 'localization' | 'profileFreshness' | 'reason' | 'rule'
   >;
 
 export type ScenarioDraftContent = Omit<
   SaveScenarioDraftDto,
-  "expectedCurrentRevisionId" | "expectedDraftVersion"
+  'expectedCurrentRevisionId' | 'expectedDraftVersion'
 >;
 
 export type ScenarioCreateInput = CreateScenarioAuthoringDto;
@@ -70,9 +62,7 @@ export interface ScenarioAuthoringRequestOptions {
   signal?: AbortSignal;
 }
 
-async function callApi<Response>(
-  request: () => Promise<Response>,
-): Promise<Response> {
+async function callApi<Response>(request: () => Promise<Response>): Promise<Response> {
   try {
     return await request();
   } catch (cause) {
@@ -82,9 +72,7 @@ async function callApi<Response>(
 
 export const scenarioAuthoringRepository = {
   async getContract(projectId: string) {
-    return adaptScenarioAuthoringContract(
-      await callApi(() => scenarioAuthoringCatalog(projectId)),
-    );
+    return adaptScenarioAuthoringContract(await callApi(() => scenarioAuthoringCatalog(projectId)));
   },
 
   createScenario(projectId: string, input: CreateScenarioAuthoringDto) {
@@ -100,19 +88,11 @@ export const scenarioAuthoringRepository = {
     scenarioId: string,
     input: UpdateScenarioAuthoringMetadataDto,
   ) {
-    return callApi(() =>
-      scenarioAuthoringUpdateScenarioMetadata(projectId, scenarioId, input),
-    );
+    return callApi(() => scenarioAuthoringUpdateScenarioMetadata(projectId, scenarioId, input));
   },
 
-  archiveScenario(
-    projectId: string,
-    scenarioId: string,
-    input: ArchiveScenarioAuthoringDto,
-  ) {
-    return callApi(() =>
-      scenarioAuthoringArchiveScenario(projectId, scenarioId, input),
-    );
+  archiveScenario(projectId: string, scenarioId: string, input: ArchiveScenarioAuthoringDto) {
+    return callApi(() => scenarioAuthoringArchiveScenario(projectId, scenarioId, input));
   },
 
   validateRule(
@@ -157,19 +137,11 @@ export const scenarioAuthoringRepository = {
   },
 
   getScenarioDocument(projectId: string, scenarioId: string) {
-    return callApi(() =>
-      scenarioAuthoringScenarioDocument(projectId, scenarioId),
-    );
+    return callApi(() => scenarioAuthoringScenarioDocument(projectId, scenarioId));
   },
 
-  saveScenarioDraft(
-    projectId: string,
-    scenarioId: string,
-    draft: SaveScenarioDraftDto,
-  ) {
-    return callApi(() =>
-      scenarioAuthoringSaveDraft(projectId, scenarioId, draft),
-    );
+  saveScenarioDraft(projectId: string, scenarioId: string, draft: SaveScenarioDraftDto) {
+    return callApi(() => scenarioAuthoringSaveDraft(projectId, scenarioId, draft));
   },
 
   validateScenarioDraft(
@@ -180,12 +152,7 @@ export const scenarioAuthoringRepository = {
   ) {
     return callApi(() =>
       options
-        ? scenarioAuthoringValidateScenarioDraft(
-            projectId,
-            scenarioId,
-            draft,
-            options,
-          )
+        ? scenarioAuthoringValidateScenarioDraft(projectId, scenarioId, draft, options)
         : scenarioAuthoringValidateScenarioDraft(projectId, scenarioId, draft),
     );
   },
@@ -195,19 +162,11 @@ export const scenarioAuthoringRepository = {
     scenarioId: string,
     params?: ScenarioAuthoringScenarioRevisionsParams,
   ) {
-    return callApi(() =>
-      scenarioAuthoringScenarioRevisions(projectId, scenarioId, params),
-    );
+    return callApi(() => scenarioAuthoringScenarioRevisions(projectId, scenarioId, params));
   },
 
-  getScenarioRevision(
-    projectId: string,
-    scenarioId: string,
-    revisionId: string,
-  ) {
-    return callApi(() =>
-      scenarioAuthoringScenarioRevision(projectId, scenarioId, revisionId),
-    );
+  getScenarioRevision(projectId: string, scenarioId: string, revisionId: string) {
+    return callApi(() => scenarioAuthoringScenarioRevision(projectId, scenarioId, revisionId));
   },
 
   searchSegments(
@@ -226,28 +185,16 @@ export const scenarioAuthoringRepository = {
     return callApi(() => scenarioAudienceDetail(projectId, segmentId));
   },
 
-  getSegmentRevision(
-    projectId: string,
-    segmentId: string,
-    segmentRevisionId: string,
-  ) {
-    return callApi(() =>
-      scenarioAudienceRevision(projectId, segmentId, segmentRevisionId),
-    );
+  getSegmentRevision(projectId: string, segmentId: string, segmentRevisionId: string) {
+    return callApi(() => scenarioAudienceRevision(projectId, segmentId, segmentRevisionId));
   },
 
   createSegment(projectId: string, draft: PublishSegmentRevisionDto) {
     return callApi(() => scenarioAudienceCreate(projectId, draft));
   },
 
-  publishSegmentRevision(
-    projectId: string,
-    segmentId: string,
-    draft: PublishSegmentRevisionDto,
-  ) {
-    return callApi(() =>
-      scenarioAudiencePublishRevision(projectId, segmentId, draft),
-    );
+  publishSegmentRevision(projectId: string, segmentId: string, draft: PublishSegmentRevisionDto) {
+    return callApi(() => scenarioAudiencePublishRevision(projectId, segmentId, draft));
   },
 
   archiveSegment(projectId: string, segmentId: string) {
@@ -269,21 +216,15 @@ export const scenarioAuthoringRepository = {
     );
   },
 
-  publishScenario(
-    projectId: string,
-    scenarioId: string,
-    draft: ScenarioPublishInput,
-  ) {
-    return callApi(() =>
-      scenarioAuthoringPublishScenario(projectId, scenarioId, draft),
-    );
+  publishScenario(projectId: string, scenarioId: string, draft: ScenarioPublishInput) {
+    return callApi(() => scenarioAuthoringPublishScenario(projectId, scenarioId, draft));
   },
 
   rollbackScenario(
     projectId: string,
     scenarioId: string,
     revisionId: string,
-    expectedCurrentRevisionId: RollbackScenarioDto["expectedCurrentRevisionId"],
+    expectedCurrentRevisionId: RollbackScenarioDto['expectedCurrentRevisionId'],
   ) {
     return callApi(() =>
       scenarioAuthoringRollbackScenario(projectId, scenarioId, revisionId, {

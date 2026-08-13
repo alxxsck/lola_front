@@ -2,34 +2,27 @@ import {
   createAccessTokenCoordinator,
   type AccessTokenChannel,
   type AccessTokenLock,
-} from "./access-token-coordinator";
+} from './access-token-coordinator';
 
-const PROJECT_KEY = "retenive-cms-selected-project-v1";
-const TRANSLATION_JOB_PREFIX = "retenive:translation-jobs:";
-const REPLY_TRANSLATION_DRAFT_PREFIX = "retenive:reply-translation-draft:";
-const SUPPORT_REPLY_ATTEMPT_PREFIX = "retenive:support-reply-attempt:";
-const AMPLITUDE_PENDING_TEST_PREFIX = "retenive:amplitude-pending-tests:";
-const AMPLITUDE_UNRESOLVED_SECRET_PREFIX = "retenive:amplitude-unresolved-secret:";
-const AMPLITUDE_PENDING_ROUTE_CREATE_PREFIX =
-  "retenive:amplitude-pending-route-create:";
-const AUTH_CHANNEL_NAME = "retenive-cms-auth-session-v1";
+const PROJECT_KEY = 'retenive-cms-selected-project-v1';
+const TRANSLATION_JOB_PREFIX = 'retenive:translation-jobs:';
+const REPLY_TRANSLATION_DRAFT_PREFIX = 'retenive:reply-translation-draft:';
+const SUPPORT_REPLY_ATTEMPT_PREFIX = 'retenive:support-reply-attempt:';
+const AMPLITUDE_PENDING_TEST_PREFIX = 'retenive:amplitude-pending-tests:';
+const AMPLITUDE_UNRESOLVED_SECRET_PREFIX = 'retenive:amplitude-unresolved-secret:';
+const AMPLITUDE_PENDING_ROUTE_CREATE_PREFIX = 'retenive:amplitude-pending-route-create:';
+const AUTH_CHANNEL_NAME = 'retenive-cms-auth-session-v1';
 
 function browserChannel(): AccessTokenChannel | undefined {
-  if (
-    typeof window === "undefined" ||
-    typeof window.BroadcastChannel === "undefined"
-  )
+  if (typeof window === 'undefined' || typeof window.BroadcastChannel === 'undefined')
     return undefined;
   return new window.BroadcastChannel(AUTH_CHANNEL_NAME);
 }
 
 function browserLock(): AccessTokenLock | undefined {
-  if (typeof navigator === "undefined" || !navigator.locks) return undefined;
+  if (typeof navigator === 'undefined' || !navigator.locks) return undefined;
   return {
-    request: async <T>(
-      name: string,
-      callback: () => Promise<T>,
-    ): Promise<T> => {
+    request: async <T>(name: string, callback: () => Promise<T>): Promise<T> => {
       let result: T | undefined;
       await navigator.locks.request(name, async () => {
         result = await callback();
@@ -57,16 +50,13 @@ export function getSelectedProjectId(): string | undefined {
   return sessionStorage.getItem(PROJECT_KEY) ?? undefined;
 }
 
-export function storeAccessToken(tokens: {
-  accessToken: string;
-  expiresIn: number;
-}): void {
+export function storeAccessToken(tokens: { accessToken: string; expiresIn: number }): void {
   accessTokens.store(tokens);
 }
 
 export function storeSelectedProjectId(
   projectId: string,
-  storage: Pick<Storage, "setItem"> = sessionStorage,
+  storage: Pick<Storage, 'setItem'> = sessionStorage,
 ): void {
   storage.setItem(PROJECT_KEY, projectId);
 }
@@ -100,20 +90,14 @@ export function clearAuthSession(): void {
   clearTabSessionStorage();
 }
 
-export function coordinateAccessTokenRefresh(
-  refreshBackend: () => Promise<void>,
-): Promise<void> {
+export function coordinateAccessTokenRefresh(refreshBackend: () => Promise<void>): Promise<void> {
   return accessTokens.refresh(refreshBackend);
 }
 
-export function coordinateAuthSessionMutation<T>(
-  operation: () => Promise<T>,
-): Promise<T> {
+export function coordinateAuthSessionMutation<T>(operation: () => Promise<T>): Promise<T> {
   return accessTokens.runSessionReplacement(operation);
 }
 
-export function registerRemoteAuthSessionClearHandler(
-  handler: () => void,
-): () => void {
+export function registerRemoteAuthSessionClearHandler(handler: () => void): () => void {
   return accessTokens.onRemoteClear(handler);
 }

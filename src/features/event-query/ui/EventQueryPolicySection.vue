@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import ToggleSwitch from "primevue/toggleswitch";
-import type { EventQueryPolicyStateResponseDto } from "@/shared/api/generated/models";
-import ProjectSettingsSectionHeader from "@/shared/ui/ProjectSettingsSectionHeader.vue";
-import { eventQueryRepository } from "../api/event-query-repository";
-import { projectPolicyConflictState } from "../model/event-query-conflict";
-import EventQueryPreview from "./EventQueryPreview.vue";
+import { computed, onMounted, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import ToggleSwitch from 'primevue/toggleswitch';
+import type { EventQueryPolicyStateResponseDto } from '@/shared/api/generated/models';
+import ProjectSettingsSectionHeader from '@/shared/ui/ProjectSettingsSectionHeader.vue';
+import { eventQueryRepository } from '../api/event-query-repository';
+import { projectPolicyConflictState } from '../model/event-query-conflict';
+import EventQueryPreview from './EventQueryPreview.vue';
 
 const props = defineProps<{
   projectId: string;
@@ -19,20 +19,18 @@ const props = defineProps<{
 const expanded = ref(false);
 const loading = ref(true);
 const applying = ref(false);
-const error = ref("");
-const success = ref("");
+const error = ref('');
+const success = ref('');
 const state = ref<EventQueryPolicyStateResponseDto | null>(null);
 const masterEnabled = ref(false);
 const savedMasterEnabled = ref(false);
 let generation = 0;
 
 const dirty = computed(
-  () =>
-    Boolean(state.value) && masterEnabled.value !== savedMasterEnabled.value,
+  () => Boolean(state.value) && masterEnabled.value !== savedMasterEnabled.value,
 );
 const canApply = computed(
-  () =>
-    props.canManage && Boolean(state.value) && dirty.value && !applying.value,
+  () => props.canManage && Boolean(state.value) && dirty.value && !applying.value,
 );
 
 function isCurrent(requestGeneration: number, projectId: string) {
@@ -44,8 +42,8 @@ async function load() {
   const projectId = props.projectId;
   loading.value = true;
   applying.value = false;
-  error.value = "";
-  success.value = "";
+  error.value = '';
+  success.value = '';
   state.value = null;
   try {
     const nextState = await eventQueryRepository.getPolicy(projectId);
@@ -55,8 +53,7 @@ async function load() {
     savedMasterEnabled.value = nextState.configured.masterEnabled;
   } catch (cause) {
     if (!isCurrent(requestGeneration, projectId)) return;
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось загрузить настройку";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить настройку';
   } finally {
     if (isCurrent(requestGeneration, projectId)) loading.value = false;
   }
@@ -68,8 +65,8 @@ async function apply() {
   const requestGeneration = generation;
   const projectId = props.projectId;
   applying.value = true;
-  error.value = "";
-  success.value = "";
+  error.value = '';
+  success.value = '';
   try {
     const next = await eventQueryRepository.applyProject(projectId, {
       concurrencyToken: current.concurrencyToken,
@@ -80,8 +77,8 @@ async function apply() {
     masterEnabled.value = next.configured.masterEnabled;
     savedMasterEnabled.value = next.configured.masterEnabled;
     success.value = masterEnabled.value
-      ? "Доступ AI к событиям включён."
-      : "Доступ AI к событиям выключен.";
+      ? 'Доступ AI к событиям включён.'
+      : 'Доступ AI к событиям выключен.';
   } catch (cause) {
     if (!isCurrent(requestGeneration, projectId)) return;
     const currentState = projectPolicyConflictState(cause);
@@ -89,12 +86,10 @@ async function apply() {
       state.value = currentState;
       savedMasterEnabled.value = currentState.configured.masterEnabled;
       error.value =
-        "Настройку изменил другой администратор. Ваш выбор сохранён в форме; проверьте его и примените ещё раз.";
+        'Настройку изменил другой администратор. Ваш выбор сохранён в форме; проверьте его и примените ещё раз.';
     } else {
       error.value =
-        cause instanceof Error
-          ? cause.message
-          : "Не удалось применить настройку доступа";
+        cause instanceof Error ? cause.message : 'Не удалось применить настройку доступа';
     }
   } finally {
     if (isCurrent(requestGeneration, projectId)) applying.value = false;
@@ -138,12 +133,12 @@ watch(() => props.projectId, load);
           <div>
             <strong>Разрешить AI получать данные событий</strong>
             <p>
-              Это общий выключатель проекта. Доступ к конкретным событиям и
-              полям настраивается внутри каждого события.
+              Это общий выключатель проекта. Доступ к конкретным событиям и полям настраивается
+              внутри каждого события.
             </p>
           </div>
           <div class="master-toggle">
-            <span>{{ masterEnabled ? "Включено" : "Выключено" }}</span>
+            <span>{{ masterEnabled ? 'Включено' : 'Выключено' }}</span>
             <ToggleSwitch
               v-model="masterEnabled"
               input-id="event-query-master-enabled"
@@ -156,11 +151,7 @@ watch(() => props.projectId, load);
 
         <footer v-if="canManage" class="master-actions">
           <span>
-            {{
-              dirty
-                ? "Изменение ещё не применено"
-                : "Настройка действует в проекте"
-            }}
+            {{ dirty ? 'Изменение ещё не применено' : 'Настройка действует в проекте' }}
           </span>
           <Button
             data-test="apply-policy"

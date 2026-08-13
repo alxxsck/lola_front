@@ -1,32 +1,25 @@
 <script setup lang="ts">
-import {
-  computed,
-  onBeforeUnmount,
-  onMounted,
-  reactive,
-  ref,
-  watch,
-} from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Textarea from "primevue/textarea";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { reportingRepository } from "@/features/reporting/api/reporting-repository";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Textarea from 'primevue/textarea';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { reportingRepository } from '@/features/reporting/api/reporting-repository';
 import {
   canCreateDashboard,
   canEditDashboard,
   canPublishDashboard,
   canReadReporting,
-} from "@/features/reporting/model/reporting-permissions";
-import { ReportingRunCoordinator } from "@/features/reporting/model/reporting-run-coordinator";
+} from '@/features/reporting/model/reporting-permissions';
+import { ReportingRunCoordinator } from '@/features/reporting/model/reporting-run-coordinator';
 import {
   reportingDateRangeOptions,
   reportingPeriodDays,
   reportingSpaceOptions,
-} from "@/features/reporting/model/reporting-options";
+} from '@/features/reporting/model/reporting-options';
 import type {
   Dashboard,
   ReportingArtifactSpace,
@@ -34,9 +27,9 @@ import type {
   DashboardWidgetWidth,
   ReportingDateRange,
   SavedReport,
-} from "@/features/reporting/model/reporting-types";
-import { ReportingVersionConflictError } from "@/features/reporting/model/reporting-types";
-import ReportingDashboardWidget from "@/features/reporting/ui/ReportingDashboardWidget.vue";
+} from '@/features/reporting/model/reporting-types';
+import { ReportingVersionConflictError } from '@/features/reporting/model/reporting-types';
+import ReportingDashboardWidget from '@/features/reporting/ui/ReportingDashboardWidget.vue';
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -47,37 +40,31 @@ const reports = ref<SavedReport[]>([]);
 const loading = ref(true);
 const saving = ref(false);
 const publishing = ref(false);
-const error = ref("");
+const error = ref('');
 const versionConflict = ref(false);
-const pendingDateRange = ref<ReportingDateRange>("LAST_2_DAYS");
-const appliedDateRange = ref<ReportingDateRange>("LAST_2_DAYS");
+const pendingDateRange = ref<ReportingDateRange>('LAST_2_DAYS');
+const appliedDateRange = ref<ReportingDateRange>('LAST_2_DAYS');
 const refreshKey = ref(0);
-const reportSearch = ref("");
-const activePageId = ref("overview");
+const reportSearch = ref('');
+const activePageId = ref('overview');
 let autosaveReady = false;
 let autosaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 const editor = reactive({
-  title: "Новый дашборд",
-  description: "",
-  space: "PERSONAL" as ReportingArtifactSpace,
-  collection: "Без коллекции",
+  title: 'Новый дашборд',
+  description: '',
+  space: 'PERSONAL' as ReportingArtifactSpace,
+  collection: 'Без коллекции',
   widgets: [] as DashboardWidget[],
 });
 
-const isCreate = computed(() => route.name === "dashboard-create");
-const isEditing = computed(
-  () => isCreate.value || route.name === "dashboard-edit",
-);
-const projectId = computed(() => auth.project?.id ?? "");
-const permissions = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
+const isCreate = computed(() => route.name === 'dashboard-create');
+const isEditing = computed(() => isCreate.value || route.name === 'dashboard-edit');
+const projectId = computed(() => auth.project?.id ?? '');
+const permissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
 const canPublish = computed(() => canPublishDashboard(permissions.value));
 const canEdit = computed(() =>
-  isCreate.value
-    ? canCreateDashboard(permissions.value)
-    : canEditDashboard(permissions.value),
+  isCreate.value ? canCreateDashboard(permissions.value) : canEditDashboard(permissions.value),
 );
 const activePage = computed(
   () =>
@@ -87,24 +74,24 @@ const activePage = computed(
 );
 const activeWidgets = computed(() => activePage.value?.widgets ?? []);
 const publishedReports = computed(() =>
-  reports.value.filter((report) => report.lifecycle === "PUBLISHED"),
+  reports.value.filter((report) => report.lifecycle === 'PUBLISHED'),
 );
 const filteredReports = computed(() => {
-  const needle = reportSearch.value.trim().toLocaleLowerCase("ru");
+  const needle = reportSearch.value.trim().toLocaleLowerCase('ru');
   if (!needle) return publishedReports.value;
   return publishedReports.value.filter((report) =>
     `${report.title} ${report.description} ${report.collection}`
-      .toLocaleLowerCase("ru")
+      .toLocaleLowerCase('ru')
       .includes(needle),
   );
 });
 const dateRangeOptions = reportingDateRangeOptions;
 const spaceOptions = reportingSpaceOptions;
 const widthOptions: Array<{ value: DashboardWidgetWidth; label: string }> = [
-  { value: "ONE_THIRD", label: "1/3" },
-  { value: "HALF", label: "1/2" },
-  { value: "TWO_THIRDS", label: "2/3" },
-  { value: "FULL", label: "На всю ширину" },
+  { value: 'ONE_THIRD', label: '1/3' },
+  { value: 'HALF', label: '1/2' },
+  { value: 'TWO_THIRDS', label: '2/3' },
+  { value: 'FULL', label: 'На всю ширину' },
 ];
 
 function reportById(reportId: string): SavedReport | undefined {
@@ -117,7 +104,7 @@ function applyDashboard(next: Dashboard): void {
   editor.description = next.description;
   editor.space = next.space;
   editor.collection = next.collection;
-  activePageId.value = next.pages[0]?.id ?? "overview";
+  activePageId.value = next.pages[0]?.id ?? 'overview';
   editor.widgets = structuredClone(next.pages[0]?.widgets ?? []);
 }
 
@@ -135,48 +122,41 @@ async function loadPage(): Promise<void> {
     reports.value = [];
     editor.widgets = [];
     loading.value = false;
-    await router.replace({ name: "overview" });
+    await router.replace({ name: 'overview' });
     return;
   }
   coordinator.purge();
   autosaveReady = false;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     reports.value = isEditing.value
       ? await reportingRepository.listSavedReports(projectId.value)
       : [];
     const dashboardId =
-      typeof route.params.dashboardId === "string"
-        ? route.params.dashboardId
-        : "";
+      typeof route.params.dashboardId === 'string' ? route.params.dashboardId : '';
     if (dashboardId) {
-      applyDashboard(
-        await reportingRepository.getDashboard(projectId.value, dashboardId),
-      );
+      applyDashboard(await reportingRepository.getDashboard(projectId.value, dashboardId));
       if (
         isEditing.value &&
-        (!canEdit.value || !dashboard.value?.allowedActions.includes("EDIT"))
+        (!canEdit.value || !dashboard.value?.allowedActions.includes('EDIT'))
       ) {
         await router.replace(`/dashboards/${dashboardId}`);
         return;
       }
     } else {
       dashboard.value = null;
-      editor.title = "Новый дашборд";
-      editor.description = "";
-      editor.space = "PERSONAL";
-      editor.collection = "Без коллекции";
+      editor.title = 'Новый дашборд';
+      editor.description = '';
+      editor.space = 'PERSONAL';
+      editor.collection = 'Без коллекции';
       editor.widgets = [];
-      const initialReportId =
-        typeof route.query.reportId === "string" ? route.query.reportId : "";
-      if (initialReportId && reportById(initialReportId))
-        addReport(initialReportId);
+      const initialReportId = typeof route.query.reportId === 'string' ? route.query.reportId : '';
+      if (initialReportId && reportById(initialReportId)) addReport(initialReportId);
     }
     beginViewerScope();
   } catch (cause) {
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось открыть дашборд";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось открыть дашборд';
   } finally {
     loading.value = false;
     autosaveReady = true;
@@ -195,12 +175,11 @@ function refreshDashboard(): void {
 }
 
 function addReport(reportId: string): void {
-  if (editor.widgets.some((widget) => widget.savedReportId === reportId))
-    return;
+  if (editor.widgets.some((widget) => widget.savedReportId === reportId)) return;
   const report = reportById(reportId);
   if (
     !report ||
-    report.lifecycle !== "PUBLISHED" ||
+    report.lifecycle !== 'PUBLISHED' ||
     report.publishedRevision === null ||
     report.chartRevision === null
   )
@@ -214,7 +193,7 @@ function addReport(reportId: string): void {
     title: report.title,
     accessibleSummary: `${report.title}. ${report.description}`,
     visualization: report.visualization,
-    width: editor.widgets.length === 0 ? "TWO_THIRDS" : "ONE_THIRD",
+    width: editor.widgets.length === 0 ? 'TWO_THIRDS' : 'ONE_THIRD',
   });
 }
 
@@ -237,36 +216,31 @@ async function persistDraft(asCopy: boolean): Promise<Dashboard | null> {
     !projectId.value ||
     !canEdit.value ||
     !editor.title.trim() ||
-    (dashboard.value && !dashboard.value.allowedActions.includes("EDIT"))
+    (dashboard.value && !dashboard.value.allowedActions.includes('EDIT'))
   )
     return null;
   if (autosaveTimer) clearTimeout(autosaveTimer);
   autosaveTimer = null;
   saving.value = true;
-  error.value = "";
+  error.value = '';
   versionConflict.value = false;
   try {
-    const saved = await reportingRepository.saveDashboardDraft(
-      projectId.value,
-      {
-        ...(dashboard.value && !asCopy ? { id: dashboard.value.id } : {}),
-        ...(dashboard.value && !asCopy
-          ? { expectedVersion: dashboard.value.version }
-          : {}),
-        title: editor.title.trim(),
-        description: editor.description.trim(),
-        space: editor.space,
-        collection: editor.collection.trim() || "Без коллекции",
-        pages: [
-          {
-            id: dashboard.value?.pages[0]?.id ?? "overview",
-            title: dashboard.value?.pages[0]?.title ?? "Обзор",
-            widgets: editor.widgets.map((widget) => ({ ...widget })),
-          },
-          ...structuredClone(dashboard.value?.pages.slice(1) ?? []),
-        ],
-      },
-    );
+    const saved = await reportingRepository.saveDashboardDraft(projectId.value, {
+      ...(dashboard.value && !asCopy ? { id: dashboard.value.id } : {}),
+      ...(dashboard.value && !asCopy ? { expectedVersion: dashboard.value.version } : {}),
+      title: editor.title.trim(),
+      description: editor.description.trim(),
+      space: editor.space,
+      collection: editor.collection.trim() || 'Без коллекции',
+      pages: [
+        {
+          id: dashboard.value?.pages[0]?.id ?? 'overview',
+          title: dashboard.value?.pages[0]?.title ?? 'Обзор',
+          widgets: editor.widgets.map((widget) => ({ ...widget })),
+        },
+        ...structuredClone(dashboard.value?.pages.slice(1) ?? []),
+      ],
+    });
     applyDashboard(saved);
     if (route.params.dashboardId !== saved.id) {
       await router.replace(`/dashboards/${saved.id}/edit`);
@@ -274,8 +248,7 @@ async function persistDraft(asCopy: boolean): Promise<Dashboard | null> {
     return saved;
   } catch (cause) {
     versionConflict.value = cause instanceof ReportingVersionConflictError;
-    error.value =
-      cause instanceof Error ? cause.message : "Черновик не сохранён";
+    error.value = cause instanceof Error ? cause.message : 'Черновик не сохранён';
     return null;
   } finally {
     saving.value = false;
@@ -305,8 +278,7 @@ async function publish(): Promise<void> {
     await router.replace(`/dashboards/${published.id}`);
     beginViewerScope();
   } catch (cause) {
-    error.value =
-      cause instanceof Error ? cause.message : "Дашборд не опубликован";
+    error.value = cause instanceof Error ? cause.message : 'Дашборд не опубликован';
   } finally {
     publishing.value = false;
   }
@@ -316,24 +288,14 @@ watch(activePageId, () => beginViewerScope());
 watch(
   editor,
   () => {
-    if (
-      !autosaveReady ||
-      !isEditing.value ||
-      !canEdit.value ||
-      publishing.value
-    )
-      return;
+    if (!autosaveReady || !isEditing.value || !canEdit.value || publishing.value) return;
     if (autosaveTimer) clearTimeout(autosaveTimer);
     autosaveTimer = setTimeout(() => void saveDraft(), 800);
   },
   { deep: true },
 );
 watch(
-  () => [
-    route.fullPath,
-    projectId.value,
-    [...permissions.value].sort().join(","),
-  ],
+  () => [route.fullPath, projectId.value, [...permissions.value].sort().join(',')],
   () => void loadPage(),
 );
 onMounted(() => void loadPage());
@@ -347,27 +309,17 @@ onBeforeUnmount(() => {
   <main class="dashboard-page" :class="{ 'is-editor': isEditing }">
     <header class="dashboard-header">
       <div class="dashboard-heading">
-        <button
-          type="button"
-          class="back-link"
-          @click="router.push('/reports')"
-        >
+        <button type="button" class="back-link" @click="router.push('/reports')">
           <i class="pi pi-arrow-left" aria-hidden="true" /> Библиотека
         </button>
         <span class="dashboard-eyebrow">Дашборд · Обзор</span>
         <h1>
-          {{
-            isCreate
-              ? "Новый дашборд"
-              : isEditing
-                ? editor.title
-                : dashboard?.title
-          }}
+          {{ isCreate ? 'Новый дашборд' : isEditing ? editor.title : dashboard?.title }}
         </h1>
         <p>
           {{
             isEditing
-              ? "Соберите обзор из опубликованных сохранённых отчётов."
+              ? 'Соберите обзор из опубликованных сохранённых отчётов.'
               : dashboard?.description
           }}
         </p>
@@ -413,28 +365,16 @@ onBeforeUnmount(() => {
       <span>{{ error }}</span>
       <div v-if="versionConflict" class="conflict-actions">
         <Button label="Перезагрузить" size="small" text @click="loadPage" />
-        <Button
-          label="Сохранить как копию"
-          size="small"
-          text
-          @click="duplicateDraft"
-        />
+        <Button label="Сохранить как копию" size="small" text @click="duplicateDraft" />
       </div>
     </div>
 
-    <section
-      v-if="isEditing"
-      class="dashboard-editor"
-      aria-label="Редактор дашборда"
-    >
+    <section v-if="isEditing" class="dashboard-editor" aria-label="Редактор дашборда">
       <div class="editor-canvas">
         <div class="dashboard-properties">
+          <label><span>Название</span><InputText v-model="editor.title" /></label>
           <label
-            ><span>Название</span><InputText v-model="editor.title"
-          /></label>
-          <label
-            ><span>Описание</span
-            ><Textarea v-model="editor.description" rows="2" auto-resize
+            ><span>Описание</span><Textarea v-model="editor.description" rows="2" auto-resize
           /></label>
           <label
             ><span>Пространство</span
@@ -444,9 +384,7 @@ onBeforeUnmount(() => {
               option-label="label"
               option-value="value"
           /></label>
-          <label
-            ><span>Коллекция</span><InputText v-model="editor.collection"
-          /></label>
+          <label><span>Коллекция</span><InputText v-model="editor.collection" /></label>
         </div>
 
         <div class="editor-section-heading">
@@ -520,11 +458,7 @@ onBeforeUnmount(() => {
         </header>
         <label class="picker-search">
           <i class="pi pi-search" aria-hidden="true" />
-          <InputText
-            v-model="reportSearch"
-            type="search"
-            placeholder="Найти отчёт"
-          />
+          <InputText v-model="reportSearch" type="search" placeholder="Найти отчёт" />
         </label>
         <ul>
           <li v-for="reportItem in filteredReports" :key="reportItem.id">
@@ -535,18 +469,12 @@ onBeforeUnmount(() => {
             </div>
             <Button
               :label="
-                editor.widgets.some(
-                  (widget) => widget.savedReportId === reportItem.id,
-                )
+                editor.widgets.some((widget) => widget.savedReportId === reportItem.id)
                   ? 'Добавлен'
                   : 'Добавить'
               "
               size="small"
-              :disabled="
-                editor.widgets.some(
-                  (widget) => widget.savedReportId === reportItem.id,
-                )
-              "
+              :disabled="editor.widgets.some((widget) => widget.savedReportId === reportItem.id)"
               @click="addReport(reportItem.id)"
             />
           </li>
@@ -580,11 +508,7 @@ onBeforeUnmount(() => {
             option-value="value"
             aria-label="Период дашборда"
           />
-          <Button
-            label="Применить"
-            severity="secondary"
-            @click="applyFilters"
-          />
+          <Button label="Применить" severity="secondary" @click="applyFilters" />
         </div>
         <span class="compatibility-status">
           <i class="pi pi-check-circle" aria-hidden="true" />

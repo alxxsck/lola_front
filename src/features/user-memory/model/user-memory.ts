@@ -1,9 +1,5 @@
 export type UserMemoryCategory =
-  | "PREFERENCE"
-  | "LOCATION"
-  | "COMMUNICATION_PREFERENCE"
-  | "INTEREST"
-  | "PERSONAL_CONTEXT";
+  'PREFERENCE' | 'LOCATION' | 'COMMUNICATION_PREFERENCE' | 'INTEREST' | 'PERSONAL_CONTEXT';
 
 export interface UserMemorySettings {
   projectVersion: number;

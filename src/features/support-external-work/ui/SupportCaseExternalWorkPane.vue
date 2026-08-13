@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import Button from "primevue/button";
-import Checkbox from "primevue/checkbox";
-import Dialog from "primevue/dialog";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import Textarea from "primevue/textarea";
-import type { ResolveSupportExternalWorkCommandDto } from "@/shared/api/generated/models";
-import { relativeTime } from "@/shared/lib/format";
+import { computed, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Checkbox from 'primevue/checkbox';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import Textarea from 'primevue/textarea';
+import type { ResolveSupportExternalWorkCommandDto } from '@/shared/api/generated/models';
+import { relativeTime } from '@/shared/lib/format';
 import type {
   createSupportCaseExternalWorkController,
   SupportCaseExternalWorkPermissions,
-} from "../model/use-support-case-external-work";
+} from '../model/use-support-case-external-work';
 
 const props = defineProps<{
   controller: ReturnType<typeof createSupportCaseExternalWorkController>;
@@ -26,18 +26,17 @@ const commentDraft = props.controller.commentDraft;
 const createVisible = ref(false);
 const linkVisible = ref(false);
 const unknownVisible = ref(false);
-const unknownMode = ref<"RESOLVE" | "EVIDENCE">("RESOLVE");
+const unknownMode = ref<'RESOLVE' | 'EVIDENCE'>('RESOLVE');
 const unlinkVisible = ref(false);
-const activeUnlinkId = ref("");
-const activeUnknownCommandId = ref("");
-const unknownDecision =
-  ref<ResolveSupportExternalWorkCommandDto["decision"]>("CANCEL");
-const unknownRemoteItemId = ref("");
-const unknownProviderCorrelation = ref("");
-const unknownEvidenceNote = ref("");
-const evidenceRemoteItemId = ref("");
-const selectedInboxItemId = ref("");
-const selectedMappingOptionId = ref("");
+const activeUnlinkId = ref('');
+const activeUnknownCommandId = ref('');
+const unknownDecision = ref<ResolveSupportExternalWorkCommandDto['decision']>('CANCEL');
+const unknownRemoteItemId = ref('');
+const unknownProviderCorrelation = ref('');
+const unknownEvidenceNote = ref('');
+const evidenceRemoteItemId = ref('');
+const selectedInboxItemId = ref('');
+const selectedMappingOptionId = ref('');
 
 const activeLink = computed(
   () =>
@@ -53,55 +52,46 @@ const activeUnknownCommand = computed(() =>
 const unknownDecisionChoices = computed(() => {
   const common = [
     {
-      label: "Подтвердить отсутствие доставки",
-      value: "CONFIRM_NOT_DELIVERED",
+      label: 'Подтвердить отсутствие доставки',
+      value: 'CONFIRM_NOT_DELIVERED',
     },
-    { label: "Отменить", value: "CANCEL" },
+    { label: 'Отменить', value: 'CANCEL' },
   ];
-  if (activeUnknownCommand.value?.intent === "CREATE")
+  if (activeUnknownCommand.value?.intent === 'CREATE')
+    return [{ label: 'Связать найденный объект', value: 'LINK_EXISTING' }, ...common];
+  if (activeUnknownCommand.value?.intent === 'COMMENT')
+    return [{ label: 'Подтвердить доставку', value: 'CONFIRM_DELIVERED' }, ...common];
+  if (activeUnknownCommand.value?.intent === 'REFRESH')
     return [
-      { label: "Связать найденный объект", value: "LINK_EXISTING" },
-      ...common,
-    ];
-  if (activeUnknownCommand.value?.intent === "COMMENT")
-    return [
-      { label: "Подтвердить доставку", value: "CONFIRM_DELIVERED" },
-      ...common,
-    ];
-  if (activeUnknownCommand.value?.intent === "REFRESH")
-    return [
-      { label: "Безопасный повтор", value: "RETRY_SAFE" },
-      { label: "Отменить", value: "CANCEL" },
+      { label: 'Безопасный повтор', value: 'RETRY_SAFE' },
+      { label: 'Отменить', value: 'CANCEL' },
     ];
   return [];
 });
 const selectedCreateOption = computed(() =>
-  props.controller.createOptions.value.find(
-    (item) => item.optionId === createDraft.value.optionId,
-  ),
+  props.controller.createOptions.value.find((item) => item.optionId === createDraft.value.optionId),
 );
 const safePreview = computed(() =>
   [
-    createDraft.value.includeCaseTitle ? "Тема обращения" : "",
-    createDraft.value.includeCaseSummary ? "Краткий контекст обращения" : "",
-    createDraft.value.body.trim() ? "Редактируемое описание" : "",
+    createDraft.value.includeCaseTitle ? 'Тема обращения' : '',
+    createDraft.value.includeCaseSummary ? 'Краткий контекст обращения' : '',
+    createDraft.value.body.trim() ? 'Редактируемое описание' : '',
   ].filter(Boolean),
 );
 const canCommentActiveLink = computed(() => {
   const actions = activeLink.value?.item.allowedActions ?? [];
   return (
-    (props.permissions.commentInternal &&
-      actions.includes("COMMENT_INTERNAL")) ||
-    (props.permissions.commentPublic && actions.includes("COMMENT_PUBLIC"))
+    (props.permissions.commentInternal && actions.includes('COMMENT_INTERNAL')) ||
+    (props.permissions.commentPublic && actions.includes('COMMENT_PUBLIC'))
   );
 });
 
 const createOptionChoices = computed(() =>
   props.controller.createOptions.value
-    .filter((item) => item.allowedActions.includes("CREATE"))
+    .filter((item) => item.allowedActions.includes('CREATE'))
     .map((item) => ({
       value: item.optionId,
-      label: `${item.destinationLabel}${item.formLabel ? ` · ${item.formLabel}` : ""}`,
+      label: `${item.destinationLabel}${item.formLabel ? ` · ${item.formLabel}` : ''}`,
     })),
 );
 const linkItemChoices = computed(() =>
@@ -112,50 +102,49 @@ const linkItemChoices = computed(() =>
 );
 
 function providerLabel(provider: string): string {
-  return provider === "JSM" ? "JSM" : "HelpDesk";
+  return provider === 'JSM' ? 'JSM' : 'HelpDesk';
 }
 
 function commandStatusLabel(status: string): string {
   return (
     {
-      QUEUED: "В очереди",
-      CLAIMED: "Отправляется",
-      RETRYING: "Повтор",
-      SUCCEEDED: "Создано",
-      FAILED: "Требует внимания",
-      UNKNOWN: "Результат неизвестен",
-      CANCELLED: "Отменено",
-    }[status] ?? "Состояние команды не распознано"
+      QUEUED: 'В очереди',
+      CLAIMED: 'Отправляется',
+      RETRYING: 'Повтор',
+      SUCCEEDED: 'Создано',
+      FAILED: 'Требует внимания',
+      UNKNOWN: 'Результат неизвестен',
+      CANCELLED: 'Отменено',
+    }[status] ?? 'Состояние команды не распознано'
   );
 }
 
 function commandIntentLabel(intent: string): string {
   return (
     {
-      CREATE: "Создание внешней заявки",
-      COMMENT: "Внешний комментарий",
-      REFRESH: "Обновление данных",
-      UNLINK: "Отвязка от обращения",
-    }[intent] ?? "Действие не распознано"
+      CREATE: 'Создание внешней заявки',
+      COMMENT: 'Внешний комментарий',
+      REFRESH: 'Обновление данных',
+      UNLINK: 'Отвязка от обращения',
+    }[intent] ?? 'Действие не распознано'
   );
 }
 
 function freshnessLabel(value: string): string {
   return (
     {
-      FRESH: "Актуально",
-      STALE: "Требует обновления",
-      TOMBSTONED: "Удалено во внешней системе",
-    }[value] ?? "Состояние данных не распознано"
+      FRESH: 'Актуально',
+      STALE: 'Требует обновления',
+      TOMBSTONED: 'Удалено во внешней системе',
+    }[value] ?? 'Состояние данных не распознано'
   );
 }
 
 function openCreate(): void {
   if (!createDraft.value.optionId)
     createDraft.value.optionId =
-      props.controller.createOptions.value.find((item) =>
-        item.allowedActions.includes("CREATE"),
-      )?.optionId ?? "";
+      props.controller.createOptions.value.find((item) => item.allowedActions.includes('CREATE'))
+        ?.optionId ?? '';
   createVisible.value = true;
 }
 
@@ -163,44 +152,41 @@ function selectLink(linkId: string): void {
   void props.controller.selectLink(linkId);
 }
 
-function chooseAudience(audience: "INTERNAL" | "PUBLIC"): void {
+function chooseAudience(audience: 'INTERNAL' | 'PUBLIC'): void {
   commentDraft.value.audience = audience;
-  if (audience === "INTERNAL") commentDraft.value.publicConfirmed = false;
+  if (audience === 'INTERNAL') commentDraft.value.publicConfirmed = false;
 }
 
 function openUnknown(commandId: string): void {
-  unknownMode.value = "RESOLVE";
+  unknownMode.value = 'RESOLVE';
   activeUnknownCommandId.value = commandId;
   const command = props.controller.commands.value.find(
     (candidate) => candidate.commandId === commandId,
   );
   unknownDecision.value =
-    command?.intent === "CREATE"
-      ? "LINK_EXISTING"
-      : command?.intent === "COMMENT"
-        ? "CONFIRM_DELIVERED"
-        : command?.intent === "REFRESH"
-          ? "RETRY_SAFE"
-          : "CANCEL";
-  unknownRemoteItemId.value = "";
-  unknownProviderCorrelation.value = "";
-  unknownEvidenceNote.value = "";
-  evidenceRemoteItemId.value = "";
+    command?.intent === 'CREATE'
+      ? 'LINK_EXISTING'
+      : command?.intent === 'COMMENT'
+        ? 'CONFIRM_DELIVERED'
+        : command?.intent === 'REFRESH'
+          ? 'RETRY_SAFE'
+          : 'CANCEL';
+  unknownRemoteItemId.value = '';
+  unknownProviderCorrelation.value = '';
+  unknownEvidenceNote.value = '';
+  evidenceRemoteItemId.value = '';
   unknownVisible.value = true;
 }
 
 function openEvidence(commandId: string): void {
-  unknownMode.value = "EVIDENCE";
+  unknownMode.value = 'EVIDENCE';
   activeUnknownCommandId.value = commandId;
-  evidenceRemoteItemId.value = "";
+  evidenceRemoteItemId.value = '';
   unknownVisible.value = true;
 }
 
 async function refreshEvidence(): Promise<void> {
-  await props.controller.refreshEvidence(
-    activeUnknownCommandId.value,
-    evidenceRemoteItemId.value,
-  );
+  await props.controller.refreshEvidence(activeUnknownCommandId.value, evidenceRemoteItemId.value);
   if (!props.controller.error.value) unknownVisible.value = false;
 }
 
@@ -223,17 +209,13 @@ async function submitCreate(): Promise<void> {
 async function resolveUnknown(): Promise<void> {
   const body: ResolveSupportExternalWorkCommandDto = {
     decision: unknownDecision.value,
-    ...(unknownDecision.value === "LINK_EXISTING" &&
-    unknownRemoteItemId.value.trim()
+    ...(unknownDecision.value === 'LINK_EXISTING' && unknownRemoteItemId.value.trim()
       ? { remoteItemId: unknownRemoteItemId.value.trim() }
       : {}),
-    ...(unknownDecision.value === "CONFIRM_DELIVERED" &&
-    unknownProviderCorrelation.value.trim()
+    ...(unknownDecision.value === 'CONFIRM_DELIVERED' && unknownProviderCorrelation.value.trim()
       ? { providerCorrelation: unknownProviderCorrelation.value.trim() }
       : {}),
-    ...(unknownEvidenceNote.value.trim()
-      ? { evidenceNote: unknownEvidenceNote.value.trim() }
-      : {}),
+    ...(unknownEvidenceNote.value.trim() ? { evidenceNote: unknownEvidenceNote.value.trim() } : {}),
   };
   await props.controller.resolveCommand(activeUnknownCommandId.value, body);
   if (!props.controller.error.value) unknownVisible.value = false;
@@ -241,10 +223,7 @@ async function resolveUnknown(): Promise<void> {
 
 async function linkExisting(): Promise<void> {
   if (!selectedInboxItemId.value || !selectedMappingOptionId.value) return;
-  await props.controller.linkExisting(
-    selectedInboxItemId.value,
-    selectedMappingOptionId.value,
-  );
+  await props.controller.linkExisting(selectedInboxItemId.value, selectedMappingOptionId.value);
   if (!props.controller.error.value) linkVisible.value = false;
 }
 
@@ -261,14 +240,14 @@ function resetLocalDialogs(): void {
   linkVisible.value = false;
   unknownVisible.value = false;
   unlinkVisible.value = false;
-  activeUnknownCommandId.value = "";
-  activeUnlinkId.value = "";
-  unknownRemoteItemId.value = "";
-  unknownProviderCorrelation.value = "";
-  unknownEvidenceNote.value = "";
-  evidenceRemoteItemId.value = "";
-  selectedInboxItemId.value = "";
-  selectedMappingOptionId.value = "";
+  activeUnknownCommandId.value = '';
+  activeUnlinkId.value = '';
+  unknownRemoteItemId.value = '';
+  unknownProviderCorrelation.value = '';
+  unknownEvidenceNote.value = '';
+  evidenceRemoteItemId.value = '';
+  selectedInboxItemId.value = '';
+  selectedMappingOptionId.value = '';
 }
 
 watch(selectedCreateOption, (option) => {
@@ -317,11 +296,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
       <Message v-if="controller.error.value" severity="error" :closable="false">
         {{ controller.error.value }}
       </Message>
-      <Message
-        v-if="controller.validationError.value"
-        severity="warn"
-        :closable="false"
-      >
+      <Message v-if="controller.validationError.value" severity="warn" :closable="false">
         {{ controller.validationError.value }}
       </Message>
       <div class="external-case-pane__actions">
@@ -330,9 +305,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
           data-testid="external-create-open"
           label="Создать внешнюю заявку"
           icon="pi pi-plus"
-          :disabled="
-            controller.mutating.value || controller.newIntentBlocked.value
-          "
+          :disabled="controller.mutating.value || controller.newIntentBlocked.value"
           @click="openCreate"
         />
         <Button
@@ -341,9 +314,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
           icon="pi pi-link"
           severity="secondary"
           outlined
-          :disabled="
-            controller.mutating.value || controller.newIntentBlocked.value
-          "
+          :disabled="controller.mutating.value || controller.newIntentBlocked.value"
           @click="linkVisible = true"
         />
       </div>
@@ -355,8 +326,8 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
         class="unknown-attempt"
       >
         <strong>Результат запроса неизвестен.</strong>
-        Новая команда заблокирована. Можно повторить только тот же запрос с теми
-        же данными и ключом.
+        Новая команда заблокирована. Можно повторить только тот же запрос с теми же данными и
+        ключом.
         <Button
           label="Повторить тот же запрос"
           severity="secondary"
@@ -386,8 +357,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
           type="button"
           class="external-link-card"
           :class="{
-            'external-link-card--active':
-              controller.selectedLinkId.value === link.linkId,
+            'external-link-card--active': controller.selectedLinkId.value === link.linkId,
           }"
           :data-testid="`external-link-${link.linkId}`"
           @click="selectLink(link.linkId)"
@@ -396,29 +366,25 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
             >В {{ providerLabel(link.item.provider) }}</span
           >
           <strong>{{ link.item.remoteKey ?? link.item.remoteItemId }}</strong>
-          <span class="external-link-card__summary">{{
-            link.item.summary ?? "Без темы"
-          }}</span>
+          <span class="external-link-card__summary">{{ link.item.summary ?? 'Без темы' }}</span>
           <span class="external-link-card__freshness">{{
             freshnessLabel(link.item.freshness)
           }}</span>
           <dl>
             <div>
               <dt>Статус во внешней системе</dt>
-              <dd>{{ link.item.status ?? "Не передан" }}</dd>
+              <dd>{{ link.item.status ?? 'Не передан' }}</dd>
             </div>
             <div>
               <dt>Исполнитель во внешней системе</dt>
-              <dd>{{ link.item.assignee?.label ?? "Не назначен" }}</dd>
+              <dd>{{ link.item.assignee?.label ?? 'Не назначен' }}</dd>
             </div>
           </dl>
         </button>
       </div>
 
       <div v-else class="external-empty">
-        <span class="external-empty__mark" aria-hidden="true"
-          ><i class="pi pi-link"
-        /></span>
+        <span class="external-empty__mark" aria-hidden="true"><i class="pi pi-link" /></span>
         <h4>Внешних заявок нет</h4>
         <p>Создайте новую заявку или свяжите доступную заявку HelpDesk.</p>
       </div>
@@ -429,14 +395,10 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
         aria-label="История внешних команд"
       >
         <header>
-          <span>Команды</span
-          ><small>Принятая команда ожидает подтверждения внешней системы</small>
+          <span>Команды</span><small>Принятая команда ожидает подтверждения внешней системы</small>
         </header>
         <ol>
-          <li
-            v-for="command in controller.commands.value"
-            :key="command.commandId"
-          >
+          <li v-for="command in controller.commands.value" :key="command.commandId">
             <span
               class="command-dot"
               :class="`command-dot--${command.status.toLowerCase()}`"
@@ -452,8 +414,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
             <div class="command-actions">
               <Button
                 v-if="
-                  permissions.resolveUnknown &&
-                  command.allowedActions.includes('REFRESH_EVIDENCE')
+                  permissions.resolveUnknown && command.allowedActions.includes('REFRESH_EVIDENCE')
                 "
                 label="Проверить результат"
                 severity="secondary"
@@ -468,9 +429,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
                 @click="controller.reconcileCommand(command.commandId)"
               />
               <Button
-                v-if="
-                  permissions.retry && command.allowedActions.includes('RETRY')
-                "
+                v-if="permissions.retry && command.allowedActions.includes('RETRY')"
                 label="Безопасный повтор"
                 severity="secondary"
                 outlined
@@ -492,11 +451,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
         </ol>
       </section>
 
-      <section
-        v-if="activeLink"
-        class="external-detail"
-        aria-label="Внешняя переписка"
-      >
+      <section v-if="activeLink" class="external-detail" aria-label="Внешняя переписка">
         <header class="external-detail__header">
           <div>
             <span class="external-case-pane__kicker"
@@ -509,8 +464,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
           <div class="external-detail__actions">
             <a
               v-if="
-                activeLink.item.remoteUrl &&
-                activeLink.item.allowedActions.includes('OPEN_REMOTE')
+                activeLink.item.remoteUrl && activeLink.item.allowedActions.includes('OPEN_REMOTE')
               "
               class="external-open-link"
               :href="activeLink.item.remoteUrl"
@@ -537,35 +491,20 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
           </div>
         </header>
 
-        <div
-          v-if="controller.loadingTimeline.value"
-          class="timeline-skeleton"
-          aria-busy="true"
-        >
+        <div v-if="controller.loadingTimeline.value" class="timeline-skeleton" aria-busy="true">
           <Skeleton width="100%" height="54px" />
           <Skeleton width="84%" height="54px" />
         </div>
         <ol v-else class="external-timeline">
-          <li
-            v-for="message in controller.timeline.value"
-            :key="message.messageId"
-          >
+          <li v-for="message in controller.timeline.value" :key="message.messageId">
             <header>
-              <Tag
-                :value="
-                  message.audience === 'INTERNAL' ? 'Внутренний' : 'Публичный'
-                "
-              />
+              <Tag :value="message.audience === 'INTERNAL' ? 'Внутренний' : 'Публичный'" />
               <time :datetime="message.remoteCreatedAt">{{
                 relativeTime(message.remoteCreatedAt)
               }}</time>
             </header>
-            <p v-if="message.tombstonedAt">
-              Сообщение удалено во внешней системе.
-            </p>
-            <p v-else-if="message.bodyUnavailable">
-              Текст недоступен для текущих прав.
-            </p>
+            <p v-if="message.tombstonedAt">Сообщение удалено во внешней системе.</p>
+            <p v-else-if="message.bodyUnavailable">Текст недоступен для текущих прав.</p>
             <p v-else>{{ message.body }}</p>
             <Button
               v-if="message.body"
@@ -578,20 +517,14 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
         </ol>
 
         <div v-if="canCommentActiveLink" class="external-comment-composer">
-          <div
-            class="audience-switch"
-            role="group"
-            aria-label="Аудитория внешнего комментария"
-          >
+          <div class="audience-switch" role="group" aria-label="Аудитория внешнего комментария">
             <button
               v-if="
                 permissions.commentInternal &&
                 activeLink.item.allowedActions.includes('COMMENT_INTERNAL')
               "
               type="button"
-              :aria-pressed="
-                controller.commentDraft.value.audience === 'INTERNAL'
-              "
+              :aria-pressed="controller.commentDraft.value.audience === 'INTERNAL'"
               @click="chooseAudience('INTERNAL')"
             >
               <i class="pi pi-lock" aria-hidden="true" /> Внутренний
@@ -602,17 +535,15 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
                 activeLink.item.allowedActions.includes('COMMENT_PUBLIC')
               "
               type="button"
-              :aria-pressed="
-                controller.commentDraft.value.audience === 'PUBLIC'
-              "
+              :aria-pressed="controller.commentDraft.value.audience === 'PUBLIC'"
               @click="chooseAudience('PUBLIC')"
             >
               <i class="pi pi-send" aria-hidden="true" /> Публичный
             </button>
           </div>
           <p class="audience-copy">
-            Внутренний — безопасный режим по умолчанию. Публичный комментарий
-            нужно явно подтвердить.
+            Внутренний — безопасный режим по умолчанию. Публичный комментарий нужно явно
+            подтвердить.
           </p>
           <Textarea
             v-model="commentDraft.body"
@@ -650,8 +581,8 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
     >
       <div class="external-form">
         <Message severity="info" :closable="false">
-          История чата не копируется автоматически. Проверьте каждый фрагмент
-          безопасный контекст ниже.
+          История чата не копируется автоматически. Проверьте каждый фрагмент безопасный контекст
+          ниже.
         </Message>
         <label>
           <span>Назначение</span>
@@ -674,11 +605,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
         </label>
         <label v-if="selectedCreateOption?.requester?.nameRequired">
           <span>Имя заявителя *</span>
-          <InputText
-            v-model="createDraft.requesterName"
-            maxlength="255"
-            autocomplete="off"
-          />
+          <InputText v-model="createDraft.requesterName" maxlength="255" autocomplete="off" />
         </label>
         <label>
           <span>Заголовок во внешней системе</span>
@@ -703,18 +630,11 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
         </label>
         <div class="safe-preview" aria-live="polite">
           <strong>Будет отправлено</strong>
-          <span v-if="safePreview.length">{{ safePreview.join(" · ") }}</span>
+          <span v-if="safePreview.length">{{ safePreview.join(' · ') }}</span>
           <span v-else>Контекст ещё не выбран</span>
         </div>
-        <template
-          v-for="field in selectedCreateOption?.fields ?? []"
-          :key="field.id"
-        >
-          <label
-            v-if="
-              field.valueType === 'CHOICE' || field.valueType === 'MULTI_CHOICE'
-            "
-          >
+        <template v-for="field in selectedCreateOption?.fields ?? []" :key="field.id">
+          <label v-if="field.valueType === 'CHOICE' || field.valueType === 'MULTI_CHOICE'">
             <span>{{ field.id }}<b v-if="field.required"> *</b></span>
             <Select
               :model-value="String(fieldValue(field.id) ?? '')"
@@ -723,22 +643,15 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
               option-value="value"
               :multiple="field.valueType === 'MULTI_CHOICE'"
               :disabled="!field.editable"
-              @update:model-value="
-                updateField(field.id, field.valueType, $event)
-              "
+              @update:model-value="updateField(field.id, field.valueType, $event)"
             />
           </label>
-          <label
-            v-else-if="field.valueType === 'BOOLEAN'"
-            class="boolean-field"
-          >
+          <label v-else-if="field.valueType === 'BOOLEAN'" class="boolean-field">
             <Checkbox
               :model-value="Boolean(fieldValue(field.id))"
               binary
               :disabled="!field.editable"
-              @update:model-value="
-                updateField(field.id, field.valueType, $event)
-              "
+              @update:model-value="updateField(field.id, field.valueType, $event)"
             />
             <span>{{ field.id }}<b v-if="field.required"> *</b></span>
           </label>
@@ -765,12 +678,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
           </label>
         </template>
         <div class="dialog-actions">
-          <Button
-            label="Отмена"
-            severity="secondary"
-            text
-            @click="createVisible = false"
-          />
+          <Button label="Отмена" severity="secondary" text @click="createVisible = false" />
           <Button
             label="Принять в очередь"
             :loading="controller.mutating.value"
@@ -805,17 +713,8 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
             option-value="value"
         /></label>
         <div class="dialog-actions">
-          <Button
-            label="Отмена"
-            severity="secondary"
-            text
-            @click="linkVisible = false"
-          />
-          <Button
-            label="Связать"
-            :loading="controller.mutating.value"
-            @click="linkExisting"
-          />
+          <Button label="Отмена" severity="secondary" text @click="linkVisible = false" />
+          <Button label="Связать" :loading="controller.mutating.value" @click="linkExisting" />
         </div>
       </div>
     </Dialog>
@@ -824,21 +723,19 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
       v-model:visible="unknownVisible"
       modal
       :header="
-        unknownMode === 'EVIDENCE'
-          ? 'Проверить результат'
-          : 'Разобрать неизвестный результат'
+        unknownMode === 'EVIDENCE' ? 'Проверить результат' : 'Разобрать неизвестный результат'
       "
       :style="{ width: 'min(560px, calc(100vw - 24px))' }"
     >
       <div class="external-form">
         <Message severity="warn" :closable="false"
-          >Решение проверяется по текущей версии и попадёт в журнал. Команда не
-          отправляется повторно без проверки.</Message
+          >Решение проверяется по текущей версии и попадёт в журнал. Команда не отправляется
+          повторно без проверки.</Message
         >
         <template v-if="unknownMode === 'EVIDENCE'">
           <Message severity="info" :closable="false">
-            Идентификатор внешней задачи проверяется сервером. Команда не
-            считается успешной, пока сервер не подтвердит результат.
+            Идентификатор внешней задачи проверяется сервером. Команда не считается успешной, пока
+            сервер не подтвердит результат.
           </Message>
           <label>
             <span>Идентификатор внешней задачи</span>
@@ -868,22 +765,11 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
           /></label>
         </template>
         <div class="dialog-actions">
+          <Button label="Отмена" severity="secondary" text @click="unknownVisible = false" />
           <Button
-            label="Отмена"
-            severity="secondary"
-            text
-            @click="unknownVisible = false"
-          />
-          <Button
-            :label="
-              unknownMode === 'EVIDENCE'
-                ? 'Проверить результат'
-                : 'Подтвердить решение'
-            "
+            :label="unknownMode === 'EVIDENCE' ? 'Проверить результат' : 'Подтвердить решение'"
             :loading="controller.mutating.value"
-            @click="
-              unknownMode === 'EVIDENCE' ? refreshEvidence() : resolveUnknown()
-            "
+            @click="unknownMode === 'EVIDENCE' ? refreshEvidence() : resolveUnknown()"
           />
         </div>
       </div>
@@ -897,16 +783,10 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
     >
       <div class="external-form">
         <Message severity="warn" :closable="false">
-          Связь исчезнет из обращения. Внешний объект и его история не
-          удаляются.
+          Связь исчезнет из обращения. Внешний объект и его история не удаляются.
         </Message>
         <div class="dialog-actions">
-          <Button
-            label="Отмена"
-            severity="secondary"
-            text
-            @click="unlinkVisible = false"
-          />
+          <Button label="Отмена" severity="secondary" text @click="unlinkVisible = false" />
           <Button
             label="Отвязать"
             severity="danger"
@@ -1234,7 +1114,7 @@ watch(props.controller.scopeRevision, resetLocalDialogs);
   font-weight: 750;
   cursor: pointer;
 }
-.audience-switch button[aria-pressed="true"] {
+.audience-switch button[aria-pressed='true'] {
   background: var(--brand-soft);
   color: var(--text-brand);
 }

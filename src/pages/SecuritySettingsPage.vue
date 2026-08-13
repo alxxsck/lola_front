@@ -1,383 +1,395 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import type { CmsSessionSummaryDto } from '@/shared/api/generated/models'
-import { securitySettingsApi } from '@/features/security-settings/security-settings.api'
-import { useAuthStore } from '@/features/auth/auth.store'
-import { normalizeApiError } from '@/shared/api/http/api-error'
-import { emailIdentityApi } from '@/features/email-identity/email-identity.api'
-import { mfaManagementApi, type MfaPasskeySummary } from '@/features/auth/mfa.api'
-import { notificationPreferencesApi } from '@/features/notification-preferences/notification-preferences.api'
-import type { EmailCaseEscalationPreferenceResponseDto } from '@/shared/api/generated/models'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import type { CmsSessionSummaryDto } from '@/shared/api/generated/models';
+import { securitySettingsApi } from '@/features/security-settings/security-settings.api';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { normalizeApiError } from '@/shared/api/http/api-error';
+import { emailIdentityApi } from '@/features/email-identity/email-identity.api';
+import { mfaManagementApi, type MfaPasskeySummary } from '@/features/auth/mfa.api';
+import { notificationPreferencesApi } from '@/features/notification-preferences/notification-preferences.api';
+import type { EmailCaseEscalationPreferenceResponseDto } from '@/shared/api/generated/models';
 
-const auth = useAuthStore()
-const router = useRouter()
-const sessions = ref<CmsSessionSummaryDto[]>([])
-const loading = ref(true)
-const listError = ref('')
-const actionError = ref('')
-const actionSuccess = ref('')
-const revokingId = ref<string | null>(null)
-const revokingOthers = ref(false)
-const changingPassword = ref(false)
-const currentPassword = ref('')
-const newPassword = ref('')
-const passwordConfirmation = ref('')
-const showCurrentPassword = ref(false)
-const showNewPassword = ref(false)
-const showPasswordConfirmation = ref(false)
-const passwordCurrentError = ref('')
-const passwordConfirmationError = ref('')
-const verificationRequesting = ref(false)
-const emailChangeSubmitting = ref(false)
-const emailChangeCancelling = ref(false)
-const verificationSeconds = ref(Math.max(0, auth.user?.emailVerificationRetryAfterSeconds ?? 0))
-const pendingEmail = ref(auth.user?.pendingEmail ?? null)
-const showEmailChangeForm = ref(!pendingEmail.value)
-const newEmail = ref('')
-const emailChangePassword = ref('')
-const showEmailChangePassword = ref(false)
-const emailChangeFieldError = ref('')
-const emailChangePasswordError = ref('')
-let countdownTimer: ReturnType<typeof setInterval> | undefined
-const canonicalEmail = computed(() => auth.user?.email ?? '')
-const emailVerified = computed(() => Boolean(auth.user?.emailVerifiedAt))
-const verificationButtonLabel = computed(() => verificationSeconds.value > 0
-  ? `Повторить через ${verificationSeconds.value} с`
-  : 'Отправить письмо')
-const canSubmitEmailChange = computed(() => Boolean(newEmail.value && emailChangePassword.value))
+const auth = useAuthStore();
+const router = useRouter();
+const sessions = ref<CmsSessionSummaryDto[]>([]);
+const loading = ref(true);
+const listError = ref('');
+const actionError = ref('');
+const actionSuccess = ref('');
+const revokingId = ref<string | null>(null);
+const revokingOthers = ref(false);
+const changingPassword = ref(false);
+const currentPassword = ref('');
+const newPassword = ref('');
+const passwordConfirmation = ref('');
+const showCurrentPassword = ref(false);
+const showNewPassword = ref(false);
+const showPasswordConfirmation = ref(false);
+const passwordCurrentError = ref('');
+const passwordConfirmationError = ref('');
+const verificationRequesting = ref(false);
+const emailChangeSubmitting = ref(false);
+const emailChangeCancelling = ref(false);
+const verificationSeconds = ref(Math.max(0, auth.user?.emailVerificationRetryAfterSeconds ?? 0));
+const pendingEmail = ref(auth.user?.pendingEmail ?? null);
+const showEmailChangeForm = ref(!pendingEmail.value);
+const newEmail = ref('');
+const emailChangePassword = ref('');
+const showEmailChangePassword = ref(false);
+const emailChangeFieldError = ref('');
+const emailChangePasswordError = ref('');
+let countdownTimer: ReturnType<typeof setInterval> | undefined;
+const canonicalEmail = computed(() => auth.user?.email ?? '');
+const emailVerified = computed(() => Boolean(auth.user?.emailVerifiedAt));
+const verificationButtonLabel = computed(() =>
+  verificationSeconds.value > 0
+    ? `Повторить через ${verificationSeconds.value} с`
+    : 'Отправить письмо',
+);
+const canSubmitEmailChange = computed(() => Boolean(newEmail.value && emailChangePassword.value));
 const canSubmitPassword = computed(() =>
   Boolean(currentPassword.value && newPassword.value && passwordConfirmation.value),
-)
-const passkeys = ref<MfaPasskeySummary[]>([])
-const recoveryCodesRemaining = ref(0)
-const factorsLoading = ref(true)
-const factorPending = ref(false)
-const passkeyLabel = ref('')
-const oneTimeRecoveryCodes = ref<string[]>([])
-const recoveryCodesSaved = ref(false)
-const emailPreference = ref<EmailCaseEscalationPreferenceResponseDto | null>(null)
-const emailPreferenceLoading = ref(true)
-const emailPreferenceSaving = ref(false)
-const emailPreferenceError = ref('')
+);
+const passkeys = ref<MfaPasskeySummary[]>([]);
+const recoveryCodesRemaining = ref(0);
+const factorsLoading = ref(true);
+const factorPending = ref(false);
+const passkeyLabel = ref('');
+const oneTimeRecoveryCodes = ref<string[]>([]);
+const recoveryCodesSaved = ref(false);
+const emailPreference = ref<EmailCaseEscalationPreferenceResponseDto | null>(null);
+const emailPreferenceLoading = ref(true);
+const emailPreferenceSaving = ref(false);
+const emailPreferenceError = ref('');
 const emailPreferenceBlocked = computed(() => {
-  const reason = emailPreference.value?.ineligibilityReason
-  return !emailPreference.value || reason === 'EMAIL_UNVERIFIED' || reason === 'USER_INACTIVE'
-})
+  const reason = emailPreference.value?.ineligibilityReason;
+  return !emailPreference.value || reason === 'EMAIL_UNVERIFIED' || reason === 'USER_INACTIVE';
+});
 const emailPreferenceStatus = computed(() => {
-  if (emailPreferenceError.value) return emailPreferenceError.value
-  const preference = emailPreference.value
-  if (!preference) return 'Загружаем настройку…'
-  if (preference.ineligibilityReason === 'EMAIL_UNVERIFIED') return 'Сначала подтвердите текущий email.'
-  if (preference.ineligibilityReason === 'EMAIL_CHANGED') return 'Email изменён. Включите подписку для нового подтверждённого адреса.'
-  if (preference.ineligibilityReason === 'USER_INACTIVE') return 'Подписка недоступна для неактивного аккаунта.'
-  return preference.subscribed ? 'Подписка включена' : 'Подписка выключена'
-})
+  if (emailPreferenceError.value) return emailPreferenceError.value;
+  const preference = emailPreference.value;
+  if (!preference) return 'Загружаем настройку…';
+  if (preference.ineligibilityReason === 'EMAIL_UNVERIFIED')
+    return 'Сначала подтвердите текущий email.';
+  if (preference.ineligibilityReason === 'EMAIL_CHANGED')
+    return 'Email изменён. Включите подписку для нового подтверждённого адреса.';
+  if (preference.ineligibilityReason === 'USER_INACTIVE')
+    return 'Подписка недоступна для неактивного аккаунта.';
+  return preference.subscribed ? 'Подписка включена' : 'Подписка выключена';
+});
 
 async function loadEmailPreference() {
-  emailPreferenceLoading.value = true
-  emailPreferenceError.value = ''
+  emailPreferenceLoading.value = true;
+  emailPreferenceError.value = '';
   try {
-    emailPreference.value = await notificationPreferencesApi.getEmailCaseEscalations()
+    emailPreference.value = await notificationPreferencesApi.getEmailCaseEscalations();
   } catch {
-    emailPreference.value = null
-    emailPreferenceError.value = 'Не удалось загрузить настройку email-уведомлений.'
+    emailPreference.value = null;
+    emailPreferenceError.value = 'Не удалось загрузить настройку email-уведомлений.';
   } finally {
-    emailPreferenceLoading.value = false
+    emailPreferenceLoading.value = false;
   }
 }
 
 async function toggleEmailPreference() {
-  if (!emailPreference.value || emailPreferenceBlocked.value) return
-  clearFeedback()
-  emailPreferenceSaving.value = true
+  if (!emailPreference.value || emailPreferenceBlocked.value) return;
+  clearFeedback();
+  emailPreferenceSaving.value = true;
   try {
     emailPreference.value = await notificationPreferencesApi.setEmailCaseEscalations(
       !emailPreference.value.subscribed,
-    )
+    );
     actionSuccess.value = emailPreference.value.subscribed
       ? 'Подписка на эскалации обращений включена.'
-      : 'Подписка на эскалации обращений отключена.'
+      : 'Подписка на эскалации обращений отключена.';
   } catch {
-    actionError.value = 'Не удалось изменить подписку. Обновите страницу и повторите.'
+    actionError.value = 'Не удалось изменить подписку. Обновите страницу и повторите.';
   } finally {
-    emailPreferenceSaving.value = false
+    emailPreferenceSaving.value = false;
   }
 }
 
 async function loadMfaSummary() {
-  factorsLoading.value = true
+  factorsLoading.value = true;
   if (auth.mode === 'mock') {
-    passkeys.value = [{
-      id: 'demo-passkey',
-      label: 'Рабочий MacBook',
-      deviceType: 'multiDevice',
-      backupEligible: true,
-      backedUp: true,
-      createdAt: '2026-07-21T08:00:00.000Z',
-      lastUsedAt: '2026-07-23T10:00:00.000Z',
-    }]
-    recoveryCodesRemaining.value = 10
-    factorsLoading.value = false
-    return
+    passkeys.value = [
+      {
+        id: 'demo-passkey',
+        label: 'Рабочий MacBook',
+        deviceType: 'multiDevice',
+        backupEligible: true,
+        backedUp: true,
+        createdAt: '2026-07-21T08:00:00.000Z',
+        lastUsedAt: '2026-07-23T10:00:00.000Z',
+      },
+    ];
+    recoveryCodesRemaining.value = 10;
+    factorsLoading.value = false;
+    return;
   }
   try {
-    const summary = await mfaManagementApi.summary()
-    passkeys.value = summary.passkeys
-    recoveryCodesRemaining.value = summary.recoveryCodesRemaining
+    const summary = await mfaManagementApi.summary();
+    passkeys.value = summary.passkeys;
+    recoveryCodesRemaining.value = summary.recoveryCodesRemaining;
   } catch (cause) {
-    actionError.value = normalizeApiError(cause).message || 'Не удалось загрузить passkeys.'
+    actionError.value = normalizeApiError(cause).message || 'Не удалось загрузить passkeys.';
   } finally {
-    factorsLoading.value = false
+    factorsLoading.value = false;
   }
 }
 
 async function addPasskey() {
-  clearFeedback()
-  factorPending.value = true
+  clearFeedback();
+  factorPending.value = true;
   try {
-    await mfaManagementApi.addPasskey(passkeyLabel.value.trim() || undefined)
-    passkeyLabel.value = ''
-    actionSuccess.value = 'Новый passkey добавлен.'
-    await loadMfaSummary()
+    await mfaManagementApi.addPasskey(passkeyLabel.value.trim() || undefined);
+    passkeyLabel.value = '';
+    actionSuccess.value = 'Новый passkey добавлен.';
+    await loadMfaSummary();
   } catch (cause) {
-    actionError.value = factorError(cause)
+    actionError.value = factorError(cause);
   } finally {
-    factorPending.value = false
+    factorPending.value = false;
   }
 }
 
 async function removePasskey(passkey: MfaPasskeySummary) {
-  if (!window.confirm(`Удалить passkey «${passkey.label}»? Все сессии будут завершены.`)) return
-  clearFeedback()
-  factorPending.value = true
+  if (!window.confirm(`Удалить passkey «${passkey.label}»? Все сессии будут завершены.`)) return;
+  clearFeedback();
+  factorPending.value = true;
   try {
-    await mfaManagementApi.removePasskey(passkey.id)
-    await auth.logout()
-    await router.replace('/login')
+    await mfaManagementApi.removePasskey(passkey.id);
+    await auth.logout();
+    await router.replace('/login');
   } catch (cause) {
-    actionError.value = factorError(cause)
+    actionError.value = factorError(cause);
   } finally {
-    factorPending.value = false
+    factorPending.value = false;
   }
 }
 
 async function rotateRecoveryCodes() {
-  if (!window.confirm('Сделать прежние recovery-коды недействительными и создать новые?')) return
-  clearFeedback()
-  factorPending.value = true
+  if (!window.confirm('Сделать прежние recovery-коды недействительными и создать новые?')) return;
+  clearFeedback();
+  factorPending.value = true;
   try {
-    const response = await mfaManagementApi.rotateRecoveryCodes()
-    oneTimeRecoveryCodes.value = [...response.recoveryCodes]
-    recoveryCodesRemaining.value = response.recoveryCodes.length
-    recoveryCodesSaved.value = false
+    const response = await mfaManagementApi.rotateRecoveryCodes();
+    oneTimeRecoveryCodes.value = [...response.recoveryCodes];
+    recoveryCodesRemaining.value = response.recoveryCodes.length;
+    recoveryCodesSaved.value = false;
   } catch (cause) {
-    actionError.value = factorError(cause)
+    actionError.value = factorError(cause);
   } finally {
-    factorPending.value = false
+    factorPending.value = false;
   }
 }
 
 function dismissRecoveryCodes() {
-  if (!recoveryCodesSaved.value) return
-  oneTimeRecoveryCodes.value = []
-  recoveryCodesSaved.value = false
-  actionSuccess.value = 'Новые recovery-коды сохранены.'
+  if (!recoveryCodesSaved.value) return;
+  oneTimeRecoveryCodes.value = [];
+  recoveryCodesSaved.value = false;
+  actionSuccess.value = 'Новые recovery-коды сохранены.';
 }
 
 function factorError(cause: unknown) {
-  const error = normalizeApiError(cause)
-  if (error.code === 'LAST_MFA_FACTOR_REQUIRED') return 'Нельзя удалить последний passkey.'
+  const error = normalizeApiError(cause);
+  if (error.code === 'LAST_MFA_FACTOR_REQUIRED') return 'Нельзя удалить последний passkey.';
   if (error.code === 'MFA_REQUIRED' || error.code === 'REAUTHENTICATION_REQUIRED') {
-    return 'Для действия нужен свежий вход с passkey. Выйдите и войдите снова.'
+    return 'Для действия нужен свежий вход с passkey. Выйдите и войдите снова.';
   }
   if (cause instanceof DOMException && cause.name === 'NotAllowedError') {
-    return 'Создание passkey отменено или истекло время ожидания.'
+    return 'Создание passkey отменено или истекло время ожидания.';
   }
-  return error.message || 'Не удалось изменить MFA-настройки.'
+  return error.message || 'Не удалось изменить MFA-настройки.';
 }
 
 async function loadSessions() {
-  loading.value = true
-  listError.value = ''
+  loading.value = true;
+  listError.value = '';
   try {
-    sessions.value = await securitySettingsApi.listSessions()
+    sessions.value = await securitySettingsApi.listSessions();
   } catch (cause) {
-    listError.value = normalizeApiError(cause).message || 'Не удалось загрузить активные сессии.'
+    listError.value = normalizeApiError(cause).message || 'Не удалось загрузить активные сессии.';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function revokeSession(session: CmsSessionSummaryDto) {
-  if (!window.confirm(session.current ? 'Завершить текущую сессию?' : 'Завершить выбранную сессию?')) return
-  clearFeedback()
-  revokingId.value = session.id
+  if (
+    !window.confirm(session.current ? 'Завершить текущую сессию?' : 'Завершить выбранную сессию?')
+  )
+    return;
+  clearFeedback();
+  revokingId.value = session.id;
   try {
-    await securitySettingsApi.revokeSession(session.id)
+    await securitySettingsApi.revokeSession(session.id);
     if (session.current) {
-      await auth.logout()
-      await router.replace('/login')
-      return
+      await auth.logout();
+      await router.replace('/login');
+      return;
     }
-    sessions.value = sessions.value.filter(({ id }) => id !== session.id)
-    actionSuccess.value = 'Сессия завершена.'
+    sessions.value = sessions.value.filter(({ id }) => id !== session.id);
+    actionSuccess.value = 'Сессия завершена.';
   } catch (cause) {
-    actionError.value = normalizeApiError(cause).message || 'Не удалось завершить сессию.'
+    actionError.value = normalizeApiError(cause).message || 'Не удалось завершить сессию.';
   } finally {
-    revokingId.value = null
+    revokingId.value = null;
   }
 }
 
 async function revokeOthers() {
-  if (!window.confirm('Завершить все остальные сессии?')) return
-  clearFeedback()
-  revokingOthers.value = true
+  if (!window.confirm('Завершить все остальные сессии?')) return;
+  clearFeedback();
+  revokingOthers.value = true;
   try {
-    await securitySettingsApi.revokeOtherSessions()
-    sessions.value = sessions.value.filter(({ current }) => current)
-    actionSuccess.value = 'Все остальные сессии завершены.'
+    await securitySettingsApi.revokeOtherSessions();
+    sessions.value = sessions.value.filter(({ current }) => current);
+    actionSuccess.value = 'Все остальные сессии завершены.';
   } catch (cause) {
-    actionError.value = normalizeApiError(cause).message || 'Не удалось завершить остальные сессии.'
+    actionError.value =
+      normalizeApiError(cause).message || 'Не удалось завершить остальные сессии.';
   } finally {
-    revokingOthers.value = false
+    revokingOthers.value = false;
   }
 }
 
 async function changePassword() {
-  clearFeedback()
+  clearFeedback();
   if (newPassword.value !== passwordConfirmation.value) {
-    passwordConfirmationError.value = 'Пароли не совпадают. Проверьте повтор нового пароля.'
-    return
+    passwordConfirmationError.value = 'Пароли не совпадают. Проверьте повтор нового пароля.';
+    return;
   }
-  changingPassword.value = true
+  changingPassword.value = true;
   try {
     await securitySettingsApi.changePassword({
       currentPassword: currentPassword.value,
       newPassword: newPassword.value,
       passwordConfirmation: passwordConfirmation.value,
-    })
-    currentPassword.value = ''
-    newPassword.value = ''
-    passwordConfirmation.value = ''
-    actionSuccess.value = 'Пароль изменён. Остальные сессии завершены.'
-    await loadSessions()
+    });
+    currentPassword.value = '';
+    newPassword.value = '';
+    passwordConfirmation.value = '';
+    actionSuccess.value = 'Пароль изменён. Остальные сессии завершены.';
+    await loadSessions();
   } catch (cause) {
-    const error = normalizeApiError(cause)
+    const error = normalizeApiError(cause);
     if (error.code === 'CURRENT_PASSWORD_INVALID') {
-      passwordCurrentError.value = 'Текущий пароль указан неверно.'
+      passwordCurrentError.value = 'Текущий пароль указан неверно.';
     } else {
-      actionError.value = error.message || 'Не удалось изменить пароль.'
+      actionError.value = error.message || 'Не удалось изменить пароль.';
     }
   } finally {
-    changingPassword.value = false
+    changingPassword.value = false;
   }
 }
 
 async function requestEmailVerification() {
-  if (verificationSeconds.value > 0 || emailVerified.value) return
-  clearFeedback()
-  verificationRequesting.value = true
+  if (verificationSeconds.value > 0 || emailVerified.value) return;
+  clearFeedback();
+  verificationRequesting.value = true;
   try {
-    const response = await emailIdentityApi.requestVerification()
-    startVerificationCountdown(response.retryAfterSeconds)
-    actionSuccess.value = 'Письмо для подтверждения отправлено.'
+    const response = await emailIdentityApi.requestVerification();
+    startVerificationCountdown(response.retryAfterSeconds);
+    actionSuccess.value = 'Письмо для подтверждения отправлено.';
   } catch {
-    actionError.value = 'Не удалось отправить письмо. Повторите позже.'
+    actionError.value = 'Не удалось отправить письмо. Повторите позже.';
   } finally {
-    verificationRequesting.value = false
+    verificationRequesting.value = false;
   }
 }
 
 async function requestEmailChange() {
-  if (!canSubmitEmailChange.value) return
-  clearFeedback()
-  emailChangeSubmitting.value = true
+  if (!canSubmitEmailChange.value) return;
+  clearFeedback();
+  emailChangeSubmitting.value = true;
   try {
     const response = await emailIdentityApi.requestEmailChange({
       newEmail: newEmail.value,
       currentPassword: emailChangePassword.value,
-    })
-    pendingEmail.value = response.pendingEmail
-    if (auth.user) auth.user.pendingEmail = response.pendingEmail
-    newEmail.value = ''
-    emailChangePassword.value = ''
-    showEmailChangeForm.value = false
-    actionSuccess.value = 'Письмо отправлено на новый адрес. Текущий email пока не изменён.'
+    });
+    pendingEmail.value = response.pendingEmail;
+    if (auth.user) auth.user.pendingEmail = response.pendingEmail;
+    newEmail.value = '';
+    emailChangePassword.value = '';
+    showEmailChangeForm.value = false;
+    actionSuccess.value = 'Письмо отправлено на новый адрес. Текущий email пока не изменён.';
   } catch (cause) {
-    const error = normalizeApiError(cause)
+    const error = normalizeApiError(cause);
     if (error.code === 'EMAIL_CHANGE_REAUTHENTICATION_FAILED') {
-      emailChangePasswordError.value = 'Текущий пароль указан неверно.'
+      emailChangePasswordError.value = 'Текущий пароль указан неверно.';
     } else if (error.code === 'EMAIL_ALREADY_IN_USE') {
-      emailChangeFieldError.value = 'Этот email уже используется.'
+      emailChangeFieldError.value = 'Этот email уже используется.';
     } else {
-      actionError.value = 'Не удалось начать смену email.'
+      actionError.value = 'Не удалось начать смену email.';
     }
   } finally {
-    emailChangeSubmitting.value = false
+    emailChangeSubmitting.value = false;
   }
 }
 
 async function cancelEmailChange() {
-  if (!window.confirm('Отменить смену email?')) return
-  clearFeedback()
-  emailChangeCancelling.value = true
+  if (!window.confirm('Отменить смену email?')) return;
+  clearFeedback();
+  emailChangeCancelling.value = true;
   try {
-    await emailIdentityApi.cancelEmailChange()
-    pendingEmail.value = null
-    if (auth.user) auth.user.pendingEmail = null
-    showEmailChangeForm.value = true
-    newEmail.value = ''
-    emailChangePassword.value = ''
-    actionSuccess.value = 'Смена email отменена.'
+    await emailIdentityApi.cancelEmailChange();
+    pendingEmail.value = null;
+    if (auth.user) auth.user.pendingEmail = null;
+    showEmailChangeForm.value = true;
+    newEmail.value = '';
+    emailChangePassword.value = '';
+    actionSuccess.value = 'Смена email отменена.';
   } catch {
-    actionError.value = 'Не удалось отменить смену email.'
+    actionError.value = 'Не удалось отменить смену email.';
   } finally {
-    emailChangeCancelling.value = false
+    emailChangeCancelling.value = false;
   }
 }
 
 function restartEmailChange() {
-  newEmail.value = pendingEmail.value ?? ''
-  emailChangePassword.value = ''
-  showEmailChangeForm.value = true
-  clearFeedback()
+  newEmail.value = pendingEmail.value ?? '';
+  emailChangePassword.value = '';
+  showEmailChangeForm.value = true;
+  clearFeedback();
 }
 
 function startVerificationCountdown(seconds: number) {
-  verificationSeconds.value = Math.max(0, Math.ceil(seconds))
-  if (auth.user) auth.user.emailVerificationRetryAfterSeconds = verificationSeconds.value
+  verificationSeconds.value = Math.max(0, Math.ceil(seconds));
+  if (auth.user) auth.user.emailVerificationRetryAfterSeconds = verificationSeconds.value;
 }
 
 function clearFeedback() {
-  actionError.value = ''
-  actionSuccess.value = ''
-  emailChangeFieldError.value = ''
-  emailChangePasswordError.value = ''
-  passwordCurrentError.value = ''
-  passwordConfirmationError.value = ''
+  actionError.value = '';
+  actionSuccess.value = '';
+  emailChangeFieldError.value = '';
+  emailChangePasswordError.value = '';
+  passwordCurrentError.value = '';
+  passwordConfirmationError.value = '';
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short' })
-    .format(new Date(value))
+  return new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short' }).format(
+    new Date(value),
+  );
 }
 
 onMounted(() => {
-  void loadSessions()
-  void loadMfaSummary()
-  void loadEmailPreference()
+  void loadSessions();
+  void loadMfaSummary();
+  void loadEmailPreference();
   countdownTimer = setInterval(() => {
-    if (verificationSeconds.value > 0) verificationSeconds.value -= 1
-  }, 1_000)
-})
+    if (verificationSeconds.value > 0) verificationSeconds.value -= 1;
+  }, 1_000);
+});
 
 onBeforeUnmount(() => {
-  if (countdownTimer) clearInterval(countdownTimer)
-})
+  if (countdownTimer) clearInterval(countdownTimer);
+});
 </script>
 
 <template>
@@ -396,7 +408,10 @@ onBeforeUnmount(() => {
     <section class="security-card identity-card" aria-labelledby="identity-heading">
       <div class="section-heading">
         <i class="pi pi-envelope" />
-        <div><h2 id="identity-heading">Email и уведомления</h2><p>Адрес для входа, восстановления доступа и писем от Retenive.</p></div>
+        <div>
+          <h2 id="identity-heading">Email и уведомления</h2>
+          <p>Адрес для входа, восстановления доступа и писем от Retenive.</p>
+        </div>
       </div>
 
       <div class="identity-summary">
@@ -430,7 +445,12 @@ onBeforeUnmount(() => {
           <span>До подтверждения вход выполняется с {{ canonicalEmail }}.</span>
         </div>
         <div class="pending-actions">
-          <Button data-testid="restart-email-change" label="Начать заново" text @click="restartEmailChange" />
+          <Button
+            data-testid="restart-email-change"
+            label="Начать заново"
+            text
+            @click="restartEmailChange"
+          />
           <Button
             data-testid="cancel-email-change"
             label="Отменить"
@@ -442,7 +462,11 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <form v-if="showEmailChangeForm" class="settings-form email-change-form" @submit.prevent="requestEmailChange">
+      <form
+        v-if="showEmailChangeForm"
+        class="settings-form email-change-form"
+        @submit.prevent="requestEmailChange"
+      >
         <div class="settings-form__fields">
           <div class="settings-field">
             <label for="security-new-email">Новый email</label>
@@ -454,7 +478,9 @@ onBeforeUnmount(() => {
               :aria-invalid="Boolean(emailChangeFieldError)"
               :aria-describedby="emailChangeFieldError ? 'security-new-email-error' : undefined"
             />
-            <small v-if="emailChangeFieldError" id="security-new-email-error" class="field-error">{{ emailChangeFieldError }}</small>
+            <small v-if="emailChangeFieldError" id="security-new-email-error" class="field-error">{{
+              emailChangeFieldError
+            }}</small>
           </div>
           <div class="settings-field">
             <label for="security-email-password">Текущий пароль для смены email</label>
@@ -465,17 +491,28 @@ onBeforeUnmount(() => {
                 :type="showEmailChangePassword ? 'text' : 'password'"
                 autocomplete="current-password"
                 :aria-invalid="Boolean(emailChangePasswordError)"
-                :aria-describedby="emailChangePasswordError ? 'security-email-password-error' : undefined"
+                :aria-describedby="
+                  emailChangePasswordError ? 'security-email-password-error' : undefined
+                "
               />
               <button
                 type="button"
-                :aria-label="showEmailChangePassword ? 'Скрыть пароль для смены email' : 'Показать пароль для смены email'"
+                :aria-label="
+                  showEmailChangePassword
+                    ? 'Скрыть пароль для смены email'
+                    : 'Показать пароль для смены email'
+                "
                 @click="showEmailChangePassword = !showEmailChangePassword"
               >
                 <i :class="showEmailChangePassword ? 'pi pi-eye-slash' : 'pi pi-eye'" />
               </button>
             </div>
-            <small v-if="emailChangePasswordError" id="security-email-password-error" class="field-error">{{ emailChangePasswordError }}</small>
+            <small
+              v-if="emailChangePasswordError"
+              id="security-email-password-error"
+              class="field-error"
+              >{{ emailChangePasswordError }}</small
+            >
           </div>
         </div>
         <div class="settings-form__actions">
@@ -493,7 +530,9 @@ onBeforeUnmount(() => {
         <div>
           <strong id="case-escalation-email-heading">Эскалации обращений по email</strong>
           <span>Получайте уведомления, когда обращению требуется помощь администратора.</span>
-          <small :class="emailPreferenceBlocked ? 'preference-warning' : ''">{{ emailPreferenceStatus }}</small>
+          <small :class="emailPreferenceBlocked ? 'preference-warning' : ''">{{
+            emailPreferenceStatus
+          }}</small>
         </div>
         <div class="item-actions">
           <Button
@@ -523,7 +562,10 @@ onBeforeUnmount(() => {
     <section class="security-card" aria-labelledby="password-heading">
       <div class="section-heading">
         <i class="pi pi-key" />
-        <div><h2 id="password-heading">Изменить пароль</h2><p>После изменения все прежние сессии будут завершены.</p></div>
+        <div>
+          <h2 id="password-heading">Изменить пароль</h2>
+          <p>После изменения все прежние сессии будут завершены.</p>
+        </div>
       </div>
       <form class="settings-form password-form" @submit.prevent="changePassword">
         <div class="settings-form__fields">
@@ -536,17 +578,26 @@ onBeforeUnmount(() => {
                 :type="showCurrentPassword ? 'text' : 'password'"
                 autocomplete="current-password"
                 :aria-invalid="Boolean(passwordCurrentError)"
-                :aria-describedby="passwordCurrentError ? 'security-current-password-error' : undefined"
+                :aria-describedby="
+                  passwordCurrentError ? 'security-current-password-error' : undefined
+                "
               />
               <button
                 type="button"
-                :aria-label="showCurrentPassword ? 'Скрыть текущий пароль' : 'Показать текущий пароль'"
+                :aria-label="
+                  showCurrentPassword ? 'Скрыть текущий пароль' : 'Показать текущий пароль'
+                "
                 @click="showCurrentPassword = !showCurrentPassword"
               >
                 <i :class="showCurrentPassword ? 'pi pi-eye-slash' : 'pi pi-eye'" />
               </button>
             </div>
-            <small v-if="passwordCurrentError" id="security-current-password-error" class="field-error">{{ passwordCurrentError }}</small>
+            <small
+              v-if="passwordCurrentError"
+              id="security-current-password-error"
+              class="field-error"
+              >{{ passwordCurrentError }}</small
+            >
           </div>
           <div class="settings-field">
             <label for="security-new-password">Новый пароль</label>
@@ -575,21 +626,38 @@ onBeforeUnmount(() => {
                 :type="showPasswordConfirmation ? 'text' : 'password'"
                 autocomplete="new-password"
                 :aria-invalid="Boolean(passwordConfirmationError)"
-                :aria-describedby="passwordConfirmationError ? 'security-password-confirmation-error' : undefined"
+                :aria-describedby="
+                  passwordConfirmationError ? 'security-password-confirmation-error' : undefined
+                "
               />
               <button
                 type="button"
-                :aria-label="showPasswordConfirmation ? 'Скрыть повтор нового пароля' : 'Показать повтор нового пароля'"
+                :aria-label="
+                  showPasswordConfirmation
+                    ? 'Скрыть повтор нового пароля'
+                    : 'Показать повтор нового пароля'
+                "
                 @click="showPasswordConfirmation = !showPasswordConfirmation"
               >
                 <i :class="showPasswordConfirmation ? 'pi pi-eye-slash' : 'pi pi-eye'" />
               </button>
             </div>
-            <small v-if="passwordConfirmationError" id="security-password-confirmation-error" class="field-error">{{ passwordConfirmationError }}</small>
+            <small
+              v-if="passwordConfirmationError"
+              id="security-password-confirmation-error"
+              class="field-error"
+              >{{ passwordConfirmationError }}</small
+            >
           </div>
         </div>
         <div class="settings-form__actions">
-          <Button type="submit" label="Сохранить пароль" icon="pi pi-check" :loading="changingPassword" :disabled="!canSubmitPassword" />
+          <Button
+            type="submit"
+            label="Сохранить пароль"
+            icon="pi pi-check"
+            :loading="changingPassword"
+            :disabled="!canSubmitPassword"
+          />
         </div>
       </form>
     </section>
@@ -597,15 +665,35 @@ onBeforeUnmount(() => {
     <section class="security-card" aria-labelledby="mfa-heading">
       <div class="section-heading">
         <i class="pi pi-shield" />
-        <div><h2 id="mfa-heading">Способы входа</h2><p>Добавляйте passkeys и храните recovery-коды на случай потери устройств.</p></div>
+        <div>
+          <h2 id="mfa-heading">Способы входа</h2>
+          <p>Добавляйте passkeys и храните recovery-коды на случай потери устройств.</p>
+        </div>
       </div>
-      <p v-if="factorsLoading" class="state"><i class="pi pi-spin pi-spinner" /> Загружаем passkeys…</p>
+      <p v-if="factorsLoading" class="state">
+        <i class="pi pi-spin pi-spinner" /> Загружаем passkeys…
+      </p>
       <template v-else>
         <ul class="passkey-list">
-          <li v-for="(passkey, passkeyIndex) in passkeys" :key="passkey.id" class="passkey-item" :data-passkey-id="passkey.id">
-            <div class="passkey-copy"><strong>{{ passkey.label }}</strong><small>Добавлен {{ formatDate(passkey.createdAt) }}<template v-if="passkey.lastUsedAt"> · использован {{ formatDate(passkey.lastUsedAt) }}</template></small></div>
+          <li
+            v-for="(passkey, passkeyIndex) in passkeys"
+            :key="passkey.id"
+            class="passkey-item"
+            :data-passkey-id="passkey.id"
+          >
+            <div class="passkey-copy">
+              <strong>{{ passkey.label }}</strong
+              ><small
+                >Добавлен {{ formatDate(passkey.createdAt)
+                }}<template v-if="passkey.lastUsedAt">
+                  · использован {{ formatDate(passkey.lastUsedAt) }}</template
+                ></small
+              >
+            </div>
             <div class="item-actions">
-              <span v-if="passkey.backedUp" class="verification-badge verified">Синхронизирован</span>
+              <span v-if="passkey.backedUp" class="verification-badge verified"
+                >Синхронизирован</span
+              >
               <Button
                 label="Удалить"
                 :aria-label="`Удалить passkey ${passkey.label}, номер ${passkeyIndex + 1}`"
@@ -621,24 +709,58 @@ onBeforeUnmount(() => {
           <div class="settings-form__fields">
             <div class="settings-field">
               <label for="security-passkey-label">Название нового passkey</label>
-              <InputText id="security-passkey-label" v-model="passkeyLabel" maxlength="100" placeholder="Например, рабочий MacBook" />
+              <InputText
+                id="security-passkey-label"
+                v-model="passkeyLabel"
+                maxlength="100"
+                placeholder="Например, рабочий MacBook"
+              />
             </div>
           </div>
           <div class="settings-form__actions">
-            <Button type="submit" label="Добавить passkey" icon="pi pi-plus" :loading="factorPending" />
+            <Button
+              type="submit"
+              label="Добавить passkey"
+              icon="pi pi-plus"
+              :loading="factorPending"
+            />
           </div>
         </form>
         <div class="recovery-summary">
-          <div><strong>Осталось recovery-кодов: {{ recoveryCodesRemaining }}</strong><small>Ротация немедленно отменит все прежние коды.</small></div>
+          <div>
+            <strong>Осталось recovery-кодов: {{ recoveryCodesRemaining }}</strong
+            ><small>Ротация немедленно отменит все прежние коды.</small>
+          </div>
           <div class="item-actions">
-            <Button label="Создать новые коды" outlined :loading="factorPending" @click="rotateRecoveryCodes" />
+            <Button
+              label="Создать новые коды"
+              outlined
+              :loading="factorPending"
+              @click="rotateRecoveryCodes"
+            />
           </div>
         </div>
-        <div v-if="oneTimeRecoveryCodes.length" class="rotated-codes" data-testid="rotated-recovery-codes">
-          <Message severity="warn" :closable="false">Сохраните новые коды сейчас: повторно они не показываются.</Message>
-          <ol><li v-for="code in oneTimeRecoveryCodes" :key="code"><code>{{ code }}</code></li></ol>
-          <label><input v-model="recoveryCodesSaved" type="checkbox" /> Я сохранил новые коды</label>
-          <Button label="Скрыть коды" :disabled="!recoveryCodesSaved" @click="dismissRecoveryCodes" />
+        <div
+          v-if="oneTimeRecoveryCodes.length"
+          class="rotated-codes"
+          data-testid="rotated-recovery-codes"
+        >
+          <Message severity="warn" :closable="false"
+            >Сохраните новые коды сейчас: повторно они не показываются.</Message
+          >
+          <ol>
+            <li v-for="code in oneTimeRecoveryCodes" :key="code">
+              <code>{{ code }}</code>
+            </li>
+          </ol>
+          <label
+            ><input v-model="recoveryCodesSaved" type="checkbox" /> Я сохранил новые коды</label
+          >
+          <Button
+            label="Скрыть коды"
+            :disabled="!recoveryCodesSaved"
+            @click="dismissRecoveryCodes"
+          />
         </div>
       </template>
     </section>
@@ -646,14 +768,23 @@ onBeforeUnmount(() => {
     <section class="security-card" aria-labelledby="sessions-heading">
       <div class="section-heading">
         <i class="pi pi-desktop" />
-        <div><h2 id="sessions-heading">Активные сессии</h2><p>Проверяйте устройства с доступом к CMS и завершайте незнакомые сеансы.</p></div>
+        <div>
+          <h2 id="sessions-heading">Активные сессии</h2>
+          <p>Проверяйте устройства с доступом к CMS и завершайте незнакомые сеансы.</p>
+        </div>
       </div>
       <p v-if="loading" class="state"><i class="pi pi-spin pi-spinner" /> Загружаем сессии…</p>
       <div v-else-if="listError" class="state state-error" role="alert">
-        <span>{{ listError }}</span><Button label="Повторить" icon="pi pi-refresh" outlined @click="loadSessions" />
+        <span>{{ listError }}</span
+        ><Button label="Повторить" icon="pi pi-refresh" outlined @click="loadSessions" />
       </div>
       <ul v-else class="session-list">
-        <li v-for="(session, sessionIndex) in sessions" :key="session.id" class="session-item" :data-session-id="session.id">
+        <li
+          v-for="(session, sessionIndex) in sessions"
+          :key="session.id"
+          class="session-item"
+          :data-session-id="session.id"
+        >
           <div class="device-icon"><i class="pi pi-desktop" /></div>
           <div class="session-copy">
             <strong>{{ session.device }} <span v-if="session.current">Текущая</span></strong>
@@ -857,7 +988,7 @@ onBeforeUnmount(() => {
   color: var(--status-accent-text);
   font-size: var(--font-size-caption);
   font-weight: 800;
-  letter-spacing: .06em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -1059,7 +1190,7 @@ onBeforeUnmount(() => {
   border-radius: 999px;
   background: var(--status-success-soft);
   color: var(--status-success-text);
-  font-size: .6875rem;
+  font-size: 0.6875rem;
   white-space: nowrap;
 }
 

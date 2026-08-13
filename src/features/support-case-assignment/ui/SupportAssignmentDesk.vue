@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Textarea from "primevue/textarea";
+import { computed, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Textarea from 'primevue/textarea';
 import type {
   ReleaseSupportCaseAssignmentDtoReasonCode,
   TransferSupportCaseAssignmentDtoReasonCode,
-} from "@/shared/api/generated/models";
-import type { createSupportAssignmentController } from "@/features/support-case-assignment/model/use-support-assignment";
+} from '@/shared/api/generated/models';
+import type { createSupportAssignmentController } from '@/features/support-case-assignment/model/use-support-assignment';
 
 const props = defineProps<{
   controller?: ReturnType<typeof createSupportAssignmentController>;
@@ -31,23 +31,21 @@ const canRelease = computed(() => props.controller?.canRelease.value ?? false);
 const canTransfer = computed(() => props.controller?.canTransfer.value ?? false);
 const caseLoading = computed(() => props.controller?.caseLoading.value ?? false);
 const mutating = computed(() => props.controller?.mutating.value ?? false);
-const error = computed(() => props.controller?.error.value ?? "");
-const unknownOutcome = computed(
-  () => props.controller?.unknownOutcome.value ?? false,
-);
+const error = computed(() => props.controller?.error.value ?? '');
+const unknownOutcome = computed(() => props.controller?.unknownOutcome.value ?? false);
 const canRetry = computed(() => props.controller?.canRetry.value ?? false);
 
 const assignmentStateLabel = computed(() => {
   if (!snapshot.value)
     return props.assignment
       ? `${props.assignment.operatorName} · ${props.assignment.teamName}`
-      : "Не назначено";
-  if (snapshot.value?.assignmentState === "RESERVED")
-    return "Зарезервировано системой маршрутизации";
-  if (snapshot.value?.assignmentState === "UNASSIGNED") return "Не назначено";
+      : 'Не назначено';
+  if (snapshot.value?.assignmentState === 'RESERVED')
+    return 'Зарезервировано системой маршрутизации';
+  if (snapshot.value?.assignmentState === 'UNASSIGNED') return 'Не назначено';
   const current = snapshot.value?.currentAssignment;
   if (
-    snapshot.value?.assignmentState === "ASSIGNED" &&
+    snapshot.value?.assignmentState === 'ASSIGNED' &&
     current &&
     props.assignment &&
     props.assignment.id === current.id &&
@@ -55,29 +53,26 @@ const assignmentStateLabel = computed(() => {
     props.assignment.actionEtag === current.actionEtag
   )
     return `${props.assignment.operatorName} · ${props.assignment.teamName}`;
-  if (snapshot.value?.assignmentState === "ASSIGNED")
-    return "Обновляем данные владельца…";
-  return props.assignment ? "Обновляем назначение…" : "Не назначено";
+  if (snapshot.value?.assignmentState === 'ASSIGNED') return 'Обновляем данные владельца…';
+  return props.assignment ? 'Обновляем назначение…' : 'Не назначено';
 });
 
 const releaseVisible = ref(false);
-const releaseReason = ref<ReleaseSupportCaseAssignmentDtoReasonCode>(
-  "WORK_RETURNED",
-);
-const releaseNote = ref("");
+const releaseReason = ref<ReleaseSupportCaseAssignmentDtoReasonCode>('WORK_RETURNED');
+const releaseNote = ref('');
 const releaseReasons = [
-  { label: "Работа возвращена в очередь", value: "WORK_RETURNED" },
-  { label: "Завершение смены", value: "SHIFT_END" },
-  { label: "Балансировка лидом", value: "LEAD_REBALANCE" },
-  { label: "Другая причина", value: "OTHER" },
+  { label: 'Работа возвращена в очередь', value: 'WORK_RETURNED' },
+  { label: 'Завершение смены', value: 'SHIFT_END' },
+  { label: 'Балансировка лидом', value: 'LEAD_REBALANCE' },
+  { label: 'Другая причина', value: 'OTHER' },
 ] satisfies Array<{
   label: string;
   value: ReleaseSupportCaseAssignmentDtoReasonCode;
 }>;
 
 function requestRelease(): void {
-  releaseReason.value = "WORK_RETURNED";
-  releaseNote.value = "";
+  releaseReason.value = 'WORK_RETURNED';
+  releaseNote.value = '';
   releaseVisible.value = true;
 }
 
@@ -85,47 +80,41 @@ async function confirmRelease(): Promise<void> {
   const controller = props.controller;
   if (!controller) return;
   controller.setDraft({
-    kind: "RELEASE",
+    kind: 'RELEASE',
     reasonCode: releaseReason.value,
-    ...(releaseNote.value.trim()
-      ? { reasonNote: releaseNote.value.trim() }
-      : {}),
+    ...(releaseNote.value.trim() ? { reasonNote: releaseNote.value.trim() } : {}),
   });
   await controller.submit();
   if (!controller.draft.value) releaseVisible.value = false;
 }
 
 const claimVisible = ref(false);
-const claimTeamId = ref("");
-const claimTeams = computed(
-  () => snapshot.value?.teams.filter((team) => team.actions.claim) ?? [],
-);
+const claimTeamId = ref('');
+const claimTeams = computed(() => snapshot.value?.teams.filter((team) => team.actions.claim) ?? []);
 
 function requestClaim(): void {
-  claimTeamId.value = claimTeams.value[0]?.id ?? "";
+  claimTeamId.value = claimTeams.value[0]?.id ?? '';
   claimVisible.value = true;
 }
 
 async function confirmClaim(): Promise<void> {
   const controller = props.controller;
   if (!controller || !claimTeamId.value) return;
-  controller.setDraft({ kind: "CLAIM", teamId: claimTeamId.value });
+  controller.setDraft({ kind: 'CLAIM', teamId: claimTeamId.value });
   await controller.submit();
   if (!controller.draft.value) claimVisible.value = false;
 }
 
 const transferVisible = ref(false);
-const transferTeamId = ref("");
-const transferOperatorId = ref("");
-const transferReason = ref<TransferSupportCaseAssignmentDtoReasonCode>(
-  "SKILL_HANDOFF",
-);
-const transferNote = ref("");
+const transferTeamId = ref('');
+const transferOperatorId = ref('');
+const transferReason = ref<TransferSupportCaseAssignmentDtoReasonCode>('SKILL_HANDOFF');
+const transferNote = ref('');
 const transferReasons = [
-  { label: "Передача по навыку", value: "SKILL_HANDOFF" },
-  { label: "Балансировка нагрузки", value: "LOAD_BALANCE" },
-  { label: "Решение лида", value: "LEAD_INTERVENTION" },
-  { label: "Другая причина", value: "OTHER" },
+  { label: 'Передача по навыку', value: 'SKILL_HANDOFF' },
+  { label: 'Балансировка нагрузки', value: 'LOAD_BALANCE' },
+  { label: 'Решение лида', value: 'LEAD_INTERVENTION' },
+  { label: 'Другая причина', value: 'OTHER' },
 ] satisfies Array<{
   label: string;
   value: TransferSupportCaseAssignmentDtoReasonCode;
@@ -134,8 +123,7 @@ const transferTeams = computed(
   () =>
     snapshot.value?.teams.filter(
       (team) =>
-        team.actions.transfer &&
-        team.operators.some((operator) => operator.actions.transfer),
+        team.actions.transfer && team.operators.some((operator) => operator.actions.transfer),
     ) ?? [],
 );
 const transferOperators = computed(
@@ -146,12 +134,8 @@ const transferOperators = computed(
 );
 
 watch(transferTeamId, () => {
-  if (
-    !transferOperators.value.some(
-      (operator) => operator.id === transferOperatorId.value,
-    )
-  )
-    transferOperatorId.value = transferOperators.value[0]?.id ?? "";
+  if (!transferOperators.value.some((operator) => operator.id === transferOperatorId.value))
+    transferOperatorId.value = transferOperators.value[0]?.id ?? '';
 });
 
 watch(
@@ -169,17 +153,17 @@ watch(
       transferVisible.value = false;
       return;
     }
-    if (!claimAllowed && draftKind !== "CLAIM") claimVisible.value = false;
-    if (!releaseAllowed && draftKind !== "RELEASE") releaseVisible.value = false;
-    if (!transferAllowed && draftKind !== "TRANSFER") transferVisible.value = false;
+    if (!claimAllowed && draftKind !== 'CLAIM') claimVisible.value = false;
+    if (!releaseAllowed && draftKind !== 'RELEASE') releaseVisible.value = false;
+    if (!transferAllowed && draftKind !== 'TRANSFER') transferVisible.value = false;
   },
 );
 
 function requestTransfer(): void {
-  transferTeamId.value = transferTeams.value[0]?.id ?? "";
-  transferOperatorId.value = transferOperators.value[0]?.id ?? "";
-  transferReason.value = "SKILL_HANDOFF";
-  transferNote.value = "";
+  transferTeamId.value = transferTeams.value[0]?.id ?? '';
+  transferOperatorId.value = transferOperators.value[0]?.id ?? '';
+  transferReason.value = 'SKILL_HANDOFF';
+  transferNote.value = '';
   transferVisible.value = true;
 }
 
@@ -187,13 +171,11 @@ async function confirmTransfer(): Promise<void> {
   const controller = props.controller;
   if (!controller || !transferTeamId.value || !transferOperatorId.value) return;
   controller.setDraft({
-    kind: "TRANSFER",
+    kind: 'TRANSFER',
     teamId: transferTeamId.value,
     operatorId: transferOperatorId.value,
     reasonCode: transferReason.value,
-    ...(transferNote.value.trim()
-      ? { reasonNote: transferNote.value.trim() }
-      : {}),
+    ...(transferNote.value.trim() ? { reasonNote: transferNote.value.trim() } : {}),
   });
   await controller.submit();
   if (!controller.draft.value) transferVisible.value = false;
@@ -282,12 +264,7 @@ function retryUnknownOutcome(): void {
     </div>
 
     <Message
-      v-if="
-        error &&
-        !claimVisible &&
-        !releaseVisible &&
-        !transferVisible
-      "
+      v-if="error && !claimVisible && !releaseVisible && !transferVisible"
       severity="error"
       :closable="false"
     >
@@ -328,12 +305,7 @@ function retryUnknownOutcome(): void {
         {{ error }}
       </Message>
       <template #footer>
-        <Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="claimVisible = false"
-        />
+        <Button label="Отмена" severity="secondary" text @click="claimVisible = false" />
         <Button
           label="Взять в работу"
           aria-label="Подтвердить назначение на себя"
@@ -380,12 +352,7 @@ function retryUnknownOutcome(): void {
         {{ error }}
       </Message>
       <template #footer>
-        <Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="releaseVisible = false"
-        />
+        <Button label="Отмена" severity="secondary" text @click="releaseVisible = false" />
         <Button
           label="Подтвердить"
           severity="danger"
@@ -430,7 +397,10 @@ function retryUnknownOutcome(): void {
           />
           <small v-if="transferOperators.length">
             Доступная ёмкость:
-            {{ transferOperators.find((item) => item.id === transferOperatorId)?.availableCapacityUnits ?? 0 }}
+            {{
+              transferOperators.find((item) => item.id === transferOperatorId)
+                ?.availableCapacityUnits ?? 0
+            }}
           </small>
         </label>
       </div>
@@ -461,22 +431,12 @@ function retryUnknownOutcome(): void {
         {{ error }}
       </Message>
       <template #footer>
-        <Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="transferVisible = false"
-        />
+        <Button label="Отмена" severity="secondary" text @click="transferVisible = false" />
         <Button
           label="Передать"
           aria-label="Подтвердить передачу назначения"
           :loading="mutating"
-          :disabled="
-            unknownOutcome ||
-            !canTransfer ||
-            !transferTeamId ||
-            !transferOperatorId
-          "
+          :disabled="unknownOutcome || !canTransfer || !transferTeamId || !transferOperatorId"
           @click="confirmTransfer"
         />
       </template>

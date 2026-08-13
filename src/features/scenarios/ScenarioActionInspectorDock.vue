@@ -1,63 +1,66 @@
 <script setup lang="ts">
-import { onBeforeUnmount } from 'vue'
+import { onBeforeUnmount } from 'vue';
 import {
   SCENARIO_ACTION_INSPECTOR_MAX_WIDTH,
   SCENARIO_ACTION_INSPECTOR_MIN_WIDTH,
   clampScenarioActionInspectorWidth,
-} from './model/scenario-action-workspace'
+} from './model/scenario-action-workspace';
 
-const props = withDefaults(defineProps<{
-  width: number
-  minWidth?: number
-  maxWidth?: number
-}>(), {
-  minWidth: SCENARIO_ACTION_INSPECTOR_MIN_WIDTH,
-  maxWidth: SCENARIO_ACTION_INSPECTOR_MAX_WIDTH,
-})
+const props = withDefaults(
+  defineProps<{
+    width: number;
+    minWidth?: number;
+    maxWidth?: number;
+  }>(),
+  {
+    minWidth: SCENARIO_ACTION_INSPECTOR_MIN_WIDTH,
+    maxWidth: SCENARIO_ACTION_INSPECTOR_MAX_WIDTH,
+  },
+);
 
 const emit = defineEmits<{
-  resize: [width: number]
-}>()
+  resize: [width: number];
+}>();
 
-let pointerStartX = 0
-let pointerStartWidth = 0
+let pointerStartX = 0;
+let pointerStartWidth = 0;
 
 function clampWidth(width: number) {
-  return clampScenarioActionInspectorWidth(width, props.minWidth, props.maxWidth)
+  return clampScenarioActionInspectorWidth(width, props.minWidth, props.maxWidth);
 }
 
 function resizeFromKeyboard(event: KeyboardEvent) {
-  let width: number | undefined
-  if (event.key === 'ArrowLeft') width = props.width + 24
-  else if (event.key === 'ArrowRight') width = props.width - 24
-  else if (event.key === 'Home') width = props.minWidth
-  else if (event.key === 'End') width = props.maxWidth
-  if (width === undefined) return
-  event.preventDefault()
-  emit('resize', clampWidth(width))
+  let width: number | undefined;
+  if (event.key === 'ArrowLeft') width = props.width + 24;
+  else if (event.key === 'ArrowRight') width = props.width - 24;
+  else if (event.key === 'Home') width = props.minWidth;
+  else if (event.key === 'End') width = props.maxWidth;
+  if (width === undefined) return;
+  event.preventDefault();
+  emit('resize', clampWidth(width));
 }
 
 function resizeFromPointer(event: PointerEvent) {
-  emit('resize', clampWidth(pointerStartWidth + pointerStartX - event.clientX))
+  emit('resize', clampWidth(pointerStartWidth + pointerStartX - event.clientX));
 }
 
 function stopPointerResize() {
-  window.removeEventListener('pointermove', resizeFromPointer)
-  window.removeEventListener('pointerup', stopPointerResize)
-  window.removeEventListener('pointercancel', stopPointerResize)
+  window.removeEventListener('pointermove', resizeFromPointer);
+  window.removeEventListener('pointerup', stopPointerResize);
+  window.removeEventListener('pointercancel', stopPointerResize);
 }
 
 function startPointerResize(event: PointerEvent) {
-  if (event.button !== 0) return
-  event.preventDefault()
-  pointerStartX = event.clientX
-  pointerStartWidth = props.width
-  window.addEventListener('pointermove', resizeFromPointer)
-  window.addEventListener('pointerup', stopPointerResize, { once: true })
-  window.addEventListener('pointercancel', stopPointerResize, { once: true })
+  if (event.button !== 0) return;
+  event.preventDefault();
+  pointerStartX = event.clientX;
+  pointerStartWidth = props.width;
+  window.addEventListener('pointermove', resizeFromPointer);
+  window.addEventListener('pointerup', stopPointerResize, { once: true });
+  window.addEventListener('pointercancel', stopPointerResize, { once: true });
 }
 
-onBeforeUnmount(stopPointerResize)
+onBeforeUnmount(stopPointerResize);
 </script>
 
 <template>
@@ -73,7 +76,9 @@ onBeforeUnmount(stopPointerResize)
       :aria-valuenow="width"
       @keydown="resizeFromKeyboard"
       @pointerdown="startPointerResize"
-    ><span aria-hidden="true" /></button>
+    >
+      <span aria-hidden="true" />
+    </button>
     <div class="scenario-action-inspector-content"><slot /></div>
   </section>
 </template>
@@ -136,8 +141,14 @@ onBeforeUnmount(stopPointerResize)
   transform: translateY(-50%);
 }
 @keyframes inspector-dock-enter {
-  from { opacity: 0; transform: translateX(8px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 @container scenario-studio (max-width: 860px) {
   .scenario-action-inspector-dock {
@@ -154,7 +165,11 @@ onBeforeUnmount(stopPointerResize)
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .scenario-action-inspector-dock { animation: none; }
-  .scenario-action-inspector-resizer::after { transition: none; }
+  .scenario-action-inspector-dock {
+    animation: none;
+  }
+  .scenario-action-inspector-resizer::after {
+    transition: none;
+  }
 }
 </style>

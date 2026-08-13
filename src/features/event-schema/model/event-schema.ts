@@ -1,124 +1,151 @@
-import Ajv from 'ajv'
-import type { ErrorObject } from 'ajv'
+import Ajv from 'ajv';
+import type { ErrorObject } from 'ajv';
 
-import { uid } from '@/shared/lib/format'
+import { uid } from '@/shared/lib/format';
 
-export const eventSchemaFieldTypes = ['string', 'number', 'integer', 'boolean', 'object', 'array'] as const
+export const eventSchemaFieldTypes = [
+  'string',
+  'number',
+  'integer',
+  'boolean',
+  'object',
+  'array',
+] as const;
 
-export type EventSchemaFieldType = typeof eventSchemaFieldTypes[number]
+export type EventSchemaFieldType = (typeof eventSchemaFieldTypes)[number];
 
 export interface EventSchemaFieldDraft {
-  id: string
-  wireKey: string
-  title?: string
-  description?: string
-  type?: EventSchemaFieldType
-  required: boolean
-  enumValues?: unknown[]
-  minimum?: number
-  maximum?: number
-  fieldKey?: string
-  semanticType?: string
-  unit?: string
-  displayScale?: number
-  displayPrecision?: number
-  sensitive?: boolean
-  visuallyEditable: boolean
-  unsupportedReason?: string
-  source: unknown
+  id: string;
+  wireKey: string;
+  title?: string;
+  description?: string;
+  type?: EventSchemaFieldType;
+  required: boolean;
+  enumValues?: unknown[];
+  minimum?: number;
+  maximum?: number;
+  fieldKey?: string;
+  semanticType?: string;
+  unit?: string;
+  displayScale?: number;
+  displayPrecision?: number;
+  sensitive?: boolean;
+  visuallyEditable: boolean;
+  unsupportedReason?: string;
+  source: unknown;
 }
 
 export interface EventSchemaDraft {
-  source: Record<string, unknown>
-  fields: EventSchemaFieldDraft[]
-  additionalProperties?: unknown
-  hasProperties: boolean
-  hasRequired: boolean
-  hasAdditionalProperties: boolean
-  unmappedRequired: string[]
+  source: Record<string, unknown>;
+  fields: EventSchemaFieldDraft[];
+  additionalProperties?: unknown;
+  hasProperties: boolean;
+  hasRequired: boolean;
+  hasAdditionalProperties: boolean;
+  unmappedRequired: string[];
 }
 
 export interface EventSchemaDraftIssue {
-  fieldId?: string
-  message: string
+  fieldId?: string;
+  message: string;
 }
 
 export interface EventSchemaSampleIssue {
-  path: string
-  expected: string
-  actual: string
-  explanation: string
+  path: string;
+  expected: string;
+  actual: string;
+  explanation: string;
 }
 
 export type EventSchemaChange =
   | EventSchemaFieldChange<'added' | 'removed' | 'renamed'>
-  | EventSchemaFieldChange<'type-changed'> & { beforeType?: EventSchemaFieldType; afterType?: EventSchemaFieldType }
-  | EventSchemaFieldChange<'field-key-changed'> & { beforeFieldKey?: string; afterFieldKey?: string }
-  | EventSchemaFieldChange<'required-changed' | 'constraint-changed' | 'metadata-changed' | 'additional-properties-changed'>
+  | (EventSchemaFieldChange<'type-changed'> & {
+      beforeType?: EventSchemaFieldType;
+      afterType?: EventSchemaFieldType;
+    })
+  | (EventSchemaFieldChange<'field-key-changed'> & {
+      beforeFieldKey?: string;
+      afterFieldKey?: string;
+    })
+  | EventSchemaFieldChange<
+      | 'required-changed'
+      | 'constraint-changed'
+      | 'metadata-changed'
+      | 'additional-properties-changed'
+    >;
 
 interface EventSchemaFieldChange<Kind extends string> {
-  kind: Kind
-  fieldKey?: string
-  beforeWireKey?: string
-  afterWireKey?: string
-  beforeValue?: string
-  afterValue?: string
+  kind: Kind;
+  fieldKey?: string;
+  beforeWireKey?: string;
+  afterWireKey?: string;
+  beforeValue?: string;
+  afterValue?: string;
 }
 
-const unsupportedKeywords = ['$ref', 'allOf', 'anyOf', 'oneOf', 'not', 'if', 'then', 'else']
+const unsupportedKeywords = ['$ref', 'allOf', 'anyOf', 'oneOf', 'not', 'if', 'then', 'else'];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 function cloneValue<T>(value: T): T {
-  if (Array.isArray(value)) return value.map(cloneValue) as T
-  if (!isRecord(value)) return value
-  return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, cloneValue(item)])) as T
+  if (Array.isArray(value)) return value.map(cloneValue) as T;
+  if (!isRecord(value)) return value;
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [key, cloneValue(item)]),
+  ) as T;
 }
 
 function optionalString(value: unknown): string | undefined {
-  return typeof value === 'string' ? value : undefined
+  return typeof value === 'string' ? value : undefined;
 }
 
 function optionalNumber(value: unknown): number | undefined {
-  return typeof value === 'number' ? value : undefined
+  return typeof value === 'number' ? value : undefined;
 }
 
 function optionalBoolean(value: unknown): boolean | undefined {
-  return typeof value === 'boolean' ? value : undefined
+  return typeof value === 'boolean' ? value : undefined;
 }
 
 function hasLegacyReteniveMetadata(definition: Record<string, unknown>): boolean {
-  return Object.keys(definition).some((key) => key.startsWith('x-lola-'))
+  return Object.keys(definition).some((key) => key.startsWith('x-lola-'));
 }
 
 function fieldType(value: unknown): EventSchemaFieldType | undefined {
-  return eventSchemaFieldTypes.find((type) => type === value)
+  return eventSchemaFieldTypes.find((type) => type === value);
 }
 
 function unsupportedReason(schema: unknown): string | undefined {
-  if (!isRecord(schema)) return 'Boolean JSON Schema доступна только в расширенном режиме.'
-  const keyword = unsupportedKeywords.find((key) => key in schema)
-  if (keyword) return `Конструкция ${keyword} доступна только в расширенном режиме.`
-  const type = fieldType(schema.type)
-  if (!type) return 'Поле без поддерживаемого простого type доступно только в расширенном режиме.'
-  if (type === 'array' && !isRecord(schema.items)) return 'Array без object items доступен только в расширенном режиме.'
-  return undefined
+  if (!isRecord(schema)) return 'Boolean JSON Schema доступна только в расширенном режиме.';
+  const keyword = unsupportedKeywords.find((key) => key in schema);
+  if (keyword) return `Конструкция ${keyword} доступна только в расширенном режиме.`;
+  const type = fieldType(schema.type);
+  if (!type) return 'Поле без поддерживаемого простого type доступно только в расширенном режиме.';
+  if (type === 'array' && !isRecord(schema.items))
+    return 'Array без object items доступен только в расширенном режиме.';
+  return undefined;
 }
 
 export function parseEventSchema(schema: Record<string, unknown>): EventSchemaDraft {
-  const properties = isRecord(schema.properties) ? schema.properties : {}
-  const required = new Set(Array.isArray(schema.required) ? schema.required.filter((value): value is string => typeof value === 'string') : [])
-  const propertyKeys = new Set(Object.keys(properties))
+  const properties = isRecord(schema.properties) ? schema.properties : {};
+  const required = new Set(
+    Array.isArray(schema.required)
+      ? schema.required.filter((value): value is string => typeof value === 'string')
+      : [],
+  );
+  const propertyKeys = new Set(Object.keys(properties));
 
   return {
     source: cloneValue(schema),
     fields: Object.entries(properties).map(([wireKey, source]) => {
-      const reason = unsupportedReason(source)
-      const definition = isRecord(source) ? source : {}
-      const legacyMetadata = hasLegacyReteniveMetadata(definition)
-      const stableKey = optionalString(definition['x-retenive-field-key'] ?? definition['x-lola-field-key'])
+      const reason = unsupportedReason(source);
+      const definition = isRecord(source) ? source : {};
+      const legacyMetadata = hasLegacyReteniveMetadata(definition);
+      const stableKey = optionalString(
+        definition['x-retenive-field-key'] ?? definition['x-lola-field-key'],
+      );
 
       return {
         id: uid('schema_field'),
@@ -131,268 +158,396 @@ export function parseEventSchema(schema: Record<string, unknown>): EventSchemaDr
         minimum: optionalNumber(definition.minimum),
         maximum: optionalNumber(definition.maximum),
         fieldKey: stableKey,
-        semanticType: optionalString(definition['x-retenive-semantic-type'] ?? definition['x-lola-semantic-type']),
+        semanticType: optionalString(
+          definition['x-retenive-semantic-type'] ?? definition['x-lola-semantic-type'],
+        ),
         unit: optionalString(definition['x-retenive-unit'] ?? definition['x-lola-unit']),
-        displayScale: optionalNumber(definition['x-retenive-display-scale'] ?? definition['x-lola-display-scale']),
-        displayPrecision: optionalNumber(definition['x-retenive-display-precision'] ?? definition['x-lola-display-precision']),
-        sensitive: optionalBoolean(definition['x-retenive-sensitive'] ?? definition['x-lola-sensitive']),
+        displayScale: optionalNumber(
+          definition['x-retenive-display-scale'] ?? definition['x-lola-display-scale'],
+        ),
+        displayPrecision: optionalNumber(
+          definition['x-retenive-display-precision'] ?? definition['x-lola-display-precision'],
+        ),
+        sensitive: optionalBoolean(
+          definition['x-retenive-sensitive'] ?? definition['x-lola-sensitive'],
+        ),
         visuallyEditable: !reason && !legacyMetadata,
-        unsupportedReason: reason ?? (legacyMetadata ? 'Историческая схема с метаданными Lola доступна только для чтения.' : undefined),
+        unsupportedReason:
+          reason ??
+          (legacyMetadata
+            ? 'Историческая схема с метаданными Lola доступна только для чтения.'
+            : undefined),
         source: cloneValue(source),
-      }
+      };
     }),
     additionalProperties: cloneValue(schema.additionalProperties),
     hasProperties: Object.hasOwn(schema, 'properties'),
     hasRequired: Object.hasOwn(schema, 'required'),
     hasAdditionalProperties: Object.hasOwn(schema, 'additionalProperties'),
     unmappedRequired: [...required].filter((wireKey) => !propertyKeys.has(wireKey)),
-  }
+  };
 }
 
 function assignOptional(target: Record<string, unknown>, key: string, value: unknown) {
-  if (value === undefined) delete target[key]
-  else target[key] = cloneValue(value)
+  if (value === undefined) delete target[key];
+  else target[key] = cloneValue(value);
 }
 
 function serializeField(field: EventSchemaFieldDraft): unknown {
-  if (!field.visuallyEditable) return cloneValue(field.source)
+  if (!field.visuallyEditable) return cloneValue(field.source);
 
-  const schema = isRecord(field.source) ? cloneValue(field.source) : {}
-  assignOptional(schema, 'type', field.type)
-  assignOptional(schema, 'title', field.title)
-  assignOptional(schema, 'description', field.description)
-  assignOptional(schema, 'enum', field.enumValues)
-  assignOptional(schema, 'minimum', field.minimum)
-  assignOptional(schema, 'maximum', field.maximum)
-  assignOptional(schema, 'x-retenive-field-key', field.fieldKey)
-  assignOptional(schema, 'x-retenive-semantic-type', field.semanticType)
-  assignOptional(schema, 'x-retenive-unit', field.unit)
-  assignOptional(schema, 'x-retenive-display-scale', field.displayScale)
-  assignOptional(schema, 'x-retenive-display-precision', field.displayPrecision)
-  assignOptional(schema, 'x-retenive-sensitive', field.sensitive)
-  if (field.type === 'array' && !isRecord(schema.items)) schema.items = {}
-  return schema
+  const schema = isRecord(field.source) ? cloneValue(field.source) : {};
+  assignOptional(schema, 'type', field.type);
+  assignOptional(schema, 'title', field.title);
+  assignOptional(schema, 'description', field.description);
+  assignOptional(schema, 'enum', field.enumValues);
+  assignOptional(schema, 'minimum', field.minimum);
+  assignOptional(schema, 'maximum', field.maximum);
+  assignOptional(schema, 'x-retenive-field-key', field.fieldKey);
+  assignOptional(schema, 'x-retenive-semantic-type', field.semanticType);
+  assignOptional(schema, 'x-retenive-unit', field.unit);
+  assignOptional(schema, 'x-retenive-display-scale', field.displayScale);
+  assignOptional(schema, 'x-retenive-display-precision', field.displayPrecision);
+  assignOptional(schema, 'x-retenive-sensitive', field.sensitive);
+  if (field.type === 'array' && !isRecord(schema.items)) schema.items = {};
+  return schema;
 }
 
 export function serializeEventSchema(draft: EventSchemaDraft): Record<string, unknown> {
-  const schema = cloneValue(draft.source)
-  const properties = Object.fromEntries(draft.fields.map((field) => [field.wireKey, serializeField(field)]))
-  const required = [...new Set([
-    ...draft.unmappedRequired,
-    ...draft.fields.filter((field) => field.required).map((field) => field.wireKey),
-  ])]
+  const schema = cloneValue(draft.source);
+  const properties = Object.fromEntries(
+    draft.fields.map((field) => [field.wireKey, serializeField(field)]),
+  );
+  const required = [
+    ...new Set([
+      ...draft.unmappedRequired,
+      ...draft.fields.filter((field) => field.required).map((field) => field.wireKey),
+    ]),
+  ];
 
-  if (draft.hasProperties || draft.fields.length) schema.properties = properties
-  else delete schema.properties
+  if (draft.hasProperties || draft.fields.length) schema.properties = properties;
+  else delete schema.properties;
 
-  if (draft.hasRequired || required.length) schema.required = required
-  else delete schema.required
+  if (draft.hasRequired || required.length) schema.required = required;
+  else delete schema.required;
 
   if (draft.hasAdditionalProperties || draft.additionalProperties !== undefined) {
-    schema.additionalProperties = cloneValue(draft.additionalProperties)
+    schema.additionalProperties = cloneValue(draft.additionalProperties);
   } else {
-    delete schema.additionalProperties
+    delete schema.additionalProperties;
   }
 
-  return schema
+  return schema;
 }
 
 function sampleValue(field: EventSchemaFieldDraft): unknown {
-  if (field.enumValues?.length) return cloneValue(field.enumValues[0])
+  if (field.enumValues?.length) return cloneValue(field.enumValues[0]);
   switch (field.type) {
-    case 'number': return field.minimum ?? field.maximum ?? 123.45
-    case 'integer': return field.minimum ?? field.maximum ?? 123
-    case 'boolean': return true
-    case 'object': return {}
-    case 'array': return []
-    default: return 'value'
+    case 'number':
+      return field.minimum ?? field.maximum ?? 123.45;
+    case 'integer':
+      return field.minimum ?? field.maximum ?? 123;
+    case 'boolean':
+      return true;
+    case 'object':
+      return {};
+    case 'array':
+      return [];
+    default:
+      return 'value';
   }
 }
 
 export function buildEventSchemaExample(draft: EventSchemaDraft): Record<string, unknown> {
-  return Object.fromEntries(draft.fields
-    .filter((field) => field.wireKey.trim())
-    .map((field) => [field.wireKey, sampleValue(field)]))
+  return Object.fromEntries(
+    draft.fields
+      .filter((field) => field.wireKey.trim())
+      .map((field) => [field.wireKey, sampleValue(field)]),
+  );
 }
 
-const wireKeyPattern = /^[a-z][a-z0-9_.-]*$/
+const wireKeyPattern = /^[a-z][a-z0-9_.-]*$/;
 
 export function validateEventSchemaDraft(draft: EventSchemaDraft): EventSchemaDraftIssue[] {
-  const editable = draft.fields.filter((field) => field.visuallyEditable)
-  const missingWireKey = editable.find((field) => !field.wireKey)
-  if (missingWireKey) return [{ fieldId: missingWireKey.id, message: 'Заполните wire key каждого поля или удалите пустую строку.' }]
+  const editable = draft.fields.filter((field) => field.visuallyEditable);
+  const missingWireKey = editable.find((field) => !field.wireKey);
+  if (missingWireKey)
+    return [
+      {
+        fieldId: missingWireKey.id,
+        message: 'Заполните wire key каждого поля или удалите пустую строку.',
+      },
+    ];
 
-  const invalidWireKey = editable.find((field) => !wireKeyPattern.test(field.wireKey))
-  if (invalidWireKey) return [{ fieldId: invalidWireKey.id, message: 'Wire key должны начинаться с буквы и содержать только допустимые символы.' }]
+  const invalidWireKey = editable.find((field) => !wireKeyPattern.test(field.wireKey));
+  if (invalidWireKey)
+    return [
+      {
+        fieldId: invalidWireKey.id,
+        message: 'Wire key должны начинаться с буквы и содержать только допустимые символы.',
+      },
+    ];
 
-  const wireKeys = draft.fields.map((field) => field.wireKey)
-  if (new Set(wireKeys).size !== wireKeys.length) return [{ message: 'Wire key не должны повторяться.' }]
+  const wireKeys = draft.fields.map((field) => field.wireKey);
+  if (new Set(wireKeys).size !== wireKeys.length)
+    return [{ message: 'Wire key не должны повторяться.' }];
 
-  const fieldKeys = draft.fields.flatMap((field) => field.fieldKey ? [field.fieldKey] : [])
-  if (new Set(fieldKeys).size !== fieldKeys.length) return [{ message: 'Stable field key не должны повторяться.' }]
+  const fieldKeys = draft.fields.flatMap((field) => (field.fieldKey ? [field.fieldKey] : []));
+  if (new Set(fieldKeys).size !== fieldKeys.length)
+    return [{ message: 'Stable field key не должны повторяться.' }];
 
-  if (serializeEventSchema(draft).type !== 'object') return [{ message: 'Корневая JSON Schema события должна иметь type object.' }]
+  if (serializeEventSchema(draft).type !== 'object')
+    return [{ message: 'Корневая JSON Schema события должна иметь type object.' }];
 
   return editable.flatMap((field) => {
-    const issues: EventSchemaDraftIssue[] = []
+    const issues: EventSchemaDraftIssue[] = [];
     if (field.enumValues?.some((value) => !enumValueMatchesType(value, field.type))) {
-      issues.push({ fieldId: field.id, message: `Допустимые варианты должны соответствовать типу поля «${field.wireKey}».` })
+      issues.push({
+        fieldId: field.id,
+        message: `Допустимые варианты должны соответствовать типу поля «${field.wireKey}».`,
+      });
     }
-    if ((field.minimum !== undefined || field.maximum !== undefined) && field.type !== 'number' && field.type !== 'integer') {
-      issues.push({ fieldId: field.id, message: `Минимум и максимум доступны только для числового поля «${field.wireKey}».` })
+    if (
+      (field.minimum !== undefined || field.maximum !== undefined) &&
+      field.type !== 'number' &&
+      field.type !== 'integer'
+    ) {
+      issues.push({
+        fieldId: field.id,
+        message: `Минимум и максимум доступны только для числового поля «${field.wireKey}».`,
+      });
     }
-    if (field.minimum !== undefined && field.maximum !== undefined && field.minimum > field.maximum) {
-      issues.push({ fieldId: field.id, message: `Минимальное значение поля «${field.wireKey}» не может быть больше максимального.` })
+    if (
+      field.minimum !== undefined &&
+      field.maximum !== undefined &&
+      field.minimum > field.maximum
+    ) {
+      issues.push({
+        fieldId: field.id,
+        message: `Минимальное значение поля «${field.wireKey}» не может быть больше максимального.`,
+      });
     }
-    if (field.displayScale !== undefined && (!Number.isFinite(field.displayScale) || field.displayScale <= 0)) {
-      issues.push({ fieldId: field.id, message: `Масштаб отображения поля «${field.wireKey}» должен быть положительным числом.` })
+    if (
+      field.displayScale !== undefined &&
+      (!Number.isFinite(field.displayScale) || field.displayScale <= 0)
+    ) {
+      issues.push({
+        fieldId: field.id,
+        message: `Масштаб отображения поля «${field.wireKey}» должен быть положительным числом.`,
+      });
     }
-    if (field.displayPrecision !== undefined && (!Number.isInteger(field.displayPrecision) || field.displayPrecision < 0 || field.displayPrecision > 12)) {
-      issues.push({ fieldId: field.id, message: `Точность отображения поля «${field.wireKey}» должна быть целым числом от 0 до 12.` })
+    if (
+      field.displayPrecision !== undefined &&
+      (!Number.isInteger(field.displayPrecision) ||
+        field.displayPrecision < 0 ||
+        field.displayPrecision > 12)
+    ) {
+      issues.push({
+        fieldId: field.id,
+        message: `Точность отображения поля «${field.wireKey}» должна быть целым числом от 0 до 12.`,
+      });
     }
     if (field.semanticType?.includes('money')) {
-      if (!field.unit?.trim()) issues.push({ fieldId: field.id, message: `Укажите единицу хранения денежного поля «${field.wireKey}».` })
-      if (field.displayScale === undefined) issues.push({ fieldId: field.id, message: `Укажите масштаб отображения денежного поля «${field.wireKey}».` })
-      if (field.displayPrecision === undefined) issues.push({ fieldId: field.id, message: `Укажите точность отображения денежного поля «${field.wireKey}».` })
+      if (!field.unit?.trim())
+        issues.push({
+          fieldId: field.id,
+          message: `Укажите единицу хранения денежного поля «${field.wireKey}».`,
+        });
+      if (field.displayScale === undefined)
+        issues.push({
+          fieldId: field.id,
+          message: `Укажите масштаб отображения денежного поля «${field.wireKey}».`,
+        });
+      if (field.displayPrecision === undefined)
+        issues.push({
+          fieldId: field.id,
+          message: `Укажите точность отображения денежного поля «${field.wireKey}».`,
+        });
     }
-    return issues
-  })
+    return issues;
+  });
 }
 
 function enumValueMatchesType(value: unknown, type?: EventSchemaFieldType): boolean {
-  if (type === 'string') return typeof value === 'string'
-  if (type === 'number') return typeof value === 'number' && Number.isFinite(value)
-  if (type === 'integer') return typeof value === 'number' && Number.isInteger(value)
-  if (type === 'boolean') return typeof value === 'boolean'
-  if (type === 'object') return isRecord(value)
-  if (type === 'array') return Array.isArray(value)
-  return false
+  if (type === 'string') return typeof value === 'string';
+  if (type === 'number') return typeof value === 'number' && Number.isFinite(value);
+  if (type === 'integer') return typeof value === 'number' && Number.isInteger(value);
+  if (type === 'boolean') return typeof value === 'boolean';
+  if (type === 'object') return isRecord(value);
+  if (type === 'array') return Array.isArray(value);
+  return false;
 }
 
-export function validateEventSchemaDefinition(schema: Record<string, unknown>): EventSchemaDraftIssue[] {
-  if (schema.type !== 'object') return [{ message: 'Схема данных события должна описывать объект.' }]
+export function validateEventSchemaDefinition(
+  schema: Record<string, unknown>,
+): EventSchemaDraftIssue[] {
+  if (schema.type !== 'object')
+    return [{ message: 'Схема данных события должна описывать объект.' }];
   if (schema.properties !== undefined && !isRecord(schema.properties)) {
-    return [{ message: 'Раздел properties должен быть объектом с описанием полей.' }]
+    return [{ message: 'Раздел properties должен быть объектом с описанием полей.' }];
   }
 
-  const draftIssues = validateEventSchemaDraft(parseEventSchema(schema))
-  if (draftIssues.length) return draftIssues
+  const draftIssues = validateEventSchemaDraft(parseEventSchema(schema));
+  if (draftIssues.length) return draftIssues;
 
   try {
-    const normalized = cloneValue(schema)
-    normalizeForBackendValidation(normalized, 'payloadSchema')
-    new Ajv({ allErrors: true, strict: false }).compile(normalized)
-    return []
+    const normalized = cloneValue(schema);
+    normalizeForBackendValidation(normalized, 'payloadSchema');
+    new Ajv({ allErrors: true, strict: false }).compile(normalized);
+    return [];
   } catch (cause) {
-    return [{ message: cause instanceof Error ? `Схема не прошла проверку: ${cause.message}` : 'Схема не прошла проверку.' }]
+    return [
+      {
+        message:
+          cause instanceof Error
+            ? `Схема не прошла проверку: ${cause.message}`
+            : 'Схема не прошла проверку.',
+      },
+    ];
   }
 }
 
-export function validateEventSchemaSample(draft: EventSchemaDraft, sample: unknown): EventSchemaSampleIssue[] {
+export function validateEventSchemaSample(
+  draft: EventSchemaDraft,
+  sample: unknown,
+): EventSchemaSampleIssue[] {
   try {
-    const schema = serializeEventSchema(draft)
-    normalizeForBackendValidation(schema, 'payloadSchema')
-    const validate = new Ajv({ allErrors: true, strict: false }).compile(schema)
-    if (validate(sample)) return []
-    return (validate.errors ?? []).map((issue) => sampleIssue(issue, sample))
+    const schema = serializeEventSchema(draft);
+    normalizeForBackendValidation(schema, 'payloadSchema');
+    const validate = new Ajv({ allErrors: true, strict: false }).compile(schema);
+    if (validate(sample)) return [];
+    return (validate.errors ?? []).map((issue) => sampleIssue(issue, sample));
   } catch (cause) {
-    return [{
-      path: '/',
-      expected: 'корректная настройка полей',
-      actual: 'проверка схемы не выполнена',
-      explanation: cause instanceof Error ? `Проверьте техническую схему: ${cause.message}` : 'Техническая схема не прошла проверку.',
-    }]
+    return [
+      {
+        path: '/',
+        expected: 'корректная настройка полей',
+        actual: 'проверка схемы не выполнена',
+        explanation:
+          cause instanceof Error
+            ? `Проверьте техническую схему: ${cause.message}`
+            : 'Техническая схема не прошла проверку.',
+      },
+    ];
   }
 }
 
 function normalizeForBackendValidation(schema: Record<string, unknown>, path: string) {
   if (schema.type === 'object') {
-    if (schema.properties === undefined) schema.properties = {}
-    if (!isRecord(schema.properties)) throw new Error(`${path}.properties must be an object`)
-    if (schema.additionalProperties === undefined) schema.additionalProperties = false
+    if (schema.properties === undefined) schema.properties = {};
+    if (!isRecord(schema.properties)) throw new Error(`${path}.properties must be an object`);
+    if (schema.additionalProperties === undefined) schema.additionalProperties = false;
     for (const [key, child] of Object.entries(schema.properties)) {
-      if (!isRecord(child)) throw new Error(`${path}.properties.${key} must be a schema object`)
-      normalizeForBackendValidation(child, `${path}.properties.${key}`)
+      if (!isRecord(child)) throw new Error(`${path}.properties.${key} must be a schema object`);
+      normalizeForBackendValidation(child, `${path}.properties.${key}`);
     }
   }
   if (schema.type === 'array') {
-    if (!isRecord(schema.items)) throw new Error(`${path}.items is required for an array field`)
-    normalizeForBackendValidation(schema.items, `${path}.items`)
+    if (!isRecord(schema.items)) throw new Error(`${path}.items is required for an array field`);
+    normalizeForBackendValidation(schema.items, `${path}.items`);
   }
 }
 
 function sampleIssue(issue: ErrorObject, sample: unknown): EventSchemaSampleIssue {
-  const additionalProperty = typeof issue.params.additionalProperty === 'string' ? issue.params.additionalProperty : undefined
-  const missingProperty = typeof issue.params.missingProperty === 'string' ? issue.params.missingProperty : undefined
-  const basePath = issue.instancePath || ''
+  const additionalProperty =
+    typeof issue.params.additionalProperty === 'string'
+      ? issue.params.additionalProperty
+      : undefined;
+  const missingProperty =
+    typeof issue.params.missingProperty === 'string' ? issue.params.missingProperty : undefined;
+  const basePath = issue.instancePath || '';
   const path = additionalProperty
     ? `${basePath}/${additionalProperty}`
     : missingProperty
       ? `${basePath}/${missingProperty}`
-      : basePath || '/'
-  const actual = missingProperty ? undefined : valueAtPointer(sample, path)
+      : basePath || '/';
+  const actual = missingProperty ? undefined : valueAtPointer(sample, path);
 
   return {
     path,
     expected: expectedValue(issue),
     actual: actual === undefined ? 'нет значения' : JSON.stringify(actual),
     explanation: issueExplanation(issue),
-  }
+  };
 }
 
 function expectedValue(issue: ErrorObject): string {
-  if (issue.keyword === 'additionalProperties') return 'поле описано в настройке'
-  if (issue.keyword === 'minimum') return `не меньше ${String(issue.params.limit)}`
-  if (issue.keyword === 'maximum') return `не больше ${String(issue.params.limit)}`
-  if (issue.keyword === 'enum') return `одно из: ${(issue.params.allowedValues as unknown[]).map(String).join(', ')}`
-  if (issue.keyword === 'type') return eventSchemaTypeLabel(String(issue.params.type))
-  if (issue.keyword === 'required') return 'обязательное поле присутствует'
-  return JSON.stringify(issue.params)
+  if (issue.keyword === 'additionalProperties') return 'поле описано в настройке';
+  if (issue.keyword === 'minimum') return `не меньше ${String(issue.params.limit)}`;
+  if (issue.keyword === 'maximum') return `не больше ${String(issue.params.limit)}`;
+  if (issue.keyword === 'enum')
+    return `одно из: ${(issue.params.allowedValues as unknown[]).map(String).join(', ')}`;
+  if (issue.keyword === 'type') return eventSchemaTypeLabel(String(issue.params.type));
+  if (issue.keyword === 'required') return 'обязательное поле присутствует';
+  return JSON.stringify(issue.params);
 }
 
 function issueExplanation(issue: ErrorObject): string {
-  if (issue.keyword === 'additionalProperties') return 'Поле не описано. Удалите его или разрешите дополнительные поля.'
-  if (issue.keyword === 'minimum') return `Значение слишком маленькое. Укажите не меньше ${String(issue.params.limit)}.`
-  if (issue.keyword === 'maximum') return `Значение слишком большое. Укажите не больше ${String(issue.params.limit)}.`
-  if (issue.keyword === 'enum') return 'Выберите один из допустимых вариантов.'
-  if (issue.keyword === 'type') return `Измените значение: ожидается тип «${eventSchemaTypeLabel(String(issue.params.type))}».`
-  if (issue.keyword === 'required') return 'Добавьте обязательное поле.'
-  return issue.message ? `Значение не соответствует настройке: ${issue.message}.` : 'Значение не соответствует настройке.'
+  if (issue.keyword === 'additionalProperties')
+    return 'Поле не описано. Удалите его или разрешите дополнительные поля.';
+  if (issue.keyword === 'minimum')
+    return `Значение слишком маленькое. Укажите не меньше ${String(issue.params.limit)}.`;
+  if (issue.keyword === 'maximum')
+    return `Значение слишком большое. Укажите не больше ${String(issue.params.limit)}.`;
+  if (issue.keyword === 'enum') return 'Выберите один из допустимых вариантов.';
+  if (issue.keyword === 'type')
+    return `Измените значение: ожидается тип «${eventSchemaTypeLabel(String(issue.params.type))}».`;
+  if (issue.keyword === 'required') return 'Добавьте обязательное поле.';
+  return issue.message
+    ? `Значение не соответствует настройке: ${issue.message}.`
+    : 'Значение не соответствует настройке.';
 }
 
 function eventSchemaTypeLabel(type: string): string {
-  return ({
-    string: 'текст',
-    number: 'число',
-    integer: 'целое число',
-    boolean: 'да/нет',
-    object: 'объект',
-    array: 'список',
-  } as Record<string, string>)[type] ?? type
+  return (
+    (
+      {
+        string: 'текст',
+        number: 'число',
+        integer: 'целое число',
+        boolean: 'да/нет',
+        object: 'объект',
+        array: 'список',
+      } as Record<string, string>
+    )[type] ?? type
+  );
 }
 
 function valueAtPointer(value: unknown, pointer: string): unknown {
-  if (pointer === '/') return value
-  return pointer.split('/').slice(1).reduce<unknown>((current, segment) => {
-    if (!isRecord(current) && !Array.isArray(current)) return undefined
-    const key = segment.replace(/~1/g, '/').replace(/~0/g, '~')
-    return (current as Record<string, unknown>)[key]
-  }, value)
+  if (pointer === '/') return value;
+  return pointer
+    .split('/')
+    .slice(1)
+    .reduce<unknown>((current, segment) => {
+      if (!isRecord(current) && !Array.isArray(current)) return undefined;
+      const key = segment.replace(/~1/g, '/').replace(/~0/g, '~');
+      return (current as Record<string, unknown>)[key];
+    }, value);
 }
 
-function matchField(before: EventSchemaFieldDraft, after: EventSchemaFieldDraft[], matched: Set<string>) {
+function matchField(
+  before: EventSchemaFieldDraft,
+  after: EventSchemaFieldDraft[],
+  matched: Set<string>,
+) {
   const byStableKey = before.fieldKey
     ? after.find((field) => field.fieldKey === before.fieldKey && !matched.has(field.id))
-    : undefined
-  return byStableKey ?? after.find((field) => field.wireKey === before.wireKey && !matched.has(field.id))
+    : undefined;
+  return (
+    byStableKey ?? after.find((field) => field.wireKey === before.wireKey && !matched.has(field.id))
+  );
 }
 
 function comparableValue(value: unknown): string {
-  return value === undefined ? 'не задано' : JSON.stringify(value)
+  return value === undefined ? 'не задано' : JSON.stringify(value);
 }
 
 function fieldConstraintValue(field: EventSchemaFieldDraft): string {
-  return comparableValue({ enum: field.enumValues, minimum: field.minimum, maximum: field.maximum })
+  return comparableValue({
+    enum: field.enumValues,
+    minimum: field.minimum,
+    maximum: field.maximum,
+  });
 }
 
 function fieldMetadataValue(field: EventSchemaFieldDraft): string {
@@ -404,22 +559,29 @@ function fieldMetadataValue(field: EventSchemaFieldDraft): string {
     displayScale: field.displayScale,
     displayPrecision: field.displayPrecision,
     sensitive: field.sensitive,
-  })
+  });
 }
 
-export function diffEventSchemas(beforeSchema: Record<string, unknown>, afterSchema: Record<string, unknown>): EventSchemaChange[] {
-  const before = parseEventSchema(beforeSchema).fields
-  const after = parseEventSchema(afterSchema).fields
-  const matched = new Set<string>()
-  const changes: EventSchemaChange[] = []
+export function diffEventSchemas(
+  beforeSchema: Record<string, unknown>,
+  afterSchema: Record<string, unknown>,
+): EventSchemaChange[] {
+  const before = parseEventSchema(beforeSchema).fields;
+  const after = parseEventSchema(afterSchema).fields;
+  const matched = new Set<string>();
+  const changes: EventSchemaChange[] = [];
 
   for (const previous of before) {
-    const current = matchField(previous, after, matched)
+    const current = matchField(previous, after, matched);
     if (!current) {
-      changes.push({ kind: 'removed', fieldKey: previous.fieldKey, beforeWireKey: previous.wireKey })
-      continue
+      changes.push({
+        kind: 'removed',
+        fieldKey: previous.fieldKey,
+        beforeWireKey: previous.wireKey,
+      });
+      continue;
     }
-    matched.add(current.id)
+    matched.add(current.id);
 
     if (previous.wireKey !== current.wireKey) {
       changes.push({
@@ -427,7 +589,7 @@ export function diffEventSchemas(beforeSchema: Record<string, unknown>, afterSch
         fieldKey: current.fieldKey ?? previous.fieldKey,
         beforeWireKey: previous.wireKey,
         afterWireKey: current.wireKey,
-      })
+      });
     }
     if (previous.type !== current.type) {
       changes.push({
@@ -437,7 +599,7 @@ export function diffEventSchemas(beforeSchema: Record<string, unknown>, afterSch
         afterWireKey: current.wireKey,
         beforeType: previous.type,
         afterType: current.type,
-      })
+      });
     }
     if (previous.fieldKey !== current.fieldKey) {
       changes.push({
@@ -447,7 +609,7 @@ export function diffEventSchemas(beforeSchema: Record<string, unknown>, afterSch
         afterWireKey: current.wireKey,
         beforeFieldKey: previous.fieldKey,
         afterFieldKey: current.fieldKey,
-      })
+      });
     }
     if (previous.required !== current.required) {
       changes.push({
@@ -457,10 +619,10 @@ export function diffEventSchemas(beforeSchema: Record<string, unknown>, afterSch
         afterWireKey: current.wireKey,
         beforeValue: previous.required ? 'да' : 'нет',
         afterValue: current.required ? 'да' : 'нет',
-      })
+      });
     }
-    const beforeConstraints = fieldConstraintValue(previous)
-    const afterConstraints = fieldConstraintValue(current)
+    const beforeConstraints = fieldConstraintValue(previous);
+    const afterConstraints = fieldConstraintValue(current);
     if (beforeConstraints !== afterConstraints) {
       changes.push({
         kind: 'constraint-changed',
@@ -469,10 +631,10 @@ export function diffEventSchemas(beforeSchema: Record<string, unknown>, afterSch
         afterWireKey: current.wireKey,
         beforeValue: beforeConstraints,
         afterValue: afterConstraints,
-      })
+      });
     }
-    const beforeMetadata = fieldMetadataValue(previous)
-    const afterMetadata = fieldMetadataValue(current)
+    const beforeMetadata = fieldMetadataValue(previous);
+    const afterMetadata = fieldMetadataValue(current);
     if (beforeMetadata !== afterMetadata) {
       changes.push({
         kind: 'metadata-changed',
@@ -481,23 +643,34 @@ export function diffEventSchemas(beforeSchema: Record<string, unknown>, afterSch
         afterWireKey: current.wireKey,
         beforeValue: beforeMetadata,
         afterValue: afterMetadata,
-      })
+      });
     }
   }
 
   for (const current of after) {
-    if (!matched.has(current.id)) changes.push({ kind: 'added', fieldKey: current.fieldKey, afterWireKey: current.wireKey })
+    if (!matched.has(current.id))
+      changes.push({ kind: 'added', fieldKey: current.fieldKey, afterWireKey: current.wireKey });
   }
 
-  const beforeAdditionalProperties = parseEventSchema(beforeSchema).additionalProperties
-  const afterAdditionalProperties = parseEventSchema(afterSchema).additionalProperties
+  const beforeAdditionalProperties = parseEventSchema(beforeSchema).additionalProperties;
+  const afterAdditionalProperties = parseEventSchema(afterSchema).additionalProperties;
   if (comparableValue(beforeAdditionalProperties) !== comparableValue(afterAdditionalProperties)) {
     changes.push({
       kind: 'additional-properties-changed',
-      beforeValue: beforeAdditionalProperties === true ? 'да' : beforeAdditionalProperties === false ? 'нет' : comparableValue(beforeAdditionalProperties),
-      afterValue: afterAdditionalProperties === true ? 'да' : afterAdditionalProperties === false ? 'нет' : comparableValue(afterAdditionalProperties),
-    })
+      beforeValue:
+        beforeAdditionalProperties === true
+          ? 'да'
+          : beforeAdditionalProperties === false
+            ? 'нет'
+            : comparableValue(beforeAdditionalProperties),
+      afterValue:
+        afterAdditionalProperties === true
+          ? 'да'
+          : afterAdditionalProperties === false
+            ? 'нет'
+            : comparableValue(afterAdditionalProperties),
+    });
   }
 
-  return changes
+  return changes;
 }

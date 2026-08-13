@@ -4,14 +4,14 @@ import {
   aIReviewSettings,
   aIReviewStart,
   aIReviewUpdateSettings,
-} from "@/shared/api/generated/retenive-backend";
-import { isMockMode } from "@/shared/config/data-mode";
+} from '@/shared/api/generated/retenive-backend';
+import { isMockMode } from '@/shared/config/data-mode';
 import type {
   AIReviewEstimate,
   AIReviewRun,
   AIReviewScope,
   AIReviewSettings,
-} from "../model/ai-review";
+} from '../model/ai-review';
 
 export interface AIReviewRepository {
   getSettings(projectId: string): Promise<AIReviewSettings>;
@@ -76,10 +76,10 @@ const mockRepository: AIReviewRepository = {
       eventCount,
       redactedBytes,
       estimatedInputTokens: Math.ceil(redactedBytes / 3),
-      costLevel: redactedBytes <= 8000 ? "LOW" : "MEDIUM",
+      costLevel: redactedBytes <= 8000 ? 'LOW' : 'MEDIUM',
       requiresConfirmation: false,
       blocked: false,
-      timezone: "UTC",
+      timezone: 'UTC',
       range: {
         start: `${scope.localDate}T00:00:00.000Z`,
         end: `${scope.localDate}T23:59:59.999Z`,
@@ -90,12 +90,12 @@ const mockRepository: AIReviewRepository = {
     const run: AIReviewRun = {
       id: input.idempotencyKey,
       analysisId: `analysis-${input.idempotencyKey}`,
-      status: "SUCCEEDED",
-      costLevel: "LOW",
+      status: 'SUCCEEDED',
+      costLevel: 'LOW',
       eventCount: input.eventCodes.length * 3,
       redactedBytes: input.eventCodes.length * 2700,
       estimatedInputTokens: input.eventCodes.length * 900,
-      policyRevisionId: "60000000-0000-4000-8000-000000000006",
+      policyRevisionId: '60000000-0000-4000-8000-000000000006',
       limitations: [],
       createdAt: new Date().toISOString(),
       completedAt: new Date().toISOString(),
@@ -105,7 +105,7 @@ const mockRepository: AIReviewRepository = {
   },
   async get(_projectId, runId) {
     const run = mockRuns.get(runId);
-    if (!run) throw new Error("AI Review Run не найден");
+    if (!run) throw new Error('AI Review Run не найден');
     return structuredClone(run);
   },
 };

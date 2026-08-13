@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
-import Button from "primevue/button";
-import type { TelegramAdminLinkSummaryResponseDto } from "@/shared/api/generated/models";
-import EndUserTelegramSendDialog from "@/features/telegram-personal-messages/EndUserTelegramSendDialog.vue";
-import type { TelegramPersonalLinkStatus } from "@/features/telegram-personal-messages/telegram-personal-message.model";
-import { telegramProductInstallationsApi } from "./telegram-product-installations.api";
+import { computed, onMounted, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import type { TelegramAdminLinkSummaryResponseDto } from '@/shared/api/generated/models';
+import EndUserTelegramSendDialog from '@/features/telegram-personal-messages/EndUserTelegramSendDialog.vue';
+import type { TelegramPersonalLinkStatus } from '@/features/telegram-personal-messages/telegram-personal-message.model';
+import { telegramProductInstallationsApi } from './telegram-product-installations.api';
 
 const props = defineProps<{
   visible: boolean;
@@ -14,65 +14,61 @@ const props = defineProps<{
   canSend: boolean;
 }>();
 const emit = defineEmits<{
-  "dirty-change": [dirty: boolean];
+  'dirty-change': [dirty: boolean];
 }>();
 
 const summary = ref<TelegramAdminLinkSummaryResponseDto | null>(null);
 const loading = ref(false);
-const error = ref("");
+const error = ref('');
 const sendVisible = ref(false);
 let epoch = 0;
 let requestGeneration = 0;
 
 const statusLabel = computed(() => {
   switch (summary.value?.effectiveStatus) {
-    case "PENDING_CONFIRMATION":
-      return "Ожидает подтверждения";
-    case "ACTIVE":
-      return "Подключён";
-    case "BLOCKED":
-      return "Бот заблокирован";
-    case "REVOKED":
-      return "Отключён";
+    case 'PENDING_CONFIRMATION':
+      return 'Ожидает подтверждения';
+    case 'ACTIVE':
+      return 'Подключён';
+    case 'BLOCKED':
+      return 'Бот заблокирован';
+    case 'REVOKED':
+      return 'Отключён';
     default:
-      return "Не подключён";
+      return 'Не подключён';
   }
 });
 const headerStatus = computed(() => {
-  if (!props.canRead) return { code: "UNKNOWN", label: "Проверит сервер" };
-  if (loading.value) return { code: "LOADING", label: "Загрузка" };
-  if (error.value) return { code: "UNAVAILABLE", label: "Недоступно" };
+  if (!props.canRead) return { code: 'UNKNOWN', label: 'Проверит сервер' };
+  if (loading.value) return { code: 'LOADING', label: 'Загрузка' };
+  if (error.value) return { code: 'UNAVAILABLE', label: 'Недоступно' };
   return {
-    code: summary.value?.effectiveStatus ?? "UNLINKED",
+    code: summary.value?.effectiveStatus ?? 'UNLINKED',
     label: statusLabel.value,
   };
 });
 const displayName = computed(() =>
-  summary.value?.effectiveStatus === "PENDING_CONFIRMATION"
+  summary.value?.effectiveStatus === 'PENDING_CONFIRMATION'
     ? summary.value.pendingCandidate?.displayName
     : (summary.value?.displayName ?? summary.value?.activeLink?.displayName),
 );
 const username = computed(() =>
-  summary.value?.effectiveStatus === "PENDING_CONFIRMATION"
+  summary.value?.effectiveStatus === 'PENDING_CONFIRMATION'
     ? summary.value.pendingCandidate?.username
     : (summary.value?.username ?? summary.value?.activeLink?.username),
 );
 const sendTargetLabel = computed(
-  () =>
-    displayName.value ||
-    (username.value ? `@${username.value}` : "Пользователь"),
+  () => displayName.value || (username.value ? `@${username.value}` : 'Пользователь'),
 );
 const sendLinkStatus = computed<TelegramPersonalLinkStatus>(() => {
-  if (!props.canRead || loading.value || error.value) return "UNKNOWN";
-  return summary.value?.effectiveStatus ?? "UNLINKED";
+  if (!props.canRead || loading.value || error.value) return 'UNKNOWN';
+  return summary.value?.effectiveStatus ?? 'UNLINKED';
 });
 
 function formatTimestamp(value: string | null | undefined): string {
-  if (!value) return "—";
+  if (!value) return '—';
   const timestamp = new Date(value);
-  return Number.isNaN(timestamp.getTime())
-    ? "—"
-    : timestamp.toLocaleString("ru-RU");
+  return Number.isNaN(timestamp.getTime()) ? '—' : timestamp.toLocaleString('ru-RU');
 }
 
 async function load(): Promise<void> {
@@ -84,18 +80,13 @@ async function load(): Promise<void> {
     endUserId: props.endUserId,
     canRead: props.canRead,
   };
-  if (
-    !operation.visible ||
-    !operation.projectId ||
-    !operation.endUserId ||
-    !operation.canRead
-  ) {
+  if (!operation.visible || !operation.projectId || !operation.endUserId || !operation.canRead) {
     summary.value = null;
     loading.value = false;
     return;
   }
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const loaded = await telegramProductInstallationsApi.getEndUserSummary(
       operation.projectId,
@@ -121,7 +112,7 @@ async function load(): Promise<void> {
       props.endUserId === operation.endUserId
     ) {
       summary.value = null;
-      error.value = "Не удалось загрузить статус Telegram.";
+      error.value = 'Не удалось загрузить статус Telegram.';
     }
   } finally {
     if (
@@ -137,21 +128,17 @@ async function load(): Promise<void> {
 }
 
 watch(
-  () =>
-    [props.visible, props.projectId, props.endUserId, props.canRead] as const,
+  () => [props.visible, props.projectId, props.endUserId, props.canRead] as const,
   () => {
     epoch += 1;
     requestGeneration += 1;
     summary.value = null;
-    error.value = "";
+    error.value = '';
     loading.value =
-      props.visible &&
-      Boolean(props.projectId) &&
-      Boolean(props.endUserId) &&
-      props.canRead;
+      props.visible && Boolean(props.projectId) && Boolean(props.endUserId) && props.canRead;
     if (loading.value) void load();
   },
-  { flush: "sync" },
+  { flush: 'sync' },
 );
 watch(
   () => [props.canSend, props.endUserId, props.projectId] as const,
@@ -163,10 +150,10 @@ watch(
       previous[2] !== props.projectId
     ) {
       sendVisible.value = false;
-      emit("dirty-change", false);
+      emit('dirty-change', false);
     }
   },
-  { flush: "sync" },
+  { flush: 'sync' },
 );
 
 onMounted(load);
@@ -187,23 +174,19 @@ onMounted(load);
         {{ headerStatus.label }}
       </strong>
     </header>
-    <p v-if="loading" role="status" aria-live="polite">
-      Загружаем статус Telegram…
-    </p>
+    <p v-if="loading" role="status" aria-live="polite">Загружаем статус Telegram…</p>
     <div v-else-if="error" class="error" role="alert">
       <p>{{ error }}</p>
-      <button type="button" data-action="retry-telegram-summary" @click="load">
-        Повторить
-      </button>
+      <button type="button" data-action="retry-telegram-summary" @click="load">Повторить</button>
     </div>
     <dl v-else-if="summary" class="facts">
       <div>
         <dt>Имя в Telegram</dt>
-        <dd>{{ displayName || "Не указано" }}</dd>
+        <dd>{{ displayName || 'Не указано' }}</dd>
       </div>
       <div>
         <dt>Username</dt>
-        <dd>{{ username ? `@${username}` : "Не указан" }}</dd>
+        <dd>{{ username ? `@${username}` : 'Не указан' }}</dd>
       </div>
       <div v-if="summary.activeLink">
         <dt>Подключён</dt>

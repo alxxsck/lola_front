@@ -1,12 +1,12 @@
-import type { AxiosProgressEvent } from "axios";
+import type { AxiosProgressEvent } from 'axios';
 import {
   telegramPersonalOutboundCreate,
   telegramPersonalOutboundGet,
   telegramPersonalOutboundList,
-} from "@/shared/api/generated/retenive-backend";
-import type { TelegramPersonalOutboundCreateBody } from "@/shared/api/generated/models";
-import type { TelegramPersonalDraft } from "./telegram-personal-message.model";
-import type { TelegramPersonalMessagesApi } from "./use-telegram-personal-messages";
+} from '@/shared/api/generated/retenive-backend';
+import type { TelegramPersonalOutboundCreateBody } from '@/shared/api/generated/models';
+import type { TelegramPersonalDraft } from './telegram-personal-message.model';
+import type { TelegramPersonalMessagesApi } from './use-telegram-personal-messages';
 
 export const TELEGRAM_PERSONAL_UPLOAD_TIMEOUT_MS = 5 * 60 * 1_000;
 
@@ -32,14 +32,12 @@ export const telegramPersonalMessagesApi: TelegramPersonalMessagesApi = {
       ...(draft.file ? { file: draft.file } : {}),
     } as TelegramPersonalOutboundCreateBody;
     return telegramPersonalOutboundCreate(projectId, endUserId, body, {
-      headers: { "Idempotency-Key": idempotencyKey },
+      headers: { 'Idempotency-Key': idempotencyKey },
       signal: options.signal,
       timeout: TELEGRAM_PERSONAL_UPLOAD_TIMEOUT_MS,
       onUploadProgress: (event: AxiosProgressEvent) => {
         if (event.total)
-          options.onUploadProgress?.(
-            Math.min(100, Math.round((event.loaded / event.total) * 100)),
-          );
+          options.onUploadProgress?.(Math.min(100, Math.round((event.loaded / event.total) * 100)));
       },
     });
   },

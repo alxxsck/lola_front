@@ -1,10 +1,10 @@
-import { isMockMode } from "@/shared/config/data-mode";
+import { isMockMode } from '@/shared/config/data-mode';
 import {
   dashboardFixtures,
   reportingDatasetFixtures,
   resultFixtureFor,
   savedReportFixtures,
-} from "./reporting-fixtures";
+} from './reporting-fixtures';
 import type {
   Dashboard,
   DashboardDraftInput,
@@ -15,12 +15,12 @@ import type {
   ReportingRepository,
   SavedReport,
   SavedReportDraftInput,
-} from "../model/reporting-types";
+} from '../model/reporting-types';
 import {
   ReportingCompatibilityError,
   ReportingVersionConflictError,
-} from "../model/reporting-types";
-import { reportingPeriodDays } from "../model/reporting-options";
+} from '../model/reporting-types';
+import { reportingPeriodDays } from '../model/reporting-options';
 
 type MockState = {
   reports: SavedReport[];
@@ -59,31 +59,27 @@ function clone<T>(value: T): T {
 }
 
 function requireReport(projectId: string, reportId: string): SavedReport {
-  const report = stateForProject(projectId).reports.find(
-    (item) => item.id === reportId,
-  );
-  if (!report) throw new Error("Сохранённый отчёт не найден");
+  const report = stateForProject(projectId).reports.find((item) => item.id === reportId);
+  if (!report) throw new Error('Сохранённый отчёт не найден');
   return report;
 }
 
 function requireDashboard(projectId: string, dashboardId: string): Dashboard {
-  const dashboard = stateForProject(projectId).dashboards.find(
-    (item) => item.id === dashboardId,
-  );
-  if (!dashboard) throw new Error("Дашборд не найден");
+  const dashboard = stateForProject(projectId).dashboards.find((item) => item.id === dashboardId);
+  if (!dashboard) throw new Error('Дашборд не найден');
   return dashboard;
 }
 
 async function waitForFixture(signal: AbortSignal): Promise<void> {
-  if (signal.aborted) throw new DOMException("Aborted", "AbortError");
-  if (import.meta.env.MODE === "test") return;
+  if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+  if (import.meta.env.MODE === 'test') return;
   await new Promise<void>((resolve, reject) => {
     const timer = window.setTimeout(resolve, 280);
     signal.addEventListener(
-      "abort",
+      'abort',
       () => {
         window.clearTimeout(timer);
-        reject(new DOMException("Aborted", "AbortError"));
+        reject(new DOMException('Aborted', 'AbortError'));
       },
       { once: true },
     );
@@ -93,13 +89,13 @@ async function waitForFixture(signal: AbortSignal): Promise<void> {
 class MockReportingRepository implements ReportingRepository {
   async listArtifacts(
     projectId: string,
-    query: Parameters<ReportingRepository["listArtifacts"]>[1],
-  ): ReturnType<ReportingRepository["listArtifacts"]> {
+    query: Parameters<ReportingRepository['listArtifacts']>[1],
+  ): ReturnType<ReportingRepository['listArtifacts']> {
     const state = stateForProject(projectId);
     const authorityFiltered = [...state.dashboards, ...state.reports].filter(
-      (artifact) => artifact.lifecycle !== "ARCHIVED",
+      (artifact) => artifact.lifecycle !== 'ARCHIVED',
     );
-    const needle = query.search.trim().toLocaleLowerCase("ru");
+    const needle = query.search.trim().toLocaleLowerCase('ru');
     const items = authorityFiltered
       .filter(
         (artifact) =>
@@ -107,23 +103,18 @@ class MockReportingRepository implements ReportingRepository {
           (!query.collection || artifact.collection === query.collection) &&
           (!needle ||
             `${artifact.title} ${artifact.description} ${artifact.ownerName}`
-              .toLocaleLowerCase("ru")
+              .toLocaleLowerCase('ru')
               .includes(needle)),
       )
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
     return clone({
       items,
       counts: {
-        dashboards: authorityFiltered.filter(
-          (artifact) => artifact.kind === "DASHBOARD",
-        ).length,
-        savedReports: authorityFiltered.filter(
-          (artifact) => artifact.kind === "SAVED_REPORT",
-        ).length,
+        dashboards: authorityFiltered.filter((artifact) => artifact.kind === 'DASHBOARD').length,
+        savedReports: authorityFiltered.filter((artifact) => artifact.kind === 'SAVED_REPORT')
+          .length,
       },
-      collections: [
-        ...new Set(authorityFiltered.map(({ collection }) => collection)),
-      ],
+      collections: [...new Set(authorityFiltered.map(({ collection }) => collection))],
     });
   }
 
@@ -134,16 +125,11 @@ class MockReportingRepository implements ReportingRepository {
 
   async listSavedReports(projectId: string): Promise<SavedReport[]> {
     return clone(
-      stateForProject(projectId).reports.filter(
-        (report) => report.lifecycle !== "ARCHIVED",
-      ),
+      stateForProject(projectId).reports.filter((report) => report.lifecycle !== 'ARCHIVED'),
     );
   }
 
-  async getSavedReport(
-    projectId: string,
-    reportId: string,
-  ): Promise<SavedReport> {
+  async getSavedReport(projectId: string, reportId: string): Promise<SavedReport> {
     return clone(requireReport(projectId, reportId));
   }
 
@@ -155,22 +141,19 @@ class MockReportingRepository implements ReportingRepository {
     const existing = draft.id ? requireReport(projectId, draft.id) : null;
     if (existing && draft.expectedVersion !== existing.version)
       throw new ReportingVersionConflictError();
-    const branchFromPublished = existing?.lifecycle === "PUBLISHED";
+    const branchFromPublished = existing?.lifecycle === 'PUBLISHED';
     const report: SavedReport = {
-      id:
-        existing && !branchFromPublished
-          ? existing.id
-          : `report-draft-${state.nextId++}`,
-      kind: "SAVED_REPORT",
+      id: existing && !branchFromPublished ? existing.id : `report-draft-${state.nextId++}`,
+      kind: 'SAVED_REPORT',
       title: draft.title,
-      description: draft.description ?? "",
+      description: draft.description ?? '',
       space: draft.space,
       collection: draft.collection,
-      ownerName: existing?.ownerName ?? "Вы",
-      lifecycle: "DRAFT",
+      ownerName: existing?.ownerName ?? 'Вы',
+      lifecycle: 'DRAFT',
       updatedAt: now(),
-      freshness: existing?.freshness ?? "UNKNOWN",
-      allowedActions: ["EDIT", "PUBLISH", "DUPLICATE", "ARCHIVE"],
+      freshness: existing?.freshness ?? 'UNKNOWN',
+      allowedActions: ['EDIT', 'PUBLISH', 'DUPLICATE', 'ARCHIVE'],
       visualization: draft.visualization,
       query: clone(draft.query),
       version: branchFromPublished ? 1 : (existing?.version ?? 0) + 1,
@@ -179,9 +162,7 @@ class MockReportingRepository implements ReportingRepository {
       ...(branchFromPublished ? { sourceArtifactId: existing.id } : {}),
     };
     if (existing && !branchFromPublished) {
-      state.reports = state.reports.map((item) =>
-        item.id === report.id ? report : item,
-      );
+      state.reports = state.reports.map((item) => (item.id === report.id ? report : item));
     } else state.reports.unshift(report);
     return clone(report);
   }
@@ -193,57 +174,46 @@ class MockReportingRepository implements ReportingRepository {
   ): Promise<SavedReport> {
     const state = stateForProject(projectId);
     const current = requireReport(projectId, reportId);
-    if (current.version !== expectedVersion)
-      throw new ReportingVersionConflictError();
+    if (current.version !== expectedVersion) throw new ReportingVersionConflictError();
     const published: SavedReport = {
       ...current,
-      lifecycle: "PUBLISHED",
-      freshness: "FRESH",
+      lifecycle: 'PUBLISHED',
+      freshness: 'FRESH',
       updatedAt: now(),
       version: current.version + 1,
       publishedRevision: (current.publishedRevision ?? 0) + 1,
       chartRevision: (current.chartRevision ?? 0) + 1,
-      allowedActions: ["EDIT", "DUPLICATE", "ARCHIVE", "ADD_TO_DASHBOARD"],
+      allowedActions: ['EDIT', 'DUPLICATE', 'ARCHIVE', 'ADD_TO_DASHBOARD'],
     };
-    state.reports = state.reports.map((item) =>
-      item.id === reportId ? published : item,
-    );
+    state.reports = state.reports.map((item) => (item.id === reportId ? published : item));
     return clone(published);
   }
 
-  async getDashboard(
-    projectId: string,
-    dashboardId: string,
-  ): Promise<Dashboard> {
+  async getDashboard(projectId: string, dashboardId: string): Promise<Dashboard> {
     return clone(requireDashboard(projectId, dashboardId));
   }
 
-  async saveDashboardDraft(
-    projectId: string,
-    draft: DashboardDraftInput,
-  ): Promise<Dashboard> {
+  async saveDashboardDraft(projectId: string, draft: DashboardDraftInput): Promise<Dashboard> {
     const state = stateForProject(projectId);
     const existing = draft.id ? requireDashboard(projectId, draft.id) : null;
     if (existing && draft.expectedVersion !== existing.version)
       throw new ReportingVersionConflictError();
-    const branchFromPublished = existing?.lifecycle === "PUBLISHED";
+    const branchFromPublished = existing?.lifecycle === 'PUBLISHED';
     const dashboardId =
-      existing && !branchFromPublished
-        ? existing.id
-        : `dashboard-draft-${state.nextId++}`;
+      existing && !branchFromPublished ? existing.id : `dashboard-draft-${state.nextId++}`;
     const nextVersion = branchFromPublished ? 1 : (existing?.version ?? 0) + 1;
     const dashboard: Dashboard = {
       id: dashboardId,
-      kind: "DASHBOARD",
+      kind: 'DASHBOARD',
       title: draft.title,
-      description: draft.description ?? "",
+      description: draft.description ?? '',
       space: draft.space,
       collection: draft.collection,
-      ownerName: existing?.ownerName ?? "Вы",
-      lifecycle: "DRAFT",
+      ownerName: existing?.ownerName ?? 'Вы',
+      lifecycle: 'DRAFT',
       updatedAt: now(),
-      freshness: existing?.freshness ?? "UNKNOWN",
-      allowedActions: ["EDIT", "PUBLISH", "DUPLICATE", "ARCHIVE"],
+      freshness: existing?.freshness ?? 'UNKNOWN',
+      allowedActions: ['EDIT', 'PUBLISH', 'DUPLICATE', 'ARCHIVE'],
       dashboardRevisionId: `${dashboardId}-v${nextVersion}`,
       pages: clone(draft.pages),
       version: nextVersion,
@@ -265,21 +235,18 @@ class MockReportingRepository implements ReportingRepository {
   ): Promise<Dashboard> {
     const state = stateForProject(projectId);
     const current = requireDashboard(projectId, dashboardId);
-    if (current.version !== expectedVersion)
-      throw new ReportingVersionConflictError();
+    if (current.version !== expectedVersion) throw new ReportingVersionConflictError();
     const published: Dashboard = {
       ...current,
-      lifecycle: "PUBLISHED",
-      freshness: "FRESH",
+      lifecycle: 'PUBLISHED',
+      freshness: 'FRESH',
       updatedAt: now(),
       version: current.version + 1,
       publishedRevision: (current.publishedRevision ?? 0) + 1,
-      allowedActions: ["EDIT", "DUPLICATE", "ARCHIVE"],
+      allowedActions: ['EDIT', 'DUPLICATE', 'ARCHIVE'],
       dashboardRevisionId: `${current.id}-r${(current.publishedRevision ?? 0) + 1}`,
     };
-    state.dashboards = state.dashboards.map((item) =>
-      item.id === dashboardId ? published : item,
-    );
+    state.dashboards = state.dashboards.map((item) => (item.id === dashboardId ? published : item));
     return clone(published);
   }
 
@@ -288,16 +255,16 @@ class MockReportingRepository implements ReportingRepository {
     kind: ReportingArtifactKind,
     artifactId: string,
   ): Promise<void> {
-    if (kind === "SAVED_REPORT") {
+    if (kind === 'SAVED_REPORT') {
       const state = stateForProject(projectId);
       state.reports = state.reports.map((item) =>
-        item.id === artifactId ? { ...item, lifecycle: "ARCHIVED" } : item,
+        item.id === artifactId ? { ...item, lifecycle: 'ARCHIVED' } : item,
       );
       return;
     }
     const state = stateForProject(projectId);
     state.dashboards = state.dashboards.map((item) =>
-      item.id === artifactId ? { ...item, lifecycle: "ARCHIVED" } : item,
+      item.id === artifactId ? { ...item, lifecycle: 'ARCHIVED' } : item,
     );
   }
 
@@ -308,41 +275,36 @@ class MockReportingRepository implements ReportingRepository {
   ): Promise<ReportingQueryResult> {
     stateForProject(projectId);
     await waitForFixture(signal);
-    const dataset = reportingDatasetFixtures.find(
-      ({ id }) => id === query.datasetId,
-    );
-    if (!dataset) throw new Error("Источник данных недоступен");
+    const dataset = reportingDatasetFixtures.find(({ id }) => id === query.datasetId);
+    if (!dataset) throw new Error('Источник данных недоступен');
     const metric = dataset.metrics.find(({ key }) => key === query.metric);
-    if (!metric || metric.classification === "RESTRICTED")
-      throw new ReportingCompatibilityError("RESTRICTED_FIELD");
-    if (!metric.analyticsReady)
-      throw new ReportingCompatibilityError("NOT_ANALYTICS_READY");
+    if (!metric || metric.classification === 'RESTRICTED')
+      throw new ReportingCompatibilityError('RESTRICTED_FIELD');
+    if (!metric.analyticsReady) throw new ReportingCompatibilityError('NOT_ANALYTICS_READY');
     const selectedFields = [
       ...(query.breakdown ? [query.breakdown] : []),
       ...query.filters.map(({ field }) => field),
     ];
     for (const field of selectedFields) {
       const dimension = dataset.dimensions.find(({ key }) => key === field);
-      if (!dimension || dimension.classification === "RESTRICTED")
-        throw new ReportingCompatibilityError("RESTRICTED_FIELD");
-      if (!dimension.analyticsReady)
-        throw new ReportingCompatibilityError("NOT_ANALYTICS_READY");
-      if (dimension.cardinality === "HIGH")
-        throw new ReportingCompatibilityError("DIMENSION_TOO_HIGH_CARDINALITY");
+      if (!dimension || dimension.classification === 'RESTRICTED')
+        throw new ReportingCompatibilityError('RESTRICTED_FIELD');
+      if (!dimension.analyticsReady) throw new ReportingCompatibilityError('NOT_ANALYTICS_READY');
+      if (dimension.cardinality === 'HIGH')
+        throw new ReportingCompatibilityError('DIMENSION_TOO_HIGH_CARDINALITY');
     }
     const invalidTemporalMode =
-      (dataset.owner === "EVENT" && query.population.mode !== "EVENT_TIME") ||
-      (dataset.owner === "PROFILE" &&
-        (query.population.mode !== "CURRENT_PROFILE" ||
+      (dataset.owner === 'EVENT' && query.population.mode !== 'EVENT_TIME') ||
+      (dataset.owner === 'PROFILE' &&
+        (query.population.mode !== 'CURRENT_PROFILE' ||
           query.dateRange !== null ||
           query.grain !== null)) ||
-      (dataset.owner === "SEGMENT" &&
-        (query.population.mode !== "CURRENT_SEGMENT" ||
+      (dataset.owner === 'SEGMENT' &&
+        (query.population.mode !== 'CURRENT_SEGMENT' ||
           query.population.segmentRevisionId !== dataset.segmentRevisionId ||
           query.dateRange !== null ||
           query.grain !== null));
-    if (invalidTemporalMode)
-      throw new ReportingCompatibilityError("NO_TEMPORAL_HISTORY");
+    if (invalidTemporalMode) throw new ReportingCompatibilityError('NO_TEMPORAL_HISTORY');
     return clone(
       resultFixtureFor(
         query.metric,
@@ -354,9 +316,9 @@ class MockReportingRepository implements ReportingRepository {
 
   async runDashboardWidget(
     projectId: string,
-    input: Parameters<ReportingRepository["runDashboardWidget"]>[1],
+    input: Parameters<ReportingRepository['runDashboardWidget']>[1],
     signal: AbortSignal,
-  ): ReturnType<ReportingRepository["runDashboardWidget"]> {
+  ): ReturnType<ReportingRepository['runDashboardWidget']> {
     await waitForFixture(signal);
     const dashboard = requireDashboard(projectId, input.dashboardId);
     if (dashboard.dashboardRevisionId !== input.dashboardRevisionId)
@@ -364,27 +326,20 @@ class MockReportingRepository implements ReportingRepository {
     const widget = dashboard.pages
       .find(({ id }) => id === input.pageId)
       ?.widgets.find(({ id }) => id === input.widgetId);
-    if (!widget) throw new Error("Виджет не найден");
+    if (!widget) throw new Error('Виджет не найден');
     const report = requireReport(projectId, widget.savedReportId);
-    return clone(
-      resultFixtureFor(
-        report.query.metric,
-        report.query.breakdown,
-        input.periodDays,
-      ),
-    );
+    return clone(resultFixtureFor(report.query.metric, report.query.breakdown, input.periodDays));
   }
 }
 
 export class ReportingContractUnavailableError extends Error {
   constructor() {
-    super("Reporting API ещё не опубликован в текущем OpenAPI-контракте");
-    this.name = "ReportingContractUnavailableError";
+    super('Reporting API ещё не опубликован в текущем OpenAPI-контракте');
+    this.name = 'ReportingContractUnavailableError';
   }
 }
 
-const unavailable = () =>
-  Promise.reject(new ReportingContractUnavailableError());
+const unavailable = () => Promise.reject(new ReportingContractUnavailableError());
 
 const unavailableRepository: ReportingRepository = {
   listArtifacts: unavailable,
@@ -408,9 +363,7 @@ export function createMockReportingRepository(): ReportingRepository {
 }
 
 export function createReportingRepository(): ReportingRepository {
-  return isMockMode || import.meta.env.MODE === "test"
-    ? mockRepository
-    : unavailableRepository;
+  return isMockMode || import.meta.env.MODE === 'test' ? mockRepository : unavailableRepository;
 }
 
 export const reportingRepository = createReportingRepository();

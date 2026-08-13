@@ -1,82 +1,72 @@
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  watch,
-} from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import Textarea from "primevue/textarea";
-import { useToast } from "primevue/usetoast";
-import { useRoute, useRouter } from "vue-router";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { useAdminConversationConsole } from "@/features/admin-conversations/model/use-admin-conversation-console";
-import { endUserProfileRepository } from "@/features/end-user-profile/api/end-user-profile-repository";
-import { formatProfileValue } from "@/features/end-user-profile/model/profile-value";
-import EndUserProfileSyncHistory from "@/features/end-user-profile/ui/EndUserProfileSyncHistory.vue";
-import EndUserTelegramPanel from "@/features/telegram-product-installations/EndUserTelegramPanel.vue";
-import { useConversationAISuspensionStore } from "@/features/conversation-ai-suspension/model/conversation-ai-suspension.store";
-import ConversationAISuspensionBanner from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionBanner.vue";
-import ConversationAISuspensionDialog from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionDialog.vue";
-import ConversationAISuspensionHeaderActions from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHeaderActions.vue";
-import ConversationAISuspensionHistory from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHistory.vue";
-import { createConversationTranslationController } from "@/features/conversation-translation/model/use-conversation-translation";
-import { isFrontendTranslationCandidate } from "@/features/conversation-translation/model/translation-eligibility";
-import ConversationTranslationBanner from "@/features/conversation-translation/ui/ConversationTranslationBanner.vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import Textarea from 'primevue/textarea';
+import { useToast } from 'primevue/usetoast';
+import { useRoute, useRouter } from 'vue-router';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { useAdminConversationConsole } from '@/features/admin-conversations/model/use-admin-conversation-console';
+import { endUserProfileRepository } from '@/features/end-user-profile/api/end-user-profile-repository';
+import { formatProfileValue } from '@/features/end-user-profile/model/profile-value';
+import EndUserProfileSyncHistory from '@/features/end-user-profile/ui/EndUserProfileSyncHistory.vue';
+import EndUserTelegramPanel from '@/features/telegram-product-installations/EndUserTelegramPanel.vue';
+import { useConversationAISuspensionStore } from '@/features/conversation-ai-suspension/model/conversation-ai-suspension.store';
+import ConversationAISuspensionBanner from '@/features/conversation-ai-suspension/ui/ConversationAISuspensionBanner.vue';
+import ConversationAISuspensionDialog from '@/features/conversation-ai-suspension/ui/ConversationAISuspensionDialog.vue';
+import ConversationAISuspensionHeaderActions from '@/features/conversation-ai-suspension/ui/ConversationAISuspensionHeaderActions.vue';
+import ConversationAISuspensionHistory from '@/features/conversation-ai-suspension/ui/ConversationAISuspensionHistory.vue';
+import { createConversationTranslationController } from '@/features/conversation-translation/model/use-conversation-translation';
+import { isFrontendTranslationCandidate } from '@/features/conversation-translation/model/translation-eligibility';
+import ConversationTranslationBanner from '@/features/conversation-translation/ui/ConversationTranslationBanner.vue';
 import type {
   ConversationSurfaceComposer,
   ConversationSurfaceComposerAction,
   ConversationSurfaceHistory,
   ConversationSurfaceSendRequest,
   ConversationSurfaceTranslation,
-} from "@/features/conversation-surface/model/conversation-surface-contract";
+} from '@/features/conversation-surface/model/conversation-surface-contract';
 import {
   defaultConversationReplyTemplates,
   type ConversationReplyTemplate,
-} from "@/features/conversation-surface/model/conversation-reply-templates";
-import ConversationTemplateGallery from "@/features/conversation-surface/ui/ConversationTemplateGallery.vue";
+} from '@/features/conversation-surface/model/conversation-reply-templates';
+import ConversationTemplateGallery from '@/features/conversation-surface/ui/ConversationTemplateGallery.vue';
 import type {
   ExtendConversationAISuspensionDto,
   ProfileProjectionResponseDto,
   ResumeConversationAIDto,
   StartConversationAISuspensionDto,
-} from "@/shared/api/generated/models";
-import { conversationAISuspensionEnabled } from "@/shared/config/features";
-import { formatDate, relativeTime } from "@/shared/lib/format";
-import { inferLocaleFromText, localeDisplayName } from "@/shared/lib/locale";
-import {
-  isConversationMessageOrdinal,
-  type ConversationMessage,
-} from "@/shared/types/domain";
-import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
-import UserMemoryPanel from "@/features/user-memory/ui/UserMemoryPanel.vue";
-import AIReviewDialog from "@/features/ai-review/ui/AIReviewDialog.vue";
-import EndUserAiUsageCard from "@/features/ai-usage/EndUserAiUsageCard.vue";
-import AiAllowanceUserDialog from "@/features/ai-costs/ui/AiAllowanceUserDialog.vue";
-import AiAllowanceJournalPanel from "@/features/ai-costs/ui/AiAllowanceJournalPanel.vue";
-import EndUserAiAllowanceCard from "@/features/ai-costs/ui/EndUserAiAllowanceCard.vue";
-import EndUserOperationalStateCard from "@/features/end-user-state/ui/EndUserOperationalStateCard.vue";
-import type { CmsRealtimeState } from "@/shared/realtime/cms-realtime-contract";
-import { repository } from "@/shared/api/repository";
+} from '@/shared/api/generated/models';
+import { conversationAISuspensionEnabled } from '@/shared/config/features';
+import { formatDate, relativeTime } from '@/shared/lib/format';
+import { inferLocaleFromText, localeDisplayName } from '@/shared/lib/locale';
+import { isConversationMessageOrdinal, type ConversationMessage } from '@/shared/types/domain';
+import { cmsRealtimeClient } from '@/shared/realtime/cms-realtime-client';
+import UserMemoryPanel from '@/features/user-memory/ui/UserMemoryPanel.vue';
+import AIReviewDialog from '@/features/ai-review/ui/AIReviewDialog.vue';
+import EndUserAiUsageCard from '@/features/ai-usage/EndUserAiUsageCard.vue';
+import AiAllowanceUserDialog from '@/features/ai-costs/ui/AiAllowanceUserDialog.vue';
+import AiAllowanceJournalPanel from '@/features/ai-costs/ui/AiAllowanceJournalPanel.vue';
+import EndUserAiAllowanceCard from '@/features/ai-costs/ui/EndUserAiAllowanceCard.vue';
+import EndUserOperationalStateCard from '@/features/end-user-state/ui/EndUserOperationalStateCard.vue';
+import type { CmsRealtimeState } from '@/shared/realtime/cms-realtime-contract';
+import { repository } from '@/shared/api/repository';
 import {
   acquireRootScrollLock,
   releaseRootScrollLock,
-} from "@/shared/ui/workspace-presentation/root-scroll-lock";
-import FullViewportWorkspaceShell from "@/shared/ui/workspace-presentation/FullViewportWorkspaceShell.vue";
-import ConversationTicketDrawer from "./ConversationTicketDrawer.vue";
-import UserConversationPane from "./UserConversationPane.vue";
+} from '@/shared/ui/workspace-presentation/root-scroll-lock';
+import FullViewportWorkspaceShell from '@/shared/ui/workspace-presentation/FullViewportWorkspaceShell.vue';
+import ConversationTicketDrawer from './ConversationTicketDrawer.vue';
+import UserConversationPane from './UserConversationPane.vue';
 
-type WorkspaceMode = "PROFILE" | "CHAT";
-type MobilePane = "LIST" | "CHAT";
-type SuspensionMode = "START" | "EXTEND" | "RESUME";
-type MessageViewMode = "ORIGINAL" | "TRANSLATED";
+type WorkspaceMode = 'PROFILE' | 'CHAT';
+type MobilePane = 'LIST' | 'CHAT';
+type SuspensionMode = 'START' | 'EXTEND' | 'RESUME';
+type MessageViewMode = 'ORIGINAL' | 'TRANSLATED';
 
 interface ConversationMessageUpsertEvent {
   contractVersion: 1;
@@ -87,8 +77,8 @@ interface ConversationMessageUpsertEvent {
     id: string;
     threadId: string;
     ordinal?: number;
-    role: "USER" | "ASSISTANT" | "ADMIN" | "SCENARIO" | "SYSTEM";
-    status: "WRITING" | "COMPLETED" | "FAILED" | "CANCELLED";
+    role: 'USER' | 'ASSISTANT' | 'ADMIN' | 'SCENARIO' | 'SYSTEM';
+    status: 'WRITING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
     text: string;
     createdAt: string;
     updatedAt: string;
@@ -104,14 +94,19 @@ const props = withDefaults(
     preferredEndUserCaseId?: string;
     readOnly?: boolean;
   }>(),
-  { readOnly: false },
+  {
+    externalUserId: undefined,
+    preferredConversationId: undefined,
+    preferredEndUserCaseId: undefined,
+    readOnly: false,
+  },
 );
 const emit = defineEmits<{
   changed: [];
   conversationSelected: [conversationId: string];
   profileSelected: [];
 }>();
-const visible = defineModel<boolean>("visible", { required: true });
+const visible = defineModel<boolean>('visible', { required: true });
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
@@ -119,31 +114,31 @@ const toast = useToast();
 const suspensionStore = useConversationAISuspensionStore();
 const detail = ref<ProfileProjectionResponseDto | null>(null);
 const detailLoading = ref(false);
-const detailError = ref("");
-const workspaceMode = ref<WorkspaceMode>("PROFILE");
+const detailError = ref('');
+const workspaceMode = ref<WorkspaceMode>('PROFILE');
 const workspaceFullTab = ref(false);
 const workspacePresentedFullTab = ref(false);
 const workspacePresentationTransitioning = ref(false);
 let workspacePresentationFocusTarget: HTMLElement | null = null;
-const mobilePane = ref<MobilePane>("CHAT");
-const messageViewMode = ref<MessageViewMode>("TRANSLATED");
-const conversationSearch = ref("");
+const mobilePane = ref<MobilePane>('CHAT');
+const messageViewMode = ref<MessageViewMode>('TRANSLATED');
+const conversationSearch = ref('');
 const newChatOpen = ref(false);
-const newChatText = ref("");
+const newChatText = ref('');
 const suspensionDialogVisible = ref(false);
 const suspensionHistoryVisible = ref(false);
-const suspensionDialogMode = ref<SuspensionMode>("START");
-const realtimeState = ref<CmsRealtimeState>("DISCONNECTED");
+const suspensionDialogMode = ref<SuspensionMode>('START');
+const realtimeState = ref<CmsRealtimeState>('DISCONNECTED');
 const aiReviewVisible = ref(false);
 const allowanceDialogVisible = ref(false);
-const allowanceDialogMode = ref<"summary" | "grant" | "assignment">("summary");
+const allowanceDialogMode = ref<'summary' | 'grant' | 'assignment'>('summary');
 const allowanceJournalVisible = ref(false);
-const allowanceJournalCursor = ref("");
+const allowanceJournalCursor = ref('');
 const allowanceRefreshKey = ref(0);
 const allowanceFreshLoginPending = ref(false);
 const telegramDraftDirty = ref(false);
 const sendWithoutTranslationVisible = ref(false);
-const sendWithoutTranslationReason = ref("");
+const sendWithoutTranslationReason = ref('');
 const conversationMenuVisible = ref(false);
 const ticketDrawerVisible = ref(false);
 const replyTemplateGalleryVisible = ref(false);
@@ -182,8 +177,8 @@ function handleWorkspacePresentationTransition(transitioning: boolean): void {
   });
 }
 
-function handleWorkspacePresented(mode: "windowed" | "full-tab"): void {
-  workspacePresentedFullTab.value = mode === "full-tab";
+function handleWorkspacePresented(mode: 'windowed' | 'full-tab'): void {
+  workspacePresentedFullTab.value = mode === 'full-tab';
 }
 let unsubscribeRealtimeState: (() => void) | undefined;
 let presenceTimer: ReturnType<typeof setInterval> | undefined;
@@ -192,16 +187,11 @@ const consoleState = useAdminConversationConsole({
   projectId: () => props.projectId,
   endUserId: () => props.endUserId ?? undefined,
   updateRoute: (conversationId) => {
-    if (workspaceMode.value === "CHAT")
-      emit("conversationSelected", conversationId);
+    if (workspaceMode.value === 'CHAT') emit('conversationSelected', conversationId);
   },
-  beforeLoadMessages: (conversationId) =>
-    cmsRealtimeClient.watchConversation(conversationId),
+  beforeLoadMessages: (conversationId) => cmsRealtimeClient.watchConversation(conversationId),
   canReadPresence: () =>
-    hasProjectPermission(
-      auth.project?.effectivePermissionCodes ?? [],
-      "project.end_users.read",
-    ),
+    hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.end_users.read'),
   endUserCaseId: () => props.preferredEndUserCaseId,
 });
 const {
@@ -222,118 +212,88 @@ const {
 } = consoleState;
 
 const selectedSuspensionEntry = computed(() =>
-  selectedConversation.value
-    ? suspensionStore.getEntry(selectedConversation.value.id)
-    : undefined,
+  selectedConversation.value ? suspensionStore.getEntry(selectedConversation.value.id) : undefined,
 );
 const canManageSuspension = computed(() =>
   Boolean(
     !props.readOnly &&
-      hasProjectPermission(
-        auth.project?.effectivePermissionCodes ?? [],
-        "project.conversations.ai_suspend",
-      ),
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      'project.conversations.ai_suspend',
+    ),
   ),
 );
-const projectPermissions = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
+const projectPermissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
 const canReadProfiles = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.profiles.read"),
+  hasProjectPermission(projectPermissions.value, 'project.profiles.read'),
 );
 const canReadTelegramLinks = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.telegram.links.read"),
+  hasProjectPermission(projectPermissions.value, 'project.telegram.links.read'),
 );
 const canSendTelegramPersonalMessages = computed(() =>
   Boolean(
     !props.readOnly &&
-      hasProjectPermission(
-        projectPermissions.value,
-        "project.telegram.personal_messages.send",
-      ),
+    hasProjectPermission(projectPermissions.value, 'project.telegram.personal_messages.send'),
   ),
 );
 const canReadUserMemory = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.user_memory.read"),
+  hasProjectPermission(projectPermissions.value, 'project.user_memory.read'),
 );
 const canReadAiUsage = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.ai_usage.read"),
+  hasProjectPermission(projectPermissions.value, 'project.ai_usage.read'),
 );
 const canReadAllowance = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.ai_allowance.read"),
+  hasProjectPermission(projectPermissions.value, 'project.ai_allowance.read'),
 );
 const canManageAllowance = computed(() =>
   Boolean(
     !props.readOnly &&
-      hasProjectPermission(
-        projectPermissions.value,
-        "project.ai_allowance.manage",
-      ),
+    hasProjectPermission(projectPermissions.value, 'project.ai_allowance.manage'),
   ),
 );
 const canGrantAllowance = computed(() =>
   Boolean(
-    !props.readOnly &&
-      hasProjectPermission(
-        projectPermissions.value,
-        "project.ai_allowance.grant",
-      ),
+    !props.readOnly && hasProjectPermission(projectPermissions.value, 'project.ai_allowance.grant'),
   ),
 );
 const canReconcileAllowance = computed(() =>
   Boolean(
     !props.readOnly &&
-      hasProjectPermission(
-        projectPermissions.value,
-        "project.ai_allowance.reconcile",
-      ),
+    hasProjectPermission(projectPermissions.value, 'project.ai_allowance.reconcile'),
   ),
 );
 const canReadEndUserState = computed(() =>
-  hasProjectPermission(
-    projectPermissions.value,
-    "project.end_user_state.sensitive.read",
-  ),
+  hasProjectPermission(projectPermissions.value, 'project.end_user_state.sensitive.read'),
 );
 const canManageEndUserState = computed(() =>
   Boolean(
     !props.readOnly &&
-      hasProjectPermission(
-        projectPermissions.value,
-        "project.end_user_state.manage",
-      ),
+    hasProjectPermission(projectPermissions.value, 'project.end_user_state.manage'),
   ),
 );
 const canReadConversations = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.conversations.read"),
+  hasProjectPermission(projectPermissions.value, 'project.conversations.read'),
 );
 const canReply = computed(() =>
   Boolean(
     !props.readOnly &&
-      hasProjectPermission(
-        projectPermissions.value,
-        "project.conversations.reply",
-      ),
+    hasProjectPermission(projectPermissions.value, 'project.conversations.reply'),
   ),
 );
 const canManageTranslation = computed(() =>
   Boolean(
-    !props.readOnly &&
-      hasProjectPermission(
-        projectPermissions.value,
-        "project.translation.create",
-      ),
+    !props.readOnly && hasProjectPermission(projectPermissions.value, 'project.translation.create'),
   ),
 );
 const canReadTranslationDetails = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.translation.read"),
+  hasProjectPermission(projectPermissions.value, 'project.translation.read'),
 );
 const canReplyWithoutTranslation = computed(() =>
   Boolean(
     canReply.value &&
     hasProjectPermission(
       projectPermissions.value,
-      "project.conversations.reply_without_translation",
+      'project.conversations.reply_without_translation',
     ),
   ),
 );
@@ -365,7 +325,7 @@ const conversationLocale = computed(() => {
   if (translationLocale) return translationLocale;
 
   const userMessages = messages.value.filter(
-    (message) => message.author === "USER" && message.text.trim(),
+    (message) => message.author === 'USER' && message.text.trim(),
   );
   for (let index = userMessages.length - 1; index >= 0; index -= 1) {
     const message = userMessages[index];
@@ -375,68 +335,56 @@ const conversationLocale = computed(() => {
   }
 
   if (userMessages.length) {
-    return inferLocaleFromText(
-      userMessages.map((message) => message.text).join("\n"),
-    );
+    return inferLocaleFromText(userMessages.map((message) => message.text).join('\n'));
   }
 
   const completedText = messages.value
-    .filter((message) => message.status === "COMPLETED" && message.text.trim())
+    .filter((message) => message.status === 'COMPLETED' && message.text.trim())
     .map((message) => message.text)
-    .join("\n");
+    .join('\n');
   if (completedText) return inferLocaleFromText(completedText);
 
   const localeField = detail.value?.fields.find(
-    (field) => field.key.toLocaleLowerCase() === "locale",
+    (field) => field.key.toLocaleLowerCase() === 'locale',
   );
   const localeValue = localeField?.value;
-  if (
-    localeValue &&
-    localeValue.type === "STRING" &&
-    typeof localeValue.value === "string"
-  ) {
+  if (localeValue && localeValue.type === 'STRING' && typeof localeValue.value === 'string') {
     return localeValue.value;
   }
   return null;
 });
 const workingLocaleLabel = computed(
-  () =>
-    translation.state.value?.preference.workingLocale?.toUpperCase() ?? "RU",
+  () => translation.state.value?.preference.workingLocale?.toUpperCase() ?? 'RU',
 );
 const filteredConversations = computed(() => {
-  const query = conversationSearch.value.trim().toLocaleLowerCase("ru-RU");
+  const query = conversationSearch.value.trim().toLocaleLowerCase('ru-RU');
   if (!query) return conversations.value;
   return conversations.value.filter((conversation) =>
-    conversation.title.toLocaleLowerCase("ru-RU").includes(query),
+    conversation.title.toLocaleLowerCase('ru-RU').includes(query),
   );
 });
 const replyTranslationInFlight = computed(
   () =>
     translation.previewing.value ||
     translation.editingReply.value ||
-    translation.draft.value?.status === "PENDING" ||
-    translation.draft.value?.status === "RUNNING",
+    translation.draft.value?.status === 'PENDING' ||
+    translation.draft.value?.status === 'RUNNING',
 );
 const userConversationComposer = computed<
-  Extract<ConversationSurfaceComposer, { mode: "PUBLIC_REPLY" }>
+  Extract<ConversationSurfaceComposer, { mode: 'PUBLIC_REPLY' }>
 >(() => {
   const conversation = selectedConversation.value;
-  const busy =
-    messagesLoading.value ||
-    sendingReply.value ||
-    replyTranslationInFlight.value;
+  const busy = messagesLoading.value || sendingReply.value || replyTranslationInFlight.value;
   const blockedReason = messagesLoading.value
-    ? "Диалог загружается."
+    ? 'Диалог загружается.'
     : !onlineSession.value
-      ? "Пользователь офлайн."
-      : conversation?.status !== "ACTIVE"
-        ? "Ответ в закрытом диалоге недоступен."
-        : "";
-  const actionVisibility = busy ? "DISABLED" : "ENABLED";
+      ? 'Пользователь офлайн.'
+      : conversation?.status !== 'ACTIVE'
+        ? 'Ответ в закрытом диалоге недоступен.'
+        : '';
+  const actionVisibility = busy ? 'DISABLED' : 'ENABLED';
   const replyPreview =
-    canManageTranslation.value &&
-    replyTranslationRequested.value &&
-    translation.state.value
+    canManageTranslation.value && replyTranslationRequested.value && translation.state.value
       ? {
           draft: translation.draft.value,
           targetLocale: translation.targetLocale.value,
@@ -450,7 +398,7 @@ const userConversationComposer = computed<
             messagesLoading.value ||
             !replyText.value.trim() ||
             !onlineSession.value ||
-            conversation?.status !== "ACTIVE" ||
+            conversation?.status !== 'ACTIVE' ||
             translation.savingPreference.value ||
             !translation.state.value.availability.available ||
             translation.state.value.budget.hardExhausted,
@@ -459,78 +407,69 @@ const userConversationComposer = computed<
       : null;
 
   return {
-    visibility: canReply.value ? "ENABLED" : "HIDDEN",
-    mode: "PUBLIC_REPLY",
+    visibility: canReply.value ? 'ENABLED' : 'HIDDEN',
+    mode: 'PUBLIC_REPLY',
     scope: {
       projectId: props.projectId,
-      actorId: auth.user?.id ?? "current-operator",
-      conversationId: conversation?.id ?? "unselected",
+      actorId: auth.user?.id ?? 'current-operator',
+      conversationId: conversation?.id ?? 'unselected',
     },
     initialDraft: replyText.value,
-    draftRevision:
-      translation.draft.value?.id ?? conversation?.id ?? "unselected",
+    draftRevision: translation.draft.value?.id ?? conversation?.id ?? 'unselected',
     sending: sendingReply.value,
     recipientStatus: {
-      label: onlineSession.value
-        ? "Пользователь онлайн"
-        : "Пользователь офлайн",
-      tone: onlineSession.value ? "ONLINE" : "OFFLINE",
+      label: onlineSession.value ? 'Пользователь онлайн' : 'Пользователь офлайн',
+      tone: onlineSession.value ? 'ONLINE' : 'OFFLINE',
     },
     actions: {
       attachment: {
         visibility: actionVisibility,
-        reason: busy ? "Дождитесь завершения текущего действия." : undefined,
+        reason: busy ? 'Дождитесь завершения текущего действия.' : undefined,
       },
       createTicket: {
         visibility: actionVisibility,
-        reason: busy ? "Дождитесь завершения текущего действия." : undefined,
+        reason: busy ? 'Дождитесь завершения текущего действия.' : undefined,
       },
       templates: {
         visibility: actionVisibility,
-        reason: busy ? "Дождитесь завершения текущего действия." : undefined,
+        reason: busy ? 'Дождитесь завершения текущего действия.' : undefined,
       },
       improveWithAI: {
-        visibility: "DISABLED",
-        reason: "Функция пока недоступна.",
+        visibility: 'DISABLED',
+        reason: 'Функция пока недоступна.',
       },
       sendWithoutTranslation: {
         visibility:
           canReplyWithoutTranslation.value && replyTranslationRequested.value
             ? replyText.value.trim()
-              ? "ENABLED"
-              : "DISABLED"
-            : "HIDDEN",
+              ? 'ENABLED'
+              : 'DISABLED'
+            : 'HIDDEN',
       },
     },
     sendCapability: blockedReason
-      ? { kind: "BLOCKED", reason: blockedReason }
+      ? { kind: 'BLOCKED', reason: blockedReason }
       : replyTranslationRequested.value
-        ? { kind: "TRANSLATED_PREVIEW" }
-        : { kind: "SOURCE" },
+        ? { kind: 'TRANSLATED_PREVIEW' }
+        : { kind: 'SOURCE' },
     replyPreview,
     translationAssist: canManageTranslation.value
       ? {
           targetLocale: translation.targetLocale.value,
           busy: translation.loading.value || translation.previewing.value,
           disabled:
-            messagesLoading.value ||
-            !onlineSession.value ||
-            conversation?.status !== "ACTIVE",
+            messagesLoading.value || !onlineSession.value || conversation?.status !== 'ACTIVE',
         }
       : null,
   };
 });
-const bulkTranslationIds = computed(() => [
-  ...translation.translatingMessageIds.value,
-]);
-const bulkTranslationActive = computed(
-  () => bulkTranslationIds.value.length > 1,
-);
+const bulkTranslationIds = computed(() => [...translation.translatingMessageIds.value]);
+const bulkTranslationActive = computed(() => bulkTranslationIds.value.length > 1);
 const bulkTranslationCompleted = computed(
   () =>
     bulkTranslationIds.value.filter((messageId) => {
       const state = translation.messageTranslations.value.get(messageId)?.state;
-      return state === "COMPLETED" || state === "FAILED" || state === "SKIPPED";
+      return state === 'COMPLETED' || state === 'FAILED' || state === 'SKIPPED';
     }).length,
 );
 const userConversationHistory = computed<ConversationSurfaceHistory>(() => ({
@@ -542,28 +481,24 @@ const userConversationHistory = computed<ConversationSurfaceHistory>(() => ({
       ? conversationError.value || undefined
       : undefined,
 }));
-const userConversationTranslation = computed<ConversationSurfaceTranslation>(
-  () => ({
-    available: canManageTranslation.value,
-    mode: messageViewMode.value,
-    changing: translation.loading.value || translation.savingPreference.value,
-    workingLocaleLabel: workingLocaleLabel.value,
-    loading: translation.loading.value,
-    progress: bulkTranslationActive.value
-      ? {
-          completed: bulkTranslationCompleted.value,
-          total: bulkTranslationIds.value.length,
-          cancellable: true,
-        }
-      : null,
-  }),
-);
+const userConversationTranslation = computed<ConversationSurfaceTranslation>(() => ({
+  available: canManageTranslation.value,
+  mode: messageViewMode.value,
+  changing: translation.loading.value || translation.savingPreference.value,
+  workingLocaleLabel: workingLocaleLabel.value,
+  loading: translation.loading.value,
+  progress: bulkTranslationActive.value
+    ? {
+        completed: bulkTranslationCompleted.value,
+        total: bulkTranslationIds.value.length,
+        cancellable: true,
+      }
+    : null,
+}));
 
-async function changeTranslationMode(
-  mode: "ORIGINAL" | "TRANSLATED",
-): Promise<void> {
-  if (mode === "ORIGINAL") {
-    messageViewMode.value = "ORIGINAL";
+async function changeTranslationMode(mode: 'ORIGINAL' | 'TRANSLATED'): Promise<void> {
+  if (mode === 'ORIGINAL') {
+    messageViewMode.value = 'ORIGINAL';
     return;
   }
   await showTranslatedMessages();
@@ -580,9 +515,7 @@ async function setTranslationEnabled(enabled: boolean): Promise<void> {
   }
 }
 
-async function setTranslationTargetLocale(
-  locale: string | null,
-): Promise<void> {
+async function setTranslationTargetLocale(locale: string | null): Promise<void> {
   if (!(await ensureTranslationLoaded())) return;
   await translation.updatePreference({ endUserLocaleOverride: locale });
   const preference = translation.state.value?.preference;
@@ -591,7 +524,7 @@ async function setTranslationTargetLocale(
     preference &&
     targetLocale &&
     targetLocale.localeCompare(preference.workingLocale, undefined, {
-      sensitivity: "accent",
+      sensitivity: 'accent',
     }) === 0
   ) {
     replyTranslationRequested.value = false;
@@ -610,13 +543,9 @@ async function ensureTranslationLoaded(): Promise<boolean> {
 async function showTranslatedMessages(): Promise<void> {
   const sourceLocale = conversationLocale.value?.toLocaleLowerCase();
   const workingLocale =
-    translation.state.value?.preference.workingLocale.toLocaleLowerCase() ??
-    "ru";
-  if (
-    sourceLocale &&
-    sourceLocale.split(/[-_]/)[0] === workingLocale.split(/[-_]/)[0]
-  ) {
-    messageViewMode.value = "TRANSLATED";
+    translation.state.value?.preference.workingLocale.toLocaleLowerCase() ?? 'ru';
+  if (sourceLocale && sourceLocale.split(/[-_]/)[0] === workingLocale.split(/[-_]/)[0]) {
+    messageViewMode.value = 'TRANSLATED';
     return;
   }
   if (!(await ensureTranslationLoaded())) return;
@@ -625,7 +554,7 @@ async function showTranslatedMessages(): Promise<void> {
   }
   if (!translation.state.value?.preference.enabled) return;
   await translation.translateMessages(visibleTranslationMessageIds.value);
-  messageViewMode.value = "TRANSLATED";
+  messageViewMode.value = 'TRANSLATED';
 }
 
 function toggleConversationMenu(): void {
@@ -643,10 +572,9 @@ async function prepareReplyTranslation(): Promise<void> {
   if (!targetLocale || targetLocale === workingLocale) {
     conversationMenuVisible.value = true;
     toast.add({
-      severity: "info",
-      summary: "Выберите язык перевода",
-      detail:
-        "В меню «⋯» задайте язык, на котором пользователь должен получить ответ.",
+      severity: 'info',
+      summary: 'Выберите язык перевода',
+      detail: 'В меню «⋯» задайте язык, на котором пользователь должен получить ответ.',
       life: 5_000,
     });
     return;
@@ -657,48 +585,40 @@ async function prepareReplyTranslation(): Promise<void> {
 const canStartAIReview = computed(
   () =>
     !props.readOnly &&
-    hasProjectPermission(projectPermissions.value, "project.ai_review.read") &&
-    hasProjectPermission(projectPermissions.value, "project.ai_review.run") &&
-    hasProjectPermission(projectPermissions.value, "project.settings.read") &&
-    hasProjectPermission(
-      projectPermissions.value,
-      "project.event_query_policy.preview",
-    ),
+    hasProjectPermission(projectPermissions.value, 'project.ai_review.read') &&
+    hasProjectPermission(projectPermissions.value, 'project.ai_review.run') &&
+    hasProjectPermission(projectPermissions.value, 'project.settings.read') &&
+    hasProjectPermission(projectPermissions.value, 'project.event_query_policy.preview'),
 );
 const canReadAIAnalyses = computed(() =>
-  hasProjectPermission(projectPermissions.value, "project.ai_analyses.read"),
+  hasProjectPermission(projectPermissions.value, 'project.ai_analyses.read'),
 );
 const projectTimezone = computed(() => {
   const scenarioEngine = auth.project?.settings?.scenarioEngine as
     { activity?: { timezone?: unknown } } | undefined;
-  return typeof scenarioEngine?.activity?.timezone === "string"
+  return typeof scenarioEngine?.activity?.timezone === 'string'
     ? scenarioEngine.activity.timezone
-    : "UTC";
+    : 'UTC';
 });
-const displayName = computed(
-  () => props.externalUserId || props.endUserId || "Пользователь",
-);
+const displayName = computed(() => props.externalUserId || props.endUserId || 'Пользователь');
 const realtimeStatus = computed(() => {
-  if (realtimeState.value === "CONNECTED") {
-    return { label: "Live", state: "connected" };
+  if (realtimeState.value === 'CONNECTED') {
+    return { label: 'Live', state: 'connected' };
   }
-  if (realtimeState.value === "CONNECTING") {
-    return { label: "Подключение", state: "connecting" };
+  if (realtimeState.value === 'CONNECTING') {
+    return { label: 'Подключение', state: 'connecting' };
   }
-  if (realtimeState.value === "DEGRADED") {
-    return { label: "Ошибка связи", state: "error" };
+  if (realtimeState.value === 'DEGRADED') {
+    return { label: 'Ошибка связи', state: 'error' };
   }
-  return { label: "Нет связи", state: "disconnected" };
+  return { label: 'Нет связи', state: 'disconnected' };
 });
 const hasUnsavedDraft = computed(
-  () =>
-    consoleState.hasAnyDraft() ||
-    Boolean(newChatText.value.trim()) ||
-    telegramDraftDirty.value,
+  () => consoleState.hasAnyDraft() || Boolean(newChatText.value.trim()) || telegramDraftDirty.value,
 );
 
 watch(conversations, (value) => suspensionStore.ingestConversations(value), {
-  flush: "sync",
+  flush: 'sync',
 });
 watch(replyText, (value) => {
   if (!value.trim()) replyTranslationRequested.value = false;
@@ -706,8 +626,8 @@ watch(replyText, (value) => {
 watch(conversationError, (message) => {
   if (!message) return;
   toast.add({
-    severity: "warn",
-    summary: "Не удалось обновить диалог",
+    severity: 'warn',
+    summary: 'Не удалось обновить диалог',
     detail: message,
     life: 6_000,
   });
@@ -717,8 +637,8 @@ watch(
   (message) => {
     if (!message) return;
     toast.add({
-      severity: "warn",
-      summary: "Не удалось обновить состояние AI",
+      severity: 'warn',
+      summary: 'Не удалось обновить состояние AI',
       detail: message,
       life: 7_000,
     });
@@ -729,10 +649,10 @@ watch(
   (message) => {
     if (!message || !translationFeedbackEnabled.value) return;
     toast.add({
-      severity: "warn",
-      summary: message.startsWith("На сервере выключена обработка переводов")
-        ? "Переводы временно выключены"
-        : "Ошибка перевода",
+      severity: 'warn',
+      summary: message.startsWith('На сервере выключена обработка переводов')
+        ? 'Переводы временно выключены'
+        : 'Ошибка перевода',
       detail: message,
       life: 7_000,
     });
@@ -741,14 +661,14 @@ watch(
 watch(
   () => selectedConversation.value?.id,
   async (conversationId) => {
-    messageViewMode.value = "ORIGINAL";
+    messageViewMode.value = 'ORIGINAL';
     translationFeedbackEnabled.value = false;
     replyTranslationRequested.value = false;
     translation.reset();
     conversationMenuVisible.value = false;
     ticketDrawerVisible.value = false;
     replyTemplateGalleryVisible.value = false;
-    sendWithoutTranslationReason.value = "";
+    sendWithoutTranslationReason.value = '';
     sendWithoutTranslationVisible.value = false;
     if (!conversationId || !props.endUserId || !visible.value) return;
     if (conversationAISuspensionEnabled)
@@ -757,7 +677,7 @@ watch(
       await translation.load();
       replyTranslationRequested.value = Boolean(translation.draft.value);
     }
-    mobilePane.value = "CHAT";
+    mobilePane.value = 'CHAT';
   },
 );
 watch(
@@ -776,9 +696,9 @@ watch(
 watch(canReadAllowance, (canRead) => {
   if (canRead) return;
   allowanceDialogVisible.value = false;
-  allowanceDialogMode.value = "summary";
+  allowanceDialogMode.value = 'summary';
   allowanceJournalVisible.value = false;
-  allowanceJournalCursor.value = "";
+  allowanceJournalCursor.value = '';
 });
 
 function stopConversationRealtime(): void {
@@ -795,11 +715,11 @@ function stopConversationRealtime(): void {
 function startConversationRealtime(): void {
   if (!canReadConversations.value || unsubscribeMessage) return;
   unsubscribeMessage = cmsRealtimeClient.subscribe(
-    ["conversation.message.upserted.v1"],
+    ['conversation.message.upserted.v1'],
     handleMessageUpsert,
   );
   unsubscribeTranslation = cmsRealtimeClient.subscribe(
-    ["conversation.message.translation.upserted.v1"],
+    ['conversation.message.translation.upserted.v1'],
     (value) => {
       if (canReadConversations.value && canManageTranslation.value)
         translation.mergeRealtimeTranslation(value);
@@ -817,8 +737,7 @@ function startConversationRealtime(): void {
     }
   });
   presenceTimer = setInterval(() => {
-    if (visible.value && canReadConversations.value)
-      void consoleState.refreshPresence();
+    if (visible.value && canReadConversations.value) void consoleState.refreshPresence();
   }, 15_000);
 }
 
@@ -834,8 +753,8 @@ watch(canReadConversations, (canRead, couldRead) => {
     conversationMenuVisible.value = false;
     ticketDrawerVisible.value = false;
     replyTemplateGalleryVisible.value = false;
-    workspaceMode.value = "PROFILE";
-    emit("profileSelected");
+    workspaceMode.value = 'PROFILE';
+    emit('profileSelected');
     return;
   }
   startConversationRealtime();
@@ -848,22 +767,22 @@ watch(canReply, (allowed, wasAllowed) => {
   consoleState.clearDrafts();
   translation.reset();
   replyTranslationRequested.value = false;
-  sendWithoutTranslationReason.value = "";
+  sendWithoutTranslationReason.value = '';
   sendWithoutTranslationVisible.value = false;
   replyTemplateGalleryVisible.value = false;
   newChatOpen.value = false;
-  newChatText.value = "";
+  newChatText.value = '';
 });
 
 watch(
   [canManageTranslation, canReadTranslationDetails],
   ([canManage, canRead], [couldManage, couldRead]) => {
     if ((!couldManage || canManage) && (!couldRead || canRead)) return;
-    messageViewMode.value = "ORIGINAL";
+    messageViewMode.value = 'ORIGINAL';
     translation.reset();
     translationFeedbackEnabled.value = false;
     replyTranslationRequested.value = false;
-    sendWithoutTranslationReason.value = "";
+    sendWithoutTranslationReason.value = '';
     sendWithoutTranslationVisible.value = false;
   },
 );
@@ -882,89 +801,67 @@ onBeforeUnmount(() => {
   closeWorkspace();
 });
 
-async function openWorkspace(
-  endUserId: string,
-  preferredConversationId?: string,
-): Promise<void> {
+async function openWorkspace(endUserId: string, preferredConversationId?: string): Promise<void> {
   const request = ++profileRequest;
   detail.value = null;
-  detailError.value = "";
+  detailError.value = '';
   detailLoading.value = true;
   newChatOpen.value = false;
-  newChatText.value = "";
-  conversationSearch.value = "";
-  mobilePane.value = "CHAT";
-  workspaceMode.value = preferredConversationId ? "CHAT" : "PROFILE";
+  newChatText.value = '';
+  conversationSearch.value = '';
+  mobilePane.value = 'CHAT';
+  workspaceMode.value = preferredConversationId ? 'CHAT' : 'PROFILE';
   const previousConversationId = selectedConversation.value?.id;
-  if (previousConversationId)
-    cmsRealtimeClient.unwatchConversation(previousConversationId);
+  if (previousConversationId) cmsRealtimeClient.unwatchConversation(previousConversationId);
   consoleState.reset();
-  const profilePromise = canReadProfiles.value
-    ? loadProfile(endUserId)
-    : Promise.resolve(null);
+  const profilePromise = canReadProfiles.value ? loadProfile(endUserId) : Promise.resolve(null);
   const conversationsPromise = canReadConversations.value
     ? (async () => {
         await cmsRealtimeClient.activateProject(props.projectId);
-        await consoleState.loadConversations(
-          endUserId,
-          preferredConversationId,
-        );
+        await consoleState.loadConversations(endUserId, preferredConversationId);
       })()
     : Promise.resolve();
-  const results = await Promise.allSettled([
-    profilePromise,
-    conversationsPromise,
-  ]);
-  if (
-    request !== profileRequest ||
-    props.endUserId !== endUserId ||
-    !visible.value
-  )
-    return;
-  if (results[0].status === "fulfilled") detail.value = results[0].value;
-  else detailError.value = "Не удалось загрузить профиль пользователя";
+  const results = await Promise.allSettled([profilePromise, conversationsPromise]);
+  if (request !== profileRequest || props.endUserId !== endUserId || !visible.value) return;
+  if (results[0].status === 'fulfilled') detail.value = results[0].value;
+  else detailError.value = 'Не удалось загрузить профиль пользователя';
   detailLoading.value = false;
 }
 
-async function loadProfile(
-  endUserId: string,
-): Promise<ProfileProjectionResponseDto> {
-  if (repository.mode !== "mock") {
+async function loadProfile(endUserId: string): Promise<ProfileProjectionResponseDto> {
+  if (repository.mode !== 'mock') {
     return endUserProfileRepository.profile(props.projectId, endUserId);
   }
   const page = await repository.getUsersPage(props.projectId, { limit: 100 });
   const user = page.items.find((item) => item.id === endUserId);
-  if (!user) throw new Error("Пользователь не найден");
+  if (!user) throw new Error('Пользователь не найден');
   const field = (key: string, label: string, value: string | undefined) => ({
     definitionId: `mock-${key}`,
     definitionRevisionId: `mock-${key}-r1`,
     key,
     label,
-    valueType: "STRING",
-    lifecycle: "ACTIVE" as const,
-    classification: "INTERNAL" as const,
-    access: "ALLOWED" as const,
-    availability: value ? ("AVAILABLE" as const) : ("MISSING" as const),
-    ...(value ? { value: { type: "STRING", value } } : {}),
+    valueType: 'STRING',
+    lifecycle: 'ACTIVE' as const,
+    classification: 'INTERNAL' as const,
+    access: 'ALLOWED' as const,
+    availability: value ? ('AVAILABLE' as const) : ('MISSING' as const),
+    ...(value ? { value: { type: 'STRING', value } } : {}),
   });
   return {
     endUserId: user.id,
-    profileVersion: "demo",
-    syncStatus: "VALID",
+    profileVersion: 'demo',
+    syncStatus: 'VALID',
     fields: [
-      field("name", "Имя", user.profile.name),
-      field("email", "Email", user.profile.email),
-      field("country", "Страна", user.profile.country),
-      field("segment", "Сегмент", user.segment),
+      field('name', 'Имя', user.profile.name),
+      field('email', 'Email', user.profile.email),
+      field('country', 'Страна', user.profile.country),
+      field('segment', 'Сегмент', user.segment),
     ],
     observedAt: user.lastSeenAt,
     receivedAt: user.lastSeenAt,
-    ageSeconds: Math.max(
-      0,
-      Math.round((Date.now() - Date.parse(user.lastSeenAt)) / 1000),
-    ),
+    ageSeconds: Math.max(0, Math.round((Date.now() - Date.parse(user.lastSeenAt)) / 1000)),
     contractRevision: 1,
-    provenance: "PRODUCT_PROFILE",
+    provenance: 'PRODUCT_PROFILE',
   };
 }
 
@@ -977,14 +874,14 @@ function closeWorkspace(): void {
   detailLoading.value = false;
   newChatOpen.value = false;
   telegramDraftDirty.value = false;
-  sendWithoutTranslationReason.value = "";
+  sendWithoutTranslationReason.value = '';
   sendWithoutTranslationVisible.value = false;
   conversationMenuVisible.value = false;
   ticketDrawerVisible.value = false;
   allowanceDialogVisible.value = false;
-  allowanceDialogMode.value = "summary";
+  allowanceDialogMode.value = 'summary';
   allowanceJournalVisible.value = false;
-  allowanceJournalCursor.value = "";
+  allowanceJournalCursor.value = '';
   replyTemplateGalleryVisible.value = false;
   translationFeedbackEnabled.value = false;
   replyTranslationRequested.value = false;
@@ -993,21 +890,19 @@ function closeWorkspace(): void {
 
 async function openChat(): Promise<void> {
   if (!canReadConversations.value) return;
-  workspaceMode.value = "CHAT";
-  mobilePane.value = selectedConversation.value ? "CHAT" : "LIST";
+  workspaceMode.value = 'CHAT';
+  mobilePane.value = selectedConversation.value ? 'CHAT' : 'LIST';
   if (selectedConversation.value) {
-    emit("conversationSelected", selectedConversation.value.id);
+    emit('conversationSelected', selectedConversation.value.id);
   }
 }
 
 function openProfile(): void {
-  workspaceMode.value = "PROFILE";
-  emit("profileSelected");
+  workspaceMode.value = 'PROFILE';
+  emit('profileSelected');
 }
 
-function openAllowanceDetails(
-  mode: "summary" | "grant" | "assignment" = "summary",
-): void {
+function openAllowanceDetails(mode: 'summary' | 'grant' | 'assignment' = 'summary'): void {
   if (!canReadAllowance.value || !props.endUserId) return;
   allowanceDialogMode.value = mode;
   allowanceDialogVisible.value = true;
@@ -1016,7 +911,7 @@ function openAllowanceDetails(
 function openAllowanceJournal(): void {
   if (!canReadAllowance.value || !props.endUserId) return;
   allowanceDialogVisible.value = false;
-  allowanceJournalCursor.value = "";
+  allowanceJournalCursor.value = '';
   allowanceJournalVisible.value = true;
 }
 
@@ -1035,12 +930,10 @@ async function requireFreshAllowanceLogin(): Promise<void> {
   } catch {
     // logout() removes local authority in finally; a network failure must not keep protected UI open.
   }
-  await router.replace({ name: "login", query: { redirect } });
+  await router.replace({ name: 'login', query: { redirect } });
 }
 
-function messageFromEvent(
-  event: ConversationMessageUpsertEvent,
-): ConversationMessage {
+function messageFromEvent(event: ConversationMessageUpsertEvent): ConversationMessage {
   return {
     id: event.message.id,
     conversationId: event.message.threadId,
@@ -1057,24 +950,21 @@ function requestVisibility(nextVisible: boolean): void {
   if (
     !nextVisible &&
     hasUnsavedDraft.value &&
-    !window.confirm("Закрыть рабочее пространство и потерять черновик?")
+    !window.confirm('Закрыть рабочее пространство и потерять черновик?')
   )
     return;
   visible.value = nextVisible;
 }
 
-function conversationIsSuspended(
-  conversation: (typeof conversations.value)[number],
-): boolean {
+function conversationIsSuspended(conversation: (typeof conversations.value)[number]): boolean {
   const entry = suspensionStore.getEntry(conversation.id);
   const summary = entry?.summary ?? conversation.aiSuspension;
   return (
-    summary.mode === "SUSPENDED" &&
-    summary.lifecycle === "ACTIVE" &&
+    summary.mode === 'SUSPENDED' &&
+    summary.lifecycle === 'ACTIVE' &&
     !entry?.locallyExpired &&
     Boolean(summary.suspendedUntil) &&
-    Date.parse(summary.suspendedUntil!) >
-      Date.now() + (entry?.serverOffsetMs ?? 0)
+    Date.parse(summary.suspendedUntil!) > Date.now() + (entry?.serverOffsetMs ?? 0)
   );
 }
 
@@ -1084,22 +974,22 @@ function handleMessageUpsert(value: unknown): void {
     !canReadConversations.value ||
     !props.endUserId ||
     !value ||
-    typeof value !== "object"
+    typeof value !== 'object'
   )
     return;
   const event = value as ConversationMessageUpsertEvent;
-  const roles = ["USER", "ASSISTANT", "ADMIN", "SCENARIO", "SYSTEM"];
-  const statuses = ["WRITING", "COMPLETED", "FAILED", "CANCELLED"];
+  const roles = ['USER', 'ASSISTANT', 'ADMIN', 'SCENARIO', 'SYSTEM'];
+  const statuses = ['WRITING', 'COMPLETED', 'FAILED', 'CANCELLED'];
   if (
     event.contractVersion !== 1 ||
     event.projectId !== props.projectId ||
     event.endUserId !== props.endUserId ||
     event.conversationId !== selectedConversation.value?.id ||
     event.message?.threadId !== event.conversationId ||
-    typeof event.message.id !== "string" ||
+    typeof event.message.id !== 'string' ||
     !roles.includes(event.message.role) ||
     !statuses.includes(event.message.status) ||
-    typeof event.message.text !== "string" ||
+    typeof event.message.text !== 'string' ||
     !Number.isFinite(Date.parse(event.message.createdAt)) ||
     !Number.isFinite(Date.parse(event.message.updatedAt))
   )
@@ -1108,12 +998,10 @@ function handleMessageUpsert(value: unknown): void {
     void consoleState.reconcileSelected();
     return;
   }
-  const previousMessage = messages.value.find(
-    (message) => message.id === event.message.id,
-  );
+  const previousMessage = messages.value.find((message) => message.id === event.message.id);
   if (!consoleState.upsertMessage(messageFromEvent(event))) return;
   if (
-    previousMessage?.status !== "COMPLETED" &&
+    previousMessage?.status !== 'COMPLETED' &&
     isFrontendTranslationCandidate(
       messageFromEvent(event),
       translation.state.value?.preference.workingLocale,
@@ -1130,10 +1018,7 @@ async function loadOlderMessagesThroughSurface(): Promise<void> {
   const previousIds = new Set(messages.value.map((message) => message.id));
   const added = await consoleState.loadOlderMessages();
   if (!added) return;
-  if (
-    canManageTranslation.value &&
-    translation.state.value?.preference.enabled
-  ) {
+  if (canManageTranslation.value && translation.state.value?.preference.enabled) {
     const newEligibleIds = messages.value
       .filter(
         (message) =>
@@ -1152,8 +1037,8 @@ async function loadOlderMessagesThroughSurface(): Promise<void> {
 async function selectConversation(
   conversation: (typeof conversations.value)[number],
 ): Promise<void> {
-  workspaceMode.value = "CHAT";
-  mobilePane.value = "CHAT";
+  workspaceMode.value = 'CHAT';
+  mobilePane.value = 'CHAT';
   await consoleState.loadMessages(conversation);
 }
 
@@ -1161,9 +1046,9 @@ function applyReplyTemplate(template: ConversationReplyTemplate): void {
   replyText.value = template.text;
   replyTemplateGalleryVisible.value = false;
   toast.add({
-    severity: "success",
-    summary: "Шаблон добавлен",
-    detail: "Текст можно отредактировать перед переводом и отправкой.",
+    severity: 'success',
+    summary: 'Шаблон добавлен',
+    detail: 'Текст можно отредактировать перед переводом и отправкой.',
     life: 3_000,
   });
 }
@@ -1174,9 +1059,9 @@ function openTicketDrawer(): void {
 
 function showUnavailableAttachment(): void {
   toast.add({
-    severity: "info",
-    summary: "Вложения пока недоступны",
-    detail: "Live API принимает только текст. Файл не будет добавлен фиктивно.",
+    severity: 'info',
+    summary: 'Вложения пока недоступны',
+    detail: 'Live API принимает только текст. Файл не будет добавлен фиктивно.',
     life: 5_000,
   });
 }
@@ -1187,15 +1072,15 @@ async function copyConversationId(): Promise<void> {
   try {
     await navigator.clipboard.writeText(id);
     toast.add({
-      severity: "success",
-      summary: "ID диалога скопирован",
+      severity: 'success',
+      summary: 'ID диалога скопирован',
       detail: id,
       life: 3_000,
     });
   } catch {
     toast.add({
-      severity: "warn",
-      summary: "Не удалось скопировать ID",
+      severity: 'warn',
+      summary: 'Не удалось скопировать ID',
       detail: id,
       life: 5_000,
     });
@@ -1208,28 +1093,22 @@ function exportConversation(): void {
   if (!conversation) return;
   const lines = messages.value.flatMap((message) => {
     const header = `[${formatDate(message.createdAt)}] ${authorLabel(message.author)}`;
-    const original =
-      message.translation?.originalText?.trim() || message.text.trim();
+    const original = message.translation?.originalText?.trim() || message.text.trim();
     const translated = message.translation?.translatedText?.trim();
     return [
       header,
       original,
-      ...(translated && translated !== original
-        ? [`Перевод: ${translated}`]
-        : []),
-      "",
+      ...(translated && translated !== original ? [`Перевод: ${translated}`] : []),
+      '',
     ];
   });
-  const blob = new Blob([lines.join("\n")], {
-    type: "text/plain;charset=utf-8",
+  const blob = new Blob([lines.join('\n')], {
+    type: 'text/plain;charset=utf-8',
   });
   const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
+  const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = `${conversation.title || conversation.id}.txt`.replace(
-    /[/\\?%*:|"<>]/g,
-    "-",
-  );
+  anchor.download = `${conversation.title || conversation.id}.txt`.replace(/[/\\?%*:|"<>]/g, '-');
   anchor.click();
   URL.revokeObjectURL(url);
   conversationMenuVisible.value = false;
@@ -1237,13 +1116,11 @@ function exportConversation(): void {
 
 async function createConversation(): Promise<void> {
   if (!canReply.value) return;
-  const conversationId = await consoleState.sendNewConversation(
-    newChatText.value,
-  );
+  const conversationId = await consoleState.sendNewConversation(newChatText.value);
   if (!conversationId) return;
-  newChatText.value = "";
+  newChatText.value = '';
   newChatOpen.value = false;
-  emit("changed");
+  emit('changed');
 }
 
 async function sendReply(): Promise<void> {
@@ -1260,19 +1137,14 @@ async function sendReply(): Promise<void> {
 }
 
 async function sendTranslatedReply(editedText?: string): Promise<void> {
-  if (
-    !canReply.value ||
-    translation.savingPreference.value ||
-    translation.previewStale.value
-  ) {
+  if (!canReply.value || translation.savingPreference.value || translation.previewStale.value) {
     return;
   }
   const beforeEdit = translation.readyDraft.value;
   if (
     beforeEdit &&
     editedText?.trim() &&
-    editedText.trim() !==
-      (beforeEdit.editedTranslatedText ?? beforeEdit.translatedText ?? "")
+    editedText.trim() !== (beforeEdit.editedTranslatedText ?? beforeEdit.translatedText ?? '')
   ) {
     await translation.editReplyTranslation(editedText);
   } else {
@@ -1283,31 +1155,26 @@ async function sendTranslatedReply(editedText?: string): Promise<void> {
   const result = await consoleState.sendReply({
     replyTranslationDraftId: ready.id,
   });
-  if (repository.mode === "mock" && result?.messageId) {
-    const saved = messages.value.find(
-      (message) => message.id === result.messageId,
-    );
+  if (repository.mode === 'mock' && result?.messageId) {
+    const saved = messages.value.find((message) => message.id === result.messageId);
     if (saved) {
       const deliveredText =
-        ready.editedTranslatedText ??
-        ready.deliveredTextPreview ??
-        ready.translatedText ??
-        "";
+        ready.editedTranslatedText ?? ready.deliveredTextPreview ?? ready.translatedText ?? '';
       consoleState.upsertMessage({
         ...saved,
         text: deliveredText,
         translation: {
           id: ready.id,
-          direction: "OUTBOUND",
-          status: "COMPLETED",
-          originalText: ready.sourceText ?? "",
+          direction: 'OUTBOUND',
+          status: 'COMPLETED',
+          originalText: ready.sourceText ?? '',
           translatedText: ready.translatedText ?? null,
           deliveredText,
           viewText: deliveredText,
           sourceLocale: ready.sourceLocale,
           targetLocale: ready.targetLocale,
           errorCode: null,
-          warnings: ready.editedTranslatedText ? ["OPERATOR_EDITED"] : [],
+          warnings: ready.editedTranslatedText ? ['OPERATOR_EDITED'] : [],
           updatedAt: new Date().toISOString(),
         },
       });
@@ -1324,7 +1191,7 @@ async function sendReplyWithoutTranslation(): Promise<void> {
   if (!canReplyWithoutTranslation.value || !reason) return;
   await consoleState.sendReply({ sendWithoutTranslationReason: reason });
   if (!replyText.value.trim()) {
-    sendWithoutTranslationReason.value = "";
+    sendWithoutTranslationReason.value = '';
     sendWithoutTranslationVisible.value = false;
     translation.clearReplyDraft();
     replyTranslationRequested.value = false;
@@ -1333,26 +1200,24 @@ async function sendReplyWithoutTranslation(): Promise<void> {
 
 function setSendWithoutTranslationVisible(value: boolean): void {
   sendWithoutTranslationVisible.value = value;
-  if (!value) sendWithoutTranslationReason.value = "";
+  if (!value) sendWithoutTranslationReason.value = '';
 }
 
-function handleConversationComposerAction(
-  action: ConversationSurfaceComposerAction,
-): void {
+function handleConversationComposerAction(action: ConversationSurfaceComposerAction): void {
   switch (action) {
-    case "ATTACHMENT":
+    case 'ATTACHMENT':
       showUnavailableAttachment();
       break;
-    case "CREATE_TICKET":
+    case 'CREATE_TICKET':
       openTicketDrawer();
       break;
-    case "TEMPLATES":
+    case 'TEMPLATES':
       replyTemplateGalleryVisible.value = true;
       break;
-    case "SEND_WITHOUT_TRANSLATION":
+    case 'SEND_WITHOUT_TRANSLATION':
       setSendWithoutTranslationVisible(true);
       break;
-    case "IMPROVE_WITH_AI":
+    case 'IMPROVE_WITH_AI':
       break;
   }
 }
@@ -1365,22 +1230,20 @@ function openSuspension(mode: SuspensionMode): void {
 async function submitSuspension(value: {
   key: string;
   command:
-    | StartConversationAISuspensionDto
-    | ExtendConversationAISuspensionDto
-    | ResumeConversationAIDto;
+    StartConversationAISuspensionDto | ExtendConversationAISuspensionDto | ResumeConversationAIDto;
 }): Promise<void> {
   const conversation = selectedConversation.value;
   const endUserId = props.endUserId;
   if (!conversation || !endUserId) return;
   const succeeded =
-    suspensionDialogMode.value === "START"
+    suspensionDialogMode.value === 'START'
       ? await suspensionStore.start(
           endUserId,
           conversation.id,
           value.command as StartConversationAISuspensionDto,
           value.key,
         )
-      : suspensionDialogMode.value === "EXTEND"
+      : suspensionDialogMode.value === 'EXTEND'
         ? await suspensionStore.extend(
             endUserId,
             conversation.id,
@@ -1396,23 +1259,21 @@ async function submitSuspension(value: {
   if (!succeeded) return;
   suspensionDialogVisible.value = false;
   await suspensionStore.loadDetail(endUserId, conversation.id);
-  emit("changed");
+  emit('changed');
 }
 
-function authorLabel(author: ConversationMessage["author"]): string {
+function authorLabel(author: ConversationMessage['author']): string {
   return {
-    USER: "Пользователь",
-    ADMIN: "Оператор",
-    ASSISTANT: "Retenive · AI",
-    SCENARIO: "Сценарий · CMS",
-    SYSTEM: "Система",
+    USER: 'Пользователь',
+    ADMIN: 'Оператор',
+    ASSISTANT: 'Retenive · AI',
+    SCENARIO: 'Сценарий · CMS',
+    SYSTEM: 'Система',
   }[author];
 }
 
-function displayField(
-  field: ProfileProjectionResponseDto["fields"][number],
-): string {
-  return field.value ? formatProfileValue(field.value) : "—";
+function displayField(field: ProfileProjectionResponseDto['fields'][number]): string {
+  return field.value ? formatProfileValue(field.value) : '—';
 }
 </script>
 
@@ -1432,12 +1293,8 @@ function displayField(
       :draggable="false"
       :pt="{ mask: { class: 'user-workspace-dialog-mask' } }"
       :style="{
-        width: workspacePresentedFullTab
-          ? '100%'
-          : 'min(1480px, calc(100vw - 32px))',
-        height: workspacePresentedFullTab
-          ? '100%'
-          : 'min(900px, calc(100dvh - 32px))',
+        width: workspacePresentedFullTab ? '100%' : 'min(1480px, calc(100vw - 32px))',
+        height: workspacePresentedFullTab ? '100%' : 'min(900px, calc(100dvh - 32px))',
         maxHeight: workspacePresentedFullTab ? 'none' : 'calc(100dvh - 32px)',
       }"
       :content-style="{ padding: '0', overflow: 'hidden' }"
@@ -1464,25 +1321,17 @@ function displayField(
             @click="openProfile"
           />
           <span v-if="workspaceMode === 'CHAT'" class="workspace-divider" />
-          <span class="avatar">{{
-            displayName.slice(0, 1).toUpperCase()
-          }}</span>
+          <span class="avatar">{{ displayName.slice(0, 1).toUpperCase() }}</span>
           <div class="workspace-identity">
             <h2>{{ displayName }}</h2>
             <span class="workspace-identity-meta">
-              {{
-                workspaceMode === "CHAT"
-                  ? endUserId || "—"
-                  : "Профиль пользователя"
-              }}
+              {{ workspaceMode === 'CHAT' ? endUserId || '—' : 'Профиль пользователя' }}
               <i
                 v-if="workspaceMode === 'CHAT'"
                 class="presence-dot"
                 :class="{ online: Boolean(onlineSession) }"
                 role="img"
-                :aria-label="
-                  onlineSession ? 'Пользователь онлайн' : 'Пользователь офлайн'
-                "
+                :aria-label="onlineSession ? 'Пользователь онлайн' : 'Пользователь офлайн'"
               />
             </span>
           </div>
@@ -1511,11 +1360,7 @@ function displayField(
           </div>
           <Button
             :label="workspaceFullTab ? 'Свернуть' : 'На весь экран'"
-            :icon="
-              workspaceFullTab
-                ? 'pi pi-window-minimize'
-                : 'pi pi-window-maximize'
-            "
+            :icon="workspaceFullTab ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
             :aria-label="
               workspaceFullTab
                 ? 'Вернуть рабочее место в окно'
@@ -1537,9 +1382,7 @@ function displayField(
       >
         <div class="profile-hero">
           <div class="profile-identity">
-            <span class="profile-avatar">{{
-              displayName.slice(0, 1).toUpperCase()
-            }}</span>
+            <span class="profile-avatar">{{ displayName.slice(0, 1).toUpperCase() }}</span>
             <div>
               <span class="eyebrow">Профиль пользователя</span>
               <h2>{{ displayName }}</h2>
@@ -1585,11 +1428,7 @@ function displayField(
               <div v-if="detailLoading" class="profile-loading">
                 <Skeleton v-for="item in 6" :key="item" height="64px" />
               </div>
-              <Message
-                v-else-if="detailError"
-                severity="error"
-                :closable="false"
-              >
+              <Message v-else-if="detailError" severity="error" :closable="false">
                 {{ detailError }}
               </Message>
               <template v-else-if="detail">
@@ -1606,10 +1445,9 @@ function displayField(
                     <dt>Контракт полей</dt>
                     <dd>
                       {{
-                        detail.contractRevision !== null &&
-                        detail.contractRevision !== undefined
+                        detail.contractRevision !== null && detail.contractRevision !== undefined
                           ? `v${detail.contractRevision}`
-                          : "Не указан"
+                          : 'Не указан'
                       }}
                     </dd>
                   </div>
@@ -1620,18 +1458,14 @@ function displayField(
                         detail.publicationSequence !== null &&
                         detail.publicationSequence !== undefined
                           ? `#${detail.publicationSequence}`
-                          : "Не указана"
+                          : 'Не указана'
                       }}
                     </dd>
                   </div>
                   <div>
                     <dt>Актуальность</dt>
                     <dd>
-                      {{
-                        detail.observedAt
-                          ? relativeTime(detail.observedAt)
-                          : "Нет данных"
-                      }}
+                      {{ detail.observedAt ? relativeTime(detail.observedAt) : 'Нет данных' }}
                     </dd>
                   </div>
                   <div v-for="field in detail.fields" :key="field.definitionId">
@@ -1640,9 +1474,7 @@ function displayField(
                   </div>
                 </dl>
               </template>
-              <div v-else class="profile-empty">
-                Профиль скрыт вашими правами доступа.
-              </div>
+              <div v-else class="profile-empty">Профиль скрыт вашими правами доступа.</div>
             </section>
 
             <EndUserAiUsageCard
@@ -1689,9 +1521,7 @@ function displayField(
                 class="ai-review-entry"
                 data-testid="ai-review-entry"
               >
-                <span class="ai-review-entry-icon"
-                  ><i class="pi pi-sparkles"
-                /></span>
+                <span class="ai-review-entry-icon"><i class="pi pi-sparkles" /></span>
                 <div>
                   <strong>AI-анализ событий</strong>
                   <span>Выберите события и сначала оцените объём запроса.</span>
@@ -1723,10 +1553,7 @@ function displayField(
                 :user-label="displayName"
                 :editable="
                   !readOnly &&
-                  hasProjectPermission(
-                    projectPermissions,
-                    'project.user_memory.manage',
-                  )
+                  hasProjectPermission(projectPermissions, 'project.user_memory.manage')
                 "
               />
             </section>
@@ -1747,13 +1574,11 @@ function displayField(
             aria-label="К профилю"
             @click="openProfile"
           >
-            <span class="avatar">{{
-              displayName.slice(0, 1).toUpperCase()
-            }}</span>
+            <span class="avatar">{{ displayName.slice(0, 1).toUpperCase() }}</span>
             <div>
               <strong>{{ displayName }}</strong>
               <small>
-                {{ (conversationLocale ?? "—").toUpperCase() }}
+                {{ (conversationLocale ?? '—').toUpperCase() }}
               </small>
             </div>
             <span class="connection-status" :data-state="realtimeStatus.state">
@@ -1796,25 +1621,14 @@ function displayField(
           </div>
           <div v-else-if="!conversations.length" class="empty-state">
             <i class="pi pi-comments" /><strong>Диалогов пока нет</strong>
-            <span
-              >Начните новый разговор, когда пользователь будет онлайн.</span
-            >
+            <span>Начните новый разговор, когда пользователь будет онлайн.</span>
           </div>
-          <div
-            v-else
-            class="conversation-list"
-            role="navigation"
-            aria-label="Диалоги пользователя"
-          >
+          <div v-else class="conversation-list" role="navigation" aria-label="Диалоги пользователя">
             <button
               v-for="conversation in filteredConversations"
               :key="conversation.id"
               type="button"
-              :aria-current="
-                selectedConversation?.id === conversation.id
-                  ? 'page'
-                  : undefined
-              "
+              :aria-current="selectedConversation?.id === conversation.id ? 'page' : undefined"
               :class="{
                 selected: selectedConversation?.id === conversation.id,
               }"
@@ -1823,19 +1637,13 @@ function displayField(
               <span class="conversation-row-title">
                 <strong>{{ conversation.title }}</strong>
                 <span
-                  v-if="
-                    conversationAISuspensionEnabled &&
-                    conversationIsSuspended(conversation)
-                  "
+                  v-if="conversationAISuspensionEnabled && conversationIsSuspended(conversation)"
                   class="conversation-badge warning"
                 >
                   AI ⏸
                 </span>
                 <span
-                  v-else-if="
-                    selectedConversation?.id === conversation.id &&
-                    conversationLocale
-                  "
+                  v-else-if="selectedConversation?.id === conversation.id && conversationLocale"
                   class="conversation-badge accent"
                 >
                   {{ conversationLocale.toUpperCase() }}
@@ -1843,17 +1651,12 @@ function displayField(
               </span>
               <span
                 >{{ relativeTime(conversation.lastMessageAt) }} ·
-                {{ conversation.messageCount }} сообщ.<template
-                  v-if="conversation.isCurrent"
-                >
+                {{ conversation.messageCount }} сообщ.<template v-if="conversation.isCurrent">
                   · текущий</template
                 ></span
               >
             </button>
-            <div
-              v-if="!filteredConversations.length"
-              class="conversation-search-empty"
-            >
+            <div v-if="!filteredConversations.length" class="conversation-search-empty">
               Ничего не найдено
             </div>
           </div>
@@ -1886,15 +1689,8 @@ function displayField(
             <div class="chat-heading">
               <h3>{{ selectedConversation.title }}</h3>
               <span>
-                {{
-                  selectedConversation.status === "ACTIVE" ? "Открыт" : "Закрыт"
-                }}
-                · сессия #{{
-                  Math.max(
-                    selectedConversation.currentInteractionSessionCount,
-                    1,
-                  )
-                }}
+                {{ selectedConversation.status === 'ACTIVE' ? 'Открыт' : 'Закрыт' }}
+                · сессия #{{ Math.max(selectedConversation.currentInteractionSessionCount, 1) }}
               </span>
               <span
                 v-if="readOnly"
@@ -1904,9 +1700,7 @@ function displayField(
                 Только просмотр
               </span>
             </div>
-            <template
-              v-if="conversationAISuspensionEnabled && selectedSuspensionEntry"
-            >
+            <template v-if="conversationAISuspensionEnabled && selectedSuspensionEntry">
               <ConversationAISuspensionHeaderActions
                 :entry="selectedSuspensionEntry"
                 :can-manage="canManageSuspension"
@@ -1917,10 +1711,7 @@ function displayField(
                 @history="suspensionHistoryVisible = true"
                 @retry="
                   props.endUserId &&
-                  suspensionStore.loadDetail(
-                    props.endUserId,
-                    selectedConversation.id,
-                  )
+                  suspensionStore.loadDetail(props.endUserId, selectedConversation.id)
                 "
               />
               <ConversationAISuspensionBanner
@@ -1945,11 +1736,7 @@ function displayField(
               >
                 <i class="pi pi-ellipsis-h" aria-hidden="true" />
               </button>
-              <div
-                v-if="conversationMenuVisible"
-                class="conversation-settings-menu"
-                role="menu"
-              >
+              <div v-if="conversationMenuVisible" class="conversation-settings-menu" role="menu">
                 <span class="menu-section-label">Язык</span>
                 <ConversationTranslationBanner
                   v-if="canManageTranslation"
@@ -1961,47 +1748,30 @@ function displayField(
                   @reload="ensureTranslationLoaded"
                   @update-enabled="setTranslationEnabled"
                   @update-target-locale="setTranslationTargetLocale($event)"
-                  @translate-visible="
-                    translation.translateMessages(visibleTranslationMessageIds)
-                  "
+                  @translate-visible="translation.translateMessages(visibleTranslationMessageIds)"
                 />
                 <button
                   type="button"
                   role="menuitem"
                   @click="
-                    messageViewMode =
-                      messageViewMode === 'ORIGINAL' ? 'TRANSLATED' : 'ORIGINAL'
+                    messageViewMode = messageViewMode === 'ORIGINAL' ? 'TRANSLATED' : 'ORIGINAL'
                   "
                 >
                   <i class="pi pi-eye" aria-hidden="true" />
                   {{
-                    messageViewMode === "ORIGINAL"
-                      ? "Показывать переводы"
-                      : "Показывать оригиналы"
+                    messageViewMode === 'ORIGINAL' ? 'Показывать переводы' : 'Показывать оригиналы'
                   }}
                 </button>
                 <span class="menu-section-label">Диалог</span>
-                <button
-                  type="button"
-                  role="menuitem"
-                  @click="suspensionHistoryVisible = true"
-                >
+                <button type="button" role="menuitem" @click="suspensionHistoryVisible = true">
                   <i class="pi pi-history" aria-hidden="true" />
                   История режима AI и пауз
                 </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  @click="copyConversationId"
-                >
+                <button type="button" role="menuitem" @click="copyConversationId">
                   <i class="pi pi-copy" aria-hidden="true" />
                   Скопировать ID диалога
                 </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  @click="exportConversation"
-                >
+                <button type="button" role="menuitem" @click="exportConversation">
                   <i class="pi pi-download" aria-hidden="true" />
                   Выгрузить переписку
                 </button>
@@ -2119,8 +1889,7 @@ function displayField(
       >
         <div class="new-chat-form">
           <p>
-            Первое сообщение создаст отдельный диалог и сразу откроет его в
-            рабочем пространстве.
+            Первое сообщение создаст отдельный диалог и сразу откроет его в рабочем пространстве.
           </p>
           <Textarea
             v-model="newChatText"
@@ -2131,12 +1900,7 @@ function displayField(
             aria-label="Первое сообщение нового диалога"
           />
           <div>
-            <Button
-              label="Отмена"
-              severity="secondary"
-              text
-              @click="newChatOpen = false"
-            /><Button
+            <Button label="Отмена" severity="secondary" text @click="newChatOpen = false" /><Button
               v-if="canReply"
               label="Создать и отправить"
               icon="pi pi-send"
@@ -2161,13 +1925,11 @@ function displayField(
             {{
               translation.targetLocale.value
                 ? `перевода на ${localeDisplayName(translation.targetLocale.value)}`
-                : "перевода"
+                : 'перевода'
             }}.
           </Message>
           <div class="field">
-            <label for="send-without-translation-reason"
-              >Причина исключения</label
-            >
+            <label for="send-without-translation-reason">Причина исключения</label>
             <Textarea
               id="send-without-translation-reason"
               v-model="sendWithoutTranslationReason"
@@ -2199,11 +1961,7 @@ function displayField(
   </FullViewportWorkspaceShell>
 
   <ConversationAISuspensionDialog
-    v-if="
-      conversationAISuspensionEnabled &&
-      selectedConversation &&
-      selectedSuspensionEntry
-    "
+    v-if="conversationAISuspensionEnabled && selectedConversation && selectedSuspensionEntry"
     v-model:visible="suspensionDialogVisible"
     :mode="suspensionDialogMode"
     :conversation-label="`${selectedConversation.title} · ${selectedConversation.id}`"
@@ -2271,16 +2029,16 @@ function displayField(
   border-radius: 50%;
   background: currentColor;
 }
-.connection-status[data-state="connected"] {
+.connection-status[data-state='connected'] {
   background: var(--status-success-soft);
   color: var(--status-success-text);
 }
-.connection-status[data-state="connected"] .connection-live-dot {
+.connection-status[data-state='connected'] .connection-live-dot {
   box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 35%, transparent);
   animation: live-pulse 2.2s ease-out infinite;
 }
-.connection-status[data-state="error"],
-.connection-status[data-state="disconnected"] {
+.connection-status[data-state='error'],
+.connection-status[data-state='disconnected'] {
   background: var(--status-danger-soft);
   color: var(--status-danger-text);
 }
@@ -2488,11 +2246,7 @@ function displayField(
   flex-direction: column;
   padding: 16px;
   overflow: hidden;
-  background: color-mix(
-    in srgb,
-    var(--surface-subtle) 46%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--surface-subtle) 46%, var(--surface-card));
 }
 .conversation-pane {
   border-right: 1px solid var(--line);
@@ -2537,11 +2291,7 @@ function displayField(
   padding: 6px 8px;
   border: 1px solid var(--line);
   border-radius: 13px;
-  background: color-mix(
-    in srgb,
-    var(--surface-subtle) 72%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--surface-subtle) 72%, var(--surface-card));
 }
 .compact-message {
   margin-bottom: 10px;
@@ -2745,11 +2495,7 @@ function displayField(
   padding: 12px;
   border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
   border-radius: 14px;
-  background: linear-gradient(
-    145deg,
-    var(--brand-soft),
-    var(--surface-card) 72%
-  );
+  background: linear-gradient(145deg, var(--brand-soft), var(--surface-card) 72%);
 }
 .ai-review-entry-icon {
   display: grid;
@@ -3041,7 +2787,7 @@ function displayField(
   border-radius: 5px;
   background: var(--border-subtle);
   color: var(--text-secondary);
-  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
   font-size: 11px;
   font-weight: 600;
 }
@@ -3073,7 +2819,7 @@ function displayField(
   border-radius: 0;
   background: var(--surface-subtle);
 }
-.conversation-state-rail[data-online="false"] {
+.conversation-state-rail[data-online='false'] {
   background: var(--surface-hover);
 }
 .chat-heading {
@@ -3156,8 +2902,7 @@ function displayField(
   border-radius: 10px;
   background: var(--surface-subtle);
 }
-.conversation-settings-menu
-  :deep(.translation-banner__main > .translation-banner__icon) {
+.conversation-settings-menu :deep(.translation-banner__main > .translation-banner__icon) {
   display: none;
 }
 .conversation-settings-menu :deep(.translation-banner__main span) {
@@ -3169,7 +2914,7 @@ function displayField(
 .menu-section-label {
   padding: 8px 11px 4px;
   color: var(--text-tertiary);
-  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -3200,7 +2945,7 @@ function displayField(
   .conversation-list button {
     transition: none;
   }
-  .connection-status[data-state="connected"] .connection-live-dot {
+  .connection-status[data-state='connected'] .connection-live-dot {
     animation: none;
   }
   .profile-overview,
@@ -3260,8 +3005,8 @@ function displayField(
     height: 100%;
     border: 0;
   }
-  .workspace-grid[data-mobile-pane="LIST"] .conversation-pane,
-  .workspace-grid[data-mobile-pane="CHAT"] .chat-pane {
+  .workspace-grid[data-mobile-pane='LIST'] .conversation-pane,
+  .workspace-grid[data-mobile-pane='CHAT'] .chat-pane {
     display: flex;
   }
   .conversation-state-rail {
@@ -3271,7 +3016,7 @@ function displayField(
   .conversation-state-rail :deep(.translation-banner) {
     order: 2;
   }
-  .workspace-grid[data-mobile-pane="CHAT"] .chat-pane {
+  .workspace-grid[data-mobile-pane='CHAT'] .chat-pane {
     display: flex;
     flex-direction: column;
     padding: 0;
@@ -3350,8 +3095,7 @@ function displayField(
     min-height: 34px;
     padding-inline: 10px;
   }
-  .conversation-state-rail
-    :deep(.ai-suspension-header-actions .p-button-label) {
+  .conversation-state-rail :deep(.ai-suspension-header-actions .p-button-label) {
     overflow: hidden;
     max-width: 150px;
     text-overflow: ellipsis;

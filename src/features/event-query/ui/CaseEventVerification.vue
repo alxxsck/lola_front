@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import Message from "primevue/message";
+import { computed, onMounted, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Message from 'primevue/message';
 import EventPicker, {
   type EventPickerOption,
   type EventPickerPage,
   type EventPickerRequest,
-} from "@/features/events/EventPicker.vue";
+} from '@/features/events/EventPicker.vue';
 import type {
   CaseVerificationEstimateResponseDto,
   CaseVerificationRunResponseDto,
   EstimateCaseVerificationDto,
   EventQueryPolicyItemDto,
-} from "@/shared/api/generated/models";
-import { eventQueryRepository } from "../api/event-query-repository";
-import { eventQueryPolicyItemFromConfiguration } from "../model/event-query-policy";
+} from '@/shared/api/generated/models';
+import { eventQueryRepository } from '../api/event-query-repository';
+import { eventQueryPolicyItemFromConfiguration } from '../model/event-query-policy';
 import {
   eventQueryPeriodOptions,
   eventQueryTimeRange,
   type EventQueryRange,
-} from "../model/event-query-range";
+} from '../model/event-query-range';
 
 const props = defineProps<{
   projectId: string;
@@ -37,37 +37,35 @@ const emit = defineEmits<{
 }>();
 
 type VerificationState =
-  | "NOT_CONFIGURED"
-  | "READY"
-  | "RUNNING"
-  | "VERIFIED_RESOLVED"
-  | "VERIFIED_UNRESOLVED"
-  | "INCONCLUSIVE"
-  | "EXPIRED"
-  | "DISABLED";
+  | 'NOT_CONFIGURED'
+  | 'READY'
+  | 'RUNNING'
+  | 'VERIFIED_RESOLVED'
+  | 'VERIFIED_UNRESOLVED'
+  | 'INCONCLUSIVE'
+  | 'EXPIRED'
+  | 'DISABLED';
 
 const loadingPolicy = ref(true);
 const loadingEvidence = ref(false);
 const policyItems = ref<EventQueryPolicyItemDto[]>([]);
 const eventNames = ref<Record<string, string>>({});
 const policyEnabled = ref(false);
-const eventCode = ref("");
-const range = ref<EventQueryRange>("CURRENT_CASE_WINDOW");
+const eventCode = ref('');
+const range = ref<EventQueryRange>('CURRENT_CASE_WINDOW');
 const dialogVisible = ref(false);
 const estimating = ref(false);
 const running = ref(false);
-const error = ref("");
+const error = ref('');
 const estimate = ref<CaseVerificationEstimateResponseDto | null>(null);
-const run = ref<CaseVerificationRunResponseDto | null>(
-  props.initialRun ?? null,
-);
+const run = ref<CaseVerificationRunResponseDto | null>(props.initialRun ?? null);
 const pendingIdempotencyKey = ref<string | null>(null);
 let evidenceGeneration = 0;
 let scopeGeneration = 0;
 let policyRequestGeneration = 0;
 
 const terminalCase = computed(() =>
-  ["RESOLVED", "UNRESOLVED", "CANCELLED"].includes(props.caseStatus),
+  ['RESOLVED', 'UNRESOLVED', 'CANCELLED'].includes(props.caseStatus),
 );
 const selectedItem = computed(() =>
   policyItems.value.find((item) => item.stableCode === eventCode.value),
@@ -83,39 +81,33 @@ const periodOptions = computed(() => {
   });
 });
 const normalizedTimeRange = computed<
-  EstimateCaseVerificationDto["queries"][number]["query"]["timeRange"]
+  EstimateCaseVerificationDto['queries'][number]['query']['timeRange']
 >(() => {
-  return eventQueryTimeRange(
-    range.value,
-    selectedItem.value?.maxVerificationLookbackHours ?? 1,
-  );
+  return eventQueryTimeRange(range.value, selectedItem.value?.maxVerificationLookbackHours ?? 1);
 });
 const state = computed<VerificationState>(() => {
-  if (loadingEvidence.value) return "RUNNING";
-  if (terminalCase.value && !run.value) return "EXPIRED";
-  if (!props.canVerify || !props.canPreview) return "DISABLED";
-  if (running.value) return "RUNNING";
+  if (loadingEvidence.value) return 'RUNNING';
+  if (terminalCase.value && !run.value) return 'EXPIRED';
+  if (!props.canVerify || !props.canPreview) return 'DISABLED';
+  if (running.value) return 'RUNNING';
   if (run.value?.evaluation) return run.value.evaluation;
-  if (
-    !loadingPolicy.value &&
-    (!policyEnabled.value || !policyItems.value.length)
-  ) {
-    return "NOT_CONFIGURED";
+  if (!loadingPolicy.value && (!policyEnabled.value || !policyItems.value.length)) {
+    return 'NOT_CONFIGURED';
   }
-  return "READY";
+  return 'READY';
 });
 const command = computed<EstimateCaseVerificationDto>(() => ({
   queries: [
     {
-      key: "goal_event",
+      key: 'goal_event',
       query: {
         eventCodes: eventCode.value ? [eventCode.value] : [],
-        mode: "SUMMARY",
+        mode: 'SUMMARY',
         timeRange: normalizedTimeRange.value,
       },
     },
   ],
-  predicate: { operator: "EVENT_EXISTS", queryKey: "goal_event" },
+  predicate: { operator: 'EVENT_EXISTS', queryKey: 'goal_event' },
 }));
 const displayed = computed(() => run.value ?? estimate.value);
 const resultBytes = computed(() =>
@@ -144,29 +136,27 @@ function isCurrentScope(scope: ReturnType<typeof captureScope>) {
 function normalizeRange() {
   const allowed = periodOptions.value.map((option) => option.value);
   if (!allowed.includes(range.value)) {
-    range.value = allowed[0] ?? "POLICY_MAX";
+    range.value = allowed[0] ?? 'POLICY_MAX';
   }
 }
 
 async function loadPolicy(
-  request: EventPickerRequest = { query: "", limit: 25 },
+  request: EventPickerRequest = { query: '', limit: 25 },
 ): Promise<EventPickerPage> {
   const scope = captureScope();
   const requestGeneration = ++policyRequestGeneration;
   loadingPolicy.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const catalog = await eventQueryRepository.listItems(scope.projectId, {
-      audience: "INTERNAL_AI",
+      audience: 'INTERNAL_AI',
       effective: true,
       ...(request.query ? { query: request.query } : {}),
       ...(request.cursor ? { cursor: request.cursor } : {}),
       limit: request.limit,
     });
-    if (
-      requestGeneration !== policyRequestGeneration ||
-      !isCurrentScope(scope)
-    ) return { items: [], nextCursor: null };
+    if (requestGeneration !== policyRequestGeneration || !isCurrentScope(scope))
+      return { items: [], nextCursor: null };
     const parsed = catalog.items.flatMap((candidate) => {
       const item = eventQueryPolicyItemFromConfiguration(
         candidate.eventCode,
@@ -179,29 +169,21 @@ async function loadPolicy(
     }
     policyItems.value = [...policyItems.value, ...parsed].filter(
       (item, index, all) =>
-        all.findIndex(
-          (candidate) => candidate.stableCode === item.stableCode,
-        ) === index,
+        all.findIndex((candidate) => candidate.stableCode === item.stableCode) === index,
     );
     return {
       items: parsed.map(toEventOption),
       nextCursor: catalog.pageInfo.nextCursor ?? null,
     };
   } catch (cause) {
-    if (
-      requestGeneration !== policyRequestGeneration ||
-      !isCurrentScope(scope)
-    ) return { items: [], nextCursor: null };
+    if (requestGeneration !== policyRequestGeneration || !isCurrentScope(scope))
+      return { items: [], nextCursor: null };
     error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось проверить доступность событий";
+      cause instanceof Error ? cause.message : 'Не удалось проверить доступность событий';
     throw cause;
   } finally {
-    if (
-      requestGeneration === policyRequestGeneration &&
-      isCurrentScope(scope)
-    ) loadingPolicy.value = false;
+    if (requestGeneration === policyRequestGeneration && isCurrentScope(scope))
+      loadingPolicy.value = false;
   }
 }
 
@@ -209,7 +191,7 @@ async function initializePolicy(): Promise<void> {
   const page = await loadPolicy();
   policyEnabled.value = page.items.length > 0;
   if (!eventCode.value) {
-    eventCode.value = page.items[0]?.value ?? "";
+    eventCode.value = page.items[0]?.value ?? '';
   }
   normalizeRange();
 }
@@ -244,11 +226,7 @@ async function loadEvidence() {
   }
   loadingEvidence.value = true;
   try {
-    const restored = await eventQueryRepository.getCaseVerification(
-      projectId,
-      caseId,
-      runId,
-    );
+    const restored = await eventQueryRepository.getCaseVerification(projectId, caseId, runId);
     if (
       generation === evidenceGeneration &&
       projectId === props.projectId &&
@@ -259,9 +237,7 @@ async function loadEvidence() {
   } catch (cause) {
     if (generation === evidenceGeneration) {
       error.value =
-        cause instanceof Error
-          ? cause.message
-          : "Не удалось восстановить evidence проверки";
+        cause instanceof Error ? cause.message : 'Не удалось восстановить evidence проверки';
     }
   } finally {
     if (generation === evidenceGeneration) loadingEvidence.value = false;
@@ -269,11 +245,11 @@ async function loadEvidence() {
 }
 
 async function openEstimate() {
-  if (state.value !== "READY" || !eventCode.value || estimating.value) return;
+  if (state.value !== 'READY' || !eventCode.value || estimating.value) return;
   const scope = captureScope();
   const request = structuredClone(command.value);
   estimating.value = true;
-  error.value = "";
+  error.value = '';
   estimate.value = null;
   run.value = null;
   pendingIdempotencyKey.value = null;
@@ -299,7 +275,7 @@ async function startVerification() {
   const scope = captureScope();
   const request = structuredClone(command.value);
   running.value = true;
-  error.value = "";
+  error.value = '';
   const idempotencyKey = pendingIdempotencyKey.value ?? crypto.randomUUID();
   pendingIdempotencyKey.value = idempotencyKey;
   try {
@@ -314,7 +290,7 @@ async function startVerification() {
     if (!isCurrentScope(scope)) return;
     run.value = response;
     pendingIdempotencyKey.value = null;
-    emit("completed", response);
+    emit('completed', response);
   } catch (cause) {
     if (!isCurrentScope(scope)) return;
     error.value = retryableMessage(cause);
@@ -324,8 +300,8 @@ async function startVerification() {
 }
 
 function retryableMessage(cause: unknown) {
-  const message = cause instanceof Error ? cause.message : "";
-  return `${message || "Проверка временно недоступна"}. Итог операции не подтверждён; безопасно повторите запрос.`;
+  const message = cause instanceof Error ? cause.message : '';
+  return `${message || 'Проверка временно недоступна'}. Итог операции не подтверждён; безопасно повторите запрос.`;
 }
 
 function formatBytes(value: number) {
@@ -334,16 +310,14 @@ function formatBytes(value: number) {
 
 function stateDescription(value: VerificationState) {
   return {
-    NOT_CONFIGURED: "Опубликованная Event Query policy не настроена.",
-    READY:
-      "Можно проверить цель по безопасным продуктовым событиям пользователя.",
-    RUNNING: "Сервер проверяет ограниченный набор событий.",
-    VERIFIED_RESOLVED:
-      "Целевой продуктовый факт найден; обращение подтверждено решённым.",
-    VERIFIED_UNRESOLVED: "Полная выборка не подтверждает достижение цели.",
-    INCONCLUSIVE: "Недостаточно полных данных; обращение не отмечено решённым.",
-    EXPIRED: "Закрытое или объединённое обращение нельзя проверять повторно.",
-    DISABLED: "Нет разрешений на preview и доверенную проверку.",
+    NOT_CONFIGURED: 'Опубликованная Event Query policy не настроена.',
+    READY: 'Можно проверить цель по безопасным продуктовым событиям пользователя.',
+    RUNNING: 'Сервер проверяет ограниченный набор событий.',
+    VERIFIED_RESOLVED: 'Целевой продуктовый факт найден; обращение подтверждено решённым.',
+    VERIFIED_UNRESOLVED: 'Полная выборка не подтверждает достижение цели.',
+    INCONCLUSIVE: 'Недостаточно полных данных; обращение не отмечено решённым.',
+    EXPIRED: 'Закрытое или объединённое обращение нельзя проверять повторно.',
+    DISABLED: 'Нет разрешений на preview и доверенную проверку.',
   }[value];
 }
 
@@ -357,7 +331,7 @@ watch(
     loadingPolicy.value = true;
     estimating.value = false;
     running.value = false;
-    error.value = "";
+    error.value = '';
     estimate.value = null;
     run.value = props.initialRun ?? null;
     pendingIdempotencyKey.value = null;
@@ -365,7 +339,7 @@ watch(
     policyItems.value = [];
     eventNames.value = {};
     policyEnabled.value = false;
-    eventCode.value = "";
+    eventCode.value = '';
     void initializePolicy().catch(() => undefined);
     void loadEvidence();
   },
@@ -398,8 +372,7 @@ onMounted(() => {
       <div>
         <h3 id="case-verification-title">Проверка результата по событиям</h3>
         <p>
-          Retenive получает только выбранные типы событий этого пользователя и
-          ограниченный период.
+          Retenive получает только выбранные типы событий этого пользователя и ограниченный период.
         </p>
       </div>
       <span
@@ -411,9 +384,7 @@ onMounted(() => {
       </span>
     </div>
     <p class="state-description">{{ stateDescription(state) }}</p>
-    <Message v-if="error" severity="warn" :closable="false">{{
-      error
-    }}</Message>
+    <Message v-if="error" severity="warn" :closable="false">{{ error }}</Message>
 
     <div v-if="state === 'READY'" class="verification-controls">
       <EventPicker
@@ -428,16 +399,8 @@ onMounted(() => {
       />
       <label>
         <span>Период</span>
-        <select
-          v-model="range"
-          data-test="verification-period"
-          :disabled="estimating"
-        >
-          <option
-            v-for="option in periodOptions"
-            :key="option.value"
-            :value="option.value"
-          >
+        <select v-model="range" data-test="verification-period" :disabled="estimating">
+          <option v-for="option in periodOptions" :key="option.value" :value="option.value">
             {{ option.label }}
           </option>
         </select>
@@ -462,8 +425,7 @@ onMounted(() => {
         <div>
           <span>Данные событий: оценка вклада</span>
           <strong
-            >{{ formatBytes(resultBytes) }} ·
-            {{ run.estimatedAddedInputTokens }} токенов</strong
+            >{{ formatBytes(resultBytes) }} · {{ run.estimatedAddedInputTokens }} токенов</strong
           >
           <small>Не является точной ценой доступа к событиям.</small>
         </div>
@@ -472,18 +434,14 @@ onMounted(() => {
         <strong>Evidence</strong>
         <span>
           policy {{ run.policyRevisionId }} ·
-          {{ new Date(run.snapshotReceivedAt).toLocaleString("ru-RU") }}
+          {{ new Date(run.snapshotReceivedAt).toLocaleString('ru-RU') }}
         </span>
         <code
-          >{{ run.queries[0]?.query.eventCodes.join(", ") }} ·
+          >{{ run.queries[0]?.query.eventCodes.join(', ') }} ·
           {{ run.queries[0]?.query.timeRange.kind }}</code
         >
       </div>
-      <ul
-        v-if="
-          Object.values(run.results).some((result) => result.limitations.length)
-        "
-      >
+      <ul v-if="Object.values(run.results).some((result) => result.limitations.length)">
         <template v-for="(result, key) in run.results" :key="key">
           <li v-for="limitation in result.limitations" :key="limitation">
             {{ limitation }}
@@ -501,9 +459,7 @@ onMounted(() => {
   >
     <div v-if="estimate" class="estimate-dialog">
       <Message
-        :severity="
-          estimate.evaluation === 'VERIFIED_RESOLVED' ? 'success' : 'warn'
-        "
+        :severity="estimate.evaluation === 'VERIFIED_RESOLVED' ? 'success' : 'warn'"
         :closable="false"
       >
         Предварительный результат: {{ estimate.evaluation }}
@@ -512,7 +468,7 @@ onMounted(() => {
         <div>
           <span>Event codes / период</span>
           <strong
-            >{{ estimate.queries[0]?.query.eventCodes.join(", ") }} ·
+            >{{ estimate.queries[0]?.query.eventCodes.join(', ') }} ·
             {{ estimate.queries[0]?.query.timeRange.kind }}</strong
           >
         </div>
@@ -526,8 +482,8 @@ onMounted(() => {
         </div>
       </div>
       <p>
-        Проверка read-only. Project ID и End User ID берутся из обращения на
-        сервере; исходные payload не передаются в интерфейс.
+        Проверка read-only. Project ID и End User ID берутся из обращения на сервере; исходные
+        payload не передаются в интерфейс.
       </p>
       <Button
         data-test="start-case-verification"

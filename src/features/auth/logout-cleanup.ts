@@ -14,7 +14,5 @@ export async function runLogoutCleanups(
   actorId: string | undefined,
   accessToken: string | null,
 ): Promise<void> {
-  await Promise.allSettled(
-    [...cleanups].map((cleanup) => cleanup(actorId, accessToken)),
-  );
+  await Promise.allSettled([...cleanups].map((cleanup) => cleanup(actorId, accessToken)));
 }

@@ -1,11 +1,11 @@
-import { config, flushPromises, shallowMount } from "@vue/test-utils";
-import InputText from "primevue/inputtext";
-import Select from "primevue/select";
-import Textarea from "primevue/textarea";
-import ToggleSwitch from "primevue/toggleswitch";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Project } from "@/shared/types/domain";
-import ProjectPage from "./ProjectPage.vue";
+import { config, flushPromises, shallowMount } from '@vue/test-utils';
+import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
+import Textarea from 'primevue/textarea';
+import ToggleSwitch from 'primevue/toggleswitch';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Project } from '@/shared/types/domain';
+import ProjectPage from './ProjectPage.vue';
 
 config.global.stubs.ProjectSettingsSectionHeader = false;
 
@@ -18,23 +18,23 @@ const mocks = vi.hoisted(() => ({
   fetchVoiceCatalog: vi.fn(),
   authProject: {} as object,
   permissions: [
-    "project.settings.read",
-    "project.settings.write",
-    "project.profile_contract.read",
-    "project.profile_contract.write",
-    "project.ai_usage.read",
+    'project.settings.read',
+    'project.settings.write',
+    'project.profile_contract.read',
+    'project.profile_contract.write',
+    'project.ai_usage.read',
   ] as string[],
 }));
 
-vi.mock("@/shared/api/repository", () => ({
+vi.mock('@/shared/api/repository', () => ({
   repository: {
-    mode: "api",
+    mode: 'api',
     getProject: mocks.getProject,
     updateProject: mocks.updateProject,
   },
 }));
 
-vi.mock("@/features/auth/auth.store", () => ({
+vi.mock('@/features/auth/auth.store', () => ({
   useAuthStore: () => ({
     get project() {
       return {
@@ -45,43 +45,40 @@ vi.mock("@/features/auth/auth.store", () => ({
     updateProject: mocks.updateAuthProject,
   }),
 }));
-vi.mock(
-  "@/features/end-user-attributes/api/attribute-contract-repository",
-  () => ({
-    attributeContractRepository: { workspace: mocks.attributeWorkspace },
-  }),
-);
-vi.mock("@/features/project-voice/project-voice.api", () => ({
+vi.mock('@/features/end-user-attributes/api/attribute-contract-repository', () => ({
+  attributeContractRepository: { workspace: mocks.attributeWorkspace },
+}));
+vi.mock('@/features/project-voice/project-voice.api', () => ({
   fetchProjectVoiceCatalog: mocks.fetchVoiceCatalog,
 }));
 
-vi.mock("primevue/usetoast", () => ({
+vi.mock('primevue/usetoast', () => ({
   useToast: () => ({ add: mocks.addToast }),
 }));
 
-vi.mock("vue-router", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("vue-router")>()),
+vi.mock('vue-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('vue-router')>()),
   onBeforeRouteLeave: vi.fn(),
 }));
 
 function project(overrides: Partial<Project> = {}): Project {
   return {
-    id: "project-1",
+    id: 'project-1',
     version: 1,
-    name: "Retenive",
-    slug: "retenive",
-    status: "ACTIVE",
-    publicKey: "public",
-    defaultLocale: "ru",
-    supportedLocales: ["ru"],
-    assistantName: "Retenive",
-    systemPrompt: "Помогай пользователю.",
-    voiceInstructions: "Говори спокойно.",
+    name: 'Retenive',
+    slug: 'retenive',
+    status: 'ACTIVE',
+    publicKey: 'public',
+    defaultLocale: 'ru',
+    supportedLocales: ['ru'],
+    assistantName: 'Retenive',
+    systemPrompt: 'Помогай пользователю.',
+    voiceInstructions: 'Говори спокойно.',
     settings: {
-      description: "",
+      description: '',
       voiceEnabled: true,
       voiceTranscriptEnabled: true,
-      voice: "eve",
+      voice: 'eve',
     },
     ...overrides,
   };
@@ -90,24 +87,24 @@ function project(overrides: Partial<Project> = {}): Project {
 function voiceInstructionsInput(wrapper: ReturnType<typeof shallowMount>) {
   return wrapper
     .findAllComponents(Textarea)
-    .find((component) => component.attributes("id") === "voice-instructions")!;
+    .find((component) => component.attributes('id') === 'voice-instructions')!;
 }
 
 function systemPromptInput(wrapper: ReturnType<typeof shallowMount>) {
   return wrapper
     .findAllComponents(Textarea)
-    .find((component) => component.attributes("id") === "system-prompt")!;
+    .find((component) => component.attributes('id') === 'system-prompt')!;
 }
 
-describe("ProjectPage voice instructions", () => {
+describe('ProjectPage voice instructions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.permissions = [
-      "project.settings.read",
-      "project.settings.write",
-      "project.profile_contract.read",
-      "project.profile_contract.write",
-      "project.ai_usage.read",
+      'project.settings.read',
+      'project.settings.write',
+      'project.profile_contract.read',
+      'project.profile_contract.write',
+      'project.ai_usage.read',
     ];
     mocks.authProject = project();
     mocks.getProject.mockResolvedValue(project());
@@ -119,59 +116,49 @@ describe("ProjectPage voice instructions", () => {
     });
     mocks.fetchVoiceCatalog.mockResolvedValue({
       items: [
-        { id: "eve", name: "Eve", language: "multilingual" },
-        { id: "rex", name: "Rex", language: "multilingual" },
+        { id: 'eve', name: 'Eve', language: 'multilingual' },
+        { id: 'rex', name: 'Rex', language: 'multilingual' },
       ],
       stale: false,
     });
-    mocks.updateProject.mockImplementation(
-      async (_projectId: string, patch: Partial<Project>) => project(patch),
+    mocks.updateProject.mockImplementation(async (_projectId: string, patch: Partial<Project>) =>
+      project(patch),
     );
   });
 
-  it("does not load or render independently protected settings sections", async () => {
-    mocks.permissions = ["project.settings.read"];
+  it('does not load or render independently protected settings sections', async () => {
+    mocks.permissions = ['project.settings.read'];
     const wrapper = shallowMount(ProjectPage);
     await flushPromises();
 
     expect(mocks.attributeWorkspace).not.toHaveBeenCalled();
-    expect(
-      wrapper.findComponent({ name: "SpeechSynthesisSection" }).exists(),
-    ).toBe(false);
-    expect(wrapper.findComponent({ name: "AiUsageSection" }).exists()).toBe(
-      false,
-    );
-    expect(wrapper.find('button-stub[label="Настроить языки"]').exists()).toBe(
-      false,
-    );
-    expect(
-      voiceInstructionsInput(wrapper).attributes("disabled"),
-    ).toBeDefined();
+    expect(wrapper.findComponent({ name: 'SpeechSynthesisSection' }).exists()).toBe(false);
+    expect(wrapper.findComponent({ name: 'AiUsageSection' }).exists()).toBe(false);
+    expect(wrapper.find('button-stub[label="Настроить языки"]').exists()).toBe(false);
+    expect(voiceInstructionsInput(wrapper).attributes('disabled')).toBeDefined();
   });
 
-  it("has no separate legacy speech settings section", async () => {
+  it('has no separate legacy speech settings section', async () => {
     const wrapper = shallowMount(ProjectPage);
     await flushPromises();
 
-    expect(
-      wrapper.findComponent({ name: "SpeechSynthesisSection" }).exists(),
-    ).toBe(false);
-    expect(wrapper.text()).not.toContain("Озвучивание текста");
+    expect(wrapper.findComponent({ name: 'SpeechSynthesisSection' }).exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('Озвучивание текста');
   });
 
-  it("shows content languages as a Locale Attribute summary and does not patch legacy locale fields", async () => {
+  it('shows content languages as a Locale Attribute summary and does not patch legacy locale fields', async () => {
     mocks.attributeWorkspace.mockResolvedValue({
       currentPublication: {
         document: {
           fields: [
             {
-              key: "language",
-              label: "Язык",
-              semanticRole: "LOCALE",
-              lifecycle: "ACTIVE",
+              key: 'language',
+              label: 'Язык',
+              semanticRole: 'LOCALE',
+              lifecycle: 'ACTIVE',
               constraints: {
-                allowedValues: ["en", "pt-BR"],
-                defaultLocale: "pt-BR",
+                allowedValues: ['en', 'pt-BR'],
+                defaultLocale: 'pt-BR',
               },
             },
           ],
@@ -183,29 +170,29 @@ describe("ProjectPage voice instructions", () => {
     const wrapper = shallowMount(ProjectPage);
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Языки контента");
-    expect(wrapper.text()).toContain("pt-BR");
-    expect(wrapper.find("#default-locale").exists()).toBe(false);
-    await wrapper.get("form#project-settings-form").trigger("submit");
+    expect(wrapper.text()).toContain('Языки контента');
+    expect(wrapper.text()).toContain('pt-BR');
+    expect(wrapper.find('#default-locale').exists()).toBe(false);
+    await wrapper.get('form#project-settings-form').trigger('submit');
     await flushPromises();
     const patch = mocks.updateProject.mock.calls.at(-1)?.[1];
-    expect(patch).not.toHaveProperty("defaultLocale");
-    expect(patch).not.toHaveProperty("supportedLocales");
+    expect(patch).not.toHaveProperty('defaultLocale');
+    expect(patch).not.toHaveProperty('supportedLocales');
   });
 
-  it("shows the loading skeleton while the project is requested", async () => {
+  it('shows the loading skeleton while the project is requested', async () => {
     mocks.getProject.mockReturnValue(new Promise(() => {}));
 
     const wrapper = shallowMount(ProjectPage);
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.findAll(".skeleton-card")).toHaveLength(2);
-    expect(wrapper.find("#project-settings-form").exists()).toBe(false);
+    expect(wrapper.findAll('.skeleton-card')).toHaveLength(2);
+    expect(wrapper.find('#project-settings-form').exists()).toBe(false);
   });
 
-  it("shows a recoverable error and retries loading the project", async () => {
+  it('shows a recoverable error and retries loading the project', async () => {
     mocks.getProject
-      .mockRejectedValueOnce(new Error("Сервис временно недоступен"))
+      .mockRejectedValueOnce(new Error('Сервис временно недоступен'))
       .mockResolvedValueOnce(project());
 
     const wrapper = shallowMount(ProjectPage, {
@@ -217,163 +204,141 @@ describe("ProjectPage voice instructions", () => {
     });
     await flushPromises();
 
-    expect(wrapper.find(".page-message").exists()).toBe(true);
+    expect(wrapper.find('.page-message').exists()).toBe(true);
     expect(wrapper.find('button-stub[label="Повторить"]').exists()).toBe(true);
 
-    await wrapper.find('button-stub[label="Повторить"]').trigger("click");
+    await wrapper.find('button-stub[label="Повторить"]').trigger('click');
     await flushPromises();
 
     expect(mocks.getProject).toHaveBeenCalledTimes(2);
-    expect(wrapper.find("#project-settings-form").exists()).toBe(true);
-    expect(wrapper.find(".page-message").exists()).toBe(false);
+    expect(wrapper.find('#project-settings-form').exists()).toBe(true);
+    expect(wrapper.find('.page-message').exists()).toBe(false);
   });
 
-  it("loads and saves the voice instruction without changing its whitespace", async () => {
+  it('loads and saves the voice instruction without changing its whitespace', async () => {
     const wrapper = shallowMount(ProjectPage);
     await flushPromises();
 
     const input = voiceInstructionsInput(wrapper);
-    expect(input.attributes("modelvalue")).toBe("Говори спокойно.");
-    expect(input.attributes("maxlength")).toBe("20000");
+    expect(input.attributes('modelvalue')).toBe('Говори спокойно.');
+    expect(input.attributes('maxlength')).toBe('20000');
 
-    const voiceInstructions = "  Говори мягко.\nДелай паузы.  ";
-    input.vm.$emit("update:modelValue", voiceInstructions);
+    const voiceInstructions = '  Говори мягко.\nДелай паузы.  ';
+    input.vm.$emit('update:modelValue', voiceInstructions);
     await wrapper.vm.$nextTick();
-    await wrapper.get("form").trigger("submit");
+    await wrapper.get('form').trigger('submit');
     await flushPromises();
 
     expect(mocks.updateProject).toHaveBeenCalledWith(
-      "project-1",
+      'project-1',
       expect.objectContaining({ voiceInstructions }),
     );
-    expect(mocks.updateProject.mock.calls[0]?.[1]).toHaveProperty("settings");
+    expect(mocks.updateProject.mock.calls[0]?.[1]).toHaveProperty('settings');
   });
 
-  it("does not save a voice instruction longer than the API limit", async () => {
+  it('does not save a voice instruction longer than the API limit', async () => {
     const wrapper = shallowMount(ProjectPage);
     await flushPromises();
 
-    voiceInstructionsInput(wrapper).vm.$emit(
-      "update:modelValue",
-      "a".repeat(20_001),
-    );
+    voiceInstructionsInput(wrapper).vm.$emit('update:modelValue', 'a'.repeat(20_001));
     await wrapper.vm.$nextTick();
-    await wrapper.get("form").trigger("submit");
+    await wrapper.get('form').trigger('submit');
 
     expect(mocks.updateProject).not.toHaveBeenCalled();
     expect(wrapper.find('message-stub[severity="warn"]').exists()).toBe(true);
   });
 
-  it("starts every project section collapsed and explains that product connection is unavailable", async () => {
+  it('starts every project section collapsed and explains that product connection is unavailable', async () => {
     const wrapper = shallowMount(ProjectPage, {
       global: { stubs: { Message: false } },
     });
     await flushPromises();
 
     for (const contentId of [
-      "project-about-settings",
-      "project-content-locales",
-      "project-connection-settings",
-      "assistant-settings",
-      "voice-chat-settings",
+      'project-about-settings',
+      'project-content-locales',
+      'project-connection-settings',
+      'assistant-settings',
+      'voice-chat-settings',
     ]) {
       const toggle = wrapper.get(`[aria-controls="${contentId}"]`);
-      expect(toggle.attributes("aria-expanded")).toBe("false");
-      expect(wrapper.get(`#${contentId}`).attributes("style")).toContain(
-        "display: none",
-      );
-      expect(toggle.element.closest("section")?.classList).toContain(
-        "collapsed",
-      );
+      expect(toggle.attributes('aria-expanded')).toBe('false');
+      expect(wrapper.get(`#${contentId}`).attributes('style')).toContain('display: none');
+      expect(toggle.element.closest('section')?.classList).toContain('collapsed');
     }
 
-    const connectionContent = wrapper.get("#project-connection-settings");
+    const connectionContent = wrapper.get('#project-connection-settings');
     expect(connectionContent.text()).toContain(
-      "Функциональность подключения продукта пока не работает.",
+      'Функциональность подключения продукта пока не работает.',
     );
-    const connectionToggle = wrapper.get(
-      '[aria-controls="project-connection-settings"]',
-    );
-    await connectionToggle.trigger("click");
-    expect(connectionToggle.attributes("aria-expanded")).toBe("true");
-    expect(connectionContent.attributes("style")).not.toContain(
-      "display: none",
-    );
+    const connectionToggle = wrapper.get('[aria-controls="project-connection-settings"]');
+    await connectionToggle.trigger('click');
+    expect(connectionToggle.attributes('aria-expanded')).toBe('true');
+    expect(connectionContent.attributes('style')).not.toContain('display: none');
 
     const voiceToggle = wrapper.get('[aria-controls="voice-chat-settings"]');
-    await voiceToggle.trigger("click");
-    expect(voiceToggle.attributes("aria-expanded")).toBe("true");
-    expect(
-      wrapper.get("#voice-chat-settings").attributes("style"),
-    ).not.toContain("display: none");
+    await voiceToggle.trigger('click');
+    expect(voiceToggle.attributes('aria-expanded')).toBe('true');
+    expect(wrapper.get('#voice-chat-settings').attributes('style')).not.toContain('display: none');
   });
 
-  it("shows the system instruction in a compact manually resizable textarea", async () => {
+  it('shows the system instruction in a compact manually resizable textarea', async () => {
     const wrapper = shallowMount(ProjectPage);
     await flushPromises();
 
     const input = systemPromptInput(wrapper);
-    expect(input.attributes("rows")).toBe("3");
-    expect(input.attributes("auto-resize")).toBeUndefined();
-    expect(input.classes()).toContain("system-prompt-textarea");
-    expect(
-      wrapper.find(".system-prompt-resizer").attributes("aria-label"),
-    ).toBe("Изменить высоту системной инструкции");
+    expect(input.attributes('rows')).toBe('3');
+    expect(input.attributes('auto-resize')).toBeUndefined();
+    expect(input.classes()).toContain('system-prompt-textarea');
+    expect(wrapper.find('.system-prompt-resizer').attributes('aria-label')).toBe(
+      'Изменить высоту системной инструкции',
+    );
   });
 
-  it("keeps one Project form in the settings column and submits it from the sidebar", async () => {
+  it('keeps one Project form in the settings column and submits it from the sidebar', async () => {
     const wrapper = shallowMount(ProjectPage);
     await flushPromises();
 
-    const mainChildren = Array.from(
-      wrapper.get(".settings-main").element.children,
-    );
+    const mainChildren = Array.from(wrapper.get('.settings-main').element.children);
     const activityIndex = mainChildren.findIndex(
-      (element) => element.tagName === "ACTIVITY-SETTINGS-SECTION-STUB",
+      (element) => element.tagName === 'ACTIVITY-SETTINGS-SECTION-STUB',
     );
 
-    expect(mainChildren[activityIndex - 1]?.textContent).toContain(
-      "Подключение продукта",
-    );
+    expect(mainChildren[activityIndex - 1]?.textContent).toContain('Подключение продукта');
     expect(mainChildren[activityIndex + 1]?.tagName).toBe(
-      "SCENARIO-ADMISSION-SETTINGS-SECTION-STUB",
+      'SCENARIO-ADMISSION-SETTINGS-SECTION-STUB',
     );
-    expect(mainChildren[activityIndex + 2]?.textContent).toContain("Ассистент");
-    expect(
-      wrapper.find(".settings-main > speech-synthesis-section-stub").exists(),
-    ).toBe(false);
-    expect(wrapper.get("#project-settings-form").element.parentElement).toBe(
-      wrapper.get(".settings-main").element,
+    expect(mainChildren[activityIndex + 2]?.textContent).toContain('Ассистент');
+    expect(wrapper.find('.settings-main > speech-synthesis-section-stub').exists()).toBe(false);
+    expect(wrapper.get('#project-settings-form').element.parentElement).toBe(
+      wrapper.get('.settings-main').element,
     );
-    expect(wrapper.get(".settings-aside").element.parentElement).toBe(
-      wrapper.get(".settings-layout").element,
+    expect(wrapper.get('.settings-aside').element.parentElement).toBe(
+      wrapper.get('.settings-layout').element,
     );
-    expect(
-      wrapper.find('button-stub[form="project-settings-form"]').exists(),
-    ).toBe(true);
+    expect(wrapper.find('button-stub[form="project-settings-form"]').exists()).toBe(true);
   });
 
-  it("keeps memory and AI Review directly after the assistant inside the settings column", async () => {
+  it('keeps memory and AI Review directly after the assistant inside the settings column', async () => {
     const wrapper = shallowMount(ProjectPage);
     await flushPromises();
 
-    const form = wrapper.get("#project-settings-form");
+    const form = wrapper.get('#project-settings-form');
     const assistantSection = form
-      .findAll("section")
-      .find((section) => section.text().includes("Ассистент"))!;
-    const memory = form.getComponent({ name: "UserMemorySettingsSection" });
-    const review = form.getComponent({ name: "AIReviewSettingsSection" });
+      .findAll('section')
+      .find((section) => section.text().includes('Ассистент'))!;
+    const memory = form.getComponent({ name: 'UserMemorySettingsSection' });
+    const review = form.getComponent({ name: 'AIReviewSettingsSection' });
     const voiceSection = form
-      .findAll("section")
-      .find((section) => section.text().includes("Голос Retenive"))!;
+      .findAll('section')
+      .find((section) => section.text().includes('Голос Retenive'))!;
 
     expect(
       assistantSection.element.compareDocumentPosition(memory.element) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
-      memory.element.compareDocumentPosition(review.element) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
+      memory.element.compareDocumentPosition(review.element) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
       review.element.compareDocumentPosition(voiceSection.element) &
@@ -381,18 +346,18 @@ describe("ProjectPage voice instructions", () => {
     ).toBeTruthy();
   });
 
-  it("keeps project connection and the shared xAI voice editable in API mode", async () => {
+  it('keeps project connection and the shared xAI voice editable in API mode', async () => {
     mocks.getProject.mockResolvedValue(
       project({
         settings: {
-          description: "Before",
-          timezone: "Europe/Madrid",
-          apiBaseUrl: "https://old.example.com",
-          wsUrl: "wss://old.example.com",
-          allowedOrigins: ["https://old.example.com"],
+          description: 'Before',
+          timezone: 'Europe/Madrid',
+          apiBaseUrl: 'https://old.example.com',
+          wsUrl: 'wss://old.example.com',
+          allowedOrigins: ['https://old.example.com'],
           voiceEnabled: true,
           voiceTranscriptEnabled: true,
-          voice: "eve",
+          voice: 'eve',
         },
       }),
     );
@@ -401,31 +366,25 @@ describe("ProjectPage voice instructions", () => {
 
     const description = wrapper
       .findAllComponents(Textarea)
-      .find(
-        (component) => component.attributes("id") === "project-description",
-      )!;
+      .find((component) => component.attributes('id') === 'project-description')!;
     const apiUrl = wrapper
       .findAllComponents(InputText)
-      .find((component) => component.attributes("id") === "api-url")!;
+      .find((component) => component.attributes('id') === 'api-url')!;
     const wsUrl = wrapper
       .findAllComponents(InputText)
-      .find((component) => component.attributes("id") === "ws-url")!;
+      .find((component) => component.attributes('id') === 'ws-url')!;
     const allowedOrigins = wrapper
       .findAllComponents(Textarea)
-      .find((component) => component.attributes("id") === "allowed-origins")!;
+      .find((component) => component.attributes('id') === 'allowed-origins')!;
     const voiceEnabled = wrapper
       .findAllComponents(ToggleSwitch)
-      .find(
-        (component) => component.attributes("input-id") === "voice-enabled",
-      )!;
+      .find((component) => component.attributes('input-id') === 'voice-enabled')!;
     const voice = wrapper
       .findAllComponents(Select)
-      .find((component) => component.attributes("id") === "voice")!;
+      .find((component) => component.attributes('id') === 'voice')!;
     const voiceTranscriptEnabled = wrapper
       .findAllComponents(ToggleSwitch)
-      .find(
-        (component) => component.attributes("input-id") === "voice-transcripts",
-      )!;
+      .find((component) => component.attributes('input-id') === 'voice-transcripts')!;
 
     for (const component of [
       description,
@@ -436,57 +395,50 @@ describe("ProjectPage voice instructions", () => {
       voice,
       voiceTranscriptEnabled,
     ]) {
-      expect(component.attributes("disabled")).toBe("false");
+      expect(component.attributes('disabled')).toBe('false');
     }
-    expect(wrapper.text()).not.toContain(
-      "Project PATCH больше не принимает общий settings",
-    );
+    expect(wrapper.text()).not.toContain('Project PATCH больше не принимает общий settings');
 
-    description.vm.$emit("update:modelValue", "After");
-    apiUrl.vm.$emit("update:modelValue", "https://api.example.com");
-    wsUrl.vm.$emit("update:modelValue", "wss://api.example.com");
+    description.vm.$emit('update:modelValue', 'After');
+    apiUrl.vm.$emit('update:modelValue', 'https://api.example.com');
+    wsUrl.vm.$emit('update:modelValue', 'wss://api.example.com');
     allowedOrigins.vm.$emit(
-      "update:modelValue",
-      "https://one.example.com\nhttps://two.example.com",
+      'update:modelValue',
+      'https://one.example.com\nhttps://two.example.com',
     );
-    voice.vm.$emit("update:modelValue", "rex");
-    voiceEnabled.vm.$emit("update:modelValue", true);
-    voiceTranscriptEnabled.vm.$emit("update:modelValue", false);
+    voice.vm.$emit('update:modelValue', 'rex');
+    voiceEnabled.vm.$emit('update:modelValue', true);
+    voiceTranscriptEnabled.vm.$emit('update:modelValue', false);
     await wrapper.vm.$nextTick();
-    expect(wrapper.text()).toContain(
-      "Обращения из голосовых диалогов нельзя определять",
-    );
-    voiceEnabled.vm.$emit("update:modelValue", false);
+    expect(wrapper.text()).toContain('Обращения из голосовых диалогов нельзя определять');
+    voiceEnabled.vm.$emit('update:modelValue', false);
     await wrapper.vm.$nextTick();
-    await wrapper.get("form").trigger("submit");
+    await wrapper.get('form').trigger('submit');
     await flushPromises();
 
     expect(mocks.updateProject).toHaveBeenCalledWith(
-      "project-1",
+      'project-1',
       expect.objectContaining({
         settings: expect.objectContaining({
-          description: "After",
-          apiBaseUrl: "https://api.example.com",
-          wsUrl: "wss://api.example.com",
-          allowedOrigins: [
-            "https://one.example.com",
-            "https://two.example.com",
-          ],
+          description: 'After',
+          apiBaseUrl: 'https://api.example.com',
+          wsUrl: 'wss://api.example.com',
+          allowedOrigins: ['https://one.example.com', 'https://two.example.com'],
           voiceEnabled: false,
           voiceTranscriptEnabled: false,
-          voice: "rex",
+          voice: 'rex',
         }),
       }),
     );
   });
 
-  it("loads the backend catalog and keeps the shared voice selector enabled when voice chat is off", async () => {
+  it('loads the backend catalog and keeps the shared voice selector enabled when voice chat is off', async () => {
     mocks.getProject.mockResolvedValue(
       project({
         settings: {
           voiceEnabled: false,
           voiceTranscriptEnabled: true,
-          voice: "eve",
+          voice: 'eve',
         },
       }),
     );
@@ -496,40 +448,35 @@ describe("ProjectPage voice instructions", () => {
 
     const voice = wrapper
       .findAllComponents(Select)
-      .find((component) => component.attributes("id") === "voice")!;
-    expect(mocks.fetchVoiceCatalog).toHaveBeenCalledWith(
-      "project-1",
-      expect.any(AbortSignal),
-    );
-    expect(voice.attributes("disabled")).toBe("false");
-    expect(voice.attributes("modelvalue")).toBe("eve");
-    expect(voice.attributes("options")).toBe("[object Object],[object Object]");
-    expect(wrapper.text()).toContain(
-      "Используется в голосовом чате и командах «Озвучить текст»",
-    );
+      .find((component) => component.attributes('id') === 'voice')!;
+    expect(mocks.fetchVoiceCatalog).toHaveBeenCalledWith('project-1', expect.any(AbortSignal));
+    expect(voice.attributes('disabled')).toBe('false');
+    expect(voice.attributes('modelvalue')).toBe('eve');
+    expect(voice.attributes('options')).toBe('[object Object],[object Object]');
+    expect(wrapper.text()).toContain('Используется в голосовом чате и командах «Озвучить текст»');
   });
 
-  it("preserves an unknown saved voice when the catalog is temporarily unavailable", async () => {
+  it('preserves an unknown saved voice when the catalog is temporarily unavailable', async () => {
     mocks.getProject.mockResolvedValue(
-      project({ settings: { voiceEnabled: false, voice: "future-voice" } }),
+      project({ settings: { voiceEnabled: false, voice: 'future-voice' } }),
     );
-    mocks.fetchVoiceCatalog.mockRejectedValue(new Error("Каталог недоступен"));
+    mocks.fetchVoiceCatalog.mockRejectedValue(new Error('Каталог недоступен'));
 
     const wrapper = shallowMount(ProjectPage);
     await flushPromises();
 
     const voice = wrapper
       .findAllComponents(Select)
-      .find((component) => component.attributes("id") === "voice")!;
-    expect(voice.attributes("modelvalue")).toBe("future-voice");
-    expect(voice.attributes("options")).toBe("[object Object]");
-    expect(voice.attributes("disabled")).toBe("false");
-    expect(wrapper.text()).toContain("Каталог недоступен");
+      .find((component) => component.attributes('id') === 'voice')!;
+    expect(voice.attributes('modelvalue')).toBe('future-voice');
+    expect(voice.attributes('options')).toBe('[object Object]');
+    expect(voice.attributes('disabled')).toBe('false');
+    expect(wrapper.text()).toContain('Каталог недоступен');
   });
 
-  it("requires a replacement when a fresh catalog no longer supports the saved voice", async () => {
+  it('requires a replacement when a fresh catalog no longer supports the saved voice', async () => {
     mocks.getProject.mockResolvedValue(
-      project({ settings: { voiceEnabled: false, voice: "retired-voice" } }),
+      project({ settings: { voiceEnabled: false, voice: 'retired-voice' } }),
     );
 
     const wrapper = shallowMount(ProjectPage);
@@ -537,73 +484,64 @@ describe("ProjectPage voice instructions", () => {
 
     const voice = wrapper
       .findAllComponents(Select)
-      .find((component) => component.attributes("id") === "voice")!;
-    expect(voice.attributes("modelvalue")).toBe("retired-voice");
-    expect(voice.attributes("disabled")).toBe("false");
-    expect(wrapper.text()).toContain(
-      "Сохранённый голос больше недоступен. Выберите новый",
-    );
+      .find((component) => component.attributes('id') === 'voice')!;
+    expect(voice.attributes('modelvalue')).toBe('retired-voice');
+    expect(voice.attributes('disabled')).toBe('false');
+    expect(wrapper.text()).toContain('Сохранённый голос больше недоступен. Выберите новый');
 
-    await wrapper.get("form").trigger("submit");
+    await wrapper.get('form').trigger('submit');
     expect(mocks.updateProject).not.toHaveBeenCalled();
 
-    voice.vm.$emit("update:modelValue", "rex");
+    voice.vm.$emit('update:modelValue', 'rex');
     await wrapper.vm.$nextTick();
-    await wrapper.get("form").trigger("submit");
+    await wrapper.get('form').trigger('submit');
     await flushPromises();
 
     expect(mocks.updateProject).toHaveBeenCalledWith(
-      "project-1",
+      'project-1',
       expect.objectContaining({
-        settings: expect.objectContaining({ voice: "rex" }),
+        settings: expect.objectContaining({ voice: 'rex' }),
       }),
     );
   });
 
-  it("shows the saved voice read-only without Project settings write permission", async () => {
-    mocks.permissions = ["project.settings.read"];
+  it('shows the saved voice read-only without Project settings write permission', async () => {
+    mocks.permissions = ['project.settings.read'];
     const wrapper = shallowMount(ProjectPage);
     await flushPromises();
 
     const voice = wrapper
       .findAllComponents(Select)
-      .find((component) => component.attributes("id") === "voice")!;
-    expect(voice.attributes("modelvalue")).toBe("eve");
-    expect(voice.attributes("disabled")).toBe("true");
+      .find((component) => component.attributes('id') === 'voice')!;
+    expect(voice.attributes('modelvalue')).toBe('eve');
+    expect(voice.attributes('disabled')).toBe('true');
   });
 
-  it("preserves the latest dedicated activity timezone when the main project form is saved", async () => {
-    mocks.getProject.mockResolvedValue(
-      project({ settings: { timezone: "UTC" } }),
-    );
+  it('preserves the latest dedicated activity timezone when the main project form is saved', async () => {
+    mocks.getProject.mockResolvedValue(project({ settings: { timezone: 'UTC' } }));
     const wrapper = shallowMount(ProjectPage);
     await flushPromises();
 
-    wrapper
-      .getComponent({ name: "ActivitySettingsSection" })
-      .vm.$emit("change", {
-        projectVersion: 2,
-        timezone: "Europe/Madrid",
-        visitInactivitySeconds: 1800,
-        reconnectGraceSeconds: 30,
-        limits: {
-          visitInactivitySeconds: { min: 60, max: 86400 },
-          reconnectGraceSeconds: { min: 0, max: 300 },
-        },
-      });
-    voiceInstructionsInput(wrapper).vm.$emit(
-      "update:modelValue",
-      "Обновлённая инструкция",
-    );
+    wrapper.getComponent({ name: 'ActivitySettingsSection' }).vm.$emit('change', {
+      projectVersion: 2,
+      timezone: 'Europe/Madrid',
+      visitInactivitySeconds: 1800,
+      reconnectGraceSeconds: 30,
+      limits: {
+        visitInactivitySeconds: { min: 60, max: 86400 },
+        reconnectGraceSeconds: { min: 0, max: 300 },
+      },
+    });
+    voiceInstructionsInput(wrapper).vm.$emit('update:modelValue', 'Обновлённая инструкция');
     await wrapper.vm.$nextTick();
-    await wrapper.get("form").trigger("submit");
+    await wrapper.get('form').trigger('submit');
     await flushPromises();
 
     expect(mocks.updateProject).toHaveBeenCalledWith(
-      "project-1",
+      'project-1',
       expect.objectContaining({
         version: 2,
-        settings: expect.objectContaining({ timezone: "Europe/Madrid" }),
+        settings: expect.objectContaining({ timezone: 'Europe/Madrid' }),
       }),
     );
   });

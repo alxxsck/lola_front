@@ -6,17 +6,17 @@ import {
   telegramChannelAdminSetBroadcastsEnabled,
   telegramChannelAdminTest,
   telegramLinkAdminGet,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   ConfigureTelegramChannelDto,
   DisableTelegramChannelDto,
   RotateTelegramChannelDto,
   TestTelegramChannelDto,
   SetTelegramBroadcastsEnabledDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 const idempotencyOptions = (key: string) => ({
-  headers: { "Idempotency-Key": key },
+  headers: { 'Idempotency-Key': key },
 });
 
 export const telegramProductInstallationsApi = {
@@ -24,16 +24,8 @@ export const telegramProductInstallationsApi = {
     return telegramChannelAdminGet(projectId);
   },
 
-  create(
-    projectId: string,
-    input: ConfigureTelegramChannelDto,
-    idempotencyKey: string,
-  ) {
-    return telegramChannelAdminCreate(
-      projectId,
-      input,
-      idempotencyOptions(idempotencyKey),
-    );
+  create(projectId: string, input: ConfigureTelegramChannelDto, idempotencyKey: string) {
+    return telegramChannelAdminCreate(projectId, input, idempotencyOptions(idempotencyKey));
   },
 
   rotate(projectId: string, input: RotateTelegramChannelDto) {

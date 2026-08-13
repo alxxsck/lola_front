@@ -1,66 +1,60 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import Avatar from "primevue/avatar";
-import Menu from "primevue/menu";
-import Tag from "primevue/tag";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { useConversationAISuspensionStore } from "@/features/conversation-ai-suspension/model/conversation-ai-suspension.store";
-import { useProjectActionsStore } from "@/features/project-actions/model/project-actions.store";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Avatar from 'primevue/avatar';
+import Menu from 'primevue/menu';
+import Tag from 'primevue/tag';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { useConversationAISuspensionStore } from '@/features/conversation-ai-suspension/model/conversation-ai-suspension.store';
+import { useProjectActionsStore } from '@/features/project-actions/model/project-actions.store';
 import {
   hasProjectPermission,
   PROJECT_SETTINGS_SURFACE_READ_PERMISSIONS,
-} from "@/features/auth/permission-access";
-import { canReadProjectMemberships } from "@/features/project-memberships/model/project-membership-permissions";
-import { canReadProjectRoles } from "@/features/project-roles/model/project-role-permissions";
-import { repository } from "@/shared/api/repository";
-import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
-import { conversationAISuspensionEnabled } from "@/shared/config/features";
+} from '@/features/auth/permission-access';
+import { canReadProjectMemberships } from '@/features/project-memberships/model/project-membership-permissions';
+import { canReadProjectRoles } from '@/features/project-roles/model/project-role-permissions';
+import { repository } from '@/shared/api/repository';
+import { cmsRealtimeClient } from '@/shared/realtime/cms-realtime-client';
+import { conversationAISuspensionEnabled } from '@/shared/config/features';
 import {
   canReadSupportControl as canReadSupportControlAccess,
   canAccessSupportNotificationSettings,
   canReadSupportWorkspace as canReadSupportWorkspaceAccess,
-} from "@/features/support-workspace/model/support-workspace-access";
-import { productBrand } from "@/shared/config/product-brand";
-import { openProjectInNewTab } from "@/features/project-switching/open-project-tab";
-import { reportingMvpEnabled } from "@/features/reporting/model/reporting-feature";
-import ThemeSwitch from "./ThemeSwitch.vue";
+} from '@/features/support-workspace/model/support-workspace-access';
+import { productBrand } from '@/shared/config/product-brand';
+import { openProjectInNewTab } from '@/features/project-switching/open-project-tab';
+import { reportingMvpEnabled } from '@/features/reporting/model/reporting-feature';
+import ThemeSwitch from './ThemeSwitch.vue';
 
 const route = useRoute();
 const router = useRouter();
-const supportFocus = computed(
-  () => route.meta.supportWorkspacePresentation === true,
-);
+const supportFocus = computed(() => route.meta.supportWorkspacePresentation === true);
 const auth = useAuthStore();
 const projectActions = useProjectActionsStore();
 const suspensions = useConversationAISuspensionStore();
 const profileMenu = ref<InstanceType<typeof Menu> | null>(null);
 const sidebarOpen = ref(false);
-const switchingProjectName = ref("");
-const navigationIntentPath = ref("");
+const switchingProjectName = ref('');
+const navigationIntentPath = ref('');
 const expandedNavigationGroups = ref<Record<string, boolean>>({
   project: false,
   support: false,
 });
-const sidebarCollapsedStorageKey = "retenive-cms-sidebar-collapsed-v1";
+const sidebarCollapsedStorageKey = 'retenive-cms-sidebar-collapsed-v1';
 
 function readSidebarCollapsedPreference(): boolean | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   try {
     const value = window.localStorage.getItem(sidebarCollapsedStorageKey);
-    return value === "true" ? true : value === "false" ? false : null;
+    return value === 'true' ? true : value === 'false' ? false : null;
   } catch {
     return null;
   }
 }
 
-const sidebarCollapsedPreference = ref<boolean | null>(
-  readSidebarCollapsedPreference(),
-);
-const sidebarCollapsed = computed(
-  () => sidebarCollapsedPreference.value ?? supportFocus.value,
-);
+const sidebarCollapsedPreference = ref<boolean | null>(readSidebarCollapsedPreference());
+const sidebarCollapsed = computed(() => sidebarCollapsedPreference.value ?? supportFocus.value);
 
 function toggleSidebarCollapsed() {
   const next = !sidebarCollapsed.value;
@@ -73,15 +67,11 @@ function toggleSidebarCollapsed() {
 }
 
 function toggleNavigationGroup(key: string) {
-  expandedNavigationGroups.value[key] =
-    expandedNavigationGroups.value[key] === false;
+  expandedNavigationGroups.value[key] = expandedNavigationGroups.value[key] === false;
 }
 const canReadProjectSettings = computed(() =>
   PROJECT_SETTINGS_SURFACE_READ_PERMISSIONS.some((permission) =>
-    hasProjectPermission(
-      auth.project?.effectivePermissionCodes ?? [],
-      permission,
-    ),
+    hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], permission),
   ),
 );
 const canReadMemberships = computed(() =>
@@ -103,144 +93,131 @@ const canReadSupportWorkspace = computed(
 );
 const supportWorkspacePath = computed(() => {
   const permissions = auth.project?.effectivePermissionCodes ?? [];
-  const canReadCases = hasProjectPermission(permissions, "project.cases.read");
-  const canReadConversations = hasProjectPermission(
-    permissions,
-    "project.conversations.read",
-  );
-  return canReadCases && !canReadConversations
-    ? "/support/inbox?mode=cases"
-    : "/support/inbox";
+  const canReadCases = hasProjectPermission(permissions, 'project.cases.read');
+  const canReadConversations = hasProjectPermission(permissions, 'project.conversations.read');
+  return canReadCases && !canReadConversations ? '/support/inbox?mode=cases' : '/support/inbox';
 });
 const canReadSupportControl = computed(() =>
   canReadSupportControlAccess(auth.project?.effectivePermissionCodes ?? []),
 );
 const canReadSupportNotificationSettings = computed(() =>
-  canAccessSupportNotificationSettings(
-    auth.project?.effectivePermissionCodes ?? [],
-  ),
+  canAccessSupportNotificationSettings(auth.project?.effectivePermissionCodes ?? []),
 );
 const navigationItems = computed(() => [
   {
-    label: "CMS Users",
-    icon: "pi pi-users",
-    to: "/platform/cms-users",
-    platformPermission: "platform.cms_users.read",
+    label: 'CMS Users',
+    icon: 'pi pi-users',
+    to: '/platform/cms-users',
+    platformPermission: 'platform.cms_users.read',
   },
   {
-    label: "Доставка и восстановление",
-    icon: "pi pi-heart-fill",
-    to: "/platform/notification-operations",
-    platformPermission: "platform.notifications.operations.read",
+    label: 'Доставка и восстановление',
+    icon: 'pi pi-heart-fill',
+    to: '/platform/notification-operations',
+    platformPermission: 'platform.notifications.operations.read',
   },
   {
-    label: "Тарифы AI",
-    icon: "pi pi-dollar",
-    to: "/platform/ai-pricing",
-    platformPermission: "platform.ai_pricing.read",
+    label: 'Тарифы AI',
+    icon: 'pi pi-dollar',
+    to: '/platform/ai-pricing',
+    platformPermission: 'platform.ai_pricing.read',
   },
   {
-    label: "Обязательная защита",
-    icon: "pi pi-shield",
-    to: "/platform/case-intelligence/safety",
-    platformPermission: "platform.case_intelligence.safety.manage",
+    label: 'Обязательная защита',
+    icon: 'pi pi-shield',
+    to: '/platform/case-intelligence/safety',
+    platformPermission: 'platform.case_intelligence.safety.manage',
   },
-  { label: "Обзор", icon: "pi pi-sparkles", to: "/overview", project: true },
+  { label: 'Обзор', icon: 'pi pi-sparkles', to: '/overview', project: true },
   {
-    label: "Отчёты",
-    icon: "pi pi-chart-line",
-    to: "/reports",
+    label: 'Отчёты',
+    icon: 'pi pi-chart-line',
+    to: '/reports',
     project: true,
-    projectPermission: "project.analytics.read",
+    projectPermission: 'project.analytics.read',
     reportingFeature: true,
   },
   {
-    label: "Настройки",
-    icon: "pi pi-sliders-h",
-    to: "/project",
+    label: 'Настройки',
+    icon: 'pi pi-sliders-h',
+    to: '/project',
     project: true,
     projectSectionRoot: true,
     projectSection: true,
     nested: true,
   },
   {
-    label: "Интеграции",
-    icon: "pi pi-link",
-    to: "/settings/integrations",
+    label: 'Интеграции',
+    icon: 'pi pi-link',
+    to: '/settings/integrations',
     project: true,
-    projectPermissionsAny: [
-      "project.notifications.read",
-      "project.integrations.read",
-    ],
+    projectPermissionsAny: ['project.notifications.read', 'project.integrations.read'],
     projectSection: true,
     nested: true,
   },
   {
-    label: "Администраторы",
-    icon: "pi pi-user-edit",
-    to: "/project/memberships",
+    label: 'Администраторы',
+    icon: 'pi pi-user-edit',
+    to: '/project/memberships',
     nested: true,
     project: true,
     projectMemberships: true,
     projectSection: true,
   },
   {
-    label: "Роли",
-    icon: "pi pi-shield",
-    to: "/project/roles",
+    label: 'Роли',
+    icon: 'pi pi-shield',
+    to: '/project/roles',
     nested: true,
     project: true,
     projectRoles: true,
     projectSection: true,
   },
   {
-    label: "Поля профиля",
-    icon: "pi pi-id-card",
-    to: "/profile-fields",
+    label: 'Поля профиля',
+    icon: 'pi pi-id-card',
+    to: '/profile-fields',
     project: true,
-    projectPermission: "project.profile_contract.read",
+    projectPermission: 'project.profile_contract.read',
   },
   {
-    label: "База знаний",
-    icon: "pi pi-book",
-    to: "/knowledge",
+    label: 'База знаний',
+    icon: 'pi pi-book',
+    to: '/knowledge',
     project: true,
-    projectPermission: "project.knowledge.read",
+    projectPermission: 'project.knowledge.read',
   },
   {
-    label: "Интерфейс",
-    icon: "pi pi-th-large",
-    to: "/interface",
+    label: 'Интерфейс',
+    icon: 'pi pi-th-large',
+    to: '/interface',
     project: true,
-    projectPermission: "project.ui_registry.read",
+    projectPermission: 'project.ui_registry.read',
   },
   {
-    label: "События",
-    icon: "pi pi-bolt",
-    to: "/events",
+    label: 'События',
+    icon: 'pi pi-bolt',
+    to: '/events',
     project: true,
-    projectPermission: "project.event_catalog.read",
+    projectPermission: 'project.event_catalog.read',
   },
   {
-    label: "Журнал проекта",
-    icon: "pi pi-list",
-    to: "/event-logs",
+    label: 'Журнал проекта',
+    icon: 'pi pi-list',
+    to: '/event-logs',
     project: true,
-    projectPermissionsAny: [
-      "project.event_logs.read",
-      "project.integration_activity.read",
-    ],
+    projectPermissionsAny: ['project.event_logs.read', 'project.integration_activity.read'],
   },
   {
-    label: "Действия",
-    icon: "pi pi-directions-alt",
-    to: "/actions",
+    label: 'Действия',
+    icon: 'pi pi-directions-alt',
+    to: '/actions',
     project: true,
-    projectPermission: "project.actions.read",
+    projectPermission: 'project.actions.read',
   },
   {
-    label: "Рабочее место",
-    icon: "pi pi-headphones",
+    label: 'Рабочее место',
+    icon: 'pi pi-headphones',
     to: supportWorkspacePath.value,
     project: true,
     supportWorkspace: true,
@@ -248,199 +225,196 @@ const navigationItems = computed(() => [
     nested: true,
   },
   {
-    label: "Операционный обзор",
-    icon: "pi pi-chart-line",
-    to: "/support/control",
+    label: 'Операционный обзор',
+    icon: 'pi pi-chart-line',
+    to: '/support/control',
     project: true,
     supportLeadControl: true,
     nested: true,
     supportSection: true,
   },
   {
-    label: "Контроль качества",
-    icon: "pi pi-verified",
-    to: "/support/quality",
+    label: 'Контроль качества',
+    icon: 'pi pi-verified',
+    to: '/support/quality',
     project: true,
     projectPermissionsAny: [
-      "project.support.quality.read",
-      "project.support.quality.review",
-      "project.support.quality.self_read",
+      'project.support.quality.read',
+      'project.support.quality.review',
+      'project.support.quality.self_read',
     ],
     nested: true,
     supportSection: true,
   },
   {
-    label: "Маршрутизация",
-    icon: "pi pi-sitemap",
-    to: "/support/settings/routing",
+    label: 'Маршрутизация',
+    icon: 'pi pi-sitemap',
+    to: '/support/settings/routing',
     project: true,
     projectPermissionsAny: [
-      "project.support.routing.read",
-      "project.support.routing.manage",
-      "project.support.teams.read",
-      "project.support.teams.manage",
-      "project.support.queues.read",
-      "project.support.queues.manage",
+      'project.support.routing.read',
+      'project.support.routing.manage',
+      'project.support.teams.read',
+      'project.support.teams.manage',
+      'project.support.queues.read',
+      'project.support.queues.manage',
     ],
     nested: true,
     supportSection: true,
   },
   {
-    label: "Аналитика поддержки",
-    icon: "pi pi-chart-bar",
-    to: "/support/analytics",
+    label: 'Аналитика поддержки',
+    icon: 'pi pi-chart-bar',
+    to: '/support/analytics',
     project: true,
     projectPermissionsAny: [
-      "project.reporting.catalog.read",
-      "project.reporting.aggregate.read",
-      "project.analytics.read",
+      'project.reporting.catalog.read',
+      'project.reporting.aggregate.read',
+      'project.analytics.read',
     ],
     nested: true,
     supportSection: true,
   },
   {
-    label: "Правила обращений",
-    icon: "pi pi-sparkles",
-    to: "/support/settings/case-intelligence",
+    label: 'Правила обращений',
+    icon: 'pi pi-sparkles',
+    to: '/support/settings/case-intelligence',
     project: true,
-    projectPermission: "project.case_intelligence.read",
+    projectPermission: 'project.case_intelligence.read',
     nested: true,
     supportSection: true,
   },
   {
-    label: "Календарь и SLA",
-    icon: "pi pi-clock",
-    to: "/support/settings/sla-calendars",
+    label: 'Календарь и SLA',
+    icon: 'pi pi-clock',
+    to: '/support/settings/sla-calendars',
     project: true,
-    projectPermissionsAny: [
-      "project.support.sla.read",
-      "project.support.sla.manage",
-    ],
+    projectPermissionsAny: ['project.support.sla.read', 'project.support.sla.manage'],
     nested: true,
     supportSection: true,
   },
   {
-    label: "Шаблоны ответов",
-    icon: "pi pi-file-edit",
-    to: "/support/settings/macros",
+    label: 'Шаблоны ответов',
+    icon: 'pi pi-file-edit',
+    to: '/support/settings/macros',
     project: true,
-    projectPermission: "project.support.macros.manage",
+    projectPermission: 'project.support.macros.manage',
     nested: true,
     supportSection: true,
   },
   {
-    label: "Уведомления",
-    icon: "pi pi-bell",
-    to: "/support/settings/notifications",
+    label: 'Уведомления',
+    icon: 'pi pi-bell',
+    to: '/support/settings/notifications',
     project: true,
     supportNotificationSettings: true,
     nested: true,
     supportSection: true,
   },
   {
-    label: "Внешние задачи",
-    icon: "pi pi-directions",
-    to: "/support/external-work",
+    label: 'Внешние задачи',
+    icon: 'pi pi-directions',
+    to: '/support/external-work',
     project: true,
     projectPermissionsAny: [
-      "project.support.external_work.inbox_read",
-      "project.support.external_work.read_linked",
+      'project.support.external_work.inbox_read',
+      'project.support.external_work.read_linked',
     ],
     nested: true,
     supportSection: true,
   },
   {
-    label: "Интеграции",
-    icon: "pi pi-link",
-    to: "/support/settings/integrations",
+    label: 'Интеграции',
+    icon: 'pi pi-link',
+    to: '/support/settings/integrations',
     project: true,
-    projectPermission: "project.support.external_work.manage",
+    projectPermission: 'project.support.external_work.manage',
     nested: true,
     supportSection: true,
   },
   {
-    label: "AI-анализы",
-    icon: "pi pi-sparkles",
-    to: "/ai-analyses",
+    label: 'AI-анализы',
+    icon: 'pi pi-sparkles',
+    to: '/ai-analyses',
     project: true,
-    projectPermission: "project.ai_analyses.read",
+    projectPermission: 'project.ai_analyses.read',
   },
   {
-    label: "Журнал AI",
-    icon: "pi pi-history",
-    to: "/ai-operations",
+    label: 'Журнал AI',
+    icon: 'pi pi-history',
+    to: '/ai-operations',
     project: true,
-    projectPermission: "project.ai_operations.read",
+    projectPermission: 'project.ai_operations.read',
   },
   {
-    label: "Расходы AI",
-    icon: "pi pi-chart-line",
-    to: "/ai-costs",
+    label: 'Расходы AI',
+    icon: 'pi pi-chart-line',
+    to: '/ai-costs',
     project: true,
     projectPermissionsAny: [
-      "project.ai_costs.read",
-      "project.ai_allowance.read",
-      "project.ai_allowance.manage",
-      "project.ai_allowance.grant",
-      "project.ai_allowance.reconcile",
-      "project.ai_allowance.accrual_rules.read",
-      "project.ai_allowance.accrual_rules.manage",
-      "project.ai_allowance.accrual_receipts.read",
+      'project.ai_costs.read',
+      'project.ai_allowance.read',
+      'project.ai_allowance.manage',
+      'project.ai_allowance.grant',
+      'project.ai_allowance.reconcile',
+      'project.ai_allowance.accrual_rules.read',
+      'project.ai_allowance.accrual_rules.manage',
+      'project.ai_allowance.accrual_receipts.read',
     ],
   },
   {
-    label: "Telegram-рассылки",
-    icon: "pi pi-send",
-    to: "/telegram/broadcasts",
+    label: 'Telegram-рассылки',
+    icon: 'pi pi-send',
+    to: '/telegram/broadcasts',
     project: true,
-    projectPermission: "project.telegram.broadcasts.read",
+    projectPermission: 'project.telegram.broadcasts.read',
   },
   {
-    label: "Сценарии",
-    icon: "pi pi-sitemap",
-    to: "/scenarios",
+    label: 'Сценарии',
+    icon: 'pi pi-sitemap',
+    to: '/scenarios',
     project: true,
-    projectPermission: "project.scenarios.read",
+    projectPermission: 'project.scenarios.read',
   },
   {
-    label: "Сегменты",
-    icon: "pi pi-filter-fill",
-    to: "/segments",
+    label: 'Сегменты',
+    icon: 'pi pi-filter-fill',
+    to: '/segments',
     project: true,
-    projectPermission: "project.segments.read",
+    projectPermission: 'project.segments.read',
   },
   {
-    label: "Документация",
-    icon: "pi pi-bookmark",
-    to: "/docs",
+    label: 'Документация',
+    icon: 'pi pi-bookmark',
+    to: '/docs',
     project: true,
   },
   {
-    label: "Операции",
-    icon: "pi pi-chart-bar",
-    to: "/operations",
+    label: 'Операции',
+    icon: 'pi pi-chart-bar',
+    to: '/operations',
     project: true,
     projectPermissionsAny: [
-      "project.event_logs.read",
-      "project.scenario_runs.read",
-      "project.audit.read",
-      "project.integration_api_requests.read",
+      'project.event_logs.read',
+      'project.scenario_runs.read',
+      'project.audit.read',
+      'project.integration_api_requests.read',
     ],
   },
   {
-    label: "Пользователи",
-    icon: "pi pi-users",
-    to: "/users",
+    label: 'Пользователи',
+    icon: 'pi pi-users',
+    to: '/users',
     project: true,
-    projectPermission: "project.profiles.read",
+    projectPermission: 'project.profiles.read',
   },
   {
-    label: "Сейчас онлайн",
-    icon: "pi pi-circle-fill",
-    to: "/live",
+    label: 'Сейчас онлайн',
+    icon: 'pi pi-circle-fill',
+    to: '/live',
     live: true,
     project: true,
-    projectPermission: "project.end_users.read",
+    projectPermission: 'project.end_users.read',
   },
 ]);
 
@@ -452,9 +426,7 @@ const navigation = computed(() => {
       (!item.supportSection || auth.supportEnabled === true) &&
       (!item.projectSectionRoot || canReadProjectSettings.value) &&
       (!item.platformPermission ||
-        auth.user?.platformPermissionCodes?.includes(
-          item.platformPermission,
-        )) &&
+        auth.user?.platformPermissionCodes?.includes(item.platformPermission)) &&
       (!item.projectPermission ||
         hasProjectPermission(
           auth.project?.effectivePermissionCodes ?? [],
@@ -471,8 +443,7 @@ const navigation = computed(() => {
       (!item.projectRoles || canReadRoles.value) &&
       (!item.supportWorkspace || canReadSupportWorkspace.value) &&
       (!item.supportLeadControl || canReadSupportControl.value) &&
-      (!item.supportNotificationSettings ||
-        canReadSupportNotificationSettings.value),
+      (!item.supportNotificationSettings || canReadSupportNotificationSettings.value),
   );
   return visibleItems;
 });
@@ -486,25 +457,25 @@ const navigationGroups = computed(() => {
   }> = [];
   for (const item of navigation.value) {
     if (item.projectSection) {
-      const projectGroup = groups.find((group) => group.key === "project");
+      const projectGroup = groups.find((group) => group.key === 'project');
       if (projectGroup) projectGroup.items.push(item);
       else
         groups.push({
-          key: "project",
-          label: "Проект",
-          icon: "pi pi-sliders-h",
+          key: 'project',
+          label: 'Проект',
+          icon: 'pi pi-sliders-h',
           items: [item],
         });
       continue;
     }
     if (item.supportSection) {
-      const supportGroup = groups.find((group) => group.key === "support");
+      const supportGroup = groups.find((group) => group.key === 'support');
       if (supportGroup) supportGroup.items.push(item);
       else
         groups.push({
-          key: "support",
-          label: "Поддержка",
-          icon: "pi pi-headphones",
+          key: 'support',
+          label: 'Поддержка',
+          icon: 'pi pi-headphones',
           items: [item],
         });
       continue;
@@ -523,8 +494,7 @@ watch(
         group.items.some((item) => {
           const targetPath = navigationPath(item.to);
           return (
-            path === targetPath ||
-            (targetPath !== "/project" && path.startsWith(`${targetPath}/`))
+            path === targetPath || (targetPath !== '/project' && path.startsWith(`${targetPath}/`))
           );
         })
       ) {
@@ -536,7 +506,7 @@ watch(
 );
 
 function navigationPath(to: string): string {
-  return to.split("?", 1)[0] ?? to;
+  return to.split('?', 1)[0] ?? to;
 }
 
 function isNavigationItemActive(to: string): boolean {
@@ -544,28 +514,22 @@ function isNavigationItemActive(to: string): boolean {
   const activePath = navigationIntentPath.value || route.path;
   return (
     activePath === targetPath ||
-    (targetPath !== "/project" && activePath.startsWith(`${targetPath}/`))
+    (targetPath !== '/project' && activePath.startsWith(`${targetPath}/`))
   );
 }
 
 function handleNavigationIntent(event: MouseEvent, to: string): void {
-  if (
-    event.button !== 0 ||
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey
-  )
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
     return;
   navigationIntentPath.value = navigationPath(to);
   sidebarOpen.value = false;
 }
 
 const removeNavigationIntentAfterEach = router.afterEach(() => {
-  navigationIntentPath.value = "";
+  navigationIntentPath.value = '';
 });
 const removeNavigationIntentOnError = router.onError(() => {
-  navigationIntentPath.value = "";
+  navigationIntentPath.value = '';
 });
 
 const profileItems = computed(() => [
@@ -574,14 +538,11 @@ const profileItems = computed(() => [
   ...(auth.projects.length > 0
     ? [
         {
-          label: "Переключить проект",
-          icon: "pi pi-briefcase",
+          label: 'Переключить проект',
+          icon: 'pi pi-briefcase',
           items: auth.projects.map((project) => ({
             label: project.name,
-            icon:
-              auth.project?.id === project.id
-                ? "pi pi-check"
-                : "pi pi-briefcase",
+            icon: auth.project?.id === project.id ? 'pi pi-check' : 'pi pi-briefcase',
             command: () => switchProject(project.id),
             openInNewTab: () => openProjectTab(project.id),
           })),
@@ -590,12 +551,12 @@ const profileItems = computed(() => [
       ]
     : []),
   {
-    label: "Безопасность",
-    icon: "pi pi-lock",
-    command: () => router.push("/settings/security"),
+    label: 'Безопасность',
+    icon: 'pi pi-lock',
+    command: () => router.push('/settings/security'),
   },
-  { label: "Выйти", icon: "pi pi-sign-out", command: () => logout(false) },
-  { label: "Выйти везде", icon: "pi pi-shield", command: () => logout(true) },
+  { label: 'Выйти', icon: 'pi pi-sign-out', command: () => logout(false) },
+  { label: 'Выйти везде', icon: 'pi pi-shield', command: () => logout(true) },
 ]);
 
 async function switchProject(projectId: string) {
@@ -609,12 +570,12 @@ async function switchProject(projectId: string) {
   try {
     projectActions.clear();
     auth.selectProject(projectId);
-    await router.replace("/overview");
+    await router.replace('/overview');
   } catch (cause) {
     if (previousProjectId) auth.selectProject(previousProjectId);
     throw cause;
   } finally {
-    switchingProjectName.value = "";
+    switchingProjectName.value = '';
   }
 }
 
@@ -630,25 +591,24 @@ async function logout(allDevices: boolean) {
     await auth.logout(allDevices);
   } finally {
     projectActions.clear();
-    await router.push("/login");
+    await router.push('/login');
   }
 }
 
 watch(
   () => ({
     projectId: auth.project?.id,
-    permissions: auth.project?.effectivePermissionCodes?.join("\u0000") ?? "",
+    permissions: auth.project?.effectivePermissionCodes?.join('\u0000') ?? '',
   }),
   ({ projectId }) => {
     if (projectId) {
       if (
         conversationAISuspensionEnabled &&
-        ["project.conversations.read", "project.conversations.ai_suspend"].some(
-          (permission) =>
-            hasProjectPermission(
-              auth.project?.effectivePermissionCodes ?? [],
-              permission as Parameters<typeof hasProjectPermission>[1],
-            ),
+        ['project.conversations.read', 'project.conversations.ai_suspend'].some((permission) =>
+          hasProjectPermission(
+            auth.project?.effectivePermissionCodes ?? [],
+            permission as Parameters<typeof hasProjectPermission>[1],
+          ),
         )
       )
         void suspensions.activateProject(projectId);
@@ -671,11 +631,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="shell" :class="{ 'shell--sidebar-collapsed': sidebarCollapsed }">
-    <aside
-      class="sidebar"
-      :class="{ open: sidebarOpen }"
-      aria-label="Основная навигация CMS"
-    >
+    <aside class="sidebar" :class="{ open: sidebarOpen }" aria-label="Основная навигация CMS">
       <div class="sidebar-header">
         <div class="brand">
           <div class="brand-mark">
@@ -688,16 +644,8 @@ onBeforeUnmount(() => {
           <button
             type="button"
             class="sidebar-collapse-toggle"
-            :aria-label="
-              sidebarCollapsed
-                ? 'Развернуть боковое меню'
-                : 'Свернуть боковое меню'
-            "
-            :title="
-              sidebarCollapsed
-                ? 'Развернуть боковое меню'
-                : 'Свернуть боковое меню'
-            "
+            :aria-label="sidebarCollapsed ? 'Развернуть боковое меню' : 'Свернуть боковое меню'"
+            :title="sidebarCollapsed ? 'Развернуть боковое меню' : 'Свернуть боковое меню'"
             @click="toggleSidebarCollapsed"
           >
             <i class="pi pi-angle-double-left" aria-hidden="true" />
@@ -706,15 +654,13 @@ onBeforeUnmount(() => {
 
         <div class="project-pill">
           <div class="project-avatar">
-            {{
-              auth.project ? auth.project.name.slice(0, 2).toUpperCase() : "CP"
-            }}
+            {{ auth.project ? auth.project.name.slice(0, 2).toUpperCase() : 'CP' }}
           </div>
           <div class="project-copy">
-            <strong>{{ auth.project?.name ?? "Управление платформой" }}</strong
+            <strong>{{ auth.project?.name ?? 'Управление платформой' }}</strong
             ><span>{{
               auth.project?.organization?.name ??
-              (auth.project ? "Текущий проект" : "Управление платформой")
+              (auth.project ? 'Текущий проект' : 'Управление платформой')
             }}</span>
           </div>
           <i class="pi pi-lock" />
@@ -744,9 +690,7 @@ onBeforeUnmount(() => {
                 :aria-expanded="expandedNavigationGroups[group.key] !== false"
                 :aria-controls="`navigation-group-${group.key}`"
                 :aria-label="`${
-                  expandedNavigationGroups[group.key] !== false
-                    ? 'Свернуть'
-                    : 'Развернуть'
+                  expandedNavigationGroups[group.key] !== false ? 'Свернуть' : 'Развернуть'
                 } раздел «${group.label}»`"
                 :title="sidebarCollapsed ? group.label : undefined"
                 @click="toggleNavigationGroup(group.key)"
@@ -770,15 +714,9 @@ onBeforeUnmount(() => {
                 'nav-group-disclosure--collapsed':
                   group.label && expandedNavigationGroups[group.key] !== true,
               }"
-              :aria-hidden="
-                group.label
-                  ? expandedNavigationGroups[group.key] !== true
-                  : undefined
-              "
+              :aria-hidden="group.label ? expandedNavigationGroups[group.key] !== true : undefined"
               :inert="
-                group.label && expandedNavigationGroups[group.key] !== true
-                  ? true
-                  : undefined
+                group.label && expandedNavigationGroups[group.key] !== true ? true : undefined
               "
             >
               <div class="nav-group-items">
@@ -789,9 +727,7 @@ onBeforeUnmount(() => {
                   class="nav-item"
                   :title="sidebarCollapsed ? item.label : undefined"
                   :aria-label="sidebarCollapsed ? item.label : undefined"
-                  :aria-current="
-                    isNavigationItemActive(item.to) ? 'page' : undefined
-                  "
+                  :aria-current="isNavigationItemActive(item.to) ? 'page' : undefined"
                   :class="{
                     active: isNavigationItemActive(item.to),
                     'nav-item--nested': item.nested,
@@ -801,11 +737,7 @@ onBeforeUnmount(() => {
                   <i
                     :class="item.icon"
                     aria-hidden="true"
-                    :style="
-                      item.live
-                        ? 'font-size:.55rem;color:var(--status-success)'
-                        : ''
-                    "
+                    :style="item.live ? 'font-size:.55rem;color:var(--status-success)' : ''"
                   />
                   <span>{{ item.label }}</span>
                   <span v-if="item.live" class="live-pulse" />
@@ -822,13 +754,11 @@ onBeforeUnmount(() => {
           <i class="pi pi-code" />
           <div>
             <strong>{{
-              repository.mode === "mock"
-                ? "Демонстрационный режим"
-                : "Подключение к API"
+              repository.mode === 'mock' ? 'Демонстрационный режим' : 'Подключение к API'
             }}</strong
             ><span>{{
-              repository.mode === "mock"
-                ? "Изменения сохраняются локально"
+              repository.mode === 'mock'
+                ? 'Изменения сохраняются локально'
                 : `Данные с сервера ${productBrand.name}`
             }}</span>
           </div>
@@ -839,18 +769,15 @@ onBeforeUnmount(() => {
           aria-label="Открыть меню профиля"
           @click="profileMenu?.toggle($event)"
         >
-          <Avatar
-            :label="auth.user?.name.slice(0, 1).toUpperCase()"
-            shape="circle"
-          />
+          <Avatar :label="auth.user?.name.slice(0, 1).toUpperCase()" shape="circle" />
           <div>
             <strong>{{ auth.user?.name }}</strong
             ><span>{{
               !auth.project && auth.user?.platformPermissionCodes?.length
-                ? "Platform Operator"
-                : auth.project?.roleKeys?.includes("PROJECT_OWNER")
-                  ? "Владелец"
-                  : "Администратор"
+                ? 'Platform Operator'
+                : auth.project?.roleKeys?.includes('PROJECT_OWNER')
+                  ? 'Владелец'
+                  : 'Администратор'
             }}</span>
           </div>
           <i class="pi pi-ellipsis-h" />
@@ -873,12 +800,7 @@ onBeforeUnmount(() => {
               <i class="pi pi-external-link" aria-hidden="true" />
             </button>
           </div>
-          <a
-            v-else
-            v-bind="props.action"
-            :href="item.url"
-            :target="item.target"
-          >
+          <a v-else v-bind="props.action" :href="item.url" :target="item.target">
             <span v-if="item.icon" v-bind="props.icon" />
             <span v-bind="props.label">{{ label }}</span>
           </a>
@@ -897,10 +819,7 @@ onBeforeUnmount(() => {
           @click="sidebarOpen = !sidebarOpen"
         />
         <strong>{{ productBrand.cmsName }}</strong>
-        <Tag
-          :value="repository.mode === 'mock' ? 'ДЕМО' : 'API'"
-          severity="secondary"
-        />
+        <Tag :value="repository.mode === 'mock' ? 'ДЕМО' : 'API'" severity="secondary" />
       </header>
       <section
         v-if="switchingProjectName"
@@ -914,9 +833,7 @@ onBeforeUnmount(() => {
         <div>
           <strong>Переключаем проект</strong>
           <span>{{ switchingProjectName }}</span>
-          <small
-            >Обновляем доступы и открываем безопасную стартовую страницу.</small
-          >
+          <small>Обновляем доступы и открываем безопасную стартовую страницу.</small>
         </div>
       </section>
       <RouterView v-else />
@@ -952,11 +869,7 @@ onBeforeUnmount(() => {
   height: 42px;
   border-radius: 12px;
   color: var(--action-primary);
-  background: color-mix(
-    in srgb,
-    var(--action-primary) 10%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--action-primary) 10%, var(--surface-card));
 }
 .project-switch-state > div {
   display: grid;
@@ -1314,7 +1227,7 @@ nav {
   font-size: 0.82rem;
 }
 .nav-item--nested::after {
-  content: "";
+  content: '';
   position: absolute;
   left: -10px;
   width: 7px;
@@ -1343,7 +1256,7 @@ nav {
   color: var(--sidebar-active-text);
 }
 .nav-item.active:before {
-  content: "";
+  content: '';
   position: absolute;
   left: -16px;
   width: 3px;
@@ -1369,8 +1282,7 @@ nav {
   height: 6px;
   border-radius: 50%;
   background: var(--status-success);
-  box-shadow: 0 0 0 4px
-    color-mix(in srgb, var(--status-success) 12%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--status-success) 12%, transparent);
 }
 .sidebar-footer {
   display: flex;

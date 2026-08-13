@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import Button from "primevue/button";
-import Skeleton from "primevue/skeleton";
+import Button from 'primevue/button';
+import Skeleton from 'primevue/skeleton';
 
 withDefaults(
   defineProps<{
@@ -27,11 +27,7 @@ defineEmits<{ retry: [] }>();
         <Skeleton width="62%" height="10px" />
       </div>
     </div>
-    <div
-      v-else-if="error && !hasContent"
-      class="inspector-resource__state"
-      role="alert"
-    >
+    <div v-else-if="error && !hasContent" class="inspector-resource__state" role="alert">
       <span class="inspector-resource__icon is-error">
         <i class="pi pi-exclamation-circle" aria-hidden="true" />
       </span>
@@ -55,11 +51,7 @@ defineEmits<{ retry: [] }>();
     </div>
     <template v-else><slot /></template>
 
-    <div
-      v-if="error && hasContent"
-      class="inspector-resource__inline-error"
-      role="alert"
-    >
+    <div v-if="error && hasContent" class="inspector-resource__inline-error" role="alert">
       <span>{{ error }}</span>
       <button type="button" @click="$emit('retry')">Повторить</button>
     </div>

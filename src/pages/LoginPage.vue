@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { useAuthErrorFeedback } from "@/features/auth/use-auth-error-feedback";
-import { loginDefaults } from "@/features/auth/login-defaults";
-import { dataMode } from "@/shared/config/data-mode";
+import { computed, nextTick, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { useAuthErrorFeedback } from '@/features/auth/use-auth-error-feedback';
+import { loginDefaults } from '@/features/auth/login-defaults';
+import { dataMode } from '@/shared/config/data-mode';
 
 const defaults = loginDefaults(dataMode);
 const login = ref(defaults.login);
@@ -27,13 +27,9 @@ const auth = useAuthStore();
 const router = useRouter();
 const route = useRoute();
 auth.setPostAuthenticationRedirect(route.query.redirect);
-const passwordResetCompleted = computed(
-  () => route.query.passwordReset === "success",
-);
+const passwordResetCompleted = computed(() => route.query.passwordReset === 'success');
 const mfaReauthenticationRequired = computed(
-  () =>
-    route.query.mfa === "MFA_ENROLLMENT_REQUIRED" ||
-    route.query.mfa === "MFA_REQUIRED",
+  () => route.query.mfa === 'MFA_ENROLLMENT_REQUIRED' || route.query.mfa === 'MFA_REQUIRED',
 );
 
 async function submit() {
@@ -41,12 +37,12 @@ async function submit() {
   clearError();
   const normalizedLogin = login.value.trim();
   if (!normalizedLogin || normalizedLogin.length > 255) {
-    showError("Введите email");
+    showError('Введите email');
     await focusError();
     return;
   }
   if (!password.value) {
-    showError("Введите пароль или секрет первоначального доступа");
+    showError('Введите пароль или секрет первоначального доступа');
     await focusError();
     return;
   }
@@ -54,13 +50,13 @@ async function submit() {
   auth.setPostAuthenticationRedirect(route.query.redirect);
   try {
     const result = await auth.login(normalizedLogin, password.value);
-    if (result === "PASSWORD_SETUP_REQUIRED") {
-      await router.push({ name: "password-setup" });
+    if (result === 'PASSWORD_SETUP_REQUIRED') {
+      await router.push({ name: 'password-setup' });
       return;
     }
-    if (result === "MFA_ENROLLMENT_REQUIRED" || result === "MFA_REQUIRED") {
+    if (result === 'MFA_ENROLLMENT_REQUIRED' || result === 'MFA_REQUIRED') {
       await router.push({
-        name: "mfa",
+        name: 'mfa',
         ...(auth.postAuthenticationRedirect
           ? { query: { redirect: auth.postAuthenticationRedirect } }
           : {}),
@@ -69,12 +65,10 @@ async function submit() {
     }
     if (auth.requiresProjectSelection) return;
     handoffPending.value = true;
-    await router.replace(
-      auth.consumePostAuthenticationRedirect() ?? auth.authenticatedLandingPath,
-    );
+    await router.replace(auth.consumePostAuthenticationRedirect() ?? auth.authenticatedLandingPath);
   } catch (cause) {
     handoffPending.value = false;
-    presentError(cause, "Не удалось войти");
+    presentError(cause, 'Не удалось войти');
     await focusError();
   } finally {
     loading.value = false;
@@ -90,9 +84,7 @@ async function chooseProject(projectId: string) {
   auth.selectProject(projectId);
   handoffPending.value = true;
   try {
-    await router.replace(
-      auth.consumePostAuthenticationRedirect() ?? auth.authenticatedLandingPath,
-    );
+    await router.replace(auth.consumePostAuthenticationRedirect() ?? auth.authenticatedLandingPath);
   } finally {
     handoffPending.value = false;
   }
@@ -106,16 +98,12 @@ async function chooseProject(projectId: string) {
       <div class="intro-copy">
         <div class="eyebrow">Control room</div>
         <h1>Настраивайте путь пользователя, пока Retenive ведёт его к цели.</h1>
-        <p>
-          События, интерфейс и сценарии — в одном спокойном рабочем
-          пространстве.
-        </p>
+        <p>События, интерфейс и сценарии — в одном спокойном рабочем пространстве.</p>
       </div>
       <div class="signal-card">
         <div class="signal-avatar">L</div>
         <div>
-          <span class="signal-live"><i /> LIVE</span
-          ><strong>registration_completed</strong
+          <span class="signal-live"><i /> LIVE</span><strong>registration_completed</strong
           ><small>Сценарий «После регистрации» запущен</small>
         </div>
       </div>
@@ -124,147 +112,132 @@ async function chooseProject(projectId: string) {
     </section>
     <section class="login-panel">
       <Transition name="auth-swap" mode="out-in">
-      <form
-        v-if="!auth.requiresProjectSelection && !handoffPending"
-        key="credentials"
-        class="login-form"
-        :aria-busy="loading"
-        @submit.prevent="submit"
-      >
-        <div class="mobile-logo logo"><span>R</span><strong>Retenive</strong></div>
-        <div>
-          <div class="eyebrow">Добро пожаловать</div>
-          <h2>Войти в Retenive</h2>
-          <p>После входа мы откроем доступное вам рабочее пространство.</p>
-        </div>
-        <div class="field">
-          <label for="login">Email</label
-          ><InputText
-            id="login"
-            v-model="login"
-            type="text"
-            size="large"
-            autofocus
-            autocomplete="username"
-            placeholder="name@company.com"
-            :aria-invalid="Boolean(error)"
-            :aria-describedby="error ? 'login-error' : undefined"
-            @keydown.enter.prevent="submit"
-          />
-        </div>
-        <div class="field">
-          <div class="row-between">
-            <label for="password"
-              >Пароль или секрет первоначального доступа</label
-            ><a
-              class="forgot"
-              data-testid="forgot-password-link"
-              href="/forgot-password"
-              >Забыли пароль?</a
-            >
+        <form
+          v-if="!auth.requiresProjectSelection && !handoffPending"
+          key="credentials"
+          class="login-form"
+          :aria-busy="loading"
+          @submit.prevent="submit"
+        >
+          <div class="mobile-logo logo"><span>R</span><strong>Retenive</strong></div>
+          <div>
+            <div class="eyebrow">Добро пожаловать</div>
+            <h2>Войти в Retenive</h2>
+            <p>После входа мы откроем доступное вам рабочее пространство.</p>
           </div>
-          <div class="password-wrap">
-            <InputText
-              id="password"
-              v-model="password"
-              :type="showPassword ? 'text' : 'password'"
+          <div class="field">
+            <label for="login">Email</label
+            ><InputText
+              id="login"
+              v-model="login"
+              type="text"
               size="large"
-              autocomplete="current-password"
-              placeholder="Введите пароль"
+              autofocus
+              autocomplete="username"
+              placeholder="name@company.com"
               :aria-invalid="Boolean(error)"
               :aria-describedby="error ? 'login-error' : undefined"
               @keydown.enter.prevent="submit"
-            /><button
-              type="button"
-              :aria-label="showPassword ? 'Скрыть пароль' : 'Показать пароль'"
-              @click="showPassword = !showPassword"
-            >
-              <i :class="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'" />
-            </button>
+            />
           </div>
-        </div>
-        <Message
-          v-if="auth.phase === 'ANONYMOUS_WITH_SETUP_SUCCESS'"
-          severity="success"
-          size="small"
-          >Пароль сохранён. Теперь войдите с новым паролем.</Message
-        >
-        <Message
-          v-else-if="passwordResetCompleted"
-          severity="success"
-          size="small"
-          >Пароль изменён. Войдите с новым паролем.</Message
-        >
-        <Message
-          v-else-if="mfaReauthenticationRequired"
-          severity="info"
-          size="small"
-          >Для продолжения войдите снова: система переведёт вас к обязательной
-          проверке MFA.</Message
-        >
-        <div v-if="error" id="login-error" ref="errorElement" tabindex="-1">
-          <Message severity="error" size="small">{{ error }}</Message>
-        </div>
-        <Button
-          type="submit"
-          label="Продолжить"
-          icon="pi pi-arrow-right"
-          icon-pos="right"
-          size="large"
-          :loading="loading"
-          :disabled="retryBlocked"
-          fluid
-        />
-        <p class="mode-note">
-          <i class="pi pi-info-circle" />
-          {{
-            auth.mode === "mock"
-              ? "Demo-режим: подойдёт любой email."
-              : "Вход в административное пространство Retenive."
-          }}
-        </p>
-      </form>
-      <section
-        v-else-if="handoffPending"
-        key="handoff"
-        class="login-form auth-handoff"
-        data-testid="auth-handoff"
-        aria-live="polite"
-      >
-        <span class="auth-handoff__icon"><i class="pi pi-check" /></span>
-        <div>
-          <div class="eyebrow">Вход подтверждён</div>
-          <h2>Открываем рабочее пространство</h2>
-          <p>Проверяем доступ и готовим данные без повторного показа формы.</p>
-        </div>
-        <i
-          class="pi pi-spin pi-spinner auth-handoff__spinner"
-          aria-hidden="true"
-        />
-      </section>
-      <section v-else key="projects" class="login-form project-choice">
-        <div>
-          <div class="eyebrow">Рабочее пространство</div>
-          <h2>Выберите проект</h2>
-          <p>У вашей учётной записи есть доступ к нескольким проектам.</p>
-        </div>
-        <button
-          v-for="item in auth.projects"
-          :key="item.id"
-          type="button"
-          class="project-option"
-          @click="chooseProject(item.id)"
-        >
-          <span class="project-option__mark">{{
-            item.name.slice(0, 2).toUpperCase()
-          }}</span>
-          <span
-            ><strong>{{ item.name }}</strong
-            ><small>{{ item.organization?.name ?? item.slug }}</small></span
+          <div class="field">
+            <div class="row-between">
+              <label for="password">Пароль или секрет первоначального доступа</label
+              ><a class="forgot" data-testid="forgot-password-link" href="/forgot-password"
+                >Забыли пароль?</a
+              >
+            </div>
+            <div class="password-wrap">
+              <InputText
+                id="password"
+                v-model="password"
+                :type="showPassword ? 'text' : 'password'"
+                size="large"
+                autocomplete="current-password"
+                placeholder="Введите пароль"
+                :aria-invalid="Boolean(error)"
+                :aria-describedby="error ? 'login-error' : undefined"
+                @keydown.enter.prevent="submit"
+              /><button
+                type="button"
+                :aria-label="showPassword ? 'Скрыть пароль' : 'Показать пароль'"
+                @click="showPassword = !showPassword"
+              >
+                <i :class="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'" />
+              </button>
+            </div>
+          </div>
+          <Message
+            v-if="auth.phase === 'ANONYMOUS_WITH_SETUP_SUCCESS'"
+            severity="success"
+            size="small"
+            >Пароль сохранён. Теперь войдите с новым паролем.</Message
           >
-          <i class="pi pi-arrow-right" />
-        </button>
-      </section>
+          <Message v-else-if="passwordResetCompleted" severity="success" size="small"
+            >Пароль изменён. Войдите с новым паролем.</Message
+          >
+          <Message v-else-if="mfaReauthenticationRequired" severity="info" size="small"
+            >Для продолжения войдите снова: система переведёт вас к обязательной проверке
+            MFA.</Message
+          >
+          <div v-if="error" id="login-error" ref="errorElement" tabindex="-1">
+            <Message severity="error" size="small">{{ error }}</Message>
+          </div>
+          <Button
+            type="submit"
+            label="Продолжить"
+            icon="pi pi-arrow-right"
+            icon-pos="right"
+            size="large"
+            :loading="loading"
+            :disabled="retryBlocked"
+            fluid
+          />
+          <p class="mode-note">
+            <i class="pi pi-info-circle" />
+            {{
+              auth.mode === 'mock'
+                ? 'Demo-режим: подойдёт любой email.'
+                : 'Вход в административное пространство Retenive.'
+            }}
+          </p>
+        </form>
+        <section
+          v-else-if="handoffPending"
+          key="handoff"
+          class="login-form auth-handoff"
+          data-testid="auth-handoff"
+          aria-live="polite"
+        >
+          <span class="auth-handoff__icon"><i class="pi pi-check" /></span>
+          <div>
+            <div class="eyebrow">Вход подтверждён</div>
+            <h2>Открываем рабочее пространство</h2>
+            <p>Проверяем доступ и готовим данные без повторного показа формы.</p>
+          </div>
+          <i class="pi pi-spin pi-spinner auth-handoff__spinner" aria-hidden="true" />
+        </section>
+        <section v-else key="projects" class="login-form project-choice">
+          <div>
+            <div class="eyebrow">Рабочее пространство</div>
+            <h2>Выберите проект</h2>
+            <p>У вашей учётной записи есть доступ к нескольким проектам.</p>
+          </div>
+          <button
+            v-for="item in auth.projects"
+            :key="item.id"
+            type="button"
+            class="project-option"
+            @click="chooseProject(item.id)"
+          >
+            <span class="project-option__mark">{{ item.name.slice(0, 2).toUpperCase() }}</span>
+            <span
+              ><strong>{{ item.name }}</strong
+              ><small>{{ item.organization?.name ?? item.slug }}</small></span
+            >
+            <i class="pi pi-arrow-right" />
+          </button>
+        </section>
       </Transition>
       <footer>© 2026 Retenive AI · Безопасность · Поддержка</footer>
     </section>

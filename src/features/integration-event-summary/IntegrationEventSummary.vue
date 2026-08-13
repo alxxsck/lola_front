@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type {
   IntegrationEventRouteSummaryItemDto,
   IntegrationEventRouteSummaryResponseDto,
-} from "@/shared/api/generated/models";
-import { integrationEventSummaryApi } from "./integration-event-summary.api";
+} from '@/shared/api/generated/models';
+import { integrationEventSummaryApi } from './integration-event-summary.api';
 
 const props = defineProps<{
   projectId: string;
@@ -14,29 +14,29 @@ const props = defineProps<{
 
 const summary = ref<IntegrationEventRouteSummaryResponseDto | null>(null);
 const loading = ref(false);
-const error = ref("");
+const error = ref('');
 let requestId = 0;
 
 function policyLabel(mode: string): string {
   return (
     {
-      NONE: "Не настроена",
-      SINGLE_SOURCE: "Единственный источник",
-      CANONICAL_KEY: "Несколько источников по canonical key",
+      NONE: 'Не настроена',
+      SINGLE_SOURCE: 'Единственный источник',
+      CANONICAL_KEY: 'Несколько источников по canonical key',
     }[mode] ?? mode
   );
 }
 
 function directionLabel(direction: string): string {
-  return direction === "INBOUND" ? "Приём" : "Отправка";
+  return direction === 'INBOUND' ? 'Приём' : 'Отправка';
 }
 
 function compatibilityLabel(compatibility: string): string {
   return (
     {
-      CURRENT: "Актуальная схема",
-      REQUIRES_REPUBLISH: "Требуется перепубликация",
-      NOT_PUBLISHED: "Не опубликован",
+      CURRENT: 'Актуальная схема',
+      REQUIRES_REPUBLISH: 'Требуется перепубликация',
+      NOT_PUBLISHED: 'Не опубликован',
     }[compatibility] ?? compatibility
   );
 }
@@ -44,28 +44,27 @@ function compatibilityLabel(compatibility: string): string {
 function warningLabel(warning: string): string {
   return (
     {
-      CONNECTION_NOT_ACTIVE: "Подключение не активно",
-      CONNECTION_UNHEALTHY: "Подключение работает нестабильно",
-      ROUTE_NOT_ACTIVE: "Маршрут не активен",
-      ROUTE_NOT_PUBLISHED: "Маршрут не опубликован",
-      ROUTE_DISABLED: "Маршрут выключен",
-      EVENT_SCHEMA_REVISION_STALE:
-        "Маршрут использует устаревшую схему события",
+      CONNECTION_NOT_ACTIVE: 'Подключение не активно',
+      CONNECTION_UNHEALTHY: 'Подключение работает нестабильно',
+      ROUTE_NOT_ACTIVE: 'Маршрут не активен',
+      ROUTE_NOT_PUBLISHED: 'Маршрут не опубликован',
+      ROUTE_DISABLED: 'Маршрут выключен',
+      EVENT_SCHEMA_REVISION_STALE: 'Маршрут использует устаревшую схему события',
     }[warning] ?? warning
   );
 }
 
 function routeStatus(route: IntegrationEventRouteSummaryItemDto): string {
-  if (route.routeLifecycle === "ARCHIVED") return "В архиве";
-  if (route.enabled) return "Включён";
-  if (route.publishedRevision === null) return "Черновик";
-  return "Остановлен";
+  if (route.routeLifecycle === 'ARCHIVED') return 'В архиве';
+  if (route.enabled) return 'Включён';
+  if (route.publishedRevision === null) return 'Черновик';
+  return 'Остановлен';
 }
 
 async function load(): Promise<void> {
   const current = ++requestId;
   summary.value = null;
-  error.value = "";
+  error.value = '';
   if (!props.canRead || !props.projectId || !props.eventDefinitionKeyId) {
     loading.value = false;
     return;
@@ -74,10 +73,7 @@ async function load(): Promise<void> {
   const eventDefinitionKeyId = props.eventDefinitionKeyId;
   loading.value = true;
   try {
-    const response = await integrationEventSummaryApi.get(
-      projectId,
-      eventDefinitionKeyId,
-    );
+    const response = await integrationEventSummaryApi.get(projectId, eventDefinitionKeyId);
     if (
       current !== requestId ||
       projectId !== props.projectId ||
@@ -86,7 +82,7 @@ async function load(): Promise<void> {
     )
       return;
     if (response.eventDefinitionKeyId !== eventDefinitionKeyId) {
-      throw new Error("Unexpected Event Definition integration summary");
+      throw new Error('Unexpected Event Definition integration summary');
     }
     summary.value = response;
   } catch {
@@ -96,7 +92,7 @@ async function load(): Promise<void> {
       eventDefinitionKeyId === props.eventDefinitionKeyId &&
       props.canRead
     ) {
-      error.value = "Не удалось загрузить интеграции события.";
+      error.value = 'Не удалось загрузить интеграции события.';
     }
   } finally {
     if (current === requestId) loading.value = false;
@@ -134,19 +130,13 @@ onBeforeUnmount(() => {
       </span>
     </header>
 
-    <p v-if="loading" class="summary-state" aria-live="polite">
-      Загружаем интеграции события…
-    </p>
+    <p v-if="loading" class="summary-state" aria-live="polite">Загружаем интеграции события…</p>
     <div v-else-if="error" class="summary-state error" role="alert">
       <span>{{ error }}</span>
-      <button type="button" class="secondary-button" @click="load">
-        Повторить
-      </button>
+      <button type="button" class="secondary-button" @click="load">Повторить</button>
     </div>
     <template v-else-if="summary">
-      <p v-if="!summary.routes.length" class="summary-state">
-        Маршруты интеграций не настроены.
-      </p>
+      <p v-if="!summary.routes.length" class="summary-state">Маршруты интеграций не настроены.</p>
       <div v-else class="summary-routes">
         <article
           v-for="route in summary.routes"
@@ -156,15 +146,10 @@ onBeforeUnmount(() => {
         >
           <div class="route-heading">
             <div>
-              <span
-                >{{ directionLabel(route.direction) }} ·
-                {{ route.provider }}</span
-              >
+              <span>{{ directionLabel(route.direction) }} · {{ route.provider }}</span>
               <h3>{{ route.connectionDisplayName }}</h3>
               <strong
-                v-if="
-                  summary.ingressPolicy.authoritativeRouteId === route.routeId
-                "
+                v-if="summary.ingressPolicy.authoritativeRouteId === route.routeId"
                 class="authoritative-label"
               >
                 Авторитетный источник
@@ -175,13 +160,11 @@ onBeforeUnmount(() => {
           <dl>
             <div>
               <dt>Подключение</dt>
-              <dd>
-                {{ route.connectionLifecycle }} · {{ route.connectionHealth }}
-              </dd>
+              <dd>{{ route.connectionLifecycle }} · {{ route.connectionHealth }}</dd>
             </div>
             <div>
               <dt>Ревизия маршрута</dt>
-              <dd>{{ route.publishedRevision ?? "—" }}</dd>
+              <dd>{{ route.publishedRevision ?? '—' }}</dd>
             </div>
             <div>
               <dt>Совместимость схемы</dt>

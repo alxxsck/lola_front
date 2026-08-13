@@ -1,4 +1,4 @@
-import { computed, ref } from "vue";
+import { computed, ref } from 'vue';
 import type {
   ClassifyEndUserCaseDto,
   EndUserCaseCommandErrorDetailsResponseDto,
@@ -7,16 +7,16 @@ import type {
   EndUserCaseEscalationCommandResponseDto,
   RequestEndUserCaseEscalationDto,
   UpdateEndUserCaseWorkflowDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 import type {
   EndUserCaseDetailBundle,
   EndUserCasesRepository,
-} from "@/features/end-user-cases/api/end-user-cases-repository";
-import { normalizeApiError } from "@/shared/api/http/api-error";
+} from '@/features/end-user-cases/api/end-user-cases-repository';
+import { normalizeApiError } from '@/shared/api/http/api-error';
 
 export type SupportCaseDeskSource = Pick<
   EndUserCasesRepository,
-  "detail" | "workflow" | "classify" | "requestEscalation"
+  'detail' | 'workflow' | 'classify' | 'requestEscalation'
 >;
 
 export interface SupportCaseDeskContext {
@@ -27,32 +27,25 @@ export interface SupportCaseDeskContext {
   onForbidden?(): Promise<void> | void;
 }
 
-export type SupportCaseStatus = UpdateEndUserCaseWorkflowDto["status"];
-export type SupportCasePriority = NonNullable<
-  ClassifyEndUserCaseDto["priority"]
->;
+export type SupportCaseStatus = UpdateEndUserCaseWorkflowDto['status'];
+export type SupportCasePriority = NonNullable<ClassifyEndUserCaseDto['priority']>;
 export type SupportCaseClassificationInput = Omit<
   ClassifyEndUserCaseDto,
-  "expectedVersion" | "idempotencyKey"
+  'expectedVersion' | 'idempotencyKey'
 >;
 
-type AllowedAction = EndUserCaseDetailResponseDto["allowedActions"][number];
-type CaseCommandReceipt =
-  | EndUserCaseCommandResponseDto
-  | EndUserCaseEscalationCommandResponseDto;
-export type SupportCaseReconciliationReason =
-  | "ACCEPTED"
-  | "CONFLICT"
-  | "UNKNOWN";
+type AllowedAction = EndUserCaseDetailResponseDto['allowedActions'][number];
+type CaseCommandReceipt = EndUserCaseCommandResponseDto | EndUserCaseEscalationCommandResponseDto;
+export type SupportCaseReconciliationReason = 'ACCEPTED' | 'CONFLICT' | 'UNKNOWN';
 
 const STATUS_ACTIONS: Partial<Record<SupportCaseStatus, AllowedAction>> = {
-  OPEN: "SET_STATUS_OPEN",
-  IN_PROGRESS: "SET_STATUS_IN_PROGRESS",
-  WAITING_END_USER: "SET_STATUS_WAITING_END_USER",
-  WAITING_SYSTEM: "SET_STATUS_WAITING_SYSTEM",
-  RESOLVED: "SET_STATUS_RESOLVED",
-  UNRESOLVED: "SET_STATUS_UNRESOLVED",
-  CANCELLED: "SET_STATUS_CANCELLED",
+  OPEN: 'SET_STATUS_OPEN',
+  IN_PROGRESS: 'SET_STATUS_IN_PROGRESS',
+  WAITING_END_USER: 'SET_STATUS_WAITING_END_USER',
+  WAITING_SYSTEM: 'SET_STATUS_WAITING_SYSTEM',
+  RESOLVED: 'SET_STATUS_RESOLVED',
+  UNRESOLVED: 'SET_STATUS_UNRESOLVED',
+  CANCELLED: 'SET_STATUS_CANCELLED',
 };
 
 const PRIORITY_WEIGHT: Record<SupportCasePriority, number> = {
@@ -65,7 +58,7 @@ const PRIORITY_WEIGHT: Record<SupportCasePriority, number> = {
 
 const cleanReason = (reason: string): string => {
   const value = reason.trim();
-  if (!value) throw new Error("Укажите причину изменения");
+  if (!value) throw new Error('Укажите причину изменения');
   return value;
 };
 
@@ -76,28 +69,23 @@ interface CaseScope {
   caseId: string;
 }
 
-const scopeKey = (value: CaseScope): string =>
-  `${value.projectId}\u0000${value.caseId}`;
+const scopeKey = (value: CaseScope): string => `${value.projectId}\u0000${value.caseId}`;
 
-function errorDetails(
-  value: unknown,
-): EndUserCaseCommandErrorDetailsResponseDto | null {
-  if (!value || typeof value !== "object") return null;
+function errorDetails(value: unknown): EndUserCaseCommandErrorDetailsResponseDto | null {
+  if (!value || typeof value !== 'object') return null;
   const record = value as Record<string, unknown>;
   if (
     record.currentVersion !== undefined &&
-    (!Number.isSafeInteger(record.currentVersion) ||
-      Number(record.currentVersion) < 1)
+    (!Number.isSafeInteger(record.currentVersion) || Number(record.currentVersion) < 1)
   )
     return null;
   if (record.currentCase !== undefined) {
-    if (!record.currentCase || typeof record.currentCase !== "object")
-      return null;
+    if (!record.currentCase || typeof record.currentCase !== 'object') return null;
     const current = record.currentCase as Record<string, unknown>;
     if (
-      typeof current.id !== "string" ||
+      typeof current.id !== 'string' ||
       !Number.isSafeInteger(current.version) ||
-      typeof current.status !== "string"
+      typeof current.status !== 'string'
     )
       return null;
   }
@@ -115,30 +103,24 @@ export function createSupportCaseDeskController(
   const conflict = ref<EndUserCaseCommandErrorDetailsResponseDto | null>(null);
   const reconciling = ref(false);
   const reconciliationReason = ref<SupportCaseReconciliationReason | null>(null);
-  const acceptedScopeKey = ref("");
+  const acceptedScopeKey = ref('');
   let generation = 0;
   const pendingKeys = new Map<string, string>();
-  let activeMutation:
-    | { token: symbol; generation: number; scopeKey: string }
-    | null = null;
-  let pendingReconciliation:
-    | {
-        fingerprint: string;
-        minimumVersion: number;
-        replay?: (key: string) => Promise<CaseCommandReceipt>;
-        scope: CaseScope;
-      }
-    | null = null;
+  let activeMutation: { token: symbol; generation: number; scopeKey: string } | null = null;
+  let pendingReconciliation: {
+    fingerprint: string;
+    minimumVersion: number;
+    replay?: (key: string) => Promise<CaseCommandReceipt>;
+    scope: CaseScope;
+  } | null = null;
 
-  const exactCase = computed(
-    () => detail.value?.case as EndUserCaseDetailResponseDto | undefined,
-  );
+  const exactCase = computed(() => detail.value?.case as EndUserCaseDetailResponseDto | undefined);
 
   function scope(): CaseScope {
     const projectId = context.projectId();
     const caseId = context.caseId();
     if (!context.canRead() || !projectId || !caseId)
-      throw new Error("Кейс недоступен в текущем проекте");
+      throw new Error('Кейс недоступен в текущем проекте');
     return { projectId, caseId };
   }
 
@@ -158,14 +140,11 @@ export function createSupportCaseDeskController(
       acceptedScopeKey.value !== scopeKey(current) ||
       reconciling.value
     )
-      throw new Error("Актуальное состояние кейса ещё не загружено");
+      throw new Error('Актуальное состояние кейса ещё не загружено');
     return value;
   }
 
-  function allowed(
-    current: EndUserCaseDetailResponseDto,
-    action: AllowedAction,
-  ): boolean {
+  function allowed(current: EndUserCaseDetailResponseDto, action: AllowedAction): boolean {
     return current.allowedActions.includes(action);
   }
 
@@ -187,11 +166,8 @@ export function createSupportCaseDeskController(
     try {
       const value = await source.detail(current.projectId, current.caseId);
       if (value.case.id !== current.caseId)
-        throw new Error("Сервер вернул состояние другого кейса");
-      if (
-        requestGeneration === generation &&
-        currentScopeMatches(current)
-      ) {
+        throw new Error('Сервер вернул состояние другого кейса');
+      if (requestGeneration === generation && currentScopeMatches(current)) {
         detail.value = value;
         acceptedScopeKey.value = scopeKey(current);
         reconciling.value = false;
@@ -203,7 +179,7 @@ export function createSupportCaseDeskController(
         error.value = value.message;
         if (value.status === 403 || value.status === 404) {
           detail.value = null;
-          acceptedScopeKey.value = "";
+          acceptedScopeKey.value = '';
           reconciling.value = false;
           reconciliationReason.value = null;
           pendingKeys.clear();
@@ -222,8 +198,8 @@ export function createSupportCaseDeskController(
       activeMutation?.token === owner.token &&
       generation === owner.generation &&
       currentScopeMatches({
-        projectId: owner.scopeKey.split("\u0000")[0]!,
-        caseId: owner.scopeKey.split("\u0000")[1]!,
+        projectId: owner.scopeKey.split('\u0000')[0]!,
+        caseId: owner.scopeKey.split('\u0000')[1]!,
       })
     );
   }
@@ -244,7 +220,7 @@ export function createSupportCaseDeskController(
   ): void {
     const receipt = details?.currentCase;
     if (!detail.value || !receipt || receipt.id !== current.caseId) {
-      disableStaleAuthority("CONFLICT");
+      disableStaleAuthority('CONFLICT');
       return;
     }
     const patch = Object.fromEntries(
@@ -266,20 +242,16 @@ export function createSupportCaseDeskController(
         ...detail.value.case,
         ...patch,
         allowedActions: [],
-        ...(details.availableStatuses
-          ? { availableStatuses: details.availableStatuses }
-          : {}),
-        ...(details.priorityPolicy
-          ? { priorityPolicy: details.priorityPolicy }
-          : {}),
+        ...(details.availableStatuses ? { availableStatuses: details.availableStatuses } : {}),
+        ...(details.priorityPolicy ? { priorityPolicy: details.priorityPolicy } : {}),
       } as EndUserCaseDetailResponseDto,
     };
     reconciling.value = true;
-    reconciliationReason.value = "CONFLICT";
+    reconciliationReason.value = 'CONFLICT';
   }
 
   function receiptVersion(receipt: CaseCommandReceipt, current: CaseScope): number {
-    if ("caseVersion" in receipt) {
+    if ('caseVersion' in receipt) {
       if (
         receipt.escalation?.caseId === current.caseId &&
         Number.isSafeInteger(receipt.caseVersion) &&
@@ -293,7 +265,7 @@ export function createSupportCaseDeskController(
     ) {
       return receipt.version;
     }
-    throw new Error("Сервер вернул некорректное подтверждение команды");
+    throw new Error('Сервер вернул некорректное подтверждение команды');
   }
 
   async function exactReconcile(
@@ -302,10 +274,9 @@ export function createSupportCaseDeskController(
     minimumVersion: number,
   ): Promise<void> {
     const value = await source.detail(current.projectId, current.caseId);
-    if (value.case.id !== current.caseId)
-      throw new Error("Сервер вернул состояние другого кейса");
+    if (value.case.id !== current.caseId) throw new Error('Сервер вернул состояние другого кейса');
     if (value.case.version < minimumVersion)
-      throw new Error("Актуальная версия кейса ещё не доступна");
+      throw new Error('Актуальная версия кейса ещё не доступна');
     if (!ownsMutation(owner)) return;
     await context.onProjectionChanged?.();
     if (!ownsMutation(owner)) return;
@@ -320,11 +291,11 @@ export function createSupportCaseDeskController(
     current: CaseScope,
     operation: (key: string) => Promise<CaseCommandReceipt>,
   ): Promise<void> {
-    if (mutating.value) throw new Error("Изменение уже выполняется");
+    if (mutating.value) throw new Error('Изменение уже выполняется');
     const mutationGeneration = ++generation;
     loading.value = false;
     const owner = {
-      token: Symbol("support-case-mutation"),
+      token: Symbol('support-case-mutation'),
       generation: mutationGeneration,
       scopeKey: scopeKey(current),
     };
@@ -342,7 +313,7 @@ export function createSupportCaseDeskController(
         return;
       }
       pendingReconciliation = { fingerprint, minimumVersion, scope: current };
-      disableStaleAuthority("ACCEPTED");
+      disableStaleAuthority('ACCEPTED');
       await exactReconcile(current, owner, minimumVersion);
       if (!ownsMutation(owner)) return;
       pendingKeys.delete(fingerprint);
@@ -351,11 +322,11 @@ export function createSupportCaseDeskController(
       const value = normalizeApiError(cause);
       if (!ownsMutation(owner)) throw value;
       error.value = operationAccepted
-        ? "Изменение принято. Обновите состояние кейса перед следующей командой."
+        ? 'Изменение принято. Обновите состояние кейса перед следующей командой.'
         : value.message;
       if (value.status === 403 || value.status === 404) {
         detail.value = null;
-        acceptedScopeKey.value = "";
+        acceptedScopeKey.value = '';
         reconciling.value = false;
         reconciliationReason.value = null;
         pendingKeys.delete(fingerprint);
@@ -369,9 +340,9 @@ export function createSupportCaseDeskController(
             replay: operation,
             scope: current,
           };
-          disableStaleAuthority("UNKNOWN");
+          disableStaleAuthority('UNKNOWN');
         } else {
-          disableStaleAuthority("ACCEPTED");
+          disableStaleAuthority('ACCEPTED');
         }
       } else if (value.status === 0 || value.status >= 500) {
         pendingReconciliation = {
@@ -380,7 +351,7 @@ export function createSupportCaseDeskController(
           replay: operation,
           scope: current,
         };
-        disableStaleAuthority("UNKNOWN");
+        disableStaleAuthority('UNKNOWN');
       }
       if (value.status === 409) {
         conflict.value = errorDetails(value.details);
@@ -416,7 +387,7 @@ export function createSupportCaseDeskController(
     const pending = pendingReconciliation;
     if (pending && scopeKey(pending.scope) !== scopeKey(current)) return;
     const owner = {
-      token: Symbol("support-case-reconcile"),
+      token: Symbol('support-case-reconcile'),
       generation,
       scopeKey: scopeKey(current),
     };
@@ -424,21 +395,16 @@ export function createSupportCaseDeskController(
     mutating.value = true;
     error.value = null;
     try {
-      let minimumVersion =
-        pending?.minimumVersion ?? exactCase.value?.version ?? 1;
+      let minimumVersion = pending?.minimumVersion ?? exactCase.value?.version ?? 1;
       if (pending?.replay) {
         const receipt = await pending.replay(commandKey(pending.fingerprint));
         minimumVersion = receiptVersion(receipt, current);
         if (!ownsMutation(owner)) return;
         pending.minimumVersion = minimumVersion;
         delete pending.replay;
-        disableStaleAuthority("ACCEPTED");
+        disableStaleAuthority('ACCEPTED');
       }
-      await exactReconcile(
-        current,
-        owner,
-        minimumVersion,
-      );
+      await exactReconcile(current, owner, minimumVersion);
       if (!ownsMutation(owner)) return;
       if (pending) pendingKeys.delete(pending.fingerprint);
       pendingReconciliation = null;
@@ -446,8 +412,7 @@ export function createSupportCaseDeskController(
       const value = normalizeApiError(cause);
       if (ownsMutation(owner)) {
         error.value = value.message;
-        const replayConflict =
-          value.status === 409 ? errorDetails(value.details) : null;
+        const replayConflict = value.status === 409 ? errorDetails(value.details) : null;
         if (replayConflict) {
           conflict.value = replayConflict;
           if (pending) pendingKeys.delete(pending.fingerprint);
@@ -469,22 +434,18 @@ export function createSupportCaseDeskController(
         } else if (value.status === 400 && pending?.replay) {
           pendingKeys.delete(pending.fingerprint);
           pendingReconciliation = null;
-          disableStaleAuthority("UNKNOWN");
+          disableStaleAuthority('UNKNOWN');
           try {
-            await exactReconcile(
-              current,
-              owner,
-              exactCase.value?.version ?? 1,
-            );
+            await exactReconcile(current, owner, exactCase.value?.version ?? 1);
           } catch {
             // The rejected intent is retired, but authority remains fail-closed.
           }
         } else {
-          disableStaleAuthority(reconciliationReason.value ?? "UNKNOWN");
+          disableStaleAuthority(reconciliationReason.value ?? 'UNKNOWN');
         }
         if (value.status === 403 || value.status === 404) {
           detail.value = null;
-          acceptedScopeKey.value = "";
+          acceptedScopeKey.value = '';
           reconciling.value = false;
           reconciliationReason.value = null;
           pendingKeys.clear();
@@ -501,19 +462,12 @@ export function createSupportCaseDeskController(
     }
   }
 
-  async function transition(
-    status: SupportCaseStatus,
-    reason: string,
-  ): Promise<void> {
+  async function transition(status: SupportCaseStatus, reason: string): Promise<void> {
     const currentScope = scope();
     const current = scopedCase(currentScope);
     const action = STATUS_ACTIONS[status];
-    if (
-      !current.availableStatuses.includes(status) ||
-      !action ||
-      !allowed(current, action)
-    ) {
-      throw new Error("Это изменение статуса недоступно по правилам сервера");
+    if (!current.availableStatuses.includes(status) || !action || !allowed(current, action)) {
+      throw new Error('Это изменение статуса недоступно по правилам сервера');
     }
     const clean = cleanReason(reason);
     const fingerprint = `workflow:${current.id}:${current.version}:${status}:${clean}`;
@@ -534,19 +488,19 @@ export function createSupportCaseDeskController(
     if (priority === current.priority) return;
     const target = PRIORITY_WEIGHT[priority];
     const present = PRIORITY_WEIGHT[current.priority];
-    if (target > present && !allowed(current, "RAISE_PRIORITY"))
-      throw new Error("Повышение приоритета недоступно по правилам сервера");
+    if (target > present && !allowed(current, 'RAISE_PRIORITY'))
+      throw new Error('Повышение приоритета недоступно по правилам сервера');
     if (
       target < present &&
-      !allowed(current, "LOWER_PRIORITY_TO_FLOOR") &&
-      !allowed(current, "OVERRIDE_PRIORITY_FLOOR")
+      !allowed(current, 'LOWER_PRIORITY_TO_FLOOR') &&
+      !allowed(current, 'OVERRIDE_PRIORITY_FLOOR')
     )
-      throw new Error("Понижение приоритета недоступно по правилам сервера");
+      throw new Error('Понижение приоритета недоступно по правилам сервера');
     if (
       target < PRIORITY_WEIGHT[current.priorityPolicy.effectiveFloor] &&
-      !allowed(current, "OVERRIDE_PRIORITY_FLOOR")
+      !allowed(current, 'OVERRIDE_PRIORITY_FLOOR')
     )
-      throw new Error("Приоритет нельзя опустить ниже серверного порога");
+      throw new Error('Приоритет нельзя опустить ниже серверного порога');
   }
 
   async function classify(input: SupportCaseClassificationInput): Promise<void> {
@@ -555,11 +509,11 @@ export function createSupportCaseDeskController(
     const classificationChanged = Boolean(
       input.groupCode || input.type || input.impact || input.urgency,
     );
-    if (classificationChanged && !allowed(current, "CHANGE_CLASSIFICATION"))
-      throw new Error("Изменение классификации недоступно по правилам сервера");
+    if (classificationChanged && !allowed(current, 'CHANGE_CLASSIFICATION'))
+      throw new Error('Изменение классификации недоступно по правилам сервера');
     if (input.priority) assertPriorityAllowed(current, input.priority);
     if (!classificationChanged && !input.priority)
-      throw new Error("Выберите изменение классификации или приоритета");
+      throw new Error('Выберите изменение классификации или приоритета');
     const reason = cleanReason(input.reason);
     const fingerprint = `classification:${current.id}:${current.version}:${JSON.stringify({ ...input, reason })}`;
     await execute(fingerprint, currentScope, (idempotencyKey) =>
@@ -575,11 +529,11 @@ export function createSupportCaseDeskController(
   async function escalate(reasonCode: string, summary: string): Promise<void> {
     const currentScope = scope();
     const current = scopedCase(currentScope);
-    if (!allowed(current, "REQUEST_ESCALATION"))
-      throw new Error("Эскалация недоступна по правилам сервера");
+    if (!allowed(current, 'REQUEST_ESCALATION'))
+      throw new Error('Эскалация недоступна по правилам сервера');
     const cleanCode = reasonCode.trim().toUpperCase();
     if (!/^[A-Z][A-Z0-9_]{0,99}$/.test(cleanCode))
-      throw new Error("Код причины должен быть в формате PAYMENT_REVIEW");
+      throw new Error('Код причины должен быть в формате PAYMENT_REVIEW');
     const cleanSummary = cleanReason(summary);
     const fingerprint = `escalation:${current.id}:${current.version}:${cleanCode}:${cleanSummary}`;
     await execute(fingerprint, currentScope, (idempotencyKey) =>
@@ -601,15 +555,14 @@ export function createSupportCaseDeskController(
     if (
       active &&
       context.canRead() &&
-      active.scopeKey ===
-        scopeKey({ projectId: context.projectId(), caseId: context.caseId() })
+      active.scopeKey === scopeKey({ projectId: context.projectId(), caseId: context.caseId() })
     ) {
-      disableStaleAuthority(reconciliationReason.value ?? "UNKNOWN");
+      disableStaleAuthority(reconciliationReason.value ?? 'UNKNOWN');
       return;
     }
     generation += 1;
     detail.value = null;
-    acceptedScopeKey.value = "";
+    acceptedScopeKey.value = '';
     loading.value = false;
     mutating.value = false;
     error.value = null;

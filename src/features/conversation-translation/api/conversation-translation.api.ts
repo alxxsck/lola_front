@@ -8,7 +8,7 @@ import {
   replyTranslationDraftEdit,
   replyTranslationDraftGet,
   replyTranslationDraftRetry,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   ConversationMessageTranslationItemResponseDto,
   ConversationMessageTranslationsResponseDto,
@@ -16,14 +16,11 @@ import type {
   EditReplyTranslationDraftDto,
   ReplyTranslationDraftResponseDto,
   UpdateConversationTranslationPreferenceDto,
-} from "@/shared/api/generated/models";
-import { isMockMode } from "@/shared/config/data-mode";
+} from '@/shared/api/generated/models';
+import { isMockMode } from '@/shared/config/data-mode';
 
 const mockPreferences = new Map<string, ConversationTranslationResponseDto>();
-const mockMessageTranslations = new Map<
-  string,
-  ConversationMessageTranslationItemResponseDto
->();
+const mockMessageTranslations = new Map<string, ConversationMessageTranslationItemResponseDto>();
 const mockDrafts = new Map<string, ReplyTranslationDraftResponseDto>();
 
 function mockPreferenceStorageKey(conversationId: string): string {
@@ -34,13 +31,10 @@ function readStoredMockPreference(
   conversationId: string,
 ): ConversationTranslationResponseDto | null {
   try {
-    const raw = globalThis.sessionStorage?.getItem(
-      mockPreferenceStorageKey(conversationId),
-    );
+    const raw = globalThis.sessionStorage?.getItem(mockPreferenceStorageKey(conversationId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as ConversationTranslationResponseDto;
-    return parsed?.preference?.workingLocale &&
-      typeof parsed.preference.enabled === "boolean"
+    return parsed?.preference?.workingLocale && typeof parsed.preference.enabled === 'boolean'
       ? parsed
       : null;
   } catch {
@@ -62,52 +56,48 @@ function storeMockPreference(
   }
 }
 
-function mockPreference(
-  conversationId: string,
-): ConversationTranslationResponseDto {
-  const saved =
-    mockPreferences.get(conversationId) ??
-    readStoredMockPreference(conversationId);
+function mockPreference(conversationId: string): ConversationTranslationResponseDto {
+  const saved = mockPreferences.get(conversationId) ?? readStoredMockPreference(conversationId);
   if (saved) return saved;
   const value: ConversationTranslationResponseDto = {
     availability: { available: true, reason: null },
     budget: {
-      consumedMicros: "3200",
+      consumedMicros: '3200',
       hardExhausted: false,
       hardLimitMicros: null,
       hardPercent: null,
-      reservedMicros: "0",
+      reservedMicros: '0',
       softLimitMicros: null,
       softPercent: null,
     },
-    configRevision: "demo-translation-config",
+    configRevision: 'demo-translation-config',
     supportedLocales: [
-      "ru",
-      "de",
-      "en",
-      "es",
-      "fr",
-      "it",
-      "pt",
-      "pl",
-      "tr",
-      "uk",
-      "ar",
-      "ja",
-      "ko",
-      "zh-CN",
+      'ru',
+      'de',
+      'en',
+      'es',
+      'fr',
+      'it',
+      'pt',
+      'pl',
+      'tr',
+      'uk',
+      'ar',
+      'ja',
+      'ko',
+      'zh-CN',
     ],
     language: {
-      locale: "de",
+      locale: 'de',
       needsConfirmation: false,
-      source: "PROFILE",
+      source: 'PROFILE',
     },
     preference: {
       enabled: false,
       endUserLocaleOverride: null,
       updatedAt: null,
       version: null,
-      workingLocale: "ru",
+      workingLocale: 'ru',
     },
     projectVersion: 1,
   };
@@ -175,10 +165,10 @@ export const conversationTranslationApi = {
         const item: ConversationMessageTranslationItemResponseDto = {
           messageId,
           translationId: `demo-translation-${messageId}`,
-          state: "COMPLETED",
-          sourceLocale: "de",
+          state: 'COMPLETED',
+          sourceLocale: 'de',
           targetLocale,
-          translatedText: "Демонстрационный перевод сообщения",
+          translatedText: 'Демонстрационный перевод сообщения',
           warnings: [],
           updatedAt: new Date().toISOString(),
         };
@@ -192,7 +182,7 @@ export const conversationTranslationApi = {
       endUserId,
       conversationId,
       { messageIds, targetLocale },
-      { headers: { "Idempotency-Key": idempotencyKey } },
+      { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   },
   getMessageTranslation(
@@ -205,14 +195,9 @@ export const conversationTranslationApi = {
       const item = mockMessageTranslations.get(translationId);
       return item
         ? Promise.resolve(item)
-        : Promise.reject(new Error("Демонстрационный перевод не найден"));
+        : Promise.reject(new Error('Демонстрационный перевод не найден'));
     }
-    return conversationMessageTranslationGet(
-      projectId,
-      endUserId,
-      conversationId,
-      translationId,
-    );
+    return conversationMessageTranslationGet(projectId, endUserId, conversationId, translationId);
   },
   retryMessageTranslation(
     projectId: string,
@@ -225,14 +210,14 @@ export const conversationTranslationApi = {
       const item = mockMessageTranslations.get(translationId);
       return item
         ? Promise.resolve(item)
-        : Promise.reject(new Error("Демонстрационный перевод не найден"));
+        : Promise.reject(new Error('Демонстрационный перевод не найден'));
     }
     return conversationMessageTranslationRetry(
       projectId,
       endUserId,
       conversationId,
       translationId,
-      { headers: { "Idempotency-Key": idempotencyKey } },
+      { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   },
   createReplyDraft(
@@ -260,18 +245,18 @@ export const conversationTranslationApi = {
         errorCode: null,
         expiresAt: new Date(now.getTime() + 10 * 60_000).toISOString(),
         id: globalThis.crypto.randomUUID(),
-        model: "grok-4.3",
-        modelConfigRevision: "demo-model-config",
-        provider: "xai",
+        model: 'grok-4.3',
+        modelConfigRevision: 'demo-model-config',
+        provider: 'xai',
         queued: false,
         sourceLocale,
         sourceText,
         sourceTextHash: `demo-${sourceText.length}`,
-        status: "READY",
+        status: 'READY',
         targetLocale,
-        targetLocaleSource: "PROFILE",
+        targetLocaleSource: 'PROFILE',
         translatedText: `DE · ${sourceText}`,
-        translationConfigRevision: "demo-translation-config",
+        translationConfigRevision: 'demo-translation-config',
         updatedAt: now.toISOString(),
         warnings: [],
       };
@@ -290,7 +275,7 @@ export const conversationTranslationApi = {
         ...(macroReplyDraft
           ? {
               macroReplyDraftId: macroReplyDraft.id,
-              macroReplyDraftSourceHash: macroReplyDraft.sourceHash.startsWith("sha256:")
+              macroReplyDraftSourceHash: macroReplyDraft.sourceHash.startsWith('sha256:')
                 ? macroReplyDraft.sourceHash
                 : `sha256:${macroReplyDraft.sourceHash}`,
               macroReplyDraftVersion: macroReplyDraft.version,
@@ -299,7 +284,7 @@ export const conversationTranslationApi = {
       },
       {
         headers: {
-          "Idempotency-Key": idempotencyKey ?? globalThis.crypto.randomUUID(),
+          'Idempotency-Key': idempotencyKey ?? globalThis.crypto.randomUUID(),
         },
       },
     );
@@ -314,14 +299,9 @@ export const conversationTranslationApi = {
       const draft = mockDrafts.get(draftId);
       return draft
         ? Promise.resolve(draft)
-        : Promise.reject(new Error("Демонстрационный черновик не найден"));
+        : Promise.reject(new Error('Демонстрационный черновик не найден'));
     }
-    return replyTranslationDraftGet(
-      projectId,
-      endUserId,
-      conversationId,
-      draftId,
-    );
+    return replyTranslationDraftGet(projectId, endUserId, conversationId, draftId);
   },
   editReplyDraft(
     projectId: string,
@@ -332,25 +312,17 @@ export const conversationTranslationApi = {
   ): Promise<ReplyTranslationDraftResponseDto> {
     if (isMockMode) {
       const current = mockDrafts.get(draftId);
-      if (!current)
-        return Promise.reject(new Error("Демонстрационный черновик не найден"));
+      if (!current) return Promise.reject(new Error('Демонстрационный черновик не найден'));
       const next = {
         ...current,
         editedTranslatedText: value.editedTranslatedText ?? null,
-        deliveredTextPreview:
-          value.editedTranslatedText ?? current.translatedText,
+        deliveredTextPreview: value.editedTranslatedText ?? current.translatedText,
         updatedAt: new Date().toISOString(),
       };
       mockDrafts.set(draftId, next);
       return Promise.resolve(next);
     }
-    return replyTranslationDraftEdit(
-      projectId,
-      endUserId,
-      conversationId,
-      draftId,
-      value,
-    );
+    return replyTranslationDraftEdit(projectId, endUserId, conversationId, draftId, value);
   },
   retryReplyDraft(
     projectId: string,
@@ -362,15 +334,11 @@ export const conversationTranslationApi = {
     if (isMockMode) {
       const draft = mockDrafts.get(draftId);
       return draft
-        ? Promise.resolve({ ...draft, status: "READY", queued: false })
-        : Promise.reject(new Error("Демонстрационный черновик не найден"));
+        ? Promise.resolve({ ...draft, status: 'READY', queued: false })
+        : Promise.reject(new Error('Демонстрационный черновик не найден'));
     }
-    return replyTranslationDraftRetry(
-      projectId,
-      endUserId,
-      conversationId,
-      draftId,
-      { headers: { "Idempotency-Key": idempotencyKey } },
-    );
+    return replyTranslationDraftRetry(projectId, endUserId, conversationId, draftId, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
   },
 };

@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import IntegrationConnectionsCard from "@/features/integration-connections/IntegrationConnectionsCard.vue";
-import IntegrationEventRoutesCard from "@/features/integration-event-routes/IntegrationEventRoutesCard.vue";
-import IntegrationInboundActivityCard from "@/features/integration-inbound-activity/IntegrationInboundActivityCard.vue";
-import IntegrationInboundConnectionsCard from "@/features/integration-inbound-connections/IntegrationInboundConnectionsCard.vue";
-import IntegrationInboundRoutesCard from "@/features/integration-inbound-routes/IntegrationInboundRoutesCard.vue";
-import type { OutboundIntegrationProvider } from "./provider-ui";
+import { computed, ref } from 'vue';
+import IntegrationConnectionsCard from '@/features/integration-connections/IntegrationConnectionsCard.vue';
+import IntegrationEventRoutesCard from '@/features/integration-event-routes/IntegrationEventRoutesCard.vue';
+import IntegrationInboundActivityCard from '@/features/integration-inbound-activity/IntegrationInboundActivityCard.vue';
+import IntegrationInboundConnectionsCard from '@/features/integration-inbound-connections/IntegrationInboundConnectionsCard.vue';
+import IntegrationInboundRoutesCard from '@/features/integration-inbound-routes/IntegrationInboundRoutesCard.vue';
+import type { OutboundIntegrationProvider } from './provider-ui';
 
 const props = defineProps<{
   projectId: string;
@@ -18,34 +18,33 @@ const props = defineProps<{
 const connectionsRevision = ref(0);
 
 const provider = computed(() =>
-  props.provider === "CUSTOMER_IO"
+  props.provider === 'CUSTOMER_IO'
     ? {
-        title: "Customer.io",
-        mark: "C",
-        eyebrow: "Коммуникации с клиентами",
-        heroClass: "provider-workspace__hero--customer-io",
+        title: 'Customer.io',
+        mark: 'C',
+        eyebrow: 'Коммуникации с клиентами',
+        heroClass: 'provider-workspace__hero--customer-io',
         summary:
-          "Передавайте продуктовые события в Customer.io Pipelines или принимайте подписанные события Customer.io в Retenive.",
-        outboundTitle: "Из Retenive в Customer.io",
+          'Передавайте продуктовые события в Customer.io Pipelines или принимайте подписанные события Customer.io в Retenive.',
+        outboundTitle: 'Из Retenive в Customer.io',
         outboundDescription:
-          "Выберите, какие события и свойства Retenive отправляет в Customer.io.",
-        inboundTitle: "Из Customer.io в Retenive",
+          'Выберите, какие события и свойства Retenive отправляет в Customer.io.',
+        inboundTitle: 'Из Customer.io в Retenive',
         inboundDescription:
-          "Retenive выдаст отдельный адрес webhook и секрет проверки — это защита входящих запросов, а не второе подключение аккаунта. Затем сопоставьте события Customer.io с событиями Retenive.",
+          'Retenive выдаст отдельный адрес webhook и секрет проверки — это защита входящих запросов, а не второе подключение аккаунта. Затем сопоставьте события Customer.io с событиями Retenive.',
       }
     : {
-        title: "Amplitude",
-        mark: "A",
-        eyebrow: "Аналитика продукта",
-        heroClass: "provider-workspace__hero--amplitude",
+        title: 'Amplitude',
+        mark: 'A',
+        eyebrow: 'Аналитика продукта',
+        heroClass: 'provider-workspace__hero--amplitude',
         summary:
-          "Передавайте события Retenive в Amplitude или принимайте события из Amplitude по явно настроенным правилам.",
-        outboundTitle: "Из Retenive в Amplitude",
-        outboundDescription:
-          "Выберите, какие события и свойства Retenive отправляет в Amplitude.",
-        inboundTitle: "Из Amplitude в Retenive",
+          'Передавайте события Retenive в Amplitude или принимайте события из Amplitude по явно настроенным правилам.',
+        outboundTitle: 'Из Retenive в Amplitude',
+        outboundDescription: 'Выберите, какие события и свойства Retenive отправляет в Amplitude.',
+        inboundTitle: 'Из Amplitude в Retenive',
         inboundDescription:
-          "Retenive выдаст отдельный адрес webhook и секрет проверки — исходящий API-ключ для приёма не используется. Затем сопоставьте внешние события с Retenive.",
+          'Retenive выдаст отдельный адрес webhook и секрет проверки — исходящий API-ключ для приёма не используется. Затем сопоставьте внешние события с Retenive.',
       },
 );
 </script>

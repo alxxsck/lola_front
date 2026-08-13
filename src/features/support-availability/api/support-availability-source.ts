@@ -1,45 +1,44 @@
 import {
   supportOperatorAvailabilityRead,
   supportOperatorAvailabilitySetOwn,
-} from "@/shared/api/generated/retenive-backend";
-import type { SupportOperatorAvailabilityResponseDto } from "@/shared/api/generated/models";
-import { ApiError, normalizeApiError } from "@/shared/api/http/api-error";
-import { isMockMode } from "@/shared/config/data-mode";
+} from '@/shared/api/generated/retenive-backend';
+import type { SupportOperatorAvailabilityResponseDto } from '@/shared/api/generated/models';
+import { ApiError, normalizeApiError } from '@/shared/api/http/api-error';
+import { isMockMode } from '@/shared/config/data-mode';
 
 export const SUPPORT_AVAILABILITY_STATES = [
-  "AVAILABLE",
-  "BUSY",
-  "AWAY",
-  "DRAINING",
-  "OFFLINE",
+  'AVAILABLE',
+  'BUSY',
+  'AWAY',
+  'DRAINING',
+  'OFFLINE',
 ] as const;
 
 export type SupportAvailabilityState = (typeof SUPPORT_AVAILABILITY_STATES)[number];
 
 export const SUPPORT_AVAILABILITY_REASON_CODES = [
-  "SHIFT_START",
-  "RETURNED",
-  "FOCUS",
-  "BREAK",
-  "MEETING",
-  "TRAINING",
-  "WRAP_UP",
-  "SHIFT_END",
-  "LEAD_INTERVENTION",
+  'SHIFT_START',
+  'RETURNED',
+  'FOCUS',
+  'BREAK',
+  'MEETING',
+  'TRAINING',
+  'WRAP_UP',
+  'SHIFT_END',
+  'LEAD_INTERVENTION',
 ] as const;
 
-export type SupportAvailabilityReasonCode =
-  (typeof SUPPORT_AVAILABILITY_REASON_CODES)[number];
+export type SupportAvailabilityReasonCode = (typeof SUPPORT_AVAILABILITY_REASON_CODES)[number];
 
 export const SUPPORT_AVAILABILITY_SELF_REASONS: Record<
   SupportAvailabilityState,
   readonly SupportAvailabilityReasonCode[]
 > = {
-  AVAILABLE: ["SHIFT_START", "RETURNED"],
-  BUSY: ["FOCUS"],
-  AWAY: ["BREAK", "MEETING", "TRAINING"],
-  DRAINING: ["WRAP_UP"],
-  OFFLINE: ["SHIFT_END"],
+  AVAILABLE: ['SHIFT_START', 'RETURNED'],
+  BUSY: ['FOCUS'],
+  AWAY: ['BREAK', 'MEETING', 'TRAINING'],
+  DRAINING: ['WRAP_UP'],
+  OFFLINE: ['SHIFT_END'],
 };
 
 export interface SupportAvailabilitySnapshot {
@@ -51,17 +50,8 @@ export interface SupportAvailabilitySnapshot {
   effectiveUntil: string | null;
   leaseRenewedAt: string | null;
   leaseUntil: string | null;
-  reasonCode:
-    | SupportAvailabilityReasonCode
-    | "LEASE_EXPIRED"
-    | "BUSINESS_EXPIRY"
-    | null;
-  source:
-    | "SELF"
-    | "LEAD_OVERRIDE"
-    | "LEASE_EXPIRY"
-    | "BUSINESS_EXPIRY"
-    | null;
+  reasonCode: SupportAvailabilityReasonCode | 'LEASE_EXPIRED' | 'BUSINESS_EXPIRY' | null;
+  source: 'SELF' | 'LEAD_OVERRIDE' | 'LEASE_EXPIRY' | 'BUSINESS_EXPIRY' | null;
   transitionedAt: string | null;
   version: number;
 }
@@ -89,8 +79,7 @@ export interface SupportAvailabilitySource {
   ): Promise<SupportAvailabilitySnapshot>;
 }
 
-export const SUPPORT_AVAILABILITY_MOCK_COMMAND_EVENT =
-  "retenive:support-availability-command";
+export const SUPPORT_AVAILABILITY_MOCK_COMMAND_EVENT = 'retenive:support-availability-command';
 
 function mapAvailability(
   response: SupportOperatorAvailabilityResponseDto,
@@ -137,8 +126,8 @@ const apiSource: SupportAvailabilitySource = {
           {
             signal,
             headers: {
-              "If-Match": `"${command.expectedVersion}"`,
-              "Idempotency-Key": command.idempotencyKey,
+              'If-Match': `"${command.expectedVersion}"`,
+              'Idempotency-Key': command.idempotencyKey,
             },
           },
         ),
@@ -155,10 +144,7 @@ function mockKey(projectId: string, operatorId: string): string {
   return `${projectId}:${operatorId}`;
 }
 
-function mockSnapshot(
-  projectId: string,
-  operatorId: string,
-): SupportAvailabilitySnapshot {
+function mockSnapshot(projectId: string, operatorId: string): SupportAvailabilitySnapshot {
   const key = mockKey(projectId, operatorId);
   const existing = mockSnapshots.get(key);
   if (existing) return existing;
@@ -166,14 +152,14 @@ function mockSnapshot(
   const created: SupportAvailabilitySnapshot = {
     operatorId,
     projectId,
-    declaredState: "AVAILABLE",
-    effectiveState: "AVAILABLE",
+    declaredState: 'AVAILABLE',
+    effectiveState: 'AVAILABLE',
     acceptsNewWork: true,
     effectiveUntil: null,
     leaseRenewedAt: now,
     leaseUntil: null,
-    reasonCode: "SHIFT_START",
-    source: "SELF",
+    reasonCode: 'SHIFT_START',
+    source: 'SELF',
     transitionedAt: now,
     version: 1,
   };
@@ -188,20 +174,18 @@ const mockSource: SupportAvailabilitySource = {
   },
   async setOwn(projectId, operatorId, command, signal) {
     if (signal?.aborted) throw signal.reason;
-    globalThis.dispatchEvent?.(
-      new CustomEvent(SUPPORT_AVAILABILITY_MOCK_COMMAND_EVENT),
-    );
+    globalThis.dispatchEvent?.(new CustomEvent(SUPPORT_AVAILABILITY_MOCK_COMMAND_EVENT));
     const current = mockSnapshot(projectId, operatorId);
     if (current.version !== command.expectedVersion)
-      throw new ApiError(409, "Availability version is stale");
+      throw new ApiError(409, 'Availability version is stale');
     const now = new Date().toISOString();
     const next: SupportAvailabilitySnapshot = {
       ...current,
       declaredState: command.state,
       effectiveState: command.state,
-      acceptsNewWork: command.state === "AVAILABLE",
+      acceptsNewWork: command.state === 'AVAILABLE',
       reasonCode: command.reasonCode,
-      source: "SELF",
+      source: 'SELF',
       transitionedAt: now,
       leaseRenewedAt: current.leaseRenewedAt,
       leaseUntil: null,

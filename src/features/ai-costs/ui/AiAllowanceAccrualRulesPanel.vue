@@ -1,79 +1,76 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
+import { ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
 import EventDefinitionSelect, {
   type EventDefinitionSelection,
-} from "@/features/events/EventDefinitionSelect.vue";
-import {
-  compareDecimalStrings,
-  formatDecimalMoney,
-} from "@/shared/lib/decimal-money";
-import { aiAllowanceAccrualRepository } from "../api/ai-allowance-accrual-repository";
-import { parseAllowanceUsd } from "../model/ai-allowance";
-import { isAllowanceReauthenticationRequired } from "../model/allowance-reauthentication";
-import AiAllowanceReauthenticationAction from "./AiAllowanceReauthenticationAction.vue";
+} from '@/features/events/EventDefinitionSelect.vue';
+import { compareDecimalStrings, formatDecimalMoney } from '@/shared/lib/decimal-money';
+import { aiAllowanceAccrualRepository } from '../api/ai-allowance-accrual-repository';
+import { parseAllowanceUsd } from '../model/ai-allowance';
+import { isAllowanceReauthenticationRequired } from '../model/allowance-reauthentication';
+import AiAllowanceReauthenticationAction from './AiAllowanceReauthenticationAction.vue';
 import type {
   AccrualLifecycle,
   AccrualSource,
   AiAllowanceAccrualRule,
-} from "../model/ai-allowance-accrual";
+} from '../model/ai-allowance-accrual';
 
 const LIFECYCLE_OPTIONS: ReadonlyArray<{
   value: AccrualLifecycle;
   label: string;
 }> = [
-  { value: "ACTIVE", label: "Активно" },
-  { value: "PAUSED", label: "Приостановлено" },
-  { value: "ARCHIVED", label: "В архиве" },
+  { value: 'ACTIVE', label: 'Активно' },
+  { value: 'PAUSED', label: 'Приостановлено' },
+  { value: 'ARCHIVED', label: 'В архиве' },
 ];
 const SOURCE_OPTIONS: ReadonlyArray<{
   value: AccrualSource;
   label: string;
 }> = [
-  { value: "SERVER", label: "Сервер" },
-  { value: "FRONTEND", label: "Интерфейс" },
-  { value: "INTERNAL", label: "Внутренняя операция" },
-  { value: "INTEGRATION", label: "Интеграция" },
+  { value: 'SERVER', label: 'Сервер' },
+  { value: 'FRONTEND', label: 'Интерфейс' },
+  { value: 'INTERNAL', label: 'Внутренняя операция' },
+  { value: 'INTEGRATION', label: 'Интеграция' },
 ];
 const props = defineProps<{
   projectId: string;
   canRead: boolean;
   canManage: boolean;
 }>();
-const emit = defineEmits<{ "fresh-login": [] }>();
+const emit = defineEmits<{ 'fresh-login': [] }>();
 const rules = ref<AiAllowanceAccrualRule[]>([]);
 const pageInfo = ref<{ hasMore: boolean; nextCursor: string | null }>({
   hasMore: false,
   nextCursor: null,
 });
 const revisionHistoryLimit = ref(20);
-const loadedProjectId = ref("");
+const loadedProjectId = ref('');
 const loadingMore = ref(false);
 const loading = ref(false);
 const saving = ref(false);
-const error = ref("");
+const error = ref('');
 const dialog = ref(false);
-const formError = ref("");
+const formError = ref('');
 const reauthenticationRequired = ref(false);
-const key = ref("");
-const name = ref("");
-const lifecycle = ref<AccrualLifecycle>("ACTIVE");
-const eventKeyId = ref("");
-const revisionIds = ref("");
-const sources = ref<AccrualSource[]>(["SERVER"]);
-const timezone = ref("UTC");
-const reward = ref("");
-const userCap = ref("");
-const projectCap = ref("");
+const key = ref('');
+const name = ref('');
+const lifecycle = ref<AccrualLifecycle>('ACTIVE');
+const eventKeyId = ref('');
+const revisionIds = ref('');
+const sources = ref<AccrualSource[]>(['SERVER']);
+const timezone = ref('UTC');
+const reward = ref('');
+const userCap = ref('');
+const projectCap = ref('');
 const ttl = ref(86400);
 const cooldown = ref(0);
-const from = ref("");
-const until = ref("");
-const reason = ref("");
-const idem = ref("");
+const from = ref('');
+const until = ref('');
+const reason = ref('');
+const idem = ref('');
 let generation = 0;
 let mutationGeneration = 0;
 watch(
@@ -82,7 +79,7 @@ watch(
     generation += 1;
     mutationGeneration += 1;
     rules.value = [];
-    loadedProjectId.value = "";
+    loadedProjectId.value = '';
     loadingMore.value = false;
     dialog.value = false;
     if (read) void load();
@@ -102,7 +99,7 @@ async function load() {
   const current = ++generation;
   const requestProjectId = props.projectId;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const page = await aiAllowanceAccrualRepository.listRules(requestProjectId);
     if (current === generation && requestProjectId === props.projectId) {
@@ -113,27 +110,22 @@ async function load() {
     }
   } catch (cause) {
     if (current === generation)
-      error.value =
-        cause instanceof Error ? cause.message : "Не удалось загрузить правила";
+      error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить правила';
   } finally {
     if (current === generation) loading.value = false;
   }
 }
 async function loadMore() {
   const cursor = pageInfo.value.nextCursor;
-  if (!cursor || loadingMore.value || loadedProjectId.value !== props.projectId)
-    return;
+  if (!cursor || loadingMore.value || loadedProjectId.value !== props.projectId) return;
   const requestGeneration = generation;
   const requestProjectId = props.projectId;
   loadingMore.value = true;
   try {
-    const page = await aiAllowanceAccrualRepository.listRules(
-      requestProjectId,
-      {
-        limit: 50,
-        cursor,
-      },
-    );
+    const page = await aiAllowanceAccrualRepository.listRules(requestProjectId, {
+      limit: 50,
+      cursor,
+    });
     if (
       requestGeneration === generation &&
       requestProjectId === props.projectId &&
@@ -143,19 +135,11 @@ async function loadMore() {
       pageInfo.value = page.pageInfo;
     }
   } catch (cause) {
-    if (
-      requestGeneration === generation &&
-      requestProjectId === props.projectId
-    )
+    if (requestGeneration === generation && requestProjectId === props.projectId)
       error.value =
-        cause instanceof Error
-          ? cause.message
-          : "Не удалось загрузить остальные правила";
+        cause instanceof Error ? cause.message : 'Не удалось загрузить остальные правила';
   } finally {
-    if (
-      requestGeneration === generation &&
-      requestProjectId === props.projectId
-    )
+    if (requestGeneration === generation && requestProjectId === props.projectId)
       loadingMore.value = false;
   }
 }
@@ -163,43 +147,39 @@ function open(rule?: AiAllowanceAccrualRule) {
   if (!props.canManage) return;
   if (rule && loadedProjectId.value !== props.projectId) return;
   const revision = rule?.revisions[0];
-  key.value = rule?.key ?? "";
-  name.value = rule?.name ?? "";
-  lifecycle.value = rule?.lifecycle ?? "ACTIVE";
-  eventKeyId.value = revision?.eventDefinitionKeyId ?? "";
+  key.value = rule?.key ?? '';
+  name.value = rule?.name ?? '';
+  lifecycle.value = rule?.lifecycle ?? 'ACTIVE';
+  eventKeyId.value = revision?.eventDefinitionKeyId ?? '';
   revisionIds.value =
-    revision?.eventRevisionBindings
-      .map((item) => item.eventDefinitionRevisionId)
-      .join("\n") ?? "";
-  sources.value = revision?.allowedSources ?? ["SERVER"];
-  timezone.value = revision?.timezone ?? "UTC";
-  reward.value = revision?.rewardUsd ?? "";
-  userCap.value = revision?.perEndUserDailyCapUsd ?? "";
-  projectCap.value = revision?.projectDailyCapUsd ?? "";
+    revision?.eventRevisionBindings.map((item) => item.eventDefinitionRevisionId).join('\n') ?? '';
+  sources.value = revision?.allowedSources ?? ['SERVER'];
+  timezone.value = revision?.timezone ?? 'UTC';
+  reward.value = revision?.rewardUsd ?? '';
+  userCap.value = revision?.perEndUserDailyCapUsd ?? '';
+  projectCap.value = revision?.projectDailyCapUsd ?? '';
   ttl.value = revision?.grantTtlSeconds ?? 86400;
   cooldown.value = revision?.cooldownSeconds ?? 0;
   from.value = localInput(new Date());
   until.value =
     revision?.effectiveUntil && Date.parse(revision.effectiveUntil) > Date.now()
       ? localInput(new Date(revision.effectiveUntil))
-      : "";
-  reason.value = "";
+      : '';
+  reason.value = '';
   idem.value = globalThis.crypto?.randomUUID?.() ?? `accrual-${Date.now()}`;
-  formError.value = "";
+  formError.value = '';
   reauthenticationRequired.value = false;
   dialog.value = true;
 }
 async function save() {
-  if (!props.canManage) return fail("Операция больше недоступна.");
+  if (!props.canManage) return fail('Операция больше недоступна.');
   const ruleKey = key.value.trim().toUpperCase();
   const rewardUsd = parseAllowanceUsd(reward.value.trim());
   const perEndUserDailyCapUsd = parseAllowanceUsd(userCap.value.trim());
   const projectDailyCapUsd = parseAllowanceUsd(projectCap.value.trim());
   const ids = [...new Set(revisionIds.value.split(/[\s,]+/).filter(Boolean))];
   const validUuid = (value: string) =>
-    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      value,
-    );
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   if (
     !/^[A-Z][A-Z0-9_]{1,99}$/.test(ruleKey) ||
     !validUuid(eventKeyId.value) ||
@@ -207,17 +187,17 @@ async function save() {
     ids.length > 50 ||
     ids.some((id) => !validUuid(id))
   )
-    return fail("Проверьте ключ правила и UUID схемы/ревизий события.");
+    return fail('Проверьте ключ правила и UUID схемы/ревизий события.');
   if (
     !rewardUsd ||
     !perEndUserDailyCapUsd ||
     !projectDailyCapUsd ||
-    compareDecimalStrings(rewardUsd, "0") <= 0 ||
+    compareDecimalStrings(rewardUsd, '0') <= 0 ||
     compareDecimalStrings(perEndUserDailyCapUsd, rewardUsd) < 0 ||
     compareDecimalStrings(projectDailyCapUsd, perEndUserDailyCapUsd) < 0
   )
     return fail(
-      "Сумма начисления должна быть больше нуля. Дневной лимит пользователя не может быть меньше начисления, а дневной лимит проекта — меньше лимита пользователя.",
+      'Сумма начисления должна быть больше нуля. Дневной лимит пользователя не может быть меньше начисления, а дневной лимит проекта — меньше лимита пользователя.',
     );
   const effectiveFrom = validInstant(from.value);
   const effectiveUntil = until.value ? validInstant(until.value) : undefined;
@@ -234,10 +214,9 @@ async function save() {
     !Number.isSafeInteger(cooldown.value) ||
     !validTimezone(timezone.value.trim()) ||
     !effectiveFrom ||
-    (Boolean(until.value) &&
-      (!effectiveUntil || effectiveFrom >= effectiveUntil))
+    (Boolean(until.value) && (!effectiveUntil || effectiveFrom >= effectiveUntil))
   )
-    return fail("Заполните обязательные поля и причину.");
+    return fail('Заполните обязательные поля и причину.');
   const requestGeneration = mutationGeneration;
   const requestProjectId = props.projectId;
   saving.value = true;
@@ -274,23 +253,16 @@ async function save() {
     saving.value = false;
     await load();
   } catch (cause) {
-    if (
-      requestGeneration === mutationGeneration &&
-      requestProjectId === props.projectId
-    ) {
-      reauthenticationRequired.value =
-        isAllowanceReauthenticationRequired(cause);
+    if (requestGeneration === mutationGeneration && requestProjectId === props.projectId) {
+      reauthenticationRequired.value = isAllowanceReauthenticationRequired(cause);
       formError.value = reauthenticationRequired.value
-        ? ""
+        ? ''
         : cause instanceof Error
           ? cause.message
-          : "Не удалось сохранить";
+          : 'Не удалось сохранить';
     }
   } finally {
-    if (
-      requestGeneration === mutationGeneration &&
-      requestProjectId === props.projectId
-    )
+    if (requestGeneration === mutationGeneration && requestProjectId === props.projectId)
       saving.value = false;
   }
 }
@@ -302,9 +274,7 @@ function selectEvent(event: EventDefinitionSelection): void {
   revisionIds.value = event.currentRevisionId;
 }
 function lifecycleLabel(value: AccrualLifecycle): string {
-  return (
-    LIFECYCLE_OPTIONS.find((option) => option.value === value)?.label ?? value
-  );
+  return LIFECYCLE_OPTIONS.find((option) => option.value === value)?.label ?? value;
 }
 function localInput(value: Date) {
   const local = new Date(value.getTime() - value.getTimezoneOffset() * 60000);
@@ -312,13 +282,11 @@ function localInput(value: Date) {
 }
 function validInstant(value: string): string | undefined {
   const instant = new Date(value);
-  return value && Number.isFinite(instant.valueOf())
-    ? instant.toISOString()
-    : undefined;
+  return value && Number.isFinite(instant.valueOf()) ? instant.toISOString() : undefined;
 }
 function validTimezone(value: string): boolean {
   try {
-    new Intl.DateTimeFormat("en", { timeZone: value }).format();
+    new Intl.DateTimeFormat('en', { timeZone: value }).format();
     return Boolean(value && value.length <= 100);
   } catch {
     return false;
@@ -331,17 +299,11 @@ function validTimezone(value: string): boolean {
       <div>
         <h3>Автоматические начисления</h3>
         <p>
-          Начисляют пользователю временный дополнительный лимит после выбранного
-          события. Для каждого правила задаются сумма, срок действия и дневные
-          ограничения.
+          Начисляют пользователю временный дополнительный лимит после выбранного события. Для
+          каждого правила задаются сумма, срок действия и дневные ограничения.
         </p>
       </div>
-      <Button
-        v-if="canManage"
-        label="Создать правило"
-        icon="pi pi-plus"
-        @click="open()"
-      />
+      <Button v-if="canManage" label="Создать правило" icon="pi pi-plus" @click="open()" />
     </header>
     <Message v-if="!canRead" severity="warn" :closable="false"
       >Нет права чтения правил начисления.</Message
@@ -358,14 +320,10 @@ function validTimezone(value: string): boolean {
           ><small>{{ rule.key }} · {{ lifecycleLabel(rule.lifecycle) }}</small>
         </div>
         <div v-if="rule.revisions[0]">
-          <strong
-            >{{ formatDecimalMoney(rule.revisions[0].rewardUsd, "USD") }} /
-            событие</strong
+          <strong>{{ formatDecimalMoney(rule.revisions[0].rewardUsd, 'USD') }} / событие</strong
           ><small
             >максимум пользователю в день:
-            {{
-              formatDecimalMoney(rule.revisions[0].perEndUserDailyCapUsd, "USD")
-            }}
+            {{ formatDecimalMoney(rule.revisions[0].perEndUserDailyCapUsd, 'USD') }}
             · версия {{ rule.revisions[0].revisionNumber }}</small
           >
         </div>
@@ -377,9 +335,7 @@ function validTimezone(value: string): boolean {
         />
       </article>
       <Message
-        v-if="
-          rules.some((rule) => rule.revisions.length >= revisionHistoryLimit)
-        "
+        v-if="rules.some((rule) => rule.revisions.length >= revisionHistoryLimit)"
         severity="info"
         :closable="false"
       >
@@ -415,11 +371,7 @@ function validTimezone(value: string): boolean {
             placeholder="Например: Бонус после регистрации" /></label
         ><label
           >Статус<select v-model="lifecycle">
-            <option
-              v-for="option in LIFECYCLE_OPTIONS"
-              :key="option.value"
-              :value="option.value"
-            >
+            <option v-for="option in LIFECYCLE_OPTIONS" :key="option.value" :value="option.value">
               {{ option.label }}
             </option>
           </select></label
@@ -432,9 +384,8 @@ function validTimezone(value: string): boolean {
         @select="selectEvent"
       />
       <small class="field-note">
-        Для нового правила используется текущая опубликованная версия события.
-        При редактировании сохранённые привязки не меняются, пока вы не
-        выберете другое событие.
+        Для нового правила используется текущая опубликованная версия события. При редактировании
+        сохранённые привязки не меняются, пока вы не выберете другое событие.
       </small>
       <fieldset>
         <legend>Источники события</legend>
@@ -444,19 +395,9 @@ function validTimezone(value: string): boolean {
         >
       </fieldset>
       <div class="row">
-        <label
-          >Сумма начисления, USD<input v-model="reward" placeholder="0,00"
-        /></label>
-        <label
-          >Максимум пользователю в день<input
-            v-model="userCap"
-            placeholder="0,00"
-        /></label>
-        <label
-          >Максимум по проекту в день<input
-            v-model="projectCap"
-            placeholder="0,00"
-        /></label>
+        <label>Сумма начисления, USD<input v-model="reward" placeholder="0,00" /></label>
+        <label>Максимум пользователю в день<input v-model="userCap" placeholder="0,00" /></label>
+        <label>Максимум по проекту в день<input v-model="projectCap" placeholder="0,00" /></label>
       </div>
       <div class="row">
         <label>Часовой пояс<input v-model="timezone" /></label
@@ -475,12 +416,8 @@ function validTimezone(value: string): boolean {
         /></label>
       </div>
       <div class="row">
-        <label
-          >Начало действия<input v-model="from" type="datetime-local"
-        /></label>
-        <label
-          >Дата окончания<input v-model="until" type="datetime-local"
-        /></label>
+        <label>Начало действия<input v-model="from" type="datetime-local" /></label>
+        <label>Дата окончания<input v-model="until" type="datetime-local" /></label>
       </div>
       <label
         >Причина изменения<textarea
@@ -490,20 +427,17 @@ function validTimezone(value: string): boolean {
           placeholder="Например: добавили приветственный бонус"
         />
       </label>
-      <small v-if="formError" class="error" role="alert">{{
-        formError
-      }}</small>
+      <small v-if="formError" class="error" role="alert">{{ formError }}</small>
       <AiAllowanceReauthenticationAction
         :required="reauthenticationRequired"
         @fresh-login="emit('fresh-login')"
       />
       <footer>
-        <Button
-          label="Отмена"
-          text
-          type="button"
-          @click="dialog = false"
-        /><Button label="Сохранить ревизию" type="submit" :loading="saving" />
+        <Button label="Отмена" text type="button" @click="dialog = false" /><Button
+          label="Сохранить ревизию"
+          type="submit"
+          :loading="saving"
+        />
       </footer></form
   ></Dialog>
 </template>

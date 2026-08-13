@@ -1,16 +1,16 @@
-import { z } from "zod";
+import { z } from 'zod';
 import {
   translationCancel,
   translationCreate,
   translationGet,
   translationRetryTarget,
   translationUsageReport,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   CreateTranslationJobDto,
   TranslationUsageReportParams,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
 
 const aggregateSchema = z.object({
   requests: z.number().int().nonnegative(),
@@ -31,9 +31,7 @@ const aggregateSchema = z.object({
 const usageSchema = z.object({
   totals: aggregateSchema,
   series: z.array(aggregateSchema.extend({ day: z.string() })),
-  targetLocales: z.array(
-    aggregateSchema.extend({ targetLocale: z.string() }),
-  ),
+  targetLocales: z.array(aggregateSchema.extend({ targetLocale: z.string() })),
   statuses: z.array(aggregateSchema.extend({ status: z.string() })),
   budget: z
     .object({
@@ -59,14 +57,10 @@ async function apiCall<T>(request: () => Promise<T>): Promise<T> {
 export type TranslationUsage = z.infer<typeof usageSchema>;
 
 export const translationRepository = {
-  create(
-    projectId: string,
-    request: CreateTranslationJobDto,
-    options: { idempotencyKey: string },
-  ) {
+  create(projectId: string, request: CreateTranslationJobDto, options: { idempotencyKey: string }) {
     return apiCall(() =>
       translationCreate(projectId, request, {
-        headers: { "Idempotency-Key": options.idempotencyKey },
+        headers: { 'Idempotency-Key': options.idempotencyKey },
       }),
     );
   },
@@ -80,15 +74,11 @@ export const translationRepository = {
   },
 
   retryTarget(projectId: string, jobId: string, targetLocale: string) {
-    return apiCall(() =>
-      translationRetryTarget(projectId, jobId, targetLocale),
-    );
+    return apiCall(() => translationRetryTarget(projectId, jobId, targetLocale));
   },
 
   async usage(projectId: string, params: TranslationUsageReportParams) {
-    const response = await apiCall(() =>
-      translationUsageReport(projectId, params),
-    );
+    const response = await apiCall(() => translationUsageReport(projectId, params));
     return usageSchema.parse(response);
   },
 };

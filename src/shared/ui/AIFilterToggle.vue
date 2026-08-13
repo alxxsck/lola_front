@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed } from 'vue';
 
 const props = defineProps<{
   expanded: boolean;
   filters: object;
 }>();
 const emit = defineEmits<{
-  "update:expanded": [value: boolean];
+  'update:expanded': [value: boolean];
 }>();
 
 const activeFilterCount = computed(
   () =>
     Object.values(props.filters).filter(
-      (value) => value !== null && value !== undefined && value !== "",
+      (value) => value !== null && value !== undefined && value !== '',
     ).length,
 );
 </script>

@@ -1,112 +1,99 @@
-import { shallowMount } from "@vue/test-utils";
-import InputText from "primevue/inputtext";
-import Textarea from "primevue/textarea";
-import ToggleSwitch from "primevue/toggleswitch";
-import { describe, expect, it } from "vitest";
-import type { ProjectAction } from "../model/project-action";
-import ProjectActionEditor from "./ProjectActionEditor.vue";
-import ProjectActionSchemaForm from "./ProjectActionSchemaForm.vue";
+import { shallowMount } from '@vue/test-utils';
+import InputText from 'primevue/inputtext';
+import Textarea from 'primevue/textarea';
+import ToggleSwitch from 'primevue/toggleswitch';
+import { describe, expect, it } from 'vitest';
+import type { ProjectAction } from '../model/project-action';
+import ProjectActionEditor from './ProjectActionEditor.vue';
+import ProjectActionSchemaForm from './ProjectActionSchemaForm.vue';
 
 const action = {
-  id: "action-1",
-  projectId: "project-1",
-  actionTypeId: "type-1",
-  actionTypeRevisionId: "revision-1",
-  code: "OPEN_PAGE",
+  id: 'action-1',
+  projectId: 'project-1',
+  actionTypeId: 'type-1',
+  actionTypeRevisionId: 'revision-1',
+  code: 'OPEN_PAGE',
   nameOverride: null,
   descriptionOverride: null,
   scenarioEnabled: false,
   aiEnabled: false,
   aiUsageDescription: null,
   configuration: {},
-  lifecycle: "ACTIVE",
-  createdAt: "now",
-  updatedAt: "now",
-  actionType: { key: "OPEN_PAGE", origin: "SYSTEM", ownerProjectId: null },
+  lifecycle: 'ACTIVE',
+  createdAt: 'now',
+  updatedAt: 'now',
+  actionType: { key: 'OPEN_PAGE', origin: 'SYSTEM', ownerProjectId: null },
   actionTypeRevision: {
-    id: "revision-1",
+    id: 'revision-1',
     version: 1,
-    name: "Открыть страницу",
-    description: "Открывает зарегистрированную страницу.",
-    executorAdapter: "FRONTEND_COMMAND",
+    name: 'Открыть страницу',
+    description: 'Открывает зарегистрированную страницу.',
+    executorAdapter: 'FRONTEND_COMMAND',
     inputSchema: {},
     resultSchema: {},
     projectConfigSchema: {
-      type: "object",
+      type: 'object',
       properties: {},
       required: [],
       additionalProperties: false,
     },
     uiSchema: { fields: [] },
-    supportedSurfaces: ["SCENARIO", "AI"],
-    risk: "UI_EFFECT",
-    confirmationPolicy: "NEVER",
+    supportedSurfaces: ['SCENARIO', 'AI'],
+    risk: 'UI_EFFECT',
+    confirmationPolicy: 'NEVER',
     multipleInstances: false,
   },
 } satisfies ProjectAction;
 
 const dialogStub = {
-  props: ["visible", "header"],
+  props: ['visible', 'header'],
   template:
     '<div v-if="visible" class="dialog-stub"><h2>{{ header }}</h2><slot /><slot name="footer" /></div>',
 };
 const messageStub = { template: '<div class="message-stub"><slot /></div>' };
-const allPermissions = [
-  "project.actions.manage",
-  "project.actions.manage_ai_exposure",
-];
+const allPermissions = ['project.actions.manage', 'project.actions.manage_ai_exposure'];
 
-describe("ProjectActionEditor", () => {
-  it("requires AI-exposure Permission, description, audit reason and explicit confirmation", async () => {
+describe('ProjectActionEditor', () => {
+  it('requires AI-exposure Permission, description, audit reason and explicit confirmation', async () => {
     const wrapper = shallowMount(ProjectActionEditor, {
       props: { action, effectivePermissionCodes: allPermissions },
       global: { stubs: { Dialog: dialogStub, Message: messageStub } },
     });
     const aiToggle = wrapper
       .findAllComponents(ToggleSwitch)
-      .find(
-        (item) => item.attributes("aria-label") === "Разрешить помощнику Retenive",
-      )!;
-    aiToggle.vm.$emit("update:modelValue", true);
+      .find((item) => item.attributes('aria-label') === 'Разрешить помощнику Retenive')!;
+    aiToggle.vm.$emit('update:modelValue', true);
     await wrapper.vm.$nextTick();
-    await wrapper.get("form").trigger("submit");
+    await wrapper.get('form').trigger('submit');
 
     expect(wrapper.text()).toContain(
-      "Подсказка для Retenive должна содержать от 20 до 2000 символов",
+      'Подсказка для Retenive должна содержать от 20 до 2000 символов',
     );
-    expect(wrapper.emitted("save")).toBeUndefined();
+    expect(wrapper.emitted('save')).toBeUndefined();
 
     wrapper
       .getComponent(Textarea)
-      .vm.$emit(
-        "update:modelValue",
-        "Use when the user explicitly asks to open the bonuses page.",
-      );
+      .vm.$emit('update:modelValue', 'Use when the user explicitly asks to open the bonuses page.');
     wrapper
       .getComponent(InputText)
-      .vm.$emit("update:modelValue", "Enable requested bonuses navigation");
+      .vm.$emit('update:modelValue', 'Enable requested bonuses navigation');
     await wrapper.vm.$nextTick();
-    await wrapper.get("form").trigger("submit");
-    expect(wrapper.text()).toContain("Проверьте изменения перед сохранением");
-    expect(wrapper.text()).toContain(
-      "Use when the user explicitly asks to open the bonuses page.",
-    );
-    expect(wrapper.text()).toContain("Что изменится после сохранения");
-    expect(wrapper.text()).not.toContain("Backend");
-    expect(wrapper.text()).not.toContain("authority");
-    await wrapper
-      .get('[data-test="confirm-project-action-save"]')
-      .trigger("click");
+    await wrapper.get('form').trigger('submit');
+    expect(wrapper.text()).toContain('Проверьте изменения перед сохранением');
+    expect(wrapper.text()).toContain('Use when the user explicitly asks to open the bonuses page.');
+    expect(wrapper.text()).toContain('Что изменится после сохранения');
+    expect(wrapper.text()).not.toContain('Backend');
+    expect(wrapper.text()).not.toContain('authority');
+    await wrapper.get('[data-test="confirm-project-action-save"]').trigger('click');
 
-    expect(wrapper.emitted("save")?.[0]?.[0]).toEqual({
+    expect(wrapper.emitted('save')?.[0]?.[0]).toEqual({
       aiEnabled: true,
-      aiUsageDescription:
-        "Use when the user explicitly asks to open the bonuses page.",
-      auditReason: "Enable requested bonuses navigation",
+      aiUsageDescription: 'Use when the user explicitly asks to open the bonuses page.',
+      auditReason: 'Enable requested bonuses navigation',
     });
   });
 
-  it("keeps mutation controls read-only without the manage Permission", () => {
+  it('keeps mutation controls read-only without the manage Permission', () => {
     const wrapper = shallowMount(ProjectActionEditor, {
       props: { action, effectivePermissionCodes: [] },
     });
@@ -114,91 +101,74 @@ describe("ProjectActionEditor", () => {
     expect(
       wrapper
         .findAllComponents(ToggleSwitch)
-        .every((item) => item.attributes("disabled") !== undefined),
+        .every((item) => item.attributes('disabled') !== undefined),
     ).toBe(true);
-    expect(
-      wrapper.get('[data-test="save-project-action"]').attributes("disabled"),
-    ).toBeDefined();
-    expect(wrapper.find('[data-test="archive-project-action"]').exists()).toBe(
-      false,
-    );
+    expect(wrapper.get('[data-test="save-project-action"]').attributes('disabled')).toBeDefined();
+    expect(wrapper.find('[data-test="archive-project-action"]').exists()).toBe(false);
   });
 
-  it("lets a Project Admin edit standard settings while keeping AI exposure owner-only", async () => {
+  it('lets a Project Admin edit standard settings while keeping AI exposure owner-only', async () => {
     const wrapper = shallowMount(ProjectActionEditor, {
       props: {
         action,
-        effectivePermissionCodes: ["project.actions.manage"],
+        effectivePermissionCodes: ['project.actions.manage'],
       },
       global: { stubs: { Dialog: dialogStub, Message: messageStub } },
     });
     const scenarioToggle = wrapper
       .findAllComponents(ToggleSwitch)
-      .find(
-        (item) => item.attributes("aria-label") === "Использовать в сценариях",
-      )!;
+      .find((item) => item.attributes('aria-label') === 'Использовать в сценариях')!;
     const aiToggle = wrapper
       .findAllComponents(ToggleSwitch)
-      .find(
-        (item) => item.attributes("aria-label") === "Разрешить помощнику Retenive",
-      )!;
+      .find((item) => item.attributes('aria-label') === 'Разрешить помощнику Retenive')!;
 
-    expect(scenarioToggle.attributes("disabled")).toBe("false");
-    expect(aiToggle.attributes("disabled")).toBe("true");
-    expect(wrapper.getComponent(Textarea).attributes("disabled")).toBe("true");
-    expect(wrapper.getComponent(ProjectActionSchemaForm).props("disabled")).toBe(
-      false,
-    );
-    expect(wrapper.find('[data-test="archive-project-action"]').exists()).toBe(
-      true,
-    );
+    expect(scenarioToggle.attributes('disabled')).toBe('false');
+    expect(aiToggle.attributes('disabled')).toBe('true');
+    expect(wrapper.getComponent(Textarea).attributes('disabled')).toBe('true');
+    expect(wrapper.getComponent(ProjectActionSchemaForm).props('disabled')).toBe(false);
+    expect(wrapper.find('[data-test="archive-project-action"]').exists()).toBe(true);
     expect(wrapper.text()).toContain(
-      "Настройки доступа Retenive может изменять только владелец проекта",
+      'Настройки доступа Retenive может изменять только владелец проекта',
     );
 
-    scenarioToggle.vm.$emit("update:modelValue", true);
+    scenarioToggle.vm.$emit('update:modelValue', true);
     await wrapper.vm.$nextTick();
-    await wrapper.get("form").trigger("submit");
-    await wrapper
-      .get('[data-test="confirm-project-action-save"]')
-      .trigger("click");
+    await wrapper.get('form').trigger('submit');
+    await wrapper.get('[data-test="confirm-project-action-save"]').trigger('click');
 
-    expect(wrapper.emitted("save")?.[0]?.[0]).toEqual({
+    expect(wrapper.emitted('save')?.[0]?.[0]).toEqual({
       scenarioEnabled: true,
     });
   });
 
-  it("keeps shared configuration owner-only while the action is exposed to AI", () => {
+  it('keeps shared configuration owner-only while the action is exposed to AI', () => {
     const wrapper = shallowMount(ProjectActionEditor, {
       props: {
         action: {
           ...action,
           aiEnabled: true,
-          aiUsageDescription:
-            "Use when the user explicitly asks to open the bonuses page.",
+          aiUsageDescription: 'Use when the user explicitly asks to open the bonuses page.',
         },
-        effectivePermissionCodes: ["project.actions.manage"],
+        effectivePermissionCodes: ['project.actions.manage'],
       },
       global: { stubs: { Message: messageStub } },
     });
 
-    expect(wrapper.getComponent(ProjectActionSchemaForm).props("disabled")).toBe(
-      true,
-    );
+    expect(wrapper.getComponent(ProjectActionSchemaForm).props('disabled')).toBe(true);
     expect(wrapper.text()).toContain(
-      "Конфигурацию AI-enabled действия может изменять только владелец",
+      'Конфигурацию AI-enabled действия может изменять только владелец',
     );
   });
 
-  it("blocks confirmation when configuration violates the published schema", async () => {
+  it('blocks confirmation when configuration violates the published schema', async () => {
     const configuredAction: ProjectAction = {
       ...action,
       actionTypeRevision: {
         ...action.actionTypeRevision,
         projectConfigSchema: {
-          type: "object",
-          properties: { target: { type: "string", enum: ["bonuses"] } },
-          required: ["target"],
+          type: 'object',
+          properties: { target: { type: 'string', enum: ['bonuses'] } },
+          required: ['target'],
           additionalProperties: false,
         },
       },
@@ -208,11 +178,9 @@ describe("ProjectActionEditor", () => {
       global: { stubs: { Dialog: dialogStub, Message: messageStub } },
     });
 
-    await wrapper.get("form").trigger("submit");
+    await wrapper.get('form').trigger('submit');
 
-    expect(wrapper.text()).toContain("Заполните поле «Target»");
-    expect(wrapper.text()).not.toContain(
-      "Проверьте изменения перед сохранением",
-    );
+    expect(wrapper.text()).toContain('Заполните поле «Target»');
+    expect(wrapper.text()).not.toContain('Проверьте изменения перед сохранением');
   });
 });

@@ -1,10 +1,7 @@
-import { aiUsageReport } from "@/shared/api/generated/retenive-backend";
-import { isMockMode } from "@/shared/config/data-mode";
-import {
-  parseDecimalString,
-  type DecimalString,
-} from "@/shared/lib/decimal-money";
-import { isValidTextToSpeechRate } from "@/features/ai-pricing/ai-pricing.model";
+import { aiUsageReport } from '@/shared/api/generated/retenive-backend';
+import { isMockMode } from '@/shared/config/data-mode';
+import { parseDecimalString, type DecimalString } from '@/shared/lib/decimal-money';
+import { isValidTextToSpeechRate } from '@/features/ai-pricing/ai-pricing.model';
 import type {
   AiUsageBreakdown,
   AiUsageCategory,
@@ -15,18 +12,18 @@ import type {
   AiTextToSpeechPricingContext,
   AiUsageTotals,
   AiUsageWorkload,
-} from "./ai-usage.model";
-import { AI_USAGE_CATEGORIES } from "./ai-usage.model";
+} from './ai-usage.model';
+import { AI_USAGE_CATEGORIES } from './ai-usage.model';
 
 export function buildDemoTextToSpeechPricingContext(): AiTextToSpeechPricingContext {
   return {
     current: {
-      rate: "15",
-      currency: "usd",
-      unit: "per_million_input_characters",
-      effectiveFrom: "2026-07-29T10:00:00.000Z",
+      rate: '15',
+      currency: 'usd',
+      unit: 'per_million_input_characters',
+      effectiveFrom: '2026-07-29T10:00:00.000Z',
     },
-    sourceUrl: "https://docs.x.ai/developers/pricing",
+    sourceUrl: 'https://docs.x.ai/developers/pricing',
   };
 }
 
@@ -42,7 +39,7 @@ const demoReport = (projectId: string): AiUsageReport => ({
       inputTokens: 60_000,
       outputTokens: 14_546,
       totalTokens: 74_546,
-      billedCostUsd: "0.0295008",
+      billedCostUsd: '0.0295008',
       estimatedCostUsd: null,
     },
   },
@@ -69,42 +66,42 @@ const demoReport = (projectId: string): AiUsageReport => ({
     cachedInputImageTokens: 0,
     outputImageTokens: 0,
     durationSeconds: 428,
-    estimatedCost: "1.384999",
-    billedCost: "0.1765",
-    providerReportedCost: "0.1765",
-    estimatedFallbackCost: "1.384999",
-    effectiveCost: "1.561499",
+    estimatedCost: '1.384999',
+    billedCost: '0.1765',
+    providerReportedCost: '0.1765',
+    estimatedFallbackCost: '1.384999',
+    effectiveCost: '1.561499',
   },
   workloads: [
     {
-      workload: "ASSISTANT",
-      requestedModel: "grok-4.5",
-      appliedModel: "grok-4.5",
-      reasoningEffort: "low",
+      workload: 'ASSISTANT',
+      requestedModel: 'grok-4.5',
+      appliedModel: 'grok-4.5',
+      reasoningEffort: 'low',
       reasoningTokens: 8_120,
       requests: 112,
       averageLatencyMs: 780,
-      effectiveCostUsd: "0.1765",
+      effectiveCostUsd: '0.1765',
       isOther: false,
     },
     {
-      workload: "CONVERSATION_INBOUND",
-      requestedModel: "grok-4.3",
-      appliedModel: "grok-4.3",
-      reasoningEffort: "low",
+      workload: 'CONVERSATION_INBOUND',
+      requestedModel: 'grok-4.3',
+      appliedModel: 'grok-4.3',
+      reasoningEffort: 'low',
       reasoningTokens: 1_240,
       requests: 48,
       averageLatencyMs: 460,
-      effectiveCostUsd: "0.0412",
+      effectiveCostUsd: '0.0412',
       isOther: false,
     },
   ],
   breakdown: [
     {
-      provider: "xai",
-      model: "grok-4.5",
-      operation: "response",
-      currency: "usd",
+      provider: 'xai',
+      model: 'grok-4.5',
+      operation: 'response',
+      currency: 'usd',
       records: 112,
       inputCharacters: 0,
       providerBilledUnits: 0,
@@ -124,17 +121,17 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 0,
-      estimatedCost: "0",
-      billedCost: "0.1765",
-      providerReportedCost: "0.1765",
-      estimatedFallbackCost: "0",
-      effectiveCost: "0.1765",
+      estimatedCost: '0',
+      billedCost: '0.1765',
+      providerReportedCost: '0.1765',
+      estimatedFallbackCost: '0',
+      effectiveCost: '0.1765',
     },
     {
-      provider: "xai",
-      model: "grok-voice-think-fast-1.0",
-      operation: "realtime_response",
-      currency: "usd",
+      provider: 'xai',
+      model: 'grok-voice-think-fast-1.0',
+      operation: 'realtime_response',
+      currency: 'usd',
       records: 51,
       inputCharacters: 0,
       providerBilledUnits: 0,
@@ -154,17 +151,17 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 0,
-      estimatedCost: "0.8467",
-      billedCost: "0",
-      providerReportedCost: "0",
-      estimatedFallbackCost: "0.8467",
-      effectiveCost: "0.8467",
+      estimatedCost: '0.8467',
+      billedCost: '0',
+      providerReportedCost: '0',
+      estimatedFallbackCost: '0.8467',
+      effectiveCost: '0.8467',
     },
     {
-      provider: "xai",
-      model: "grok-voice-think-fast-1.0",
-      operation: "realtime_text_input",
-      currency: "usd",
+      provider: 'xai',
+      model: 'grok-voice-think-fast-1.0',
+      operation: 'realtime_text_input',
+      currency: 'usd',
       records: 9,
       inputCharacters: 0,
       providerBilledUnits: 0,
@@ -184,17 +181,17 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 0,
-      estimatedCost: "0.1964",
-      billedCost: "0",
-      providerReportedCost: "0",
-      estimatedFallbackCost: "0.1964",
-      effectiveCost: "0.1964",
+      estimatedCost: '0.1964',
+      billedCost: '0',
+      providerReportedCost: '0',
+      estimatedFallbackCost: '0.1964',
+      effectiveCost: '0.1964',
     },
     {
-      provider: "xai",
-      model: "grok-voice-think-fast-1.0",
-      operation: "realtime_transcription",
-      currency: "usd",
+      provider: 'xai',
+      model: 'grok-voice-think-fast-1.0',
+      operation: 'realtime_transcription',
+      currency: 'usd',
       records: 14,
       inputCharacters: 0,
       providerBilledUnits: 0,
@@ -214,17 +211,17 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 428,
-      estimatedCost: "0.064999",
-      billedCost: "0",
-      providerReportedCost: "0",
-      estimatedFallbackCost: "0.064999",
-      effectiveCost: "0.064999",
+      estimatedCost: '0.064999',
+      billedCost: '0',
+      providerReportedCost: '0',
+      estimatedFallbackCost: '0.064999',
+      effectiveCost: '0.064999',
     },
     {
-      provider: "xai",
+      provider: 'xai',
       model: null,
-      operation: "speech",
-      currency: "usd",
+      operation: 'speech',
+      currency: 'usd',
       records: 24,
       inputCharacters: 18_460,
       providerBilledUnits: 0,
@@ -244,17 +241,17 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 0,
-      estimatedCost: "0.2769",
-      billedCost: "0",
-      providerReportedCost: "0",
-      estimatedFallbackCost: "0.2769",
-      effectiveCost: "0.2769",
+      estimatedCost: '0.2769',
+      billedCost: '0',
+      providerReportedCost: '0',
+      estimatedFallbackCost: '0.2769',
+      effectiveCost: '0.2769',
     },
   ],
   categories: [
     {
-      category: "VOICE",
-      currency: "usd",
+      category: 'VOICE',
+      currency: 'usd',
       records: 74,
       inputCharacters: 0,
       providerBilledUnits: 0,
@@ -274,15 +271,15 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 428,
-      estimatedCost: "1.108099",
-      billedCost: "0",
-      providerReportedCost: "0",
-      estimatedFallbackCost: "1.108099",
-      effectiveCost: "1.108099",
+      estimatedCost: '1.108099',
+      billedCost: '0',
+      providerReportedCost: '0',
+      estimatedFallbackCost: '1.108099',
+      effectiveCost: '1.108099',
     },
     {
-      category: "SPEECH",
-      currency: "usd",
+      category: 'SPEECH',
+      currency: 'usd',
       records: 24,
       inputCharacters: 18_460,
       providerBilledUnits: 0,
@@ -302,106 +299,88 @@ const demoReport = (projectId: string): AiUsageReport => ({
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
       durationSeconds: 0,
-      estimatedCost: "0.2769",
-      billedCost: "0",
-      providerReportedCost: "0",
-      estimatedFallbackCost: "0.2769",
-      effectiveCost: "0.2769",
+      estimatedCost: '0.2769',
+      billedCost: '0',
+      providerReportedCost: '0',
+      estimatedFallbackCost: '0.2769',
+      effectiveCost: '0.2769',
     },
   ],
   textToSpeechPricing: buildDemoTextToSpeechPricingContext(),
 });
 
 const totalsIntegerKeys = [
-  "records",
-  "unpricedRecords",
-  "inputCharacters",
-  "totalTokens",
-  "inputTokens",
-  "cachedInputTokens",
-  "outputTokens",
-  "reasoningTokens",
-  "inputTextTokens",
-  "outputTextTokens",
-  "inputAudioTokens",
-  "outputAudioTokens",
+  'records',
+  'unpricedRecords',
+  'inputCharacters',
+  'totalTokens',
+  'inputTokens',
+  'cachedInputTokens',
+  'outputTokens',
+  'reasoningTokens',
+  'inputTextTokens',
+  'outputTextTokens',
+  'inputAudioTokens',
+  'outputAudioTokens',
 ] as const;
 const totalsLegacyIntegerKeys = [
-  "cacheWriteInputTokens",
-  "cachedInputTextTokens",
-  "cachedInputAudioTokens",
-  "inputImageTokens",
-  "cachedInputImageTokens",
-  "outputImageTokens",
+  'cacheWriteInputTokens',
+  'cachedInputTextTokens',
+  'cachedInputAudioTokens',
+  'inputImageTokens',
+  'cachedInputImageTokens',
+  'outputImageTokens',
 ] as const;
 const breakdownIntegerKeys = [
-  "records",
-  "inputCharacters",
-  "totalTokens",
-  "inputTokens",
-  "cachedInputTokens",
-  "cacheWriteInputTokens",
-  "outputTokens",
-  "reasoningTokens",
-  "inputTextTokens",
-  "cachedInputTextTokens",
-  "outputTextTokens",
-  "inputAudioTokens",
-  "cachedInputAudioTokens",
-  "outputAudioTokens",
-  "inputImageTokens",
-  "cachedInputImageTokens",
-  "outputImageTokens",
+  'records',
+  'inputCharacters',
+  'totalTokens',
+  'inputTokens',
+  'cachedInputTokens',
+  'cacheWriteInputTokens',
+  'outputTokens',
+  'reasoningTokens',
+  'inputTextTokens',
+  'cachedInputTextTokens',
+  'outputTextTokens',
+  'inputAudioTokens',
+  'cachedInputAudioTokens',
+  'outputAudioTokens',
+  'inputImageTokens',
+  'cachedInputImageTokens',
+  'outputImageTokens',
 ] as const;
-const measurementDecimalKeys = [
-  "providerBilledUnits",
-  "durationSeconds",
-] as const;
+const measurementDecimalKeys = ['providerBilledUnits', 'durationSeconds'] as const;
 const moneyKeys = [
-  "estimatedCost",
-  "billedCost",
-  "providerReportedCost",
-  "estimatedFallbackCost",
-  "effectiveCost",
+  'estimatedCost',
+  'billedCost',
+  'providerReportedCost',
+  'estimatedFallbackCost',
+  'effectiveCost',
 ] as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function boundedString(
-  value: unknown,
-  min: number,
-  max: number,
-): value is string {
-  return (
-    typeof value === "string" && value.length >= min && value.length <= max
-  );
+function boundedString(value: unknown, min: number, max: number): value is string {
+  return typeof value === 'string' && value.length >= min && value.length <= max;
 }
 
 function safeInteger(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0
-    ? value
-    : undefined;
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
 }
 
 function nonNegativeNumber(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0
-    ? value
-    : undefined;
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined;
 }
 
 function measurementDecimal(value: unknown): number | undefined {
-  if (
-    typeof value === "string" &&
-    (value.length > 64 || !/^\d+(?:\.\d+)?$/.test(value))
-  )
+  if (typeof value === 'string' && (value.length > 64 || !/^\d+(?:\.\d+)?$/.test(value)))
     return undefined;
-  if (typeof value !== "string" && typeof value !== "number") return undefined;
+  if (typeof value !== 'string' && typeof value !== 'number') return undefined;
   const normalized = Number(value);
-  return Number.isFinite(normalized) && normalized >= 0
-    ? normalized
-    : undefined;
+  return Number.isFinite(normalized) && normalized >= 0 ? normalized : undefined;
 }
 
 function normalizeNumbers(
@@ -439,18 +418,14 @@ function normalizeNumbers(
 
 function parseTotals(value: unknown): AiUsageTotals | undefined {
   if (!isRecord(value)) return undefined;
-  const numbers = normalizeNumbers(
-    value,
-    totalsIntegerKeys,
-    totalsLegacyIntegerKeys,
-  );
+  const numbers = normalizeNumbers(value, totalsIntegerKeys, totalsLegacyIntegerKeys);
   if (!numbers) return undefined;
   for (const key of [
-    "providerReportedUsageRecords",
-    "estimatedCostRecords",
-    "providerReportedCostRecords",
-    "estimatedRecords",
-    "providerUnitOnlyRecords",
+    'providerReportedUsageRecords',
+    'estimatedCostRecords',
+    'providerReportedCostRecords',
+    'estimatedRecords',
+    'providerUnitOnlyRecords',
   ] as const) {
     if (value[key] === undefined) continue;
     const parsed = safeInteger(value[key]);
@@ -464,9 +439,7 @@ function parseBreakdown(value: unknown): AiUsageBreakdown | undefined {
   if (!isRecord(value)) return undefined;
   const model = boundedString(value.model, 1, 160)
     ? value.model
-    : value.model === null &&
-        value.provider === "xai" &&
-        value.operation === "speech"
+    : value.model === null && value.provider === 'xai' && value.operation === 'speech'
       ? null
       : undefined;
   if (
@@ -492,7 +465,7 @@ const usageCategories = new Set<AiUsageCategory>(AI_USAGE_CATEGORIES);
 function parseCategory(value: unknown): AiUsageCategoryBreakdown | undefined {
   if (!isRecord(value)) return undefined;
   if (
-    typeof value.category !== "string" ||
+    typeof value.category !== 'string' ||
     !usageCategories.has(value.category as AiUsageCategory) ||
     !boundedString(value.currency, 3, 8)
   )
@@ -517,17 +490,13 @@ export function parseAiUsageEventQueryBreakdown(
   if (!isRecord(value) || !isRecord(value.linkedAiUsage)) return undefined;
   const calls = safeInteger(value.calls);
   const resultBytes = safeInteger(value.resultBytes);
-  const estimatedAddedInputTokens = safeInteger(
-    value.estimatedAddedInputTokens,
-  );
+  const estimatedAddedInputTokens = safeInteger(value.estimatedAddedInputTokens);
   const records = safeInteger(value.linkedAiUsage.records);
   const inputTokens = safeInteger(value.linkedAiUsage.inputTokens);
   const outputTokens = safeInteger(value.linkedAiUsage.outputTokens);
   const totalTokens = safeInteger(value.linkedAiUsage.totalTokens);
   const billedCostUsd = nullableMoney(value.linkedAiUsage.billedCostUsd);
-  const estimatedCostUsd = nullableMoney(
-    value.linkedAiUsage.estimatedCostUsd,
-  );
+  const estimatedCostUsd = nullableMoney(value.linkedAiUsage.estimatedCostUsd);
   if (
     calls === undefined ||
     resultBytes === undefined ||
@@ -546,8 +515,7 @@ export function parseAiUsageEventQueryBreakdown(
     calls,
     resultBytes,
     estimatedAddedInputTokens,
-    linkedUsageIncludedInProviderTotals:
-      value.linkedUsageIncludedInProviderTotals,
+    linkedUsageIncludedInProviderTotals: value.linkedUsageIncludedInProviderTotals,
     linkedAiUsage: {
       records,
       inputTokens,
@@ -563,17 +531,13 @@ function parseHttpsUrl(value: unknown): string | undefined {
   if (!boundedString(value, 1, 2_048)) return undefined;
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && !url.username && !url.password
-      ? value
-      : undefined;
+    return url.protocol === 'https:' && !url.username && !url.password ? value : undefined;
   } catch {
     return undefined;
   }
 }
 
-export function parseTextToSpeechPricing(
-  value: unknown,
-): AiTextToSpeechPricingContext | undefined {
+export function parseTextToSpeechPricing(value: unknown): AiTextToSpeechPricingContext | undefined {
   if (!isRecord(value)) return undefined;
   const sourceUrl = parseHttpsUrl(value.sourceUrl);
   if (!sourceUrl) return undefined;
@@ -584,14 +548,13 @@ export function parseTextToSpeechPricing(
   if (
     !boundedString(rate, 1, 64) ||
     !isValidTextToSpeechRate(rate) ||
-    currency !== "usd" ||
-    unit !== "per_million_input_characters" ||
+    currency !== 'usd' ||
+    unit !== 'per_million_input_characters' ||
     !boundedString(effectiveFrom, 1, 64)
   )
     return undefined;
   const date = new Date(effectiveFrom);
-  if (!Number.isFinite(date.getTime()) || date.toISOString() !== effectiveFrom)
-    return undefined;
+  if (!Number.isFinite(date.getTime()) || date.toISOString() !== effectiveFrom) return undefined;
 
   return {
     current: { rate, currency, unit, effectiveFrom },
@@ -599,21 +562,17 @@ export function parseTextToSpeechPricing(
   };
 }
 
-const workloadNames = new Set<AiUsageWorkload["workload"]>([
-  "ASSISTANT",
-  "SCENARIO_AUTHORING",
-  "CONVERSATION_INBOUND",
-  "CONVERSATION_OUTBOUND",
+const workloadNames = new Set<AiUsageWorkload['workload']>([
+  'ASSISTANT',
+  'SCENARIO_AUTHORING',
+  'CONVERSATION_INBOUND',
+  'CONVERSATION_OUTBOUND',
 ]);
-const reasoningEfforts = new Set(["none", "low", "medium", "high"]);
+const reasoningEfforts = new Set(['none', 'low', 'medium', 'high']);
 
 function parseWorkloads(value: unknown): AiUsageWorkload[] | undefined {
   if (value === undefined) return [];
-  if (
-    !isRecord(value) ||
-    !Array.isArray(value.items) ||
-    value.items.length > 104
-  ) {
+  if (!isRecord(value) || !Array.isArray(value.items) || value.items.length > 104) {
     return undefined;
   }
   const items: AiUsageWorkload[] = [];
@@ -622,34 +581,29 @@ function parseWorkloads(value: unknown): AiUsageWorkload[] | undefined {
     const requests = safeInteger(item.requests);
     const reasoningTokens = safeInteger(item.reasoningTokens);
     const averageLatencyMs =
-      item.averageLatencyMs === null
-        ? null
-        : nonNegativeNumber(item.averageLatencyMs);
+      item.averageLatencyMs === null ? null : nonNegativeNumber(item.averageLatencyMs);
     const effectiveCostUsd = parseDecimalString(item.effectiveCostUsd);
     if (
-      typeof item.workload !== "string" ||
-      !workloadNames.has(item.workload as AiUsageWorkload["workload"]) ||
-      (item.requestedModel !== null &&
-        !boundedString(item.requestedModel, 1, 160)) ||
-      (item.appliedModel !== null &&
-        !boundedString(item.appliedModel, 1, 160)) ||
+      typeof item.workload !== 'string' ||
+      !workloadNames.has(item.workload as AiUsageWorkload['workload']) ||
+      (item.requestedModel !== null && !boundedString(item.requestedModel, 1, 160)) ||
+      (item.appliedModel !== null && !boundedString(item.appliedModel, 1, 160)) ||
       (item.reasoningEffort !== null &&
-        (typeof item.reasoningEffort !== "string" ||
+        (typeof item.reasoningEffort !== 'string' ||
           !reasoningEfforts.has(item.reasoningEffort))) ||
       requests === undefined ||
       reasoningTokens === undefined ||
       averageLatencyMs === undefined ||
       effectiveCostUsd === undefined ||
-      typeof item.isOther !== "boolean"
+      typeof item.isOther !== 'boolean'
     ) {
       return undefined;
     }
     items.push({
-      workload: item.workload as AiUsageWorkload["workload"],
+      workload: item.workload as AiUsageWorkload['workload'],
       requestedModel: item.requestedModel as string | null,
       appliedModel: item.appliedModel as string | null,
-      reasoningEffort:
-        item.reasoningEffort as AiUsageWorkload["reasoningEffort"],
+      reasoningEffort: item.reasoningEffort as AiUsageWorkload['reasoningEffort'],
       reasoningTokens,
       requests,
       averageLatencyMs,
@@ -660,18 +614,12 @@ function parseWorkloads(value: unknown): AiUsageWorkload[] | undefined {
   return items;
 }
 
-export function parseAiUsageReport(
-  value: unknown,
-  projectId: string,
-): AiUsageReport | undefined {
+export function parseAiUsageReport(value: unknown, projectId: string): AiUsageReport | undefined {
   if (!isRecord(value) || value.projectId !== projectId) return undefined;
-  if (!Array.isArray(value.breakdown) || value.breakdown.length > 1_000)
-    return undefined;
-  if (!Array.isArray(value.categories) || value.categories.length > 100)
-    return undefined;
+  if (!Array.isArray(value.breakdown) || value.breakdown.length > 1_000) return undefined;
+  if (!Array.isArray(value.categories) || value.categories.length > 100) return undefined;
   if (!Array.isArray(value.items) || value.items.length > 1) return undefined;
-  if (value.nextCursor !== null && typeof value.nextCursor !== "string")
-    return undefined;
+  if (value.nextCursor !== null && typeof value.nextCursor !== 'string') return undefined;
   const totals = parseTotals(value.totals);
   if (!totals) return undefined;
   const eventQuery = parseAiUsageEventQueryBreakdown(
@@ -680,9 +628,7 @@ export function parseAiUsageReport(
       : undefined,
   );
   if (!eventQuery) return undefined;
-  const textToSpeechPricing = parseTextToSpeechPricing(
-    value.textToSpeechPricing,
-  );
+  const textToSpeechPricing = parseTextToSpeechPricing(value.textToSpeechPricing);
   if (!textToSpeechPricing) return undefined;
   const workloads = parseWorkloads(value.workloads);
   if (!workloads) return undefined;
@@ -716,13 +662,8 @@ export async function fetchAiUsageReport(
 ): Promise<AiUsageReport> {
   if (isMockMode) return demoReport(projectId);
 
-  const response: unknown = await aiUsageReport(
-    projectId,
-    { ...range, limit: 1 },
-    { signal },
-  );
+  const response: unknown = await aiUsageReport(projectId, { ...range, limit: 1 }, { signal });
   const parsed = parseAiUsageReport(response, projectId);
-  if (!parsed)
-    throw new Error("Сервер вернул некорректные данные статистики AI");
+  if (!parsed) throw new Error('Сервер вернул некорректные данные статистики AI');
   return parsed;
 }

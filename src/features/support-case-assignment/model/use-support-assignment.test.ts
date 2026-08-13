@@ -1,20 +1,18 @@
-import { nextTick, ref } from "vue";
-import { describe, expect, it, vi } from "vitest";
-import { ApiError } from "@/shared/api/http/api-error";
-import type { SupportWorkspaceSelection } from "@/features/support-workspace/api/support-workspace-source";
+import { nextTick, ref } from 'vue';
+import { describe, expect, it, vi } from 'vitest';
+import { ApiError } from '@/shared/api/http/api-error';
+import type { SupportWorkspaceSelection } from '@/features/support-workspace/api/support-workspace-source';
 import {
   SupportAssignmentIntegrityError,
   type SupportAssignmentSnapshot,
   type SupportAssignmentSource,
-} from "@/features/support-case-assignment/api/support-assignment-source";
-import { createSupportAssignmentController } from "./use-support-assignment";
+} from '@/features/support-case-assignment/api/support-assignment-source';
+import { createSupportAssignmentController } from './use-support-assignment';
 
-function selection(
-  overrides: Partial<SupportWorkspaceSelection> = {},
-): SupportWorkspaceSelection {
+function selection(overrides: Partial<SupportWorkspaceSelection> = {}): SupportWorkspaceSelection {
   return {
-    checkpoint: "checkpoint-1",
-    capabilitiesRevision: "capabilities-1",
+    checkpoint: 'checkpoint-1',
+    capabilitiesRevision: 'capabilities-1',
     actionRevisions: { caseVersion: 9, assignmentVersion: null },
     classificationOptions: [],
     capabilities: {
@@ -29,23 +27,23 @@ function selection(
       transferAssignment: false,
     },
     endUser: {
-      id: "end-user-1",
+      id: 'end-user-1',
       isGuest: false,
-      createdAt: "2026-08-08T09:00:00.000Z",
-      lastSeenAt: "2026-08-08T10:00:00.000Z",
+      createdAt: '2026-08-08T09:00:00.000Z',
+      lastSeenAt: '2026-08-08T10:00:00.000Z',
     },
     case: {
-      id: "case-1",
-      title: "Возврат",
-      summary: "",
-      goal: "",
-      status: "OPEN",
-      priority: "NORMAL",
-      groupCode: "PAYMENTS",
-      projectSequence: "42",
+      id: 'case-1',
+      title: 'Возврат',
+      summary: '',
+      goal: '',
+      status: 'OPEN',
+      priority: 'NORMAL',
+      groupCode: 'PAYMENTS',
+      projectSequence: '42',
       attentionRequired: false,
-      lastActivityAt: "2026-08-08T10:00:00.000Z",
-      updatedAt: "2026-08-08T10:00:00.000Z",
+      lastActivityAt: '2026-08-08T10:00:00.000Z',
+      updatedAt: '2026-08-08T10:00:00.000Z',
       version: 9,
       latestRevisionId: null,
       assignee: null,
@@ -64,16 +62,14 @@ function selection(
   };
 }
 
-function snapshot(
-  overrides: Partial<SupportAssignmentSnapshot> = {},
-): SupportAssignmentSnapshot {
+function snapshot(overrides: Partial<SupportAssignmentSnapshot> = {}): SupportAssignmentSnapshot {
   return {
-    caseId: "case-1",
+    caseId: 'case-1',
     caseVersion: 9,
     caseReadToken: '"sc1.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"',
-    assignmentState: "UNASSIGNED",
+    assignmentState: 'UNASSIGNED',
     currentAssignment: null,
-    workforceRevision: { id: "workforce-1", number: 4 },
+    workforceRevision: { id: 'workforce-1', number: 4 },
     actions: {
       claim: true,
       assign: false,
@@ -84,9 +80,9 @@ function snapshot(
     },
     teams: [
       {
-        id: "team-1",
-        code: "PAYMENTS",
-        name: "Платежи",
+        id: 'team-1',
+        code: 'PAYMENTS',
+        name: 'Платежи',
         actions: {
           claim: true,
           assign: false,
@@ -114,13 +110,13 @@ function assignedSelection(): SupportWorkspaceSelection {
     },
     case: {
       ...value.case!,
-      assignee: { id: "operator-1", displayName: "Анна" },
+      assignee: { id: 'operator-1', displayName: 'Анна' },
       assignment: {
-        id: "assignment-1",
-        state: "ASSIGNED",
-        operatorId: "operator-1",
-        operatorName: "Анна",
-        teamName: "Платежи",
+        id: 'assignment-1',
+        state: 'ASSIGNED',
+        operatorId: 'operator-1',
+        operatorName: 'Анна',
+        teamName: 'Платежи',
         version: 3,
         actionEtag: '"sa1.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"',
       },
@@ -130,9 +126,9 @@ function assignedSelection(): SupportWorkspaceSelection {
 
 function assignedSnapshot(): SupportAssignmentSnapshot {
   return snapshot({
-    assignmentState: "ASSIGNED",
+    assignmentState: 'ASSIGNED',
     currentAssignment: {
-      id: "assignment-1",
+      id: 'assignment-1',
       version: 3,
       actionEtag: '"sa1.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"',
     },
@@ -146,9 +142,9 @@ function assignedSnapshot(): SupportAssignmentSnapshot {
     },
     teams: [
       {
-        id: "team-2",
-        code: "VIP",
-        name: "VIP",
+        id: 'team-2',
+        code: 'VIP',
+        name: 'VIP',
         actions: {
           claim: false,
           assign: false,
@@ -158,10 +154,10 @@ function assignedSnapshot(): SupportAssignmentSnapshot {
         },
         operators: [
           {
-            id: "operator-2",
-            displayName: "Максим",
+            id: 'operator-2',
+            displayName: 'Максим',
             availableCapacityUnits: 300,
-            effectiveAvailability: "AVAILABLE",
+            effectiveAvailability: 'AVAILABLE',
             requiredOverrides: [],
             actions: {
               claim: false,
@@ -177,9 +173,7 @@ function assignedSnapshot(): SupportAssignmentSnapshot {
   });
 }
 
-function source(
-  overrides: Partial<SupportAssignmentSource> = {},
-): SupportAssignmentSource {
+function source(overrides: Partial<SupportAssignmentSource> = {}): SupportAssignmentSource {
   return {
     readCase: vi.fn().mockResolvedValue(snapshot()),
     execute: vi.fn(),
@@ -189,11 +183,11 @@ function source(
   };
 }
 
-describe("support assignment controller", () => {
-  it("exposes claim only when session, workspace and Case candidate authorities agree", async () => {
+describe('support assignment controller', () => {
+  it('exposes claim only when session, workspace and Case candidate authorities agree', async () => {
     const current = ref(selection());
     const controller = createSupportAssignmentController(source(), {
-      projectId: () => "project-1",
+      projectId: () => 'project-1',
       selection: () => current.value,
       canManageOwn: () => true,
       canOverride: () => false,
@@ -212,44 +206,42 @@ describe("support assignment controller", () => {
     expect(controller.canClaim.value).toBe(false);
   });
 
-  it("replays an unknown claim outcome with the exact captured snapshot and idempotency key", async () => {
+  it('replays an unknown claim outcome with the exact captured snapshot and idempotency key', async () => {
     const execute = vi
       .fn()
-      .mockRejectedValueOnce(new Error("connection lost"))
+      .mockRejectedValueOnce(new Error('connection lost'))
       .mockResolvedValueOnce({
-        intent: "CLAIM_CASE_ASSIGNMENT",
-        caseId: "case-1",
-        assignmentId: "assignment-1",
+        intent: 'CLAIM_CASE_ASSIGNMENT',
+        caseId: 'case-1',
+        assignmentId: 'assignment-1',
         caseVersion: 10,
         assignmentVersion: 1,
       });
     const onChanged = vi.fn();
     const controller = createSupportAssignmentController(source({ execute }), {
-      projectId: () => "project-1",
+      projectId: () => 'project-1',
       selection: () => selection(),
       canManageOwn: () => true,
       canOverride: () => false,
       canReceiveOffers: () => false,
-      createIdempotencyKey: () => "assignment-intent-1",
+      createIdempotencyKey: () => 'assignment-intent-1',
       onChanged,
     });
 
     await controller.loadCase();
-    controller.setDraft({ kind: "CLAIM", teamId: "team-1" });
+    controller.setDraft({ kind: 'CLAIM', teamId: 'team-1' });
     await controller.submit();
     await controller.retryUnknownOutcome();
 
     expect(execute).toHaveBeenCalledTimes(2);
-    expect(execute.mock.calls[1]?.slice(0, 3)).toEqual(
-      execute.mock.calls[0]?.slice(0, 3),
-    );
-    expect(execute.mock.calls[0]?.[2]).toBe("assignment-intent-1");
+    expect(execute.mock.calls[1]?.slice(0, 3)).toEqual(execute.mock.calls[0]?.slice(0, 3));
+    expect(execute.mock.calls[0]?.[2]).toBe('assignment-intent-1');
     expect(controller.unknownOutcome.value).toBe(false);
     expect(controller.draft.value).toBeNull();
     expect(onChanged).toHaveBeenCalledOnce();
   });
 
-  it("preserves the operator draft and reconciles authoritative state on 409", async () => {
+  it('preserves the operator draft and reconciles authoritative state on 409', async () => {
     const holder: {
       controller?: ReturnType<typeof createSupportAssignmentController>;
     } = {};
@@ -262,7 +254,7 @@ describe("support assignment controller", () => {
       .mockResolvedValueOnce(
         snapshot({
           caseVersion: 10,
-          assignmentState: "ASSIGNED",
+          assignmentState: 'ASSIGNED',
           actions: {
             claim: false,
             assign: false,
@@ -280,17 +272,11 @@ describe("support assignment controller", () => {
         execute: vi
           .fn()
           .mockRejectedValue(
-            new ApiError(
-              409,
-              "stale",
-              undefined,
-              undefined,
-              "CASE_VERSION_CONFLICT",
-            ),
+            new ApiError(409, 'stale', undefined, undefined, 'CASE_VERSION_CONFLICT'),
           ),
       }),
       {
-        projectId: () => "project-1",
+        projectId: () => 'project-1',
         selection: () => selection(),
         canManageOwn: () => true,
         canOverride: () => false,
@@ -301,25 +287,25 @@ describe("support assignment controller", () => {
     holder.controller = controller;
 
     await controller.loadCase();
-    controller.setDraft({ kind: "CLAIM", teamId: "team-1" });
+    controller.setDraft({ kind: 'CLAIM', teamId: 'team-1' });
     await controller.submit();
 
     expect(controller.draft.value).toEqual({
-      kind: "CLAIM",
-      teamId: "team-1",
+      kind: 'CLAIM',
+      teamId: 'team-1',
     });
     expect(controller.unknownOutcome.value).toBe(false);
     expect(controller.canRetry.value).toBe(false);
-    expect(controller.error.value).toContain("изменилось");
+    expect(controller.error.value).toContain('изменилось');
     expect(onChanged).toHaveBeenCalledOnce();
     expect(readCase).toHaveBeenCalledTimes(2);
   });
 
-  it("transfers only through the selected server-authorized target", async () => {
+  it('transfers only through the selected server-authorized target', async () => {
     const execute = vi.fn().mockResolvedValue({
-      intent: "TRANSFER_CASE_ASSIGNMENT",
-      caseId: "case-1",
-      assignmentId: "assignment-2",
+      intent: 'TRANSFER_CASE_ASSIGNMENT',
+      caseId: 'case-1',
+      assignmentId: 'assignment-2',
       caseVersion: 10,
       assignmentVersion: 1,
     });
@@ -329,12 +315,12 @@ describe("support assignment controller", () => {
         execute,
       }),
       {
-        projectId: () => "project-1",
+        projectId: () => 'project-1',
         selection: assignedSelection,
         canManageOwn: () => true,
         canOverride: () => true,
         canReceiveOffers: () => false,
-        createIdempotencyKey: () => "assignment-intent-2",
+        createIdempotencyKey: () => 'assignment-intent-2',
       },
     );
 
@@ -342,59 +328,53 @@ describe("support assignment controller", () => {
     expect(controller.canRelease.value).toBe(true);
     expect(controller.canTransfer.value).toBe(true);
     controller.setDraft({
-      kind: "TRANSFER",
-      teamId: "team-2",
-      operatorId: "operator-2",
-      reasonCode: "SKILL_HANDOFF",
-      reasonNote: "Нужна экспертиза VIP",
+      kind: 'TRANSFER',
+      teamId: 'team-2',
+      operatorId: 'operator-2',
+      reasonCode: 'SKILL_HANDOFF',
+      reasonNote: 'Нужна экспертиза VIP',
     });
     await controller.submit();
 
     expect(execute).toHaveBeenCalledWith(
-      "project-1",
+      'project-1',
       {
-        kind: "TRANSFER",
+        kind: 'TRANSFER',
         snapshot: assignedSnapshot(),
-        teamId: "team-2",
-        operatorId: "operator-2",
-        reasonCode: "SKILL_HANDOFF",
-        reasonNote: "Нужна экспертиза VIP",
+        teamId: 'team-2',
+        operatorId: 'operator-2',
+        reasonCode: 'SKILL_HANDOFF',
+        reasonNote: 'Нужна экспертиза VIP',
       },
-      "assignment-intent-2",
+      'assignment-intent-2',
       expect.any(AbortSignal),
     );
   });
 
-  it("removes an expired own offer even when the private refresh fails", async () => {
+  it('removes an expired own offer even when the private refresh fails', async () => {
     const offer = {
-      assignmentId: "offer-assignment-1",
-      caseId: "case-2",
+      assignmentId: 'offer-assignment-1',
+      caseId: 'case-2',
       assignmentVersion: 6,
-      expiresAt: "2026-08-08T12:00:00.000Z",
+      expiresAt: '2026-08-08T12:00:00.000Z',
       actionEtag: '"so1.k.ddddddddddddddddddddddddddddddddddddddddddd"',
-      offerToken: "opaque-routing-offer-token",
+      offerToken: 'opaque-routing-offer-token',
     };
     const listOffers = vi
       .fn()
       .mockResolvedValueOnce([offer])
-      .mockRejectedValueOnce(new Error("refresh failed"));
+      .mockRejectedValueOnce(new Error('refresh failed'));
     const controller = createSupportAssignmentController(
       source({
         listOffers,
         actOnOffer: vi
           .fn()
           .mockRejectedValue(
-            new ApiError(
-              409,
-              "expired",
-              undefined,
-              undefined,
-              "SUPPORT_OFFER_EXPIRED",
-            ),
+            new ApiError(409, 'expired', undefined, undefined, 'SUPPORT_OFFER_EXPIRED'),
           ),
       }),
       {
-        projectId: () => "project-1",
+        projectId: () => 'project-1',
         selection: () => selection(),
         canManageOwn: () => true,
         canOverride: () => false,
@@ -403,32 +383,26 @@ describe("support assignment controller", () => {
     );
 
     await controller.loadOffers();
-    await controller.actOnOffer("offer-assignment-1", "ACCEPT");
+    await controller.actOnOffer('offer-assignment-1', 'ACCEPT');
 
     expect(controller.offers.value).toEqual([]);
     expect(controller.offerUnknownOutcome.value).toBe(false);
-    expect(controller.offerError.value).toContain("не актуально");
+    expect(controller.offerError.value).toContain('не актуально');
     expect(listOffers).toHaveBeenCalledTimes(2);
   });
 
-  it("purges the Case action surface after assignment permission is revoked", async () => {
+  it('purges the Case action surface after assignment permission is revoked', async () => {
     const onForbidden = vi.fn();
     const controller = createSupportAssignmentController(
       source({
         readCase: vi
           .fn()
           .mockRejectedValue(
-            new ApiError(
-              403,
-              "revoked",
-              undefined,
-              undefined,
-              "NOT_FOUND_OR_FORBIDDEN",
-            ),
+            new ApiError(403, 'revoked', undefined, undefined, 'NOT_FOUND_OR_FORBIDDEN'),
           ),
       }),
       {
-        projectId: () => "project-1",
+        projectId: () => 'project-1',
         selection: () => selection(),
         canManageOwn: () => true,
         canOverride: () => false,
@@ -436,7 +410,7 @@ describe("support assignment controller", () => {
         onForbidden,
       },
     );
-    controller.setDraft({ kind: "CLAIM", teamId: "team-1" });
+    controller.setDraft({ kind: 'CLAIM', teamId: 'team-1' });
 
     await controller.loadCase();
 
@@ -446,52 +420,46 @@ describe("support assignment controller", () => {
     expect(onForbidden).toHaveBeenCalledOnce();
   });
 
-  it("does not replay a known successful assignment when reconciliation fails", async () => {
+  it('does not replay a known successful assignment when reconciliation fails', async () => {
     const execute = vi.fn().mockResolvedValue({
-      intent: "CLAIM_CASE_ASSIGNMENT",
-      caseId: "case-1",
-      assignmentId: "assignment-1",
+      intent: 'CLAIM_CASE_ASSIGNMENT',
+      caseId: 'case-1',
+      assignmentId: 'assignment-1',
       caseVersion: 10,
       assignmentVersion: 1,
     });
     const controller = createSupportAssignmentController(source({ execute }), {
-      projectId: () => "project-1",
+      projectId: () => 'project-1',
       selection: () => selection(),
       canManageOwn: () => true,
       canOverride: () => false,
       canReceiveOffers: () => false,
-      onChanged: vi.fn().mockRejectedValue(new Error("refresh failed")),
+      onChanged: vi.fn().mockRejectedValue(new Error('refresh failed')),
     });
 
     await controller.loadCase();
-    controller.setDraft({ kind: "CLAIM", teamId: "team-1" });
+    controller.setDraft({ kind: 'CLAIM', teamId: 'team-1' });
     await controller.submit();
 
     expect(execute).toHaveBeenCalledOnce();
     expect(controller.draft.value).toBeNull();
     expect(controller.unknownOutcome.value).toBe(false);
     expect(controller.canRetry.value).toBe(false);
-    expect(controller.error.value).toContain("выполнено");
+    expect(controller.error.value).toContain('выполнено');
   });
 
-  it("purges a revoked mutation and never offers an idempotent replay", async () => {
+  it('purges a revoked mutation and never offers an idempotent replay', async () => {
     const onForbidden = vi.fn();
     const controller = createSupportAssignmentController(
       source({
         execute: vi
           .fn()
           .mockRejectedValue(
-            new ApiError(
-              403,
-              "revoked",
-              undefined,
-              undefined,
-              "NOT_FOUND_OR_FORBIDDEN",
-            ),
+            new ApiError(403, 'revoked', undefined, undefined, 'NOT_FOUND_OR_FORBIDDEN'),
           ),
       }),
       {
-        projectId: () => "project-1",
+        projectId: () => 'project-1',
         selection: () => selection(),
         canManageOwn: () => true,
         canOverride: () => false,
@@ -501,7 +469,7 @@ describe("support assignment controller", () => {
     );
 
     await controller.loadCase();
-    controller.setDraft({ kind: "CLAIM", teamId: "team-1" });
+    controller.setDraft({ kind: 'CLAIM', teamId: 'team-1' });
     await controller.submit();
 
     expect(controller.caseSnapshot.value).toBeNull();
@@ -510,51 +478,51 @@ describe("support assignment controller", () => {
     expect(onForbidden).toHaveBeenCalledOnce();
   });
 
-  it("keeps a successful offer final when the follow-up reconcile fails", async () => {
+  it('keeps a successful offer final when the follow-up reconcile fails', async () => {
     const offer = {
-      assignmentId: "offer-assignment-1",
-      caseId: "case-2",
+      assignmentId: 'offer-assignment-1',
+      caseId: 'case-2',
       assignmentVersion: 6,
-      expiresAt: "2026-08-08T12:00:00.000Z",
+      expiresAt: '2026-08-08T12:00:00.000Z',
       actionEtag: '"so1.k.ddddddddddddddddddddddddddddddddddddddddddd"',
-      offerToken: "opaque-routing-offer-token",
+      offerToken: 'opaque-routing-offer-token',
     };
     const controller = createSupportAssignmentController(
       source({
         listOffers: vi
           .fn()
           .mockResolvedValueOnce([offer])
-          .mockRejectedValueOnce(new Error("refresh failed")),
+          .mockRejectedValueOnce(new Error('refresh failed')),
         actOnOffer: vi.fn().mockResolvedValue({
           assignmentId: offer.assignmentId,
           caseVersion: 10,
-          outcome: "ACCEPTED",
+          outcome: 'ACCEPTED',
         }),
       }),
       {
-        projectId: () => "project-1",
+        projectId: () => 'project-1',
         selection: () => selection(),
         canManageOwn: () => true,
         canOverride: () => false,
         canReceiveOffers: () => true,
-        onChanged: vi.fn().mockRejectedValue(new Error("reconcile failed")),
+        onChanged: vi.fn().mockRejectedValue(new Error('reconcile failed')),
       },
     );
 
     await controller.loadOffers();
-    await controller.actOnOffer(offer.assignmentId, "ACCEPT");
+    await controller.actOnOffer(offer.assignmentId, 'ACCEPT');
 
     expect(controller.offers.value).toEqual([]);
     expect(controller.offerUnknownOutcome.value).toBe(false);
     expect(controller.offerCanRetry.value).toBe(false);
-    expect(controller.offerError.value).toContain("выполнено");
+    expect(controller.offerError.value).toContain('выполнено');
   });
 
-  it("blocks an unknown-outcome replay after the exact Case authority changes", async () => {
+  it('blocks an unknown-outcome replay after the exact Case authority changes', async () => {
     const current = ref(selection());
-    const execute = vi.fn().mockRejectedValue(new Error("connection lost"));
+    const execute = vi.fn().mockRejectedValue(new Error('connection lost'));
     const controller = createSupportAssignmentController(source({ execute }), {
-      projectId: () => "project-1",
+      projectId: () => 'project-1',
       selection: () => current.value,
       canManageOwn: () => true,
       canOverride: () => false,
@@ -562,7 +530,7 @@ describe("support assignment controller", () => {
     });
 
     await controller.loadCase();
-    controller.setDraft({ kind: "CLAIM", teamId: "team-1" });
+    controller.setDraft({ kind: 'CLAIM', teamId: 'team-1' });
     await controller.submit();
     current.value = selection({
       capabilities: {
@@ -575,13 +543,13 @@ describe("support assignment controller", () => {
     expect(execute).toHaveBeenCalledOnce();
     expect(controller.unknownOutcome.value).toBe(false);
     expect(controller.canRetry.value).toBe(false);
-    expect(controller.error.value).toContain("заблокирован");
+    expect(controller.error.value).toContain('заблокирован');
   });
 
-  it("reactively purges an unknown replay when the server candidate action is revoked", async () => {
-    const execute = vi.fn().mockRejectedValue(new Error("connection lost"));
+  it('reactively purges an unknown replay when the server candidate action is revoked', async () => {
+    const execute = vi.fn().mockRejectedValue(new Error('connection lost'));
     const controller = createSupportAssignmentController(source({ execute }), {
-      projectId: () => "project-1",
+      projectId: () => 'project-1',
       selection: () => selection(),
       canManageOwn: () => true,
       canOverride: () => false,
@@ -589,7 +557,7 @@ describe("support assignment controller", () => {
     });
 
     await controller.loadCase();
-    controller.setDraft({ kind: "CLAIM", teamId: "team-1" });
+    controller.setDraft({ kind: 'CLAIM', teamId: 'team-1' });
     await controller.submit();
     expect(controller.canRetry.value).toBe(true);
 
@@ -608,27 +576,27 @@ describe("support assignment controller", () => {
 
     expect(controller.canRetry.value).toBe(false);
     expect(controller.unknownOutcome.value).toBe(false);
-    expect(controller.error.value).toContain("заблокирован");
+    expect(controller.error.value).toContain('заблокирован');
     expect(execute).toHaveBeenCalledOnce();
   });
 
-  it("purges an expired unknown offer replay without another operator click", async () => {
+  it('purges an expired unknown offer replay without another operator click', async () => {
     const offer = {
-      assignmentId: "offer-assignment-1",
-      caseId: "case-2",
+      assignmentId: 'offer-assignment-1',
+      caseId: 'case-2',
       assignmentVersion: 6,
-      expiresAt: "2099-08-08T12:00:00.000Z",
+      expiresAt: '2099-08-08T12:00:00.000Z',
       actionEtag: '"so1.k.ddddddddddddddddddddddddddddddddddddddddddd"',
-      offerToken: "opaque-routing-offer-token",
+      offerToken: 'opaque-routing-offer-token',
     };
-    const actOnOffer = vi.fn().mockRejectedValue(new Error("connection lost"));
+    const actOnOffer = vi.fn().mockRejectedValue(new Error('connection lost'));
     const controller = createSupportAssignmentController(
       source({
         listOffers: vi.fn().mockResolvedValue([offer]),
         actOnOffer,
       }),
       {
-        projectId: () => "project-1",
+        projectId: () => 'project-1',
         selection: () => selection(),
         canManageOwn: () => true,
         canOverride: () => false,
@@ -637,25 +605,23 @@ describe("support assignment controller", () => {
     );
 
     await controller.loadOffers();
-    await controller.actOnOffer(offer.assignmentId, "ACCEPT");
+    await controller.actOnOffer(offer.assignmentId, 'ACCEPT');
     expect(controller.offerCanRetry.value).toBe(true);
 
-    controller.expireOffers(Date.parse("2100-01-01T00:00:00.000Z"));
+    controller.expireOffers(Date.parse('2100-01-01T00:00:00.000Z'));
     await nextTick();
 
     expect(controller.offers.value).toEqual([]);
     expect(controller.offerUnknownOutcome.value).toBe(false);
     expect(controller.offerCanRetry.value).toBe(false);
-    expect(controller.offerError.value).toContain("истёк");
+    expect(controller.offerError.value).toContain('истёк');
     expect(actOnOffer).toHaveBeenCalledOnce();
   });
 
-  it("never replays a command after a receipt integrity failure", async () => {
-    const execute = vi
-      .fn()
-      .mockRejectedValue(new SupportAssignmentIntegrityError());
+  it('never replays a command after a receipt integrity failure', async () => {
+    const execute = vi.fn().mockRejectedValue(new SupportAssignmentIntegrityError());
     const controller = createSupportAssignmentController(source({ execute }), {
-      projectId: () => "project-1",
+      projectId: () => 'project-1',
       selection: () => selection(),
       canManageOwn: () => true,
       canOverride: () => false,
@@ -663,13 +629,13 @@ describe("support assignment controller", () => {
     });
 
     await controller.loadCase();
-    controller.setDraft({ kind: "CLAIM", teamId: "team-1" });
+    controller.setDraft({ kind: 'CLAIM', teamId: 'team-1' });
     await controller.submit();
     await controller.retryUnknownOutcome();
 
     expect(execute).toHaveBeenCalledOnce();
     expect(controller.unknownOutcome.value).toBe(false);
     expect(controller.canRetry.value).toBe(false);
-    expect(controller.error.value).toContain("повтор заблокирован");
+    expect(controller.error.value).toContain('повтор заблокирован');
   });
 });

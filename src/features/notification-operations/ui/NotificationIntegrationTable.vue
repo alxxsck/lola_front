@@ -3,7 +3,7 @@ import {
   canQuarantineNotificationIntegration,
   type NotificationOperationsIntegration,
   type NotificationOperationsPermissions,
-} from "../model/notification-operations";
+} from '../model/notification-operations';
 
 defineProps<{
   items: NotificationOperationsIntegration[];
@@ -18,33 +18,20 @@ defineEmits<{
 }>();
 
 const kindLabels = {
-  SLACK_DESTINATION: "Slack destination",
-  TELEGRAM_OPERATIONAL_DESTINATION: "Telegram operational destination",
-  TELEGRAM_PRODUCT_INSTALLATION: "Telegram product installation",
+  SLACK_DESTINATION: 'Slack destination',
+  TELEGRAM_OPERATIONAL_DESTINATION: 'Telegram operational destination',
+  TELEGRAM_PRODUCT_INSTALLATION: 'Telegram product installation',
 } as const;
 </script>
 
 <template>
-  <section
-    class="table-panel"
-    aria-labelledby="notification-integrations-title"
-  >
+  <section class="table-panel" aria-labelledby="notification-integrations-title">
     <div>
       <h2 id="notification-integrations-title">Интеграции для quarantine</h2>
-      <p>
-        Только server-issued masked identity. Credential и destination address
-        не раскрываются.
-      </p>
+      <p>Только server-issued masked identity. Credential и destination address не раскрываются.</p>
     </div>
-    <p v-if="loading && !items.length" role="status" aria-live="polite">
-      Загружаем интеграции…
-    </p>
-    <div
-      v-else
-      class="table-scroll"
-      tabindex="0"
-      aria-label="Таблица интеграций для quarantine"
-    >
+    <p v-if="loading && !items.length" role="status" aria-live="polite">Загружаем интеграции…</p>
+    <div v-else class="table-scroll" tabindex="0" aria-label="Таблица интеграций для quarantine">
       <table>
         <thead>
           <tr>
@@ -70,9 +57,7 @@ const kindLabels = {
             <td>{{ integration.status }}</td>
             <td>
               <button
-                v-if="
-                  canQuarantineNotificationIntegration(integration, permissions)
-                "
+                v-if="canQuarantineNotificationIntegration(integration, permissions)"
                 type="button"
                 class="danger-button"
                 :aria-label="`Поместить в карантин ${integration.maskedIdentity}`"

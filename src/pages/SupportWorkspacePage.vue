@@ -1,30 +1,23 @@
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  watch,
-} from "vue";
-import "@/features/support-workspace/ui/support-loading-shimmer.css";
-import { useRoute, useRouter, type LocationQuery } from "vue-router";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import Message from "primevue/message";
-import Tag from "primevue/tag";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { endUserCasesRepository } from "@/features/end-user-cases/api/end-user-cases-repository";
-import { createSupportCaseDeskController } from "@/features/support-case-desk/model/use-support-case-desk";
-import { useConversationAISuspensionStore } from "@/features/conversation-ai-suspension/model/conversation-ai-suspension.store";
-import ConversationAISuspensionBanner from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionBanner.vue";
-import ConversationAISuspensionDialog from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionDialog.vue";
-import ConversationAISuspensionHistory from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHistory.vue";
-import { createConversationTranslationController } from "@/features/conversation-translation/model/use-conversation-translation";
-import { isFrontendTranslationCandidate } from "@/features/conversation-translation/model/translation-eligibility";
-import { hasConversationTranslationBoundary } from "@/features/conversation-translation/model/conversation-translation-visibility";
-import ConversationTranslationBanner from "@/features/conversation-translation/ui/ConversationTranslationBanner.vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import '@/features/support-workspace/ui/support-loading-shimmer.css';
+import { useRoute, useRouter, type LocationQuery } from 'vue-router';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Message from 'primevue/message';
+import Tag from 'primevue/tag';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { endUserCasesRepository } from '@/features/end-user-cases/api/end-user-cases-repository';
+import { createSupportCaseDeskController } from '@/features/support-case-desk/model/use-support-case-desk';
+import { useConversationAISuspensionStore } from '@/features/conversation-ai-suspension/model/conversation-ai-suspension.store';
+import ConversationAISuspensionBanner from '@/features/conversation-ai-suspension/ui/ConversationAISuspensionBanner.vue';
+import ConversationAISuspensionDialog from '@/features/conversation-ai-suspension/ui/ConversationAISuspensionDialog.vue';
+import ConversationAISuspensionHistory from '@/features/conversation-ai-suspension/ui/ConversationAISuspensionHistory.vue';
+import { createConversationTranslationController } from '@/features/conversation-translation/model/use-conversation-translation';
+import { isFrontendTranslationCandidate } from '@/features/conversation-translation/model/translation-eligibility';
+import { hasConversationTranslationBoundary } from '@/features/conversation-translation/model/conversation-translation-visibility';
+import ConversationTranslationBanner from '@/features/conversation-translation/ui/ConversationTranslationBanner.vue';
 import type {
   ConversationSurfaceAttachmentDownloadRequest,
   ConversationSurfaceComposer,
@@ -35,67 +28,67 @@ import type {
   ConversationSurfaceInternalNotes,
   ConversationSurfaceSendRequest,
   ConversationSurfaceTranslation,
-} from "@/features/conversation-surface/model/conversation-surface-contract";
-import { clearConversationSurfaceProjectSession } from "@/features/conversation-surface/model/conversation-surface-session";
-import ConversationTemplateGallery from "@/features/conversation-surface/ui/ConversationTemplateGallery.vue";
-import { supportMacroSource } from "@/features/support-macros/api/support-macros-source";
-import { createSupportMacroController } from "@/features/support-macros/model/use-support-macros";
-import { createSupportConversationController } from "@/features/support-conversation/model/use-support-conversation";
-import SupportConversationPane from "@/features/support-conversation/ui/SupportConversationPane.vue";
-import { supportConversationCollaborationSource } from "@/features/support-conversation-collaboration/api/support-conversation-collaboration-source";
-import { createSupportConversationCollaborationController } from "@/features/support-conversation-collaboration/model/use-support-conversation-collaboration";
-import { createSupportInboxController } from "@/features/support-inbox/model/use-support-inbox";
-import SupportInboxPane from "@/features/support-inbox/ui/SupportInboxPane.vue";
+} from '@/features/conversation-surface/model/conversation-surface-contract';
+import { clearConversationSurfaceProjectSession } from '@/features/conversation-surface/model/conversation-surface-session';
+import ConversationTemplateGallery from '@/features/conversation-surface/ui/ConversationTemplateGallery.vue';
+import { supportMacroSource } from '@/features/support-macros/api/support-macros-source';
+import { createSupportMacroController } from '@/features/support-macros/model/use-support-macros';
+import { createSupportConversationController } from '@/features/support-conversation/model/use-support-conversation';
+import SupportConversationPane from '@/features/support-conversation/ui/SupportConversationPane.vue';
+import { supportConversationCollaborationSource } from '@/features/support-conversation-collaboration/api/support-conversation-collaboration-source';
+import { createSupportConversationCollaborationController } from '@/features/support-conversation-collaboration/model/use-support-conversation-collaboration';
+import { createSupportInboxController } from '@/features/support-inbox/model/use-support-inbox';
+import SupportInboxPane from '@/features/support-inbox/ui/SupportInboxPane.vue';
 import {
   supportSearchSource,
   type SupportSearchResult,
-} from "@/features/support-search/api/support-search-source";
+} from '@/features/support-search/api/support-search-source';
 import {
   hasSupportSearchCriteria,
   normalizeSupportSearchState,
   readSupportSearchRoute,
   writeSupportSearchRoute,
   type SupportSearchRouteState,
-} from "@/features/support-search/model/support-search-route";
-import { createSupportSearchController } from "@/features/support-search/model/use-support-search";
+} from '@/features/support-search/model/support-search-route';
+import { createSupportSearchController } from '@/features/support-search/model/use-support-search';
 import {
   supportViewsSource,
   type SupportViewSelection,
-} from "@/features/support-views/api/support-views-source";
-import { createSavedViewCommand } from "@/features/support-views/model/support-view-draft";
+} from '@/features/support-views/api/support-views-source';
+import { createSavedViewCommand } from '@/features/support-views/model/support-view-draft';
 import {
   isCustomSupportViewRoute,
   readSupportViewSelection,
   shouldLoadCustomSupportView,
   supportViewRouteKeys,
   writeSupportViewSelection,
-} from "@/features/support-views/model/support-view-route";
-import { createSupportViewsController } from "@/features/support-views/model/use-support-views";
-import { createSupportReplyController } from "@/features/support-reply/model/use-support-reply";
-import { ApiError } from "@/shared/api/http/api-error";
-import { supportAttachmentsSource } from "@/features/support-attachments/api/support-attachments-source";
-import { createSupportAttachmentsController } from "@/features/support-attachments/model/use-support-attachments";
-import { supportMessageDeliverySource } from "@/features/conversation-delivery/api/support-message-delivery-source";
-import { createSupportMessageDeliveryController } from "@/features/conversation-delivery/model/use-support-message-delivery";
-import { supportAssignmentSource } from "@/features/support-case-assignment/api/support-assignment-source";
-import { createSupportAssignmentController } from "@/features/support-case-assignment/model/use-support-assignment";
-import SupportAssignmentOfferTray from "@/features/support-case-assignment/ui/SupportAssignmentOfferTray.vue";
-import { supportLeadAssignmentSource } from "@/features/support-lead-assignment/api/support-lead-assignment-source";
-import { createSupportLeadAssignmentController } from "@/features/support-lead-assignment/model/use-support-lead-assignment";
-import { supportAvailabilitySource } from "@/features/support-availability/api/support-availability-source";
-import { createSupportAvailabilityController } from "@/features/support-availability/model/use-support-availability";
-import SupportAvailabilityStatus from "@/features/support-availability/ui/SupportAvailabilityStatus.vue";
-import { supportInternalNotesSource } from "@/features/support-internal-notes/api/support-internal-notes-source";
-import { createSupportInternalNotesController } from "@/features/support-internal-notes/model/use-support-internal-notes";
-import { supportInternalKnowledgeSource } from "@/features/support-internal-knowledge/api/support-internal-knowledge-source";
-import { createSupportInternalKnowledgeController } from "@/features/support-internal-knowledge/model/use-support-internal-knowledge";
-import { parseSupportInternalNoteChanged } from "@/features/support-internal-notes/model/support-internal-note-live";
-import SupportInternalNotesDialog from "@/features/support-internal-notes/ui/SupportInternalNotesDialog.vue";
+} from '@/features/support-views/model/support-view-route';
+import { createSupportViewsController } from '@/features/support-views/model/use-support-views';
+import { createSupportReplyController } from '@/features/support-reply/model/use-support-reply';
+import { ApiError } from '@/shared/api/http/api-error';
+import { supportAttachmentsSource } from '@/features/support-attachments/api/support-attachments-source';
+import { createSupportAttachmentsController } from '@/features/support-attachments/model/use-support-attachments';
+import { supportMessageDeliverySource } from '@/features/conversation-delivery/api/support-message-delivery-source';
+import { createSupportMessageDeliveryController } from '@/features/conversation-delivery/model/use-support-message-delivery';
+import { supportAssignmentSource } from '@/features/support-case-assignment/api/support-assignment-source';
+import { createSupportAssignmentController } from '@/features/support-case-assignment/model/use-support-assignment';
+import SupportAssignmentOfferTray from '@/features/support-case-assignment/ui/SupportAssignmentOfferTray.vue';
+import { supportLeadAssignmentSource } from '@/features/support-lead-assignment/api/support-lead-assignment-source';
+import { createSupportLeadAssignmentController } from '@/features/support-lead-assignment/model/use-support-lead-assignment';
+import { supportAvailabilitySource } from '@/features/support-availability/api/support-availability-source';
+import { createSupportAvailabilityController } from '@/features/support-availability/model/use-support-availability';
+import SupportAvailabilityStatus from '@/features/support-availability/ui/SupportAvailabilityStatus.vue';
+import { supportInternalNotesSource } from '@/features/support-internal-notes/api/support-internal-notes-source';
+import { createSupportInternalNotesController } from '@/features/support-internal-notes/model/use-support-internal-notes';
+import { supportInternalKnowledgeSource } from '@/features/support-internal-knowledge/api/support-internal-knowledge-source';
+import { createSupportInternalKnowledgeController } from '@/features/support-internal-knowledge/model/use-support-internal-knowledge';
+import { parseSupportInternalNoteChanged } from '@/features/support-internal-notes/model/support-internal-note-live';
+import SupportInternalNotesDialog from '@/features/support-internal-notes/ui/SupportInternalNotesDialog.vue';
 import {
   supportWorkspaceSource,
   type SupportInboxItem,
   type SupportInboxMode,
-} from "@/features/support-workspace/api/support-workspace-source";
+} from '@/features/support-workspace/api/support-workspace-source';
 import {
   canManageOwnSupportAvailability,
   canManageOwnSupportAssignments,
@@ -105,35 +98,35 @@ import {
   canReceiveSupportRoutingOffers,
   canReadSupportWorkspace,
   canReadSupportConversationAiSuspension,
-} from "@/features/support-workspace/model/support-workspace-access";
-import { supportInspectorSource } from "@/features/support-inspector/api/support-inspector-source";
-import { createSupportInspectorController } from "@/features/support-inspector/model/use-support-inspector";
-import { supportExternalWorkSource } from "@/features/support-external-work/api/support-external-work-source";
-import { createSupportCaseExternalWorkController } from "@/features/support-external-work/model/use-support-case-external-work";
-import SupportConversationContext from "@/features/support-workspace/ui/SupportConversationContext.vue";
-import FullViewportWorkspaceShell from "@/shared/ui/workspace-presentation/FullViewportWorkspaceShell.vue";
-import ResponsiveWorkspaceInspector from "@/features/support-workspace/presentation/ResponsiveWorkspaceInspector.vue";
-import { createSupportWorkspaceLiveController } from "@/features/support-workspace/model/use-support-workspace-live";
+} from '@/features/support-workspace/model/support-workspace-access';
+import { supportInspectorSource } from '@/features/support-inspector/api/support-inspector-source';
+import { createSupportInspectorController } from '@/features/support-inspector/model/use-support-inspector';
+import { supportExternalWorkSource } from '@/features/support-external-work/api/support-external-work-source';
+import { createSupportCaseExternalWorkController } from '@/features/support-external-work/model/use-support-case-external-work';
+import SupportConversationContext from '@/features/support-workspace/ui/SupportConversationContext.vue';
+import FullViewportWorkspaceShell from '@/shared/ui/workspace-presentation/FullViewportWorkspaceShell.vue';
+import ResponsiveWorkspaceInspector from '@/features/support-workspace/presentation/ResponsiveWorkspaceInspector.vue';
+import { createSupportWorkspaceLiveController } from '@/features/support-workspace/model/use-support-workspace-live';
 import {
   reportSupportWorkspaceTelemetry,
   supportWorkspaceViewportBucket,
-} from "@/features/support-workspace/model/support-workspace-telemetry";
-import { repository } from "@/shared/api/repository";
-import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
-import type { CmsRealtimeState } from "@/shared/realtime/cms-realtime-contract";
+} from '@/features/support-workspace/model/support-workspace-telemetry';
+import { repository } from '@/shared/api/repository';
+import { cmsRealtimeClient } from '@/shared/realtime/cms-realtime-client';
+import type { CmsRealtimeState } from '@/shared/realtime/cms-realtime-contract';
 import type {
   ExtendConversationAISuspensionDto,
   ResumeConversationAIDto,
   StartConversationAISuspensionDto,
   SupportMacroResponseDto,
-} from "@/shared/api/generated/models";
-import { conversationAISuspensionEnabled } from "@/shared/config/features";
+} from '@/shared/api/generated/models';
+import { conversationAISuspensionEnabled } from '@/shared/config/features';
 
 const conversationLoadingSkeletons = Array.from({ length: 16 }, (_, index) => {
   const outbound = index % 3 === 1;
   return {
     id: index,
-    direction: outbound ? "outbound" : "inbound",
+    direction: outbound ? 'outbound' : 'inbound',
     compact: !outbound && index % 5 === 4,
     lineCount: index % 4 === 3 ? 2 : 3,
   } as const;
@@ -147,87 +140,77 @@ const canReadInbox = computed(() =>
   canReadSupportWorkspace(auth.project?.effectivePermissionCodes ?? []),
 );
 const canSearchSupport = computed(() =>
-  hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
-    "project.support.search.read",
-  ),
+  hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.support.search.read'),
 );
 const canReadSavedViews = computed(
   () =>
     hasProjectPermission(
       auth.project?.effectivePermissionCodes ?? [],
-      "project.support.saved_views.read",
+      'project.support.saved_views.read',
     ) ||
     hasProjectPermission(
       auth.project?.effectivePermissionCodes ?? [],
-      "project.support.saved_views.self_manage",
+      'project.support.saved_views.self_manage',
     ) ||
     hasProjectPermission(
       auth.project?.effectivePermissionCodes ?? [],
-      "project.support.saved_views.manage",
+      'project.support.saved_views.manage',
     ),
 );
 const canCreateSavedViews = computed(
   () =>
     hasProjectPermission(
       auth.project?.effectivePermissionCodes ?? [],
-      "project.support.saved_views.self_manage",
+      'project.support.saved_views.self_manage',
     ) ||
     hasProjectPermission(
       auth.project?.effectivePermissionCodes ?? [],
-      "project.support.saved_views.manage",
+      'project.support.saved_views.manage',
     ),
 );
 const canManageAllSavedViews = computed(() =>
   hasProjectPermission(
     auth.project?.effectivePermissionCodes ?? [],
-    "project.support.saved_views.manage",
+    'project.support.saved_views.manage',
   ),
 );
 const canReadSlaContext = computed(() =>
-  hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
-    "project.support.sla.read",
-  ),
+  hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.support.sla.read'),
 );
-const routingContextVisibility = computed<"FULL" | "OWN" | "NONE">(() => {
+const routingContextVisibility = computed<'FULL' | 'OWN' | 'NONE'>(() => {
   const permissions = auth.project?.effectivePermissionCodes ?? [];
   if (
     (
       [
-        "project.support.routing.read",
-        "project.support.routing.manage",
-        "project.support.lead_control.read",
+        'project.support.routing.read',
+        'project.support.routing.manage',
+        'project.support.lead_control.read',
       ] as const
     ).some((permission) => hasProjectPermission(permissions, permission))
   )
-    return "FULL";
-  return hasProjectPermission(permissions, "project.support.routing.receive")
-    ? "OWN"
-    : "NONE";
+    return 'FULL';
+  return hasProjectPermission(permissions, 'project.support.routing.receive') ? 'OWN' : 'NONE';
 });
-const canReadRoutingContext = computed(
-  () => routingContextVisibility.value !== "NONE",
-);
+const canReadRoutingContext = computed(() => routingContextVisibility.value !== 'NONE');
 const operationsContextAuthorityKey = computed(() =>
   [
-    auth.project?.id ?? "",
-    canReadSlaContext.value ? "SLA" : "NO_SLA",
+    auth.project?.id ?? '',
+    canReadSlaContext.value ? 'SLA' : 'NO_SLA',
     routingContextVisibility.value,
-  ].join("\u0000"),
+  ].join('\u0000'),
 );
 const routeCaseId = computed(() => {
   const routeId = route.params.caseId;
-  return typeof routeId === "string" ? routeId : undefined;
+  return typeof routeId === 'string' ? routeId : undefined;
 });
 const routeConversationId = computed(() => {
   const routeId = route.params.conversationId;
-  return typeof routeId === "string" ? routeId : undefined;
+  return typeof routeId === 'string' ? routeId : undefined;
 });
 const inboxMode = computed<SupportInboxMode>(() => {
-  if (routeCaseId.value) return "CASES";
-  if (routeConversationId.value) return "ALL_CONVERSATIONS";
-  return route.query.mode === "cases" ? "CASES" : "ALL_CONVERSATIONS";
+  if (routeCaseId.value) return 'CASES';
+  if (routeConversationId.value) return 'ALL_CONVERSATIONS';
+  return route.query.mode === 'cases' ? 'CASES' : 'ALL_CONVERSATIONS';
 });
 function readWorkspaceSearchRoute(query: LocationQuery) {
   return readSupportSearchRoute(query);
@@ -243,19 +226,16 @@ const inbox = createSupportInboxController(
       } catch {
         // Rows are already purged; route recovery below remains fail-closed.
       }
-      if (!canReadInbox.value) await router.replace({ name: "overview" });
+      if (!canReadInbox.value) await router.replace({ name: 'overview' });
     },
   },
   supportWorkspaceSource,
 );
-const searchState = ref<SupportSearchRouteState>(
-  readWorkspaceSearchRoute(route.query),
-);
+const searchState = ref<SupportSearchRouteState>(readWorkspaceSearchRoute(route.query));
 const searchOpen = ref(hasSupportSearchCriteria(searchState.value));
 const searchActive = computed(
   () =>
-    canUseSupportSearch.value &&
-    (searchOpen.value || hasSupportSearchCriteria(searchState.value)),
+    canUseSupportSearch.value && (searchOpen.value || hasSupportSearchCriteria(searchState.value)),
 );
 const supportSearch = createSupportSearchController(
   {
@@ -286,8 +266,7 @@ const supportViews = createSupportViewsController(
     async onSelection(selection) {
       const query = Object.fromEntries(
         Object.entries(route.query).filter(
-          ([key]) =>
-            !supportViewRouteKeys.has(key) && !supportSearchRouteKeys.has(key),
+          ([key]) => !supportViewRouteKeys.has(key) && !supportSearchRouteKeys.has(key),
         ),
       );
       await router.replace({
@@ -312,41 +291,37 @@ const viewActive = computed(
   () => canUseSupportSearch.value && Boolean(supportViews.selection.value),
 );
 const supportSearchRouteKeys = new Set([
-  "search",
-  "scope",
-  "status",
-  "waiting",
-  "assignment",
-  "priority",
-  "sla",
-  "channel",
-  "queue",
-  "topic",
-  "category",
-  "language",
-  "team",
-  "assignee",
-  "unread",
-  "draft",
-  "delivery",
-  "from",
-  "to",
-  "sort",
-  "direction",
-  "caseId",
-  "conversationId",
-  "messageId",
-  "endUserId",
-  "externalEndUserId",
+  'search',
+  'scope',
+  'status',
+  'waiting',
+  'assignment',
+  'priority',
+  'sla',
+  'channel',
+  'queue',
+  'topic',
+  'category',
+  'language',
+  'team',
+  'assignee',
+  'unread',
+  'draft',
+  'delivery',
+  'from',
+  'to',
+  'sort',
+  'direction',
+  'caseId',
+  'conversationId',
+  'messageId',
+  'endUserId',
+  'externalEndUserId',
 ]);
 let supportSearchTimer: number | undefined;
 const availabilityDialogVisible = ref(false);
-const supportInboxPane = ref<InstanceType<typeof SupportInboxPane> | null>(
-  null,
-);
-const supportContext = ref<InstanceType<
-  typeof SupportConversationContext
-> | null>(null);
+const supportInboxPane = ref<InstanceType<typeof SupportInboxPane> | null>(null);
+const supportContext = ref<InstanceType<typeof SupportConversationContext> | null>(null);
 const workspaceFullscreen = ref(false);
 const workspacePresentedFullscreen = ref(false);
 const workspacePresentationTransitioning = ref(false);
@@ -355,8 +330,7 @@ let workspacePresentationFocusTarget: HTMLElement | null = null;
 
 function setWorkspaceFullscreen(fullscreen: boolean, event?: Event): void {
   if (workspacePresentationTransitioning.value) return;
-  const eventTarget =
-    event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+  const eventTarget = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
   if (fullscreen && eventTarget) workspacePresentationLauncher = eventTarget;
   workspacePresentationFocusTarget = fullscreen
     ? eventTarget
@@ -374,8 +348,8 @@ function handleWorkspacePresentationTransition(transitioning: boolean): void {
   });
 }
 
-function handleWorkspacePresented(mode: "windowed" | "full-tab"): void {
-  workspacePresentedFullscreen.value = mode === "full-tab";
+function handleWorkspacePresented(mode: 'windowed' | 'full-tab'): void {
+  workspacePresentedFullscreen.value = mode === 'full-tab';
 }
 
 const requestedSelectionKey = computed(() =>
@@ -383,12 +357,10 @@ const requestedSelectionKey = computed(() =>
     ? `CASE:${routeCaseId.value}`
     : routeConversationId.value
       ? `CONVERSATION:${routeConversationId.value}`
-      : "",
+      : '',
 );
-function recordCoreFeedback(
-  payload: Record<string, string | number | boolean>,
-): void {
-  reportSupportWorkspaceTelemetry("support_workspace_core_feedback", {
+function recordCoreFeedback(payload: Record<string, string | number | boolean>): void {
+  reportSupportWorkspaceTelemetry('support_workspace_core_feedback', {
     ...payload,
     viewport: supportWorkspaceViewportBucket(),
   });
@@ -412,8 +384,8 @@ function publicAttachmentCapabilities() {
   const value = conversation.selection.value?.capabilities.attachments;
   return {
     state: publicAttachmentsAccessDenied.value
-      ? ("UNAVAILABLE" as const)
-      : (value?.state ?? ("UNAVAILABLE" as const)),
+      ? ('UNAVAILABLE' as const)
+      : (value?.state ?? ('UNAVAILABLE' as const)),
     upload: Boolean(!publicAttachmentsAccessDenied.value && value?.upload),
     download: Boolean(!publicAttachmentsAccessDenied.value && value?.download),
     maxFiles: value?.maxFilesPerMessage ?? 10,
@@ -429,19 +401,13 @@ function noteAttachmentCapabilities() {
   return {
     state:
       !noteAttachmentsAccessDenied.value &&
-      common?.state === "AVAILABLE" &&
-      note?.state === "AVAILABLE"
-        ? ("AVAILABLE" as const)
-        : ("UNAVAILABLE" as const),
-    upload: Boolean(
-      !noteAttachmentsAccessDenied.value &&
-      common?.upload &&
-      note?.attachmentUpload,
-    ),
+      common?.state === 'AVAILABLE' &&
+      note?.state === 'AVAILABLE'
+        ? ('AVAILABLE' as const)
+        : ('UNAVAILABLE' as const),
+    upload: Boolean(!noteAttachmentsAccessDenied.value && common?.upload && note?.attachmentUpload),
     download: Boolean(
-      !noteAttachmentsAccessDenied.value &&
-      common?.download &&
-      note?.attachmentDownload,
+      !noteAttachmentsAccessDenied.value && common?.download && note?.attachmentDownload,
     ),
     maxFiles: common?.maxFilesPerMessage ?? 10,
     maxFileBytes: common?.maxBytesPerFile ?? 20 * 1024 * 1024,
@@ -449,40 +415,34 @@ function noteAttachmentCapabilities() {
     contentTypes: common?.contentTypes ?? [],
   };
 }
-const publicAttachments = createSupportAttachmentsController(
-  supportAttachmentsSource,
-  {
-    scope: () => {
-      const selection = conversation.selection.value;
-      const projectId = auth.project?.id;
-      const actorId = auth.user?.id;
-      if (!projectId || !actorId || !selection?.conversation) return null;
-      return {
-        visibility: "PUBLIC_REPLY",
-        projectId,
-        actorId,
-        endUserId: selection.endUser.id,
-        conversationId: selection.conversation.id,
-      };
-    },
-    capabilities: publicAttachmentCapabilities,
-    onForbidden: handlePublicAttachmentForbidden,
+const publicAttachments = createSupportAttachmentsController(supportAttachmentsSource, {
+  scope: () => {
+    const selection = conversation.selection.value;
+    const projectId = auth.project?.id;
+    const actorId = auth.user?.id;
+    if (!projectId || !actorId || !selection?.conversation) return null;
+    return {
+      visibility: 'PUBLIC_REPLY',
+      projectId,
+      actorId,
+      endUserId: selection.endUser.id,
+      conversationId: selection.conversation.id,
+    };
   },
-);
-const noteAttachments = createSupportAttachmentsController(
-  supportAttachmentsSource,
-  {
-    scope: () => {
-      const caseId = conversation.selection.value?.case?.id;
-      const projectId = auth.project?.id;
-      const actorId = auth.user?.id;
-      if (!projectId || !actorId || !caseId) return null;
-      return { visibility: "INTERNAL_NOTE", projectId, actorId, caseId };
-    },
-    capabilities: noteAttachmentCapabilities,
-    onForbidden: handleNoteAttachmentForbidden,
+  capabilities: publicAttachmentCapabilities,
+  onForbidden: handlePublicAttachmentForbidden,
+});
+const noteAttachments = createSupportAttachmentsController(supportAttachmentsSource, {
+  scope: () => {
+    const caseId = conversation.selection.value?.case?.id;
+    const projectId = auth.project?.id;
+    const actorId = auth.user?.id;
+    if (!projectId || !actorId || !caseId) return null;
+    return { visibility: 'INTERNAL_NOTE', projectId, actorId, caseId };
   },
-);
+  capabilities: noteAttachmentCapabilities,
+  onForbidden: handleNoteAttachmentForbidden,
+});
 
 async function handlePublicAttachmentForbidden(): Promise<void> {
   publicAttachmentsAccessDenied.value = true;
@@ -496,9 +456,7 @@ async function handlePublicAttachmentForbidden(): Promise<void> {
   } catch {
     // Attachment metadata is already concealed while authority is refreshed.
   }
-  await Promise.all([inbox.load(), conversation.reconcile()]).catch(
-    () => undefined,
-  );
+  await Promise.all([inbox.load(), conversation.reconcile()]).catch(() => undefined);
 }
 
 async function handleNoteAttachmentForbidden(): Promise<void> {
@@ -510,45 +468,40 @@ async function handleNoteAttachmentForbidden(): Promise<void> {
   } catch {
     // Private attachment metadata is already concealed while authority is refreshed.
   }
-  await Promise.all([inbox.load(), conversation.reconcile()]).catch(
-    () => undefined,
-  );
+  await Promise.all([inbox.load(), conversation.reconcile()]).catch(() => undefined);
 }
 const publicAttachmentAuthorityKey = computed(() => {
   const selection = conversation.selection.value;
   const capability = publicAttachmentCapabilities();
   return [
-    auth.project?.id ?? "",
-    auth.user?.id ?? "",
-    selection?.endUser.id ?? "",
-    selection?.conversation?.id ?? "",
+    auth.project?.id ?? '',
+    auth.user?.id ?? '',
+    selection?.endUser.id ?? '',
+    selection?.conversation?.id ?? '',
     capability.state,
-    capability.upload ? "upload" : "no-upload",
-    capability.download ? "download" : "no-download",
-  ].join("\u0000");
+    capability.upload ? 'upload' : 'no-upload',
+    capability.download ? 'download' : 'no-download',
+  ].join('\u0000');
 });
 const noteAttachmentAuthorityKey = computed(() => {
   const capability = noteAttachmentCapabilities();
   return [
-    auth.project?.id ?? "",
-    auth.user?.id ?? "",
-    conversation.selection.value?.case?.id ?? "",
+    auth.project?.id ?? '',
+    auth.user?.id ?? '',
+    conversation.selection.value?.case?.id ?? '',
     capability.state,
-    capability.upload ? "upload" : "no-upload",
-    capability.download ? "download" : "no-download",
-  ].join("\u0000");
+    capability.upload ? 'upload' : 'no-upload',
+    capability.download ? 'download' : 'no-download',
+  ].join('\u0000');
 });
 const knowledgeAccessDenied = ref(false);
 const publicKnowledgeDraftPurgeRevision = ref(0);
 const hasKnowledgeReadPermission = computed(
   () =>
+    hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.cases.read') &&
     hasProjectPermission(
       auth.project?.effectivePermissionCodes ?? [],
-      "project.cases.read",
-    ) &&
-    hasProjectPermission(
-      auth.project?.effectivePermissionCodes ?? [],
-      "project.support.knowledge.read",
+      'project.support.knowledge.read',
     ),
 );
 const canReadSelectedKnowledge = computed(
@@ -580,15 +533,12 @@ const knowledge = createSupportInternalKnowledgeController(
     scope: () => {
       const selection = conversation.selection.value;
       const projectId = auth.project?.id;
-      if (!projectId || !selection?.case || !selection.conversation)
-        return null;
+      if (!projectId || !selection?.case || !selection.conversation) return null;
       return {
         projectId,
         caseId: selection.case.id,
         conversationId: selection.conversation.id,
-        ...(selection.endUser.locale
-          ? { locale: selection.endUser.locale }
-          : {}),
+        ...(selection.endUser.locale ? { locale: selection.endUser.locale } : {}),
       };
     },
     allowed: () => canReadSelectedKnowledge.value,
@@ -596,12 +546,10 @@ const knowledge = createSupportInternalKnowledgeController(
       Boolean(
         canReadSelectedKnowledge.value &&
         reply.canReply.value &&
-        supportComposerMode.value === "PUBLIC_REPLY",
+        supportComposerMode.value === 'PUBLIC_REPLY',
       ),
     onInsert(text) {
-      reply.draft.value = [reply.draft.value.trim(), text]
-        .filter(Boolean)
-        .join("\n\n");
+      reply.draft.value = [reply.draft.value.trim(), text].filter(Boolean).join('\n\n');
       void workspaceLive.setDraftActive(true);
     },
     onForbidden: handleSupportKnowledgeForbidden,
@@ -621,40 +569,25 @@ const messageDelivery = createSupportMessageDeliveryController(
   supportMessageDeliverySource,
 );
 const canManageTranslation = computed(() =>
-  hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
-    "project.translation.create",
-  ),
+  hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.translation.create'),
 );
 const canReadTranslationDetails = computed(() =>
-  hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
-    "project.translation.read",
-  ),
+  hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.translation.read'),
 );
 const replyTranslationRequested = ref(false);
 const replyTemplateGalleryVisible = ref(false);
-const supportComposerMode = ref<"PUBLIC_REPLY" | "INTERNAL_NOTE">(
-  "PUBLIC_REPLY",
-);
-const internalNoteDraft = ref("");
+const supportComposerMode = ref<'PUBLIC_REPLY' | 'INTERNAL_NOTE'>('PUBLIC_REPLY');
+const internalNoteDraft = ref('');
 const internalNoteDraftPurgeRevision = ref(0);
 const supportMacrosAccessDenied = ref(false);
 const hasSupportMacrosReadPermission = computed(() =>
-  hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
-    "project.support.macros.read",
-  ),
+  hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.support.macros.read'),
 );
 const hasSupportMacrosUsePermission = computed(() =>
-  hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
-    "project.support.macros.use",
-  ),
+  hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.support.macros.use'),
 );
 const canReadSupportMacros = computed(
-  () =>
-    !supportMacrosAccessDenied.value && hasSupportMacrosReadPermission.value,
+  () => !supportMacrosAccessDenied.value && hasSupportMacrosReadPermission.value,
 );
 const canUseSupportMacros = computed(
   () => canReadSupportMacros.value && hasSupportMacrosUsePermission.value,
@@ -680,20 +613,18 @@ const supportMacros = createSupportMacroController(
     target: () => {
       const selection = conversation.selection.value;
       if (!selection) return null;
-      if (supportComposerMode.value === "INTERNAL_NOTE") {
+      if (supportComposerMode.value === 'INTERNAL_NOTE') {
         return selection.case
-          ? { kind: "INTERNAL_NOTE" as const, caseId: selection.case.id }
+          ? { kind: 'INTERNAL_NOTE' as const, caseId: selection.case.id }
           : null;
       }
       return selection.conversation
         ? {
-            kind: "PUBLIC_REPLY" as const,
+            kind: 'PUBLIC_REPLY' as const,
             endUserId: selection.endUser.id,
             conversationId: selection.conversation.id,
             locale:
-              translation.state.value?.preference.workingLocale ??
-              selection.endUser.locale ??
-              "ru",
+              translation.state.value?.preference.workingLocale ?? selection.endUser.locale ?? 'ru',
             ...(selection.case ? { caseId: selection.case.id } : {}),
           }
         : null;
@@ -722,8 +653,7 @@ async function handleSupportMacroRejected(): Promise<void> {
     // The rejected Macro draft is already purged; the typed text stays local.
   }
   supportMacrosAccessDenied.value =
-    !hasSupportMacrosReadPermission.value ||
-    !hasSupportMacrosUsePermission.value;
+    !hasSupportMacrosReadPermission.value || !hasSupportMacrosUsePermission.value;
   if (!supportMacrosAccessDenied.value) await supportMacros.load();
 }
 
@@ -734,7 +664,7 @@ async function handleSupportKnowledgeForbidden(): Promise<void> {
   knowledgeAccessDenied.value = true;
   knowledge.purge({ keepQuery: true });
   if (hadDerivedKnowledgeText) {
-    reply.draft.value = "";
+    reply.draft.value = '';
     publicKnowledgeDraftPurgeRevision.value += 1;
   }
   try {
@@ -757,8 +687,8 @@ async function handleSupportKnowledgeRejected(cause: ApiError): Promise<void> {
 }
 const translationSettingsVisible = ref(false);
 const sendWithoutTranslationVisible = ref(false);
-const sendWithoutTranslationReason = ref("");
-const messageViewMode = ref<"ORIGINAL" | "TRANSLATED">("ORIGINAL");
+const sendWithoutTranslationReason = ref('');
+const messageViewMode = ref<'ORIGINAL' | 'TRANSLATED'>('ORIGINAL');
 let replyTranslationLoad: Promise<boolean> | null = null;
 let replyTranslationLoadScope: string | undefined;
 const translation = createConversationTranslationController({
@@ -769,7 +699,7 @@ const translation = createConversationTranslationController({
   sourceText: () => reply.draft.value,
   macroReplyDraft: () => {
     const active = supportMacros.activeDraft.value;
-    return active?.target.kind === "PUBLIC_REPLY"
+    return active?.target.kind === 'PUBLIC_REPLY'
       ? {
           id: active.receipt.id,
           sourceHash: active.receipt.renderedHash,
@@ -802,13 +732,10 @@ const hasSupportTranslationBoundary = computed(() =>
 const translationPolicyRequiresReviewedReply = computed(() => {
   const preference = translation.state.value?.preference;
   return Boolean(
-    preference?.enabled &&
-    (!translation.targetLocale.value || hasSupportTranslationBoundary.value),
+    preference?.enabled && (!translation.targetLocale.value || hasSupportTranslationBoundary.value),
   );
 });
-const replyPolicyChecking = computed(
-  () => canManageTranslation.value && !translation.state.value,
-);
+const replyPolicyChecking = computed(() => canManageTranslation.value && !translation.state.value);
 const canSubmitPublicReply = computed(() => {
   if (
     !reply.canReply.value ||
@@ -821,8 +748,7 @@ const canSubmitPublicReply = computed(() => {
     return false;
   if (
     replyHasText.value &&
-    (replyTranslationRequested.value ||
-      translationPolicyRequiresReviewedReply.value)
+    (replyTranslationRequested.value || translationPolicyRequiresReviewedReply.value)
   )
     return Boolean(
       translation.readyDraft.value &&
@@ -832,323 +758,298 @@ const canSubmitPublicReply = computed(() => {
   return true;
 });
 const publicReplyBlockedReason = computed(() => {
-  if (!reply.canReply.value) return "";
+  if (!reply.canReply.value) return '';
   if (supportMacros.recoveryRequired.value) return supportMacros.error.value;
   if (knowledge.recoveryRequired.value) return knowledge.error.value;
   if (knowledge.inserting.value || knowledge.preparing.value)
-    return "Закрепляем внутренний источник…";
+    return 'Закрепляем внутренний источник…';
   if (replyHasText.value && replyPolicyChecking.value)
-    return translation.error.value || "Проверяем правила перевода…";
+    return translation.error.value || 'Проверяем правила перевода…';
   if (
     replyHasText.value &&
-    (replyTranslationRequested.value ||
-      translationPolicyRequiresReviewedReply.value)
+    (replyTranslationRequested.value || translationPolicyRequiresReviewedReply.value)
   )
     return translation.targetLocale.value
-      ? "Сначала подготовьте и проверьте перевод."
-      : "Выберите язык ответа или используйте разрешённое исключение.";
-  return "";
+      ? 'Сначала подготовьте и проверьте перевод.'
+      : 'Выберите язык ответа или используйте разрешённое исключение.';
+  return '';
 });
 const supportComposerWorkingLocale = computed(
-  () =>
-    translation.state.value?.preference.workingLocale?.toUpperCase() ?? "RU",
+  () => translation.state.value?.preference.workingLocale?.toUpperCase() ?? 'RU',
 );
-const supportConversationComposer = computed<ConversationSurfaceComposer>(
-  () => {
-    const selection = conversation.selection.value;
-    const noteCapabilities = selection?.capabilities.internalNotes;
-    const noteAvailable = noteCapabilities?.state === "AVAILABLE";
-    const modeSwitch = {
-      publicReply: {
-        visibility:
-          reply.canReply.value &&
-          !supportMacros.recoveryRequired.value &&
-          !knowledge.recoveryRequired.value
-            ? ("ENABLED" as const)
-            : ("DISABLED" as const),
-        reason:
-          reply.canReply.value &&
-          !supportMacros.recoveryRequired.value &&
-          !knowledge.recoveryRequired.value
-            ? undefined
-            : supportMacros.recoveryRequired.value
-              ? supportMacros.error.value
-              : knowledge.recoveryRequired.value
-                ? knowledge.error.value
-                : "Ответ пользователю в этом диалоге недоступен.",
-      },
-      internalNote: {
-        visibility:
-          noteAvailable &&
-          noteCapabilities.create &&
-          !supportMacros.recoveryRequired.value &&
-          !knowledge.recoveryRequired.value
-            ? ("ENABLED" as const)
-            : ("DISABLED" as const),
-        reason:
-          supportMacros.recoveryRequired.value ||
-          knowledge.recoveryRequired.value
-            ? supportMacros.recoveryRequired.value
-              ? supportMacros.error.value
-              : knowledge.error.value
-            : noteAvailable
-              ? "Для этого обращения доступен только просмотр заметок."
-              : "Внутренние заметки недоступны для текущего обращения.",
-      },
-    };
-    if (supportComposerMode.value === "INTERNAL_NOTE") {
-      const enabled = Boolean(noteAvailable && noteCapabilities?.create);
-      return {
-        visibility: enabled ? "ENABLED" : "DISABLED",
-        mode: "INTERNAL_NOTE",
-        scope: {
-          projectId: auth.project?.id ?? "unselected-project",
-          actorId: auth.user?.id ?? "current-operator",
-          conversationId:
-            selection?.conversation?.id ?? "unselected-conversation",
-        },
-        draftTargetId: selection?.case?.id ?? "unselected-case",
-        initialDraft: internalNoteDraft.value,
-        draftRevision: `${selection?.capabilitiesRevision ?? "unselected"}:internal-note`,
-        sensitiveDraftPurgeRevision: internalNoteDraftPurgeRevision.value,
-        sending: internalNotes.creating.value,
-        attachments: {
-          draftKey: noteAttachments.draftKey.value,
-          accept: noteAttachmentCapabilities().contentTypes.join(","),
-          loading: noteAttachments.loading.value,
-          busy: noteAttachments.busy.value,
-          error: noteAttachments.error.value,
-          canDownload: noteAttachmentCapabilities().download,
-          maxFiles: noteAttachmentCapabilities().maxFiles,
-          items: noteAttachments.items.value,
-        },
-        recipientStatus: null,
-        actions: {
-          attachment: {
-            visibility: noteAttachmentCapabilities().upload
-              ? "ENABLED"
-              : "DISABLED",
-            reason: noteAttachmentCapabilities().upload
-              ? undefined
-              : "Загрузка файлов во внутреннюю заметку недоступна.",
-          },
-          createTicket: { visibility: "HIDDEN" },
-          classifyCase: { visibility: "HIDDEN" },
-          internalNotes: {
-            visibility: noteCapabilities?.read ? "ENABLED" : "HIDDEN",
-          },
-          knowledge: {
-            visibility: canReadSelectedKnowledge.value ? "ENABLED" : "HIDDEN",
-          },
-          templates: {
-            visibility: canUseSupportMacros.value ? "ENABLED" : "HIDDEN",
-          },
-          improveWithAI: { visibility: "HIDDEN" },
-          sendWithoutTranslation: { visibility: "HIDDEN" },
-        },
-        modeSwitch,
-        sendCapability:
-          enabled && !supportMacros.recoveryRequired.value
-            ? { kind: "SOURCE" }
-            : {
-                kind: "BLOCKED",
-                reason: supportMacros.recoveryRequired.value
-                  ? supportMacros.error.value
-                  : "Добавление заметки больше недоступно. Черновик очищен.",
-              },
-        replyPreview: null,
-        translationAssist: null,
-      };
-    }
-    const hasReplyText = replyHasText.value;
-    const translatedMode =
-      hasReplyText &&
-      (replyTranslationRequested.value ||
-        translationPolicyRequiresReviewedReply.value);
-    const busy = replyTranslationBusy.value;
-    const replyPreview =
-      canManageTranslation.value && translatedMode && translation.state.value
-        ? {
-            draft: translation.draft.value,
-            targetLocale: translation.targetLocale.value,
-            busy,
-            stale: translation.previewStale.value,
-            disabled:
-              !reply.canReply.value ||
-              !reply.draft.value.trim() ||
-              translation.savingPreference.value ||
-              !translation.state.value.availability.available ||
-              translation.state.value.budget.hardExhausted,
-            showProviderDetails: canReadTranslationDetails.value,
-          }
-        : null;
-    const sendCapability =
-      hasReplyText && replyPolicyChecking.value
-        ? {
-            kind: "BLOCKED" as const,
-            reason: publicReplyBlockedReason.value,
-          }
-        : translatedMode
-          ? { kind: "TRANSLATED_PREVIEW" as const }
-          : canSubmitPublicReply.value
-            ? { kind: "SOURCE" as const }
-            : {
-                kind: "BLOCKED" as const,
-                reason:
-                  publicReplyBlockedReason.value ||
-                  "Ответ в этом диалоге сейчас недоступен.",
-              };
-
-    return {
-      visibility: reply.canReply.value ? "ENABLED" : "HIDDEN",
-      mode: "PUBLIC_REPLY",
-      scope: {
-        projectId: auth.project?.id ?? "unselected-project",
-        actorId: auth.user?.id ?? "current-operator",
-        conversationId:
-          selection?.conversation?.id ?? "unselected-conversation",
-      },
-      initialDraft: reply.draft.value,
-      publicDraftPurgeRevision: publicKnowledgeDraftPurgeRevision.value,
-      ...(knowledge.activeCitation.value
-        ? {
-            knowledgeSource: {
-              title:
-                knowledge.selected.value?.title ??
-                knowledge.items.value.find(
-                  (item) =>
-                    item.documentId ===
-                    knowledge.activeCitation.value?.documentId,
-                )?.title ??
-                "Внутренний материал",
-              revisionNumber: knowledge.activeCitation.value.revisionNumber,
-              mode: knowledge.activeCitation.value.mode,
-              edited: knowledge.activeCitation.value.text !== reply.draft.value,
-            },
-          }
-        : {}),
-      sensitiveDraftPurgeRevision: internalNoteDraftPurgeRevision.value,
-      draftRevision:
-        translation.draft.value?.id ??
-        selection?.actionRevisions.conversationUpdatedAt ??
-        selection?.conversation?.updatedAt ??
-        "unselected",
-      sending: reply.sending.value,
-      attachments: {
-        draftKey: publicAttachments.draftKey.value,
-        accept: publicAttachmentCapabilities().contentTypes.join(","),
-        loading: publicAttachments.loading.value,
-        busy: publicAttachments.busy.value,
-        error: publicAttachments.error.value,
-        canDownload: publicAttachmentCapabilities().download,
-        maxFiles: publicAttachmentCapabilities().maxFiles,
-        items: publicAttachments.items.value,
-      },
-      outcome:
-        reply.outcomeState.value === "IDLE" ||
-        reply.outcomeState.value === "SENDING"
+const supportConversationComposer = computed<ConversationSurfaceComposer>(() => {
+  const selection = conversation.selection.value;
+  const noteCapabilities = selection?.capabilities.internalNotes;
+  const noteAvailable = noteCapabilities?.state === 'AVAILABLE';
+  const modeSwitch = {
+    publicReply: {
+      visibility:
+        reply.canReply.value &&
+        !supportMacros.recoveryRequired.value &&
+        !knowledge.recoveryRequired.value
+          ? ('ENABLED' as const)
+          : ('DISABLED' as const),
+      reason:
+        reply.canReply.value &&
+        !supportMacros.recoveryRequired.value &&
+        !knowledge.recoveryRequired.value
           ? undefined
-          : {
-              state: reply.outcomeState.value,
-              label:
-                reply.outcomeState.value === "CHECKING_OUTCOME"
-                  ? "Результат пока неизвестен. Сообщение не отправляется заново."
-                  : reply.outcomeState.value === "RETRYABLE"
-                    ? "Отправка не найдена. Черновик сохранён."
-                    : "Отправка заблокирована. Черновик сохранён.",
-              ...(reply.outcomeState.value === "CHECKING_OUTCOME" &&
-              !reply.sending.value
-                ? {
-                    action: {
-                      kind: "CHECK" as const,
-                      label: "Проверить результат",
-                    },
-                  }
-                : reply.outcomeState.value === "BLOCKED"
-                  ? {
-                      action: {
-                        kind: "DISCARD" as const,
-                        label: "Начать новую попытку",
-                      },
-                    }
-                  : {}),
-            },
-      recipientStatus: selection?.conversation
-        ? selection.conversation.currentInteractionSessionCount > 0
-          ? { label: "Пользователь онлайн", tone: "ONLINE" as const }
-          : { label: "Пользователь офлайн", tone: "OFFLINE" as const }
-        : null,
+          : supportMacros.recoveryRequired.value
+            ? supportMacros.error.value
+            : knowledge.recoveryRequired.value
+              ? knowledge.error.value
+              : 'Ответ пользователю в этом диалоге недоступен.',
+    },
+    internalNote: {
+      visibility:
+        noteAvailable &&
+        noteCapabilities.create &&
+        !supportMacros.recoveryRequired.value &&
+        !knowledge.recoveryRequired.value
+          ? ('ENABLED' as const)
+          : ('DISABLED' as const),
+      reason:
+        supportMacros.recoveryRequired.value || knowledge.recoveryRequired.value
+          ? supportMacros.recoveryRequired.value
+            ? supportMacros.error.value
+            : knowledge.error.value
+          : noteAvailable
+            ? 'Для этого обращения доступен только просмотр заметок.'
+            : 'Внутренние заметки недоступны для текущего обращения.',
+    },
+  };
+  if (supportComposerMode.value === 'INTERNAL_NOTE') {
+    const enabled = Boolean(noteAvailable && noteCapabilities?.create);
+    return {
+      visibility: enabled ? 'ENABLED' : 'DISABLED',
+      mode: 'INTERNAL_NOTE',
+      scope: {
+        projectId: auth.project?.id ?? 'unselected-project',
+        actorId: auth.user?.id ?? 'current-operator',
+        conversationId: selection?.conversation?.id ?? 'unselected-conversation',
+      },
+      draftTargetId: selection?.case?.id ?? 'unselected-case',
+      initialDraft: internalNoteDraft.value,
+      draftRevision: `${selection?.capabilitiesRevision ?? 'unselected'}:internal-note`,
+      sensitiveDraftPurgeRevision: internalNoteDraftPurgeRevision.value,
+      sending: internalNotes.creating.value,
+      attachments: {
+        draftKey: noteAttachments.draftKey.value,
+        accept: noteAttachmentCapabilities().contentTypes.join(','),
+        loading: noteAttachments.loading.value,
+        busy: noteAttachments.busy.value,
+        error: noteAttachments.error.value,
+        canDownload: noteAttachmentCapabilities().download,
+        maxFiles: noteAttachmentCapabilities().maxFiles,
+        items: noteAttachments.items.value,
+      },
+      recipientStatus: null,
       actions: {
         attachment: {
-          visibility: publicAttachmentCapabilities().upload
-            ? "ENABLED"
-            : "DISABLED",
-          reason: publicAttachmentCapabilities().upload
+          visibility: noteAttachmentCapabilities().upload ? 'ENABLED' : 'DISABLED',
+          reason: noteAttachmentCapabilities().upload
             ? undefined
-            : "Загрузка файлов в ответ недоступна.",
+            : 'Загрузка файлов во внутреннюю заметку недоступна.',
         },
-        createTicket: {
-          visibility: "HIDDEN",
-        },
-        classifyCase: {
-          visibility: selection?.case
-            ? canManageSelectedCase.value
-              ? "ENABLED"
-              : "HIDDEN"
-            : "DISABLED",
-          reason: selection?.case
-            ? undefined
-            : "Диалог пока не привязан к обращению.",
-        },
+        createTicket: { visibility: 'HIDDEN' },
+        classifyCase: { visibility: 'HIDDEN' },
         internalNotes: {
-          visibility: selection?.case
-            ? canReadSelectedInternalNotes.value
-              ? "ENABLED"
-              : "HIDDEN"
-            : "DISABLED",
-          reason: selection?.case
-            ? undefined
-            : "Внутренние заметки доступны после привязки обращения.",
+          visibility: noteCapabilities?.read ? 'ENABLED' : 'HIDDEN',
         },
         knowledge: {
-          visibility: canReadSelectedKnowledge.value ? "ENABLED" : "HIDDEN",
+          visibility: canReadSelectedKnowledge.value ? 'ENABLED' : 'HIDDEN',
         },
         templates: {
-          visibility: canUseSupportMacros.value
-            ? busy
-              ? "DISABLED"
-              : "ENABLED"
-            : "HIDDEN",
-          reason: busy ? "Дождитесь завершения текущего действия." : undefined,
+          visibility: canUseSupportMacros.value ? 'ENABLED' : 'HIDDEN',
         },
-        improveWithAI: {
-          visibility: "DISABLED",
-          reason:
-            "Серверная команда улучшения ответа с AI ещё не опубликована.",
-        },
-        sendWithoutTranslation: {
-          visibility:
-            reply.canSendWithoutTranslation.value && translatedMode
-              ? reply.draft.value.trim() && !busy
-                ? "ENABLED"
-                : "DISABLED"
-              : "HIDDEN",
-        },
+        improveWithAI: { visibility: 'HIDDEN' },
+        sendWithoutTranslation: { visibility: 'HIDDEN' },
       },
       modeSwitch,
-      sendCapability,
-      replyPreview,
-      translationAssist:
-        canManageTranslation.value && hasSupportTranslationBoundary.value
-          ? {
-              targetLocale: translation.targetLocale.value,
-              busy,
-              disabled: !reply.canReply.value || busy,
-            }
-          : null,
+      sendCapability:
+        enabled && !supportMacros.recoveryRequired.value
+          ? { kind: 'SOURCE' }
+          : {
+              kind: 'BLOCKED',
+              reason: supportMacros.recoveryRequired.value
+                ? supportMacros.error.value
+                : 'Добавление заметки больше недоступно. Черновик очищен.',
+            },
+      replyPreview: null,
+      translationAssist: null,
     };
-  },
-);
+  }
+  const hasReplyText = replyHasText.value;
+  const translatedMode =
+    hasReplyText &&
+    (replyTranslationRequested.value || translationPolicyRequiresReviewedReply.value);
+  const busy = replyTranslationBusy.value;
+  const replyPreview =
+    canManageTranslation.value && translatedMode && translation.state.value
+      ? {
+          draft: translation.draft.value,
+          targetLocale: translation.targetLocale.value,
+          busy,
+          stale: translation.previewStale.value,
+          disabled:
+            !reply.canReply.value ||
+            !reply.draft.value.trim() ||
+            translation.savingPreference.value ||
+            !translation.state.value.availability.available ||
+            translation.state.value.budget.hardExhausted,
+          showProviderDetails: canReadTranslationDetails.value,
+        }
+      : null;
+  const sendCapability =
+    hasReplyText && replyPolicyChecking.value
+      ? {
+          kind: 'BLOCKED' as const,
+          reason: publicReplyBlockedReason.value,
+        }
+      : translatedMode
+        ? { kind: 'TRANSLATED_PREVIEW' as const }
+        : canSubmitPublicReply.value
+          ? { kind: 'SOURCE' as const }
+          : {
+              kind: 'BLOCKED' as const,
+              reason: publicReplyBlockedReason.value || 'Ответ в этом диалоге сейчас недоступен.',
+            };
+
+  return {
+    visibility: reply.canReply.value ? 'ENABLED' : 'HIDDEN',
+    mode: 'PUBLIC_REPLY',
+    scope: {
+      projectId: auth.project?.id ?? 'unselected-project',
+      actorId: auth.user?.id ?? 'current-operator',
+      conversationId: selection?.conversation?.id ?? 'unselected-conversation',
+    },
+    initialDraft: reply.draft.value,
+    publicDraftPurgeRevision: publicKnowledgeDraftPurgeRevision.value,
+    ...(knowledge.activeCitation.value
+      ? {
+          knowledgeSource: {
+            title:
+              knowledge.selected.value?.title ??
+              knowledge.items.value.find(
+                (item) => item.documentId === knowledge.activeCitation.value?.documentId,
+              )?.title ??
+              'Внутренний материал',
+            revisionNumber: knowledge.activeCitation.value.revisionNumber,
+            mode: knowledge.activeCitation.value.mode,
+            edited: knowledge.activeCitation.value.text !== reply.draft.value,
+          },
+        }
+      : {}),
+    sensitiveDraftPurgeRevision: internalNoteDraftPurgeRevision.value,
+    draftRevision:
+      translation.draft.value?.id ??
+      selection?.actionRevisions.conversationUpdatedAt ??
+      selection?.conversation?.updatedAt ??
+      'unselected',
+    sending: reply.sending.value,
+    attachments: {
+      draftKey: publicAttachments.draftKey.value,
+      accept: publicAttachmentCapabilities().contentTypes.join(','),
+      loading: publicAttachments.loading.value,
+      busy: publicAttachments.busy.value,
+      error: publicAttachments.error.value,
+      canDownload: publicAttachmentCapabilities().download,
+      maxFiles: publicAttachmentCapabilities().maxFiles,
+      items: publicAttachments.items.value,
+    },
+    outcome:
+      reply.outcomeState.value === 'IDLE' || reply.outcomeState.value === 'SENDING'
+        ? undefined
+        : {
+            state: reply.outcomeState.value,
+            label:
+              reply.outcomeState.value === 'CHECKING_OUTCOME'
+                ? 'Результат пока неизвестен. Сообщение не отправляется заново.'
+                : reply.outcomeState.value === 'RETRYABLE'
+                  ? 'Отправка не найдена. Черновик сохранён.'
+                  : 'Отправка заблокирована. Черновик сохранён.',
+            ...(reply.outcomeState.value === 'CHECKING_OUTCOME' && !reply.sending.value
+              ? {
+                  action: {
+                    kind: 'CHECK' as const,
+                    label: 'Проверить результат',
+                  },
+                }
+              : reply.outcomeState.value === 'BLOCKED'
+                ? {
+                    action: {
+                      kind: 'DISCARD' as const,
+                      label: 'Начать новую попытку',
+                    },
+                  }
+                : {}),
+          },
+    recipientStatus: selection?.conversation
+      ? selection.conversation.currentInteractionSessionCount > 0
+        ? { label: 'Пользователь онлайн', tone: 'ONLINE' as const }
+        : { label: 'Пользователь офлайн', tone: 'OFFLINE' as const }
+      : null,
+    actions: {
+      attachment: {
+        visibility: publicAttachmentCapabilities().upload ? 'ENABLED' : 'DISABLED',
+        reason: publicAttachmentCapabilities().upload
+          ? undefined
+          : 'Загрузка файлов в ответ недоступна.',
+      },
+      createTicket: {
+        visibility: 'HIDDEN',
+      },
+      classifyCase: {
+        visibility: selection?.case
+          ? canManageSelectedCase.value
+            ? 'ENABLED'
+            : 'HIDDEN'
+          : 'DISABLED',
+        reason: selection?.case ? undefined : 'Диалог пока не привязан к обращению.',
+      },
+      internalNotes: {
+        visibility: selection?.case
+          ? canReadSelectedInternalNotes.value
+            ? 'ENABLED'
+            : 'HIDDEN'
+          : 'DISABLED',
+        reason: selection?.case
+          ? undefined
+          : 'Внутренние заметки доступны после привязки обращения.',
+      },
+      knowledge: {
+        visibility: canReadSelectedKnowledge.value ? 'ENABLED' : 'HIDDEN',
+      },
+      templates: {
+        visibility: canUseSupportMacros.value ? (busy ? 'DISABLED' : 'ENABLED') : 'HIDDEN',
+        reason: busy ? 'Дождитесь завершения текущего действия.' : undefined,
+      },
+      improveWithAI: {
+        visibility: 'DISABLED',
+        reason: 'Серверная команда улучшения ответа с AI ещё не опубликована.',
+      },
+      sendWithoutTranslation: {
+        visibility:
+          reply.canSendWithoutTranslation.value && translatedMode
+            ? reply.draft.value.trim() && !busy
+              ? 'ENABLED'
+              : 'DISABLED'
+            : 'HIDDEN',
+      },
+    },
+    modeSwitch,
+    sendCapability,
+    replyPreview,
+    translationAssist:
+      canManageTranslation.value && hasSupportTranslationBoundary.value
+        ? {
+            targetLocale: translation.targetLocale.value,
+            busy,
+            disabled: !reply.canReply.value || busy,
+          }
+        : null,
+  };
+});
 const visibleTranslationMessageIds = computed(() =>
   conversation.messages.value
     .filter(
@@ -1161,14 +1062,12 @@ const visibleTranslationMessageIds = computed(() =>
     .slice(-50)
     .map((message) => message.id),
 );
-const bulkTranslationIds = computed(() => [
-  ...translation.translatingMessageIds.value,
-]);
+const bulkTranslationIds = computed(() => [...translation.translatingMessageIds.value]);
 const bulkTranslationCompleted = computed(
   () =>
     bulkTranslationIds.value.filter((messageId) => {
       const state = translation.messageTranslations.value.get(messageId)?.state;
-      return state === "COMPLETED" || state === "FAILED" || state === "SKIPPED";
+      return state === 'COMPLETED' || state === 'FAILED' || state === 'SKIPPED';
     }).length,
 );
 const supportConversationHistory = computed<ConversationSurfaceHistory>(() => ({
@@ -1184,24 +1083,21 @@ const supportConversationHistory = computed<ConversationSurfaceHistory>(() => ({
       ? conversation.error.value || undefined
       : undefined,
 }));
-const supportConversationTranslation = computed<ConversationSurfaceTranslation>(
-  () => ({
-    available:
-      canManageTranslation.value && hasSupportTranslationBoundary.value,
-    mode: messageViewMode.value,
-    changing: translation.loading.value || translation.savingPreference.value,
-    workingLocaleLabel: supportComposerWorkingLocale.value,
-    loading: translation.loading.value,
-    progress:
-      bulkTranslationIds.value.length > 1
-        ? {
-            completed: bulkTranslationCompleted.value,
-            total: bulkTranslationIds.value.length,
-            cancellable: true,
-          }
-        : null,
-  }),
-);
+const supportConversationTranslation = computed<ConversationSurfaceTranslation>(() => ({
+  available: canManageTranslation.value && hasSupportTranslationBoundary.value,
+  mode: messageViewMode.value,
+  changing: translation.loading.value || translation.savingPreference.value,
+  workingLocaleLabel: supportComposerWorkingLocale.value,
+  loading: translation.loading.value,
+  progress:
+    bulkTranslationIds.value.length > 1
+      ? {
+          completed: bulkTranslationCompleted.value,
+          total: bulkTranslationIds.value.length,
+          cancellable: true,
+        }
+      : null,
+}));
 const collaboration = createSupportConversationCollaborationController(
   supportConversationCollaborationSource,
   {
@@ -1232,28 +1128,28 @@ const workspaceLivePresentationByState: Record<
   {
     label: string;
     compactLabel: string;
-    severity: "success" | "warn" | "info";
+    severity: 'success' | 'warn' | 'info';
   }
 > = {
   DISCONNECTED: {
-    label: "Снимок сервера",
-    compactLabel: "Снимок",
-    severity: "info",
+    label: 'Снимок сервера',
+    compactLabel: 'Снимок',
+    severity: 'info',
   },
   CONNECTING: {
-    label: "Подключаем обновления",
-    compactLabel: "Подключение…",
-    severity: "info",
+    label: 'Подключаем обновления',
+    compactLabel: 'Подключение…',
+    severity: 'info',
   },
   CONNECTED: {
-    label: "Обновления подключены",
-    compactLabel: "Подключено",
-    severity: "success",
+    label: 'Обновления подключены',
+    compactLabel: 'Подключено',
+    severity: 'success',
   },
   DEGRADED: {
-    label: "Обновления восстанавливаются",
-    compactLabel: "Восстановление…",
-    severity: "warn",
+    label: 'Обновления восстанавливаются',
+    compactLabel: 'Восстановление…',
+    severity: 'warn',
   },
 };
 const workspaceLivePresentation = computed(
@@ -1263,13 +1159,12 @@ const selectedConversation = computed(() => {
   return conversation.selection.value?.conversation ?? null;
 });
 const selectedCase = computed(() => conversation.selection.value?.case ?? null);
-const supportConversationCollaboration =
-  computed<ConversationSurfaceCollaboration>(() => ({
-    availability: collaboration.error.value ? "DEGRADED" : "READY",
-    viewers: collaboration.viewers.value,
-    typers: collaboration.typers.value,
-    collision: collaboration.collision.value,
-  }));
+const supportConversationCollaboration = computed<ConversationSurfaceCollaboration>(() => ({
+  availability: collaboration.error.value ? 'DEGRADED' : 'READY',
+  viewers: collaboration.viewers.value,
+  typers: collaboration.typers.value,
+  collision: collaboration.collision.value,
+}));
 const reservationReconcileProgress = ref<{
   key: string;
   attempts: number;
@@ -1279,8 +1174,7 @@ let operationsReconcileGeneration = 0;
 const selectedReservationKey = computed(() => {
   const caseId = selectedCase.value?.id;
   const routing = conversation.selection.value?.routing;
-  const expiresAt =
-    routing?.state === "AVAILABLE" ? routing.reservation?.expiresAt : null;
+  const expiresAt = routing?.state === 'AVAILABLE' ? routing.reservation?.expiresAt : null;
   return caseId && expiresAt ? `${caseId}\u0000${expiresAt}` : null;
 });
 const reservationReconcileAttempt = computed(() =>
@@ -1291,8 +1185,8 @@ const reservationReconcileAttempt = computed(() =>
 const reservationReconcileInFlight = computed(
   () => operationsReconcileInFlightKey.value === selectedReservationKey.value,
 );
-const lastInboxSelectionKey = ref("");
-const selectionIntentKey = ref("");
+const lastInboxSelectionKey = ref('');
+const selectionIntentKey = ref('');
 const selectedInboxKey = computed(
   () =>
     selectionIntentKey.value ||
@@ -1303,9 +1197,7 @@ const selectedInboxKey = computed(
 const committedSelectionKey = computed(() => {
   const selection = conversation.selection.value;
   if (selection?.case?.id) return `CASE:${selection.case.id}`;
-  return selection?.conversation?.id
-    ? `CONVERSATION:${selection.conversation.id}`
-    : "";
+  return selection?.conversation?.id ? `CONVERSATION:${selection.conversation.id}` : '';
 });
 const selectionTransitioning = computed(
   () =>
@@ -1316,15 +1208,15 @@ const selectedAssignmentAuthorityKey = computed(() => {
   const supportCase = conversation.selection.value?.case;
   const assignment = supportCase?.assignment;
   return [
-    supportCase?.id ?? "",
-    assignment?.id ?? "",
-    assignment?.version ?? "",
-    assignment?.actionEtag ?? "",
-    conversation.selection.value?.capabilitiesRevision ?? "",
+    supportCase?.id ?? '',
+    assignment?.id ?? '',
+    assignment?.version ?? '',
+    assignment?.actionEtag ?? '',
+    conversation.selection.value?.capabilitiesRevision ?? '',
     conversation.selection.value?.capabilities.claimAssignment ?? false,
     conversation.selection.value?.capabilities.releaseAssignment ?? false,
     conversation.selection.value?.capabilities.transferAssignment ?? false,
-  ].join("\u0000");
+  ].join('\u0000');
 });
 const aiSuspensionAccessDenied = ref(false);
 const canReadSelectedAiSuspension = computed(
@@ -1333,9 +1225,7 @@ const canReadSelectedAiSuspension = computed(
     conversationAISuspensionEnabled &&
     aiSuspension.projectId === auth.project?.id &&
     Boolean(conversation.selection.value?.conversation) &&
-    canReadSupportConversationAiSuspension(
-      auth.project?.effectivePermissionCodes ?? [],
-    ),
+    canReadSupportConversationAiSuspension(auth.project?.effectivePermissionCodes ?? []),
 );
 const canManageSelectedAiSuspension = computed(
   () =>
@@ -1357,7 +1247,7 @@ const supportConversationAiSuspension = computed<
   return {
     entry,
     canManage: canManageSelectedAiSuspension.value,
-    conversationOpen: selectedConversation.value?.status === "OPEN",
+    conversationOpen: selectedConversation.value?.status === 'OPEN',
     showHistory: true,
   };
 });
@@ -1368,63 +1258,51 @@ const selectedAiSuspensionError = computed(() => {
 const selectedAiSuspensionKey = computed(() => {
   const selection = conversation.selection.value;
   return [
-    auth.project?.id ?? "",
-    selection?.endUser.id ?? "",
-    selection?.conversation?.id ?? "",
-    selection?.capabilities.suspendAi ? "allowed" : "denied",
-  ].join("\u0000");
+    auth.project?.id ?? '',
+    selection?.endUser.id ?? '',
+    selection?.conversation?.id ?? '',
+    selection?.capabilities.suspendAi ? 'allowed' : 'denied',
+  ].join('\u0000');
 });
 const aiSuspensionDialogVisible = ref(false);
 const aiSuspensionHistoryVisible = ref(false);
-const aiSuspensionDialogMode = ref<"START" | "EXTEND" | "RESUME">("START");
+const aiSuspensionDialogMode = ref<'START' | 'EXTEND' | 'RESUME'>('START');
 const contextDrawerVisible = ref(false);
 const isMobileWorkspace = ref(false);
 const isCompactWorkspace = ref(false);
 let mobileWorkspaceMedia: MediaQueryList | null = null;
 let compactWorkspaceMedia: MediaQueryList | null = null;
 let contextTrigger: HTMLElement | null = null;
-const mobileInspectorRequested = computed(
-  () => route.query.panel === "inspector",
-);
+const mobileInspectorRequested = computed(() => route.query.panel === 'inspector');
 const mobileInspectorVisible = computed(
   () =>
     isMobileWorkspace.value &&
     mobileInspectorRequested.value &&
     Boolean(conversation.selection.value),
 );
-const workspaceInspectorMode = computed<"DESKTOP" | "TABLET" | "MOBILE">(() =>
-  isMobileWorkspace.value
-    ? "MOBILE"
-    : isCompactWorkspace.value
-      ? "TABLET"
-      : "DESKTOP",
+const workspaceInspectorMode = computed<'DESKTOP' | 'TABLET' | 'MOBILE'>(() =>
+  isMobileWorkspace.value ? 'MOBILE' : isCompactWorkspace.value ? 'TABLET' : 'DESKTOP',
 );
 const canManageSelectedCase = computed(
   () =>
     Boolean(conversation.selection.value?.case) &&
     Boolean(conversation.selection.value?.capabilities.manageCase) &&
-    hasProjectPermission(
-      auth.project?.effectivePermissionCodes ?? [],
-      "project.cases.manage",
-    ),
+    hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.cases.manage'),
 );
 const canExplainSelectedCase = computed(() =>
   hasProjectPermission(
     auth.project?.effectivePermissionCodes ?? [],
-    "project.case_intelligence.decisions.read",
+    'project.case_intelligence.decisions.read',
   ),
 );
 const canReadSelectedCaseDesk = computed(
   () =>
     Boolean(conversation.selection.value?.case) &&
-    hasProjectPermission(
-      auth.project?.effectivePermissionCodes ?? [],
-      "project.cases.read",
-    ),
+    hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.cases.read'),
 );
 const caseDesk = createSupportCaseDeskController(endUserCasesRepository, {
-  projectId: () => auth.project?.id ?? "",
-  caseId: () => conversation.selection.value?.case?.id ?? "",
+  projectId: () => auth.project?.id ?? '',
+  caseId: () => conversation.selection.value?.case?.id ?? '',
   canRead: () => canReadSelectedCaseDesk.value,
   async onProjectionChanged() {
     await Promise.all([inbox.load(), conversation.reconcile()]);
@@ -1441,34 +1319,31 @@ const caseDesk = createSupportCaseDeskController(endUserCasesRepository, {
 const selectedCaseDeskAuthorityKey = computed(() => {
   const selection = conversation.selection.value;
   return [
-    auth.project?.id ?? "",
-    selection?.case?.id ?? "",
-    canReadSelectedCaseDesk.value ? "read" : "denied",
-  ].join("\u0000");
+    auth.project?.id ?? '',
+    selection?.case?.id ?? '',
+    canReadSelectedCaseDesk.value ? 'read' : 'denied',
+  ].join('\u0000');
 });
 const selectedCaseDeskFreshnessKey = computed(() => {
   const selection = conversation.selection.value;
   return [
-    auth.project?.id ?? "",
-    selection?.case?.id ?? "",
-    selection?.case?.version ?? "",
-    selection?.capabilitiesRevision ?? "",
-  ].join("\u0000");
+    auth.project?.id ?? '',
+    selection?.case?.id ?? '',
+    selection?.case?.version ?? '',
+    selection?.capabilitiesRevision ?? '',
+  ].join('\u0000');
 });
 const internalNotesAccessDenied = ref(false);
 const canReadSelectedInternalNotes = computed(
   () =>
     !internalNotesAccessDenied.value &&
-    conversation.selection.value?.capabilities.internalNotes?.state ===
-      "AVAILABLE" &&
+    conversation.selection.value?.capabilities.internalNotes?.state === 'AVAILABLE' &&
     Boolean(conversation.selection.value.capabilities.internalNotes.read),
 );
 const canReadSelectedInternalNoteHistory = computed(
   () =>
     canReadSelectedInternalNotes.value &&
-    Boolean(
-      conversation.selection.value?.capabilities.internalNotes?.historyRead,
-    ),
+    Boolean(conversation.selection.value?.capabilities.internalNotes?.historyRead),
 );
 const canWriteSelectedInternalNotes = computed(
   () =>
@@ -1483,12 +1358,10 @@ const canCorrectSelectedInternalNotes = computed(
 const canRedactSelectedInternalNotes = computed(
   () =>
     canReadSelectedInternalNotes.value &&
-    Boolean(
-      conversation.selection.value?.capabilities.internalNotes?.tombstone,
-    ),
+    Boolean(conversation.selection.value?.capabilities.internalNotes?.tombstone),
 );
 const selectedInternalNotesAuthorityKey = computed(() => {
-  return [auth.project?.id ?? "", requestedSelectionKey.value].join("\u0000");
+  return [auth.project?.id ?? '', requestedSelectionKey.value].join('\u0000');
 });
 const internalNotesVisible = ref(false);
 const internalNotes = createSupportInternalNotesController(
@@ -1512,9 +1385,7 @@ const internalNotes = createSupportInternalNotesController(
       } catch {
         // Private note text was already purged before refreshing authority.
       }
-      await Promise.all([inbox.load(), conversation.reconcile()]).catch(
-        () => undefined,
-      );
+      await Promise.all([inbox.load(), conversation.reconcile()]).catch(() => undefined);
     },
   },
   supportInternalNotesSource,
@@ -1522,26 +1393,25 @@ const internalNotes = createSupportInternalNotesController(
 
 function purgeInternalNoteDraft(): void {
   internalNotesVisible.value = false;
-  internalNoteDraft.value = "";
+  internalNoteDraft.value = '';
   internalNoteDraftPurgeRevision.value += 1;
-  supportComposerMode.value = "PUBLIC_REPLY";
+  supportComposerMode.value = 'PUBLIC_REPLY';
 }
-const supportConversationInternalNotes =
-  computed<ConversationSurfaceInternalNotes>(() => ({
-    loading: internalNotes.loading.value,
-    error: internalNotes.error.value,
-    totalVisible: internalNotes.notes.value.length,
-    hasMore: Boolean(internalNotes.nextCursor.value),
-    items: internalNotes.notes.value.slice(0, 1).map((note) => ({
-      id: note.id,
-      body: note.body,
-      lifecycle: note.lifecycle,
-      creatorName: note.creatorName,
-      updatedAt: note.updatedAt,
-    })),
-  }));
+const supportConversationInternalNotes = computed<ConversationSurfaceInternalNotes>(() => ({
+  loading: internalNotes.loading.value,
+  error: internalNotes.error.value,
+  totalVisible: internalNotes.notes.value.length,
+  hasMore: Boolean(internalNotes.nextCursor.value),
+  items: internalNotes.notes.value.slice(0, 1).map((note) => ({
+    id: note.id,
+    body: note.body,
+    lifecycle: note.lifecycle,
+    creatorName: note.creatorName,
+    updatedAt: note.updatedAt,
+  })),
+}));
 const stopInternalNoteRealtime = cmsRealtimeClient.subscribe(
-  ["support.internal_note.changed.v1"],
+  ['support.internal_note.changed.v1'],
   (value) => {
     const hint = parseSupportInternalNoteChanged(value);
     const selection = conversation.selection.value;
@@ -1556,8 +1426,8 @@ const stopInternalNoteRealtime = cmsRealtimeClient.subscribe(
     void internalNotes.reconcile();
   },
 );
-const stopInternalNoteWatchTermination =
-  cmsRealtimeClient.onSupportInternalNoteWatchTerminated(async (caseId) => {
+const stopInternalNoteWatchTermination = cmsRealtimeClient.onSupportInternalNoteWatchTerminated(
+  async (caseId) => {
     if (caseId !== conversation.selection.value?.case?.id) return;
     internalNotesAccessDenied.value = true;
     purgeInternalNoteDraft();
@@ -1567,26 +1437,23 @@ const stopInternalNoteWatchTermination =
     } catch {
       // The private projection is already purged; remain fail-closed offline.
     }
-    await Promise.all([inbox.load(), conversation.reconcile()]).catch(
-      () => undefined,
-    );
-  });
+    await Promise.all([inbox.load(), conversation.reconcile()]).catch(() => undefined);
+  },
+);
 const selectedInternalNoteWatchKey = computed(() => {
   const selection = conversation.selection.value;
   return [
-    auth.project?.id ?? "",
-    selection?.case?.id ?? "",
-    selection?.capabilities.internalNotes?.realtimeWatch ? "watch" : "off",
-    canReadSelectedInternalNotes.value ? "read" : "denied",
-  ].join("\u0000");
+    auth.project?.id ?? '',
+    selection?.case?.id ?? '',
+    selection?.capabilities.internalNotes?.realtimeWatch ? 'watch' : 'off',
+    canReadSelectedInternalNotes.value ? 'read' : 'denied',
+  ].join('\u0000');
 });
 const availabilityAccessDenied = ref(false);
 const canReadAvailability = computed(
   () =>
     !availabilityAccessDenied.value &&
-    canManageOwnSupportAvailability(
-      auth.project?.effectivePermissionCodes ?? [],
-    ),
+    canManageOwnSupportAvailability(auth.project?.effectivePermissionCodes ?? []),
 );
 const canManageOwnAvailability = computed(() => canReadAvailability.value);
 const availability = createSupportAvailabilityController(
@@ -1610,9 +1477,7 @@ const assignmentAccessDenied = ref(false);
 const canManageOwnAssignments = computed(
   () =>
     !assignmentAccessDenied.value &&
-    canManageOwnSupportAssignments(
-      auth.project?.effectivePermissionCodes ?? [],
-    ),
+    canManageOwnSupportAssignments(auth.project?.effectivePermissionCodes ?? []),
 );
 const canOverrideAssignments = computed(
   () =>
@@ -1627,9 +1492,7 @@ const canForceAssignments = computed(
 const canManageRoutingOffers = computed(
   () =>
     !assignmentAccessDenied.value &&
-    canReceiveSupportRoutingOffers(
-      auth.project?.effectivePermissionCodes ?? [],
-    ),
+    canReceiveSupportRoutingOffers(auth.project?.effectivePermissionCodes ?? []),
 );
 const assignment = createSupportAssignmentController(supportAssignmentSource, {
   projectId: () => auth.project?.id,
@@ -1644,9 +1507,7 @@ const assignment = createSupportAssignmentController(supportAssignmentSource, {
     } catch {
       // Assignment capabilities and private offers were already purged.
     }
-    await Promise.all([inbox.load(), conversation.reconcile()]).catch(
-      () => undefined,
-    );
+    await Promise.all([inbox.load(), conversation.reconcile()]).catch(() => undefined);
   },
   async onChanged() {
     await Promise.all([
@@ -1656,53 +1517,45 @@ const assignment = createSupportAssignmentController(supportAssignmentSource, {
     ]);
   },
 });
-const leadAssignment = createSupportLeadAssignmentController(
-  supportLeadAssignmentSource,
-  {
-    projectId: () => auth.project?.id,
-    canOverride: () => canOverrideAssignments.value,
-    canForce: () => canForceAssignments.value,
-    canReadAudit: () =>
-      hasProjectPermission(
-        auth.project?.effectivePermissionCodes ?? [],
-        "project.support.lead_control.read",
-      ),
-    async onForbidden() {
-      assignmentAccessDenied.value = true;
-      try {
-        await auth.refreshContext();
-      } catch {
-        // Lead assignment state has already been purged by the controller.
-      }
-      await Promise.all([inbox.load(), conversation.reconcile()]).catch(
-        () => undefined,
-      );
-    },
-    async onChanged() {
-      await Promise.all([
-        inbox.load(),
-        conversation.reconcile(),
-        canReadAvailability.value ? availability.load() : Promise.resolve(),
-      ]);
-    },
+const leadAssignment = createSupportLeadAssignmentController(supportLeadAssignmentSource, {
+  projectId: () => auth.project?.id,
+  canOverride: () => canOverrideAssignments.value,
+  canForce: () => canForceAssignments.value,
+  canReadAudit: () =>
+    hasProjectPermission(
+      auth.project?.effectivePermissionCodes ?? [],
+      'project.support.lead_control.read',
+    ),
+  async onForbidden() {
+    assignmentAccessDenied.value = true;
+    try {
+      await auth.refreshContext();
+    } catch {
+      // Lead assignment state has already been purged by the controller.
+    }
+    await Promise.all([inbox.load(), conversation.reconcile()]).catch(() => undefined);
   },
-);
+  async onChanged() {
+    await Promise.all([
+      inbox.load(),
+      conversation.reconcile(),
+      canReadAvailability.value ? availability.load() : Promise.resolve(),
+    ]);
+  },
+});
 const assignmentAvailabilityLabel = computed(() => {
   const snapshot = availability.availability.value;
-  if (!canReadAvailability.value) return "Нет права на просмотр";
-  if (!snapshot)
-    return availability.loading.value ? "Загружается…" : "Не загружена";
+  if (!canReadAvailability.value) return 'Нет права на просмотр';
+  if (!snapshot) return availability.loading.value ? 'Загружается…' : 'Не загружена';
   const state =
     {
-      AVAILABLE: "Доступен для новых обращений",
-      BUSY: "Занят",
-      AWAY: "Отошёл",
-      DRAINING: "Завершает текущую работу",
-      OFFLINE: "Офлайн",
-    }[snapshot.effectiveState] ?? "Состояние доступности не распознано";
-  return snapshot.acceptsNewWork
-    ? state
-    : `${state} · новую работу не принимает`;
+      AVAILABLE: 'Доступен для новых обращений',
+      BUSY: 'Занят',
+      AWAY: 'Отошёл',
+      DRAINING: 'Завершает текущую работу',
+      OFFLINE: 'Офлайн',
+    }[snapshot.effectiveState] ?? 'Состояние доступности не распознано';
+  return snapshot.acceptsNewWork ? state : `${state} · новую работу не принимает`;
 });
 const availabilityButtonLabel = computed(
   () => `Моя доступность: ${assignmentAvailabilityLabel.value}`,
@@ -1710,21 +1563,18 @@ const availabilityButtonLabel = computed(
 const availabilityCompactLabel = computed(() => {
   const state = availability.availability.value?.effectiveState;
   const labels: Record<string, string> = {
-    AVAILABLE: "Я доступен",
-    BUSY: "Я занят",
-    AWAY: "Я отошёл",
-    DRAINING: "Завершаю работу",
-    OFFLINE: "Я офлайн",
+    AVAILABLE: 'Я доступен',
+    BUSY: 'Я занят',
+    AWAY: 'Я отошёл',
+    DRAINING: 'Завершаю работу',
+    OFFLINE: 'Я офлайн',
   };
   return (
-    labels[state ?? ""] ??
-    (availability.loading.value ? "Загрузка статуса" : "Статус не загружен")
+    labels[state ?? ''] ?? (availability.loading.value ? 'Загрузка статуса' : 'Статус не загружен')
   );
 });
 const assignmentSurfaceController = computed(() =>
-  canManageOwnAssignments.value || canOverrideAssignments.value
-    ? assignment
-    : undefined,
+  canManageOwnAssignments.value || canOverrideAssignments.value ? assignment : undefined,
 );
 const leadAssignmentSurfaceController = computed(() =>
   canOverrideAssignments.value ? leadAssignment : undefined,
@@ -1736,39 +1586,35 @@ const externalWorkAccessDenied = ref(false);
 const externalWorkPermissions = computed(() => {
   const permissions = auth.project?.effectivePermissionCodes ?? [];
   const allowed = (permission: Parameters<typeof hasProjectPermission>[1]) =>
-    !externalWorkAccessDenied.value &&
-    hasProjectPermission(permissions, permission);
-  const read = allowed("project.support.external_work.read_linked");
+    !externalWorkAccessDenied.value && hasProjectPermission(permissions, permission);
+  const read = allowed('project.support.external_work.read_linked');
   return {
     read,
     // A 202 receipt can only be reconciled through read_linked on the pinned
     // backend. Keep create fail-closed when that recovery authority is absent.
-    create: read && allowed("project.support.external_work.create"),
-    commentInternal: allowed("project.support.external_work.comment_internal"),
-    commentPublic: allowed("project.support.external_work.comment_public"),
-    readInternal: allowed("project.support.external_work.read_internal"),
-    retry: allowed("project.support.external_work.retry"),
-    resolveUnknown: allowed("project.support.external_work.resolve_unknown"),
-    inboxRead: allowed("project.support.external_work.inbox_read"),
+    create: read && allowed('project.support.external_work.create'),
+    commentInternal: allowed('project.support.external_work.comment_internal'),
+    commentPublic: allowed('project.support.external_work.comment_public'),
+    readInternal: allowed('project.support.external_work.read_internal'),
+    retry: allowed('project.support.external_work.retry'),
+    resolveUnknown: allowed('project.support.external_work.resolve_unknown'),
+    inboxRead: allowed('project.support.external_work.inbox_read'),
   };
 });
 const canUseSelectedExternalWork = computed(
   () =>
     Boolean(conversation.selection.value?.case) &&
-    (externalWorkPermissions.value.read ||
-      externalWorkPermissions.value.create),
+    (externalWorkPermissions.value.read || externalWorkPermissions.value.create),
 );
 const externalWork = createSupportCaseExternalWorkController(
   {
     projectId: () => auth.project?.id,
     actorId: () => auth.user?.id,
     caseId: () => conversation.selection.value?.case?.id,
-    caseTitle: () => conversation.selection.value?.case?.title ?? "",
+    caseTitle: () => conversation.selection.value?.case?.title ?? '',
     caseSummary: () => {
       const supportCase = conversation.selection.value?.case;
-      return supportCase
-        ? `${supportCase.groupCode} · ${supportCase.title}`
-        : "";
+      return supportCase ? `${supportCase.groupCode} · ${supportCase.title}` : '';
     },
     permissions: () => externalWorkPermissions.value,
     async onForbidden() {
@@ -1786,7 +1632,7 @@ const externalWork = createSupportCaseExternalWorkController(
         // Local authority is cleared before remote logout; navigation is mandatory.
       } finally {
         await router.replace({
-          path: "/login",
+          path: '/login',
           query: { redirect: route.fullPath },
         });
       }
@@ -1795,32 +1641,24 @@ const externalWork = createSupportCaseExternalWorkController(
   supportExternalWorkSource,
 );
 externalWork.setDraftCopyHandler((text) => {
-  supportComposerMode.value = "PUBLIC_REPLY";
-  reply.draft.value = [reply.draft.value.trim(), text.trim()]
-    .filter(Boolean)
-    .join("\n\n");
+  supportComposerMode.value = 'PUBLIC_REPLY';
+  reply.draft.value = [reply.draft.value.trim(), text.trim()].filter(Boolean).join('\n\n');
   workspaceLive.setDraftActive(true);
   if (isMobileWorkspace.value) void closeMobileInspector();
 });
 const canReadInspectorProfile = computed(
   () =>
     !profileAccessDenied.value &&
-    hasProjectPermission(
-      auth.project?.effectivePermissionCodes ?? [],
-      "project.profiles.read",
-    ),
+    hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.profiles.read'),
 );
 const canReadInspectorEvents = computed(
   () =>
     !inspectorEventsAccessDenied.value &&
     Boolean(conversation.selection.value?.case) &&
+    hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.cases.read') &&
     hasProjectPermission(
       auth.project?.effectivePermissionCodes ?? [],
-      "project.cases.read",
-    ) &&
-    hasProjectPermission(
-      auth.project?.effectivePermissionCodes ?? [],
-      "project.support.inspector_events.read",
+      'project.support.inspector_events.read',
     ),
 );
 const canReadInspectorActivity = computed(
@@ -1829,7 +1667,7 @@ const canReadInspectorActivity = computed(
     Boolean(conversation.selection.value?.case) &&
     hasProjectPermission(
       auth.project?.effectivePermissionCodes ?? [],
-      "project.support.activity.read",
+      'project.support.activity.read',
     ),
 );
 const inspector = createSupportInspectorController(
@@ -1846,11 +1684,11 @@ const inspector = createSupportInspectorController(
       externalWork: canUseSelectedExternalWork.value,
     }),
     async onForbidden(tab) {
-      if (tab === "DATA") profileAccessDenied.value = true;
-      if (tab === "EVENTS") inspectorEventsAccessDenied.value = true;
-      if (tab === "ACTIVITY") inspectorActivityAccessDenied.value = true;
-      if (tab === "KNOWLEDGE") await handleSupportKnowledgeForbidden();
-      if (tab === "INTEGRATIONS") externalWorkAccessDenied.value = true;
+      if (tab === 'DATA') profileAccessDenied.value = true;
+      if (tab === 'EVENTS') inspectorEventsAccessDenied.value = true;
+      if (tab === 'ACTIVITY') inspectorActivityAccessDenied.value = true;
+      if (tab === 'KNOWLEDGE') await handleSupportKnowledgeForbidden();
+      if (tab === 'INTEGRATIONS') externalWorkAccessDenied.value = true;
       try {
         await auth.refreshContext();
       } catch {
@@ -1868,7 +1706,7 @@ async function openInboxItem(item: SupportInboxItem): Promise<void> {
     selectionKey === requestedSelectionKey.value &&
     (!selectionIntentKey.value || selectionIntentKey.value === selectionKey)
   ) {
-    selectionIntentKey.value = "";
+    selectionIntentKey.value = '';
     return;
   }
   selectionIntentKey.value = selectionKey;
@@ -1876,14 +1714,14 @@ async function openInboxItem(item: SupportInboxItem): Promise<void> {
   delete query.panel;
   try {
     await router.push(
-      item.kind === "CASE"
+      item.kind === 'CASE'
         ? {
-            name: "support-inbox-case",
+            name: 'support-inbox-case',
             params: { caseId: item.id },
             query,
           }
         : {
-            name: "support-inbox-conversation",
+            name: 'support-inbox-conversation',
             params: { conversationId: item.id },
             query,
           },
@@ -1894,11 +1732,10 @@ async function openInboxItem(item: SupportInboxItem): Promise<void> {
         committedSelectionKey.value === selectionKey &&
         !conversation.loading.value;
       if (requestedSelectionKey.value !== selectionKey || alreadyPresented)
-        selectionIntentKey.value = "";
+        selectionIntentKey.value = '';
     }
   } catch (error) {
-    if (selectionIntentKey.value === selectionKey)
-      selectionIntentKey.value = "";
+    if (selectionIntentKey.value === selectionKey) selectionIntentKey.value = '';
     throw error;
   }
 }
@@ -1909,13 +1746,9 @@ function clearSupportSearchTimer(): void {
   supportSearchTimer = undefined;
 }
 
-async function syncSupportSearchRoute(
-  state: SupportSearchRouteState,
-): Promise<void> {
+async function syncSupportSearchRoute(state: SupportSearchRouteState): Promise<void> {
   const query = Object.fromEntries(
-    Object.entries(route.query).filter(
-      ([key]) => !supportSearchRouteKeys.has(key),
-    ),
+    Object.entries(route.query).filter(([key]) => !supportSearchRouteKeys.has(key)),
   );
   await router.replace({
     query: { ...query, ...writeSupportSearchRoute(state) },
@@ -1965,9 +1798,7 @@ function changeSupportSearch(state: SupportSearchRouteState): void {
   }, 250);
 }
 
-async function selectSupportView(
-  selection: SupportViewSelection,
-): Promise<void> {
+async function selectSupportView(selection: SupportViewSelection): Promise<void> {
   if (!canUseSupportSearch.value) return;
   clearSupportSearchTimer();
   searchOpen.value = false;
@@ -1989,7 +1820,7 @@ async function startCustomSupportSearch(): Promise<void> {
 async function createSupportView(value: {
   name: string;
   code: string;
-  scope: "PERSONAL" | "TEAM" | "PROJECT";
+  scope: 'PERSONAL' | 'TEAM' | 'PROJECT';
   teamId: string;
 }): Promise<void> {
   if (!canUseSupportSearch.value) return;
@@ -2007,41 +1838,32 @@ async function createSupportView(value: {
 }
 
 async function replaceSupportView(value: {
-  view: import("@/shared/api/generated/models").SavedSupportViewResponseDto;
+  view: import('@/shared/api/generated/models').SavedSupportViewResponseDto;
   displayName: string;
 }): Promise<void> {
   if (!canUseSupportSearch.value) return;
   const { view } = value;
   const displayName = value.displayName.trim();
-  if (
-    !view.permissions.replaceDraft ||
-    displayName.length < 2 ||
-    displayName.length > 120
-  )
-    return;
+  if (!view.permissions.replaceDraft || displayName.length < 2 || displayName.length > 120) return;
   const command = { draft: { ...view.draft, displayName } };
   const signature = `replace:${view.id}:${view.etag}:${JSON.stringify(command)}`;
-  if (
-    await supportViews.replace(view, command, supportViewIntentKey(signature))
-  )
+  if (await supportViews.replace(view, command, supportViewIntentKey(signature)))
     supportViewIntentKeys.delete(signature);
 }
 
-async function setDefaultSupportView(
-  selection: SupportViewSelection,
-): Promise<void> {
+async function setDefaultSupportView(selection: SupportViewSelection): Promise<void> {
   if (!canUseSupportSearch.value) return;
   const command =
-    selection.kind === "SYSTEM"
-      ? { kind: "SYSTEM" as const, presetCode: selection.code }
-      : { kind: "SAVED" as const, savedViewId: selection.id };
-  const signature = `default:${JSON.stringify(command)}:${supportViews.defaultView.value?.etag ?? "none"}`;
+    selection.kind === 'SYSTEM'
+      ? { kind: 'SYSTEM' as const, presetCode: selection.code }
+      : { kind: 'SAVED' as const, savedViewId: selection.id };
+  const signature = `default:${JSON.stringify(command)}:${supportViews.defaultView.value?.etag ?? 'none'}`;
   if (await supportViews.setDefault(command, supportViewIntentKey(signature)))
     supportViewIntentKeys.delete(signature);
 }
 
 async function publishSupportView(
-  view: import("@/shared/api/generated/models").SavedSupportViewResponseDto,
+  view: import('@/shared/api/generated/models').SavedSupportViewResponseDto,
 ): Promise<void> {
   if (!canUseSupportSearch.value) return;
   if (!view.permissions.publish) return;
@@ -2051,7 +1873,7 @@ async function publishSupportView(
 }
 
 async function archiveSupportView(
-  view: import("@/shared/api/generated/models").SavedSupportViewResponseDto,
+  view: import('@/shared/api/generated/models').SavedSupportViewResponseDto,
 ): Promise<void> {
   if (!canUseSupportSearch.value) return;
   if (!view.permissions.archive) return;
@@ -2068,42 +1890,36 @@ async function closeSupportSearch(): Promise<void> {
   searchState.value = readSupportSearchRoute({});
   if (supportViews.selection.value) void supportViews.query();
   const query = Object.fromEntries(
-    Object.entries(route.query).filter(
-      ([key]) => !supportSearchRouteKeys.has(key),
-    ),
+    Object.entries(route.query).filter(([key]) => !supportSearchRouteKeys.has(key)),
   );
   await router.replace({ query });
   await nextTick();
-  const selected = document.querySelector<HTMLElement>(
-    '.inbox-row[aria-current="true"]',
-  );
+  const selected = document.querySelector<HTMLElement>('.inbox-row[aria-current="true"]');
   selected?.focus({ preventScroll: true });
 }
 
-async function openSupportSearchResult(
-  item: SupportSearchResult,
-): Promise<void> {
+async function openSupportSearchResult(item: SupportSearchResult): Promise<void> {
   if (!canUseSupportSearch.value) return;
   const query = { ...route.query };
   delete query.panel;
-  if (item.selection.kind === "CASE") {
+  if (item.selection.kind === 'CASE') {
     await router.push({
-      name: "support-inbox-case",
+      name: 'support-inbox-case',
       params: { caseId: item.selection.id },
       query,
     });
     return;
   }
-  if (item.selection.kind === "CONVERSATION") {
+  if (item.selection.kind === 'CONVERSATION') {
     await router.push({
-      name: "support-inbox-conversation",
+      name: 'support-inbox-conversation',
       params: { conversationId: item.selection.id },
       query,
     });
     return;
   }
   await router.push({
-    name: "users",
+    name: 'users',
     params: { endUserId: item.selection.id },
   });
 }
@@ -2112,7 +1928,7 @@ async function classifySelectedCase(): Promise<void> {
   const caseId = conversation.selection.value?.case?.id;
   if (!caseId || !canManageSelectedCase.value) return;
   if (isMobileWorkspace.value) {
-    await router.push({ query: { ...route.query, panel: "inspector" } });
+    await router.push({ query: { ...route.query, panel: 'inspector' } });
   } else if (isCompactWorkspace.value) {
     contextDrawerVisible.value = true;
   }
@@ -2122,9 +1938,9 @@ async function classifySelectedCase(): Promise<void> {
 
 async function openSupportKnowledge(): Promise<void> {
   if (!canReadSelectedKnowledge.value) return;
-  await inspector.open("KNOWLEDGE");
+  await inspector.open('KNOWLEDGE');
   if (isMobileWorkspace.value) {
-    await router.push({ query: { ...route.query, panel: "inspector" } });
+    await router.push({ query: { ...route.query, panel: 'inspector' } });
   } else if (isCompactWorkspace.value) {
     contextDrawerVisible.value = true;
   }
@@ -2133,14 +1949,12 @@ async function openSupportKnowledge(): Promise<void> {
 async function backToInbox(): Promise<void> {
   contextDrawerVisible.value = false;
   const query =
-    inboxMode.value === "CASES"
-      ? { ...route.query, mode: "cases" }
-      : Object.fromEntries(
-          Object.entries(route.query).filter(([key]) => key !== "mode"),
-        );
+    inboxMode.value === 'CASES'
+      ? { ...route.query, mode: 'cases' }
+      : Object.fromEntries(Object.entries(route.query).filter(([key]) => key !== 'mode'));
   delete query.panel;
   const inboxLocation = {
-    name: "support-inbox",
+    name: 'support-inbox',
     query,
   } as const;
   if (window.history.state?.back === router.resolve(inboxLocation).fullPath) {
@@ -2150,43 +1964,36 @@ async function backToInbox(): Promise<void> {
   await router.replace(inboxLocation);
 }
 
-function syncMobileWorkspace(
-  event: MediaQueryList | MediaQueryListEvent,
-): void {
+function syncMobileWorkspace(event: MediaQueryList | MediaQueryListEvent): void {
   const drawerWasVisible = contextDrawerVisible.value;
   isMobileWorkspace.value = event.matches;
   if (event.matches && drawerWasVisible && requestedSelectionKey.value) {
     contextDrawerVisible.value = false;
     void router.replace({
-      query: { ...route.query, panel: "inspector" },
+      query: { ...route.query, panel: 'inspector' },
     });
     return;
   }
   if (!event.matches && mobileInspectorRequested.value) {
-    contextDrawerVisible.value = window.matchMedia(
-      "(max-width: 1279px)",
-    ).matches;
+    contextDrawerVisible.value = window.matchMedia('(max-width: 1279px)').matches;
     const query = { ...route.query };
     delete query.panel;
     void router.replace({ query });
   }
 }
 
-function syncCompactWorkspace(
-  event: MediaQueryList | MediaQueryListEvent,
-): void {
+function syncCompactWorkspace(event: MediaQueryList | MediaQueryListEvent): void {
   isCompactWorkspace.value = event.matches;
 }
 
 async function openConversationContext(event: Event): Promise<void> {
-  contextTrigger =
-    event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+  contextTrigger = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
   if (!isMobileWorkspace.value) {
     contextDrawerVisible.value = true;
     return;
   }
   await router.push({
-    query: { ...route.query, panel: "inspector" },
+    query: { ...route.query, panel: 'inspector' },
   });
 }
 
@@ -2239,9 +2046,8 @@ function stopInternalNotesReconciliation(): void {
 function syncInternalNotesReconciliation(): void {
   stopInternalNotesReconciliation();
   if (
-    typeof window === "undefined" ||
-    (!internalNotesVisible.value &&
-      supportComposerMode.value !== "INTERNAL_NOTE") ||
+    typeof window === 'undefined' ||
+    (!internalNotesVisible.value && supportComposerMode.value !== 'INTERNAL_NOTE') ||
     !canReadSelectedInternalNotes.value
   )
     return;
@@ -2271,11 +2077,7 @@ function moveInboxSelection(direction: -1 | 1): void {
     0,
     Math.min(
       items.length - 1,
-      currentIndex < 0
-        ? direction > 0
-          ? 0
-          : items.length - 1
-        : currentIndex + direction,
+      currentIndex < 0 ? (direction > 0 ? 0 : items.length - 1) : currentIndex + direction,
     ),
   );
   const next = items[nextIndex];
@@ -2283,16 +2085,9 @@ function moveInboxSelection(direction: -1 | 1): void {
 }
 
 function handleWorkspaceKeydown(event: KeyboardEvent): void {
-  if (
-    event.key === "Escape" &&
-    document.querySelector("[role='dialog'][aria-modal='true']")
-  )
+  if (event.key === 'Escape' && document.querySelector("[role='dialog'][aria-modal='true']"))
     return;
-  if (
-    workspaceFullscreen.value &&
-    workspacePresentationLauncher &&
-    event.key === "Escape"
-  ) {
+  if (workspaceFullscreen.value && workspacePresentationLauncher && event.key === 'Escape') {
     event.preventDefault();
     void setWorkspaceFullscreen(false);
     return;
@@ -2302,7 +2097,7 @@ function handleWorkspaceKeydown(event: KeyboardEvent): void {
     !event.altKey &&
     !event.shiftKey &&
     (event.metaKey || event.ctrlKey) &&
-    event.key.toLowerCase() === "k" &&
+    event.key.toLowerCase() === 'k' &&
     !document.querySelector("[role='dialog'][aria-modal='true']")
   ) {
     event.preventDefault();
@@ -2320,9 +2115,9 @@ function handleWorkspaceKeydown(event: KeyboardEvent): void {
   )
     return;
   const direction =
-    event.key === "ArrowDown" || event.key.toLowerCase() === "j"
+    event.key === 'ArrowDown' || event.key.toLowerCase() === 'j'
       ? 1
-      : event.key === "ArrowUp" || event.key.toLowerCase() === "k"
+      : event.key === 'ArrowUp' || event.key.toLowerCase() === 'k'
         ? -1
         : null;
   if (!direction) return;
@@ -2363,11 +2158,7 @@ async function reconcileCaseOperations(expiresAt: string): Promise<void> {
     reservationReconcileProgress.value?.key === reservationKey
       ? reservationReconcileProgress.value.attempts
       : 0;
-  if (
-    operationsReconcileInFlightKey.value === reservationKey ||
-    previousAttempts >= 3
-  )
-    return;
+  if (operationsReconcileInFlightKey.value === reservationKey || previousAttempts >= 3) return;
   const generation = ++operationsReconcileGeneration;
   operationsReconcileInFlightKey.value = reservationKey;
   try {
@@ -2405,10 +2196,10 @@ async function sendReply(attachments?: {
     return;
   const activeMacro = supportMacros.activeDraft.value;
   const macroReplyDraftId =
-    activeMacro?.target.kind === "PUBLIC_REPLY"
+    activeMacro?.target.kind === 'PUBLIC_REPLY'
       ? await supportMacros.prepareForSend(reply.draft.value)
       : undefined;
-  if (activeMacro?.target.kind === "PUBLIC_REPLY" && !macroReplyDraftId) return;
+  if (activeMacro?.target.kind === 'PUBLIC_REPLY' && !macroReplyDraftId) return;
   const hadKnowledgeCitation = Boolean(knowledge.activeCitation.value);
   const supportKnowledgeCitationDraftId = hadKnowledgeCitation
     ? await knowledge.prepareForSend(reply.draft.value)
@@ -2418,17 +2209,12 @@ async function sendReply(attachments?: {
     await reply.send(attachments);
     return;
   }
-  const policyLoaded = canManageTranslation.value
-    ? await ensureReplyTranslationLoaded()
-    : true;
+  const policyLoaded = canManageTranslation.value ? await ensureReplyTranslationLoaded() : true;
   if (!policyLoaded) {
     replyTranslationRequested.value = true;
     return;
   }
-  if (
-    replyTranslationRequested.value ||
-    translationPolicyRequiresReviewedReply.value
-  ) {
+  if (replyTranslationRequested.value || translationPolicyRequiresReviewedReply.value) {
     replyTranslationRequested.value = true;
     if (translation.readyDraft.value) {
       await sendTranslatedReply(undefined, attachments);
@@ -2440,15 +2226,13 @@ async function sendReply(attachments?: {
   await reply.send({
     ...attachments,
     ...(macroReplyDraftId ? { macroReplyDraftId } : {}),
-    ...(supportKnowledgeCitationDraftId
-      ? { supportKnowledgeCitationDraftId }
-      : {}),
+    ...(supportKnowledgeCitationDraftId ? { supportKnowledgeCitationDraftId } : {}),
   });
 }
 
 function setSendWithoutTranslationVisible(visible: boolean): void {
   sendWithoutTranslationVisible.value = visible;
-  if (!visible) sendWithoutTranslationReason.value = "";
+  if (!visible) sendWithoutTranslationReason.value = '';
 }
 
 async function sendReplyWithoutTranslation(): Promise<void> {
@@ -2463,10 +2247,10 @@ async function sendReplyWithoutTranslation(): Promise<void> {
   if (!reason || !reply.canSendWithoutTranslation.value) return;
   const activeMacro = supportMacros.activeDraft.value;
   const macroReplyDraftId =
-    activeMacro?.target.kind === "PUBLIC_REPLY"
+    activeMacro?.target.kind === 'PUBLIC_REPLY'
       ? await supportMacros.prepareForSend(reply.draft.value)
       : undefined;
-  if (activeMacro?.target.kind === "PUBLIC_REPLY" && !macroReplyDraftId) return;
+  if (activeMacro?.target.kind === 'PUBLIC_REPLY' && !macroReplyDraftId) return;
   const hadKnowledgeCitation = Boolean(knowledge.activeCitation.value);
   const supportKnowledgeCitationDraftId = hadKnowledgeCitation
     ? await knowledge.prepareForSend(reply.draft.value)
@@ -2494,13 +2278,12 @@ async function ensureReplyTranslationLoaded(): Promise<boolean> {
   if (!canManageTranslation.value) return false;
   if (translation.state.value) return true;
   const scope = [
-    auth.project?.id ?? "",
-    conversation.selection.value?.endUser.id ?? "",
-    conversation.selection.value?.conversation?.id ?? "",
-  ].join("\u0000");
-  if (!scope.replaceAll("\u0000", "")) return false;
-  if (replyTranslationLoad && replyTranslationLoadScope === scope)
-    return replyTranslationLoad;
+    auth.project?.id ?? '',
+    conversation.selection.value?.endUser.id ?? '',
+    conversation.selection.value?.conversation?.id ?? '',
+  ].join('\u0000');
+  if (!scope.replaceAll('\u0000', '')) return false;
+  if (replyTranslationLoad && replyTranslationLoadScope === scope) return replyTranslationLoad;
   const request = translation
     .load()
     .then(() => Boolean(translation.state.value))
@@ -2520,12 +2303,10 @@ async function setTranslationEnabled(enabled: boolean): Promise<void> {
   await translation.updatePreference({ enabled });
 }
 
-async function setTranslationTargetLocale(
-  locale: string | null,
-): Promise<void> {
+async function setTranslationTargetLocale(locale: string | null): Promise<void> {
   if (!(await ensureReplyTranslationLoaded())) return;
   await translation.updatePreference({ endUserLocaleOverride: locale });
-  if (!hasSupportTranslationBoundary.value) messageViewMode.value = "ORIGINAL";
+  if (!hasSupportTranslationBoundary.value) messageViewMode.value = 'ORIGINAL';
 }
 
 async function openTranslationSettings(): Promise<void> {
@@ -2541,21 +2322,19 @@ async function showTranslatedMessages(): Promise<void> {
   }
   if (!translation.state.value?.preference.enabled) return;
   await translation.translateMessages(visibleTranslationMessageIds.value);
-  messageViewMode.value = "TRANSLATED";
+  messageViewMode.value = 'TRANSLATED';
 }
 
-async function changeSupportTranslationMode(
-  mode: "ORIGINAL" | "TRANSLATED",
-): Promise<void> {
-  if (mode === "ORIGINAL") {
-    messageViewMode.value = "ORIGINAL";
+async function changeSupportTranslationMode(mode: 'ORIGINAL' | 'TRANSLATED'): Promise<void> {
+  if (mode === 'ORIGINAL') {
+    messageViewMode.value = 'ORIGINAL';
     return;
   }
   await showTranslatedMessages();
 }
 
 function changeSupportDraft(request: ConversationSurfaceSendRequest): void {
-  if (request.mode === "INTERNAL_NOTE") {
+  if (request.mode === 'INTERNAL_NOTE') {
     internalNoteDraft.value = request.text;
     return;
   }
@@ -2563,11 +2342,9 @@ function changeSupportDraft(request: ConversationSurfaceSendRequest): void {
   void workspaceLive.recordTypingActivity(Boolean(request.text.trim()));
 }
 
-async function sendSupportComposer(
-  request: ConversationSurfaceSendRequest,
-): Promise<void> {
+async function sendSupportComposer(request: ConversationSurfaceSendRequest): Promise<void> {
   if (supportMacros.recoveryRequired.value) return;
-  if (request.mode === "INTERNAL_NOTE") {
+  if (request.mode === 'INTERNAL_NOTE') {
     if (!canWriteSelectedInternalNotes.value) return;
     internalNoteDraft.value = request.text;
     const conversationId = conversation.selection.value?.conversation?.id;
@@ -2577,10 +2354,10 @@ async function sendSupportComposer(
         : undefined;
     const activeMacro = supportMacros.activeDraft.value;
     const macroDraftId =
-      activeMacro?.target.kind === "INTERNAL_NOTE"
+      activeMacro?.target.kind === 'INTERNAL_NOTE'
         ? await supportMacros.prepareForSend(request.text)
         : undefined;
-    if (activeMacro?.target.kind === "INTERNAL_NOTE" && !macroDraftId) return;
+    if (activeMacro?.target.kind === 'INTERNAL_NOTE' && !macroDraftId) return;
     if (
       await internalNotes.create(
         request.text,
@@ -2589,8 +2366,8 @@ async function sendSupportComposer(
         macroDraftId ?? undefined,
       )
     ) {
-      internalNoteDraft.value = "";
-      supportMacros.detachIfChanged("");
+      internalNoteDraft.value = '';
+      supportMacros.detachIfChanged('');
       if (attachmentDraft) noteAttachments.consumeDraft();
       await internalNotes.reconcile();
     }
@@ -2608,15 +2385,12 @@ async function sendSupportComposer(
   if (!reply.draft.value.trim()) void workspaceLive.setDraftActive(false);
 }
 
-function changeSupportComposerMode(
-  mode: "PUBLIC_REPLY" | "INTERNAL_NOTE",
-): void {
+function changeSupportComposerMode(mode: 'PUBLIC_REPLY' | 'INTERNAL_NOTE'): void {
   if (mode === supportComposerMode.value) return;
-  if (supportMacros.recoveryRequired.value || knowledge.recoveryRequired.value)
-    return;
+  if (supportMacros.recoveryRequired.value || knowledge.recoveryRequired.value) return;
   supportMacros.reset({ keepQuery: true });
   replyTemplateGalleryVisible.value = false;
-  if (mode === "INTERNAL_NOTE") {
+  if (mode === 'INTERNAL_NOTE') {
     if (!canWriteSelectedInternalNotes.value) return;
     supportComposerMode.value = mode;
     void internalNotes.load(undefined, { retainNotesUntilResponse: true });
@@ -2626,9 +2400,7 @@ function changeSupportComposerMode(
   supportComposerMode.value = mode;
 }
 
-async function sendSupportTranslatedReply(
-  request: ConversationSurfaceSendRequest,
-): Promise<void> {
+async function sendSupportTranslatedReply(request: ConversationSurfaceSendRequest): Promise<void> {
   await sendTranslatedReply(
     request.text,
     request.attachmentIds?.length && request.attachmentDraftKey
@@ -2644,59 +2416,53 @@ function reconcileSupportSurface(): void {
   void Promise.all([inbox.load(), conversation.reconcile()]);
 }
 
-function handleSupportComposerAction(
-  action: ConversationSurfaceComposerAction,
-): void {
+function handleSupportComposerAction(action: ConversationSurfaceComposerAction): void {
   switch (action) {
-    case "TEMPLATES":
+    case 'TEMPLATES':
       replyTemplateGalleryVisible.value = true;
       void supportMacros.load();
       break;
-    case "CLASSIFY_CASE":
+    case 'CLASSIFY_CASE':
       void classifySelectedCase();
       break;
-    case "INTERNAL_NOTES":
-      if (canWriteSelectedInternalNotes.value)
-        changeSupportComposerMode("INTERNAL_NOTE");
+    case 'INTERNAL_NOTES':
+      if (canWriteSelectedInternalNotes.value) changeSupportComposerMode('INTERNAL_NOTE');
       else openInternalNotes();
       break;
-    case "KNOWLEDGE":
+    case 'KNOWLEDGE':
       void openSupportKnowledge();
       break;
-    case "REMOVE_KNOWLEDGE":
+    case 'REMOVE_KNOWLEDGE':
       knowledge.accepted();
-      reply.draft.value = "";
+      reply.draft.value = '';
       publicKnowledgeDraftPurgeRevision.value += 1;
       break;
-    case "SEND_WITHOUT_TRANSLATION":
+    case 'SEND_WITHOUT_TRANSLATION':
       setSendWithoutTranslationVisible(true);
       break;
-    case "ATTACHMENT":
-    case "CREATE_TICKET":
-    case "IMPROVE_WITH_AI":
+    case 'ATTACHMENT':
+    case 'CREATE_TICKET':
+    case 'IMPROVE_WITH_AI':
       break;
   }
 }
 
 async function addSupportAttachments(files: File[]): Promise<void> {
-  await (supportComposerMode.value === "INTERNAL_NOTE"
+  await (supportComposerMode.value === 'INTERNAL_NOTE'
     ? noteAttachments.addFiles(files)
     : publicAttachments.addFiles(files));
-  if (
-    supportComposerMode.value === "PUBLIC_REPLY" &&
-    publicAttachments.items.value.length
-  )
+  if (supportComposerMode.value === 'PUBLIC_REPLY' && publicAttachments.items.value.length)
     void workspaceLive.setDraftActive(true);
 }
 
 function removeSupportAttachment(localId: string): void {
   const operation =
-    supportComposerMode.value === "INTERNAL_NOTE"
+    supportComposerMode.value === 'INTERNAL_NOTE'
       ? noteAttachments.remove(localId)
       : publicAttachments.remove(localId);
   void operation.then(() => {
     if (
-      supportComposerMode.value === "PUBLIC_REPLY" &&
+      supportComposerMode.value === 'PUBLIC_REPLY' &&
       !reply.draft.value.trim() &&
       !publicAttachments.items.value.length
     )
@@ -2705,26 +2471,21 @@ function removeSupportAttachment(localId: string): void {
 }
 
 function retrySupportAttachment(localId: string): void {
-  void (supportComposerMode.value === "INTERNAL_NOTE"
+  void (supportComposerMode.value === 'INTERNAL_NOTE'
     ? noteAttachments.retry(localId)
     : publicAttachments.retry(localId));
 }
 
-function downloadSupportAttachment(
-  request: ConversationSurfaceAttachmentDownloadRequest,
-): void {
-  void (request.visibility === "INTERNAL_NOTE"
+function downloadSupportAttachment(request: ConversationSurfaceAttachmentDownloadRequest): void {
+  void (request.visibility === 'INTERNAL_NOTE'
     ? noteAttachments.download(request.attachmentId)
     : publicAttachments.download(request.attachmentId));
 }
 
-async function applySupportReplyTemplate(
-  macro: SupportMacroResponseDto,
-): Promise<void> {
+async function applySupportReplyTemplate(macro: SupportMacroResponseDto): Promise<void> {
   const text = await supportMacros.apply(macro);
   if (!text) return;
-  if (supportComposerMode.value === "INTERNAL_NOTE")
-    internalNoteDraft.value = text;
+  if (supportComposerMode.value === 'INTERNAL_NOTE') internalNoteDraft.value = text;
   else reply.draft.value = text;
   replyTemplateGalleryVisible.value = false;
 }
@@ -2738,7 +2499,7 @@ async function prepareReplyTranslation(): Promise<void> {
   if (supportMacros.recoveryRequired.value) return;
   const activeMacro = supportMacros.activeDraft.value;
   if (
-    activeMacro?.target.kind === "PUBLIC_REPLY" &&
+    activeMacro?.target.kind === 'PUBLIC_REPLY' &&
     !(await supportMacros.prepareForSend(reply.draft.value))
   )
     return;
@@ -2767,8 +2528,7 @@ async function sendTranslatedReply(
   if (
     beforeEdit &&
     editedText?.trim() &&
-    editedText.trim() !==
-      (beforeEdit.editedTranslatedText ?? beforeEdit.translatedText ?? "")
+    editedText.trim() !== (beforeEdit.editedTranslatedText ?? beforeEdit.translatedText ?? '')
   ) {
     await translation.editReplyTranslation(editedText);
   } else {
@@ -2777,7 +2537,7 @@ async function sendTranslatedReply(
   const ready = translation.readyDraft.value;
   if (!ready) return;
   const macroReplyDraftId =
-    supportMacros.activeDraft.value?.target.kind === "PUBLIC_REPLY"
+    supportMacros.activeDraft.value?.target.kind === 'PUBLIC_REPLY'
       ? supportMacros.activeDraft.value.receipt.id
       : undefined;
   const hadKnowledgeCitation = Boolean(knowledge.activeCitation.value);
@@ -2853,8 +2613,8 @@ async function handleConversationForbidden(): Promise<void> {
   await inbox.load().catch(() => undefined);
   if (requestedSelectionKey.value)
     await router.replace({
-      name: "support-inbox",
-      query: inboxMode.value === "CASES" ? { mode: "cases" } : {},
+      name: 'support-inbox',
+      query: inboxMode.value === 'CASES' ? { mode: 'cases' } : {},
     });
 }
 
@@ -2865,9 +2625,8 @@ async function handleCollaborationAccessRevoked(): Promise<void> {
   await handleConversationForbidden();
 }
 
-function openAiSuspensionDialog(mode: "START" | "EXTEND" | "RESUME"): void {
-  if (!canManageSelectedAiSuspension.value || !selectedAiSuspensionEntry.value)
-    return;
+function openAiSuspensionDialog(mode: 'START' | 'EXTEND' | 'RESUME'): void {
+  if (!canManageSelectedAiSuspension.value || !selectedAiSuspensionEntry.value) return;
   aiSuspensionDialogMode.value = mode;
   aiSuspensionDialogVisible.value = true;
 }
@@ -2875,9 +2634,7 @@ function openAiSuspensionDialog(mode: "START" | "EXTEND" | "RESUME"): void {
 async function submitAiSuspension(value: {
   key: string;
   command:
-    | StartConversationAISuspensionDto
-    | ExtendConversationAISuspensionDto
-    | ResumeConversationAIDto;
+    StartConversationAISuspensionDto | ExtendConversationAISuspensionDto | ResumeConversationAIDto;
 }): Promise<void> {
   const selection = conversation.selection.value;
   if (
@@ -2888,14 +2645,14 @@ async function submitAiSuspension(value: {
     return;
   const { endUser, conversation: selected } = selection;
   const succeeded =
-    aiSuspensionDialogMode.value === "START"
+    aiSuspensionDialogMode.value === 'START'
       ? await aiSuspension.start(
           endUser.id,
           selected.id,
           value.command as StartConversationAISuspensionDto,
           value.key,
         )
-      : aiSuspensionDialogMode.value === "EXTEND"
+      : aiSuspensionDialogMode.value === 'EXTEND'
         ? await aiSuspension.extend(
             endUser.id,
             selected.id,
@@ -2918,13 +2675,13 @@ async function submitAiSuspension(value: {
 }
 
 onMounted(async () => {
-  window.addEventListener("keydown", handleWorkspaceKeydown);
-  mobileWorkspaceMedia = window.matchMedia("(max-width: 767px)");
-  compactWorkspaceMedia = window.matchMedia("(max-width: 1279px)");
+  window.addEventListener('keydown', handleWorkspaceKeydown);
+  mobileWorkspaceMedia = window.matchMedia('(max-width: 767px)');
+  compactWorkspaceMedia = window.matchMedia('(max-width: 1279px)');
   syncMobileWorkspace(mobileWorkspaceMedia);
   syncCompactWorkspace(compactWorkspaceMedia);
-  mobileWorkspaceMedia.addEventListener("change", syncMobileWorkspace);
-  compactWorkspaceMedia.addEventListener("change", syncCompactWorkspace);
+  mobileWorkspaceMedia.addEventListener('change', syncMobileWorkspace);
+  compactWorkspaceMedia.addEventListener('change', syncCompactWorkspace);
   const initialInboxLoad = inbox.load();
   const initialCustomSearch = shouldLoadCustomSupportView(
     route.query,
@@ -2939,10 +2696,7 @@ onMounted(async () => {
       });
     }
   } else await supportViews.load(readSupportViewSelection(route.query));
-  if (
-    !supportViews.selection.value &&
-    hasSupportSearchCriteria(searchState.value)
-  )
+  if (!supportViews.selection.value && hasSupportSearchCriteria(searchState.value))
     await supportSearch.search();
   await initialInboxLoad;
   if (canReadAvailability.value) {
@@ -2954,17 +2708,15 @@ onMounted(async () => {
 watch(
   () => auth.project?.id,
   (projectId, previousProjectId) => {
-    const projectChanged =
-      previousProjectId !== undefined && projectId !== previousProjectId;
-    if (previousProjectId)
-      clearConversationSurfaceProjectSession(previousProjectId);
+    const projectChanged = previousProjectId !== undefined && projectId !== previousProjectId;
+    if (previousProjectId) clearConversationSurfaceProjectSession(previousProjectId);
     if (projectChanged) {
       clearSupportSearchTimer();
       searchOpen.value = false;
       searchState.value = readSupportSearchRoute({});
       void syncSupportSearchRoute(searchState.value);
     }
-    lastInboxSelectionKey.value = "";
+    lastInboxSelectionKey.value = '';
     contextDrawerVisible.value = false;
     profileAccessDenied.value = false;
     inspectorEventsAccessDenied.value = false;
@@ -2996,7 +2748,7 @@ watch(
     replyTemplateGalleryVisible.value = false;
     translationSettingsVisible.value = false;
     setSendWithoutTranslationVisible(false);
-    messageViewMode.value = "ORIGINAL";
+    messageViewMode.value = 'ORIGINAL';
     translation.reset();
     conversation.reset();
     inbox.reset();
@@ -3007,17 +2759,12 @@ watch(
       await inbox.load();
       const resumeCustomSearch =
         !projectChanged &&
-        shouldLoadCustomSupportView(
-          route.query,
-          hasSupportSearchCriteria(searchState.value),
-        );
+        shouldLoadCustomSupportView(route.query, hasSupportSearchCriteria(searchState.value));
       if (resumeCustomSearch) {
         searchOpen.value = true;
         await supportViews.loadCustom();
       } else {
-        await supportViews.load(
-          projectChanged ? null : readSupportViewSelection(route.query),
-        );
+        await supportViews.load(projectChanged ? null : readSupportViewSelection(route.query));
       }
       if (
         !supportViews.selection.value &&
@@ -3076,9 +2823,7 @@ watch(operationsContextAuthorityKey, (authorityKey, previousAuthorityKey) => {
   reservationReconcileProgress.value = null;
   conversation.purgeOperationsContext({ sla: true, routing: true });
   if (!routeCaseId.value && !routeConversationId.value) return;
-  void (conversation.selection.value
-    ? conversation.reconcile()
-    : conversation.load());
+  void (conversation.selection.value ? conversation.reconcile() : conversation.load());
 });
 
 watch(canManageRoutingOffers, (allowed) => {
@@ -3089,18 +2834,15 @@ watch(canManageRoutingOffers, (allowed) => {
   void assignment.loadOffers();
 });
 
-watch(
-  [canManageOwnAssignments, canOverrideAssignments],
-  ([canOwn, canOverride]) => {
-    if (!canOwn && !canOverride) {
-      assignment.resetCase();
-      leadAssignment.reset();
-      return;
-    }
-    if (!canOverride) leadAssignment.reset();
-    void assignment.loadCase();
-  },
-);
+watch([canManageOwnAssignments, canOverrideAssignments], ([canOwn, canOverride]) => {
+  if (!canOwn && !canOverride) {
+    assignment.resetCase();
+    leadAssignment.reset();
+    return;
+  }
+  if (!canOverride) leadAssignment.reset();
+  void assignment.loadCase();
+});
 
 watch(canReadSelectedAiSuspension, (allowed) => {
   if (allowed) {
@@ -3111,21 +2853,18 @@ watch(canReadSelectedAiSuspension, (allowed) => {
   aiSuspensionHistoryVisible.value = false;
 });
 
-watch(
-  [canReadSelectedInternalNotes, conversation.loading],
-  ([allowed, loading]) => {
-    if (allowed || loading) return;
-    purgeInternalNoteDraft();
-    internalNotes.reset();
-  },
-);
+watch([canReadSelectedInternalNotes, conversation.loading], ([allowed, loading]) => {
+  if (allowed || loading) return;
+  purgeInternalNoteDraft();
+  internalNotes.reset();
+});
 
 watch(
   [publicAttachmentAuthorityKey, conversation.loading],
   ([, loading]) => {
     if (loading) return;
     const capability = publicAttachmentCapabilities();
-    if (capability.state !== "AVAILABLE" || !capability.upload) {
+    if (capability.state !== 'AVAILABLE' || !capability.upload) {
       publicAttachments.purge();
       return;
     }
@@ -3139,7 +2878,7 @@ watch(
   ([, loading]) => {
     if (loading) return;
     const capability = noteAttachmentCapabilities();
-    if (capability.state !== "AVAILABLE" || !capability.upload) {
+    if (capability.state !== 'AVAILABLE' || !capability.upload) {
       noteAttachments.purge();
       return;
     }
@@ -3148,21 +2887,14 @@ watch(
   { immediate: true },
 );
 
-watch(
-  [canWriteSelectedInternalNotes, conversation.loading],
-  ([allowed, loading]) => {
-    if (allowed || loading || supportComposerMode.value !== "INTERNAL_NOTE")
-      return;
-    purgeInternalNoteDraft();
-  },
-);
+watch([canWriteSelectedInternalNotes, conversation.loading], ([allowed, loading]) => {
+  if (allowed || loading || supportComposerMode.value !== 'INTERNAL_NOTE') return;
+  purgeInternalNoteDraft();
+});
 
-watch(
-  [canReadSelectedInternalNoteHistory, conversation.loading],
-  ([allowed, loading]) => {
-    if (!allowed && !loading) internalNotes.closeHistory();
-  },
-);
+watch([canReadSelectedInternalNoteHistory, conversation.loading], ([allowed, loading]) => {
+  if (!allowed && !loading) internalNotes.closeHistory();
+});
 
 watch(hasKnowledgeReadPermission, (allowed, previousAllowed) => {
   if (allowed || !previousAllowed) return;
@@ -3180,22 +2912,18 @@ watch(
 );
 
 watch(
-  [
-    () => auth.user?.id,
-    hasSupportMacrosReadPermission,
-    hasSupportMacrosUsePermission,
-  ],
+  [() => auth.user?.id, hasSupportMacrosReadPermission, hasSupportMacrosUsePermission],
   ([actorId, canRead, canUse], [previousActorId]) => {
     if (actorId === previousActorId && canRead && canUse) return;
     if (knowledge.activeCitation.value) {
-      reply.draft.value = "";
+      reply.draft.value = '';
       publicKnowledgeDraftPurgeRevision.value += 1;
     }
     supportMacros.reset({ keepQuery: actorId === previousActorId });
     knowledge.purge({ keepQuery: actorId === previousActorId });
     replyTemplateGalleryVisible.value = false;
   },
-  { flush: "sync" },
+  { flush: 'sync' },
 );
 
 watch(selectedAiSuspensionKey, (selectionKey, previousSelectionKey) => {
@@ -3209,47 +2937,40 @@ watch(selectedAiSuspensionKey, (selectionKey, previousSelectionKey) => {
 watch(
   () => selectedAiSuspensionError.value?.kind,
   (kind) => {
-    if (kind !== "FORBIDDEN" && kind !== "NOT_FOUND") return;
+    if (kind !== 'FORBIDDEN' && kind !== 'NOT_FOUND') return;
     revokeSelectedAiSuspensionAccess();
   },
 );
 
-watch(
-  selectedInternalNotesAuthorityKey,
-  (authorityKey, previousAuthorityKey) => {
-    if (authorityKey === previousAuthorityKey) return;
-    internalNotesAccessDenied.value = false;
-    publicAttachmentsAccessDenied.value = false;
-    noteAttachmentsAccessDenied.value = false;
-    purgeInternalNoteDraft();
-    internalNotes.reset();
-  },
-);
+watch(selectedInternalNotesAuthorityKey, (authorityKey, previousAuthorityKey) => {
+  if (authorityKey === previousAuthorityKey) return;
+  internalNotesAccessDenied.value = false;
+  publicAttachmentsAccessDenied.value = false;
+  noteAttachmentsAccessDenied.value = false;
+  purgeInternalNoteDraft();
+  internalNotes.reset();
+});
 
 watch(
   selectedInternalNoteWatchKey,
   async (key, previousKey) => {
-    const [, previousCaseId] = previousKey?.split("\u0000") ?? [];
-    if (previousCaseId)
-      cmsRealtimeClient.unwatchSupportInternalNotes(previousCaseId);
-    const [, caseId, watch, read] = key.split("\u0000");
-    if (!caseId || watch !== "watch" || read !== "read") return;
+    const [, previousCaseId] = previousKey?.split('\u0000') ?? [];
+    if (previousCaseId) cmsRealtimeClient.unwatchSupportInternalNotes(previousCaseId);
+    const [, caseId, watch, read] = key.split('\u0000');
+    if (!caseId || watch !== 'watch' || read !== 'read') return;
     const joined = await cmsRealtimeClient.watchSupportInternalNotes(caseId);
-    if (joined && canReadSelectedInternalNotes.value)
-      await internalNotes.reconcile();
+    if (joined && canReadSelectedInternalNotes.value) await internalNotes.reconcile();
   },
   { immediate: true },
 );
 
 watch(selectedAssignmentAuthorityKey, (authorityKey, previousAuthorityKey) => {
   if (authorityKey === previousAuthorityKey) return;
-  const caseId = authorityKey.split("\u0000", 1)[0];
-  const previousCaseId = previousAuthorityKey?.split("\u0000", 1)[0];
-  if (caseId !== previousCaseId || !assignment.mutating.value)
-    assignment.resetCase();
+  const caseId = authorityKey.split('\u0000', 1)[0];
+  const previousCaseId = previousAuthorityKey?.split('\u0000', 1)[0];
+  if (caseId !== previousCaseId || !assignment.mutating.value) assignment.resetCase();
   if (caseId !== previousCaseId) leadAssignment.reset();
-  if (canManageOwnAssignments.value || canOverrideAssignments.value)
-    void assignment.loadCase();
+  if (canManageOwnAssignments.value || canOverrideAssignments.value) void assignment.loadCase();
 });
 
 watch(
@@ -3257,25 +2978,21 @@ watch(
   async (authorityKey, previousAuthorityKey) => {
     if (authorityKey === previousAuthorityKey) return;
     caseDesk.reset();
-    if (canReadSelectedCaseDesk.value)
-      await caseDesk.load().catch(() => undefined);
+    if (canReadSelectedCaseDesk.value) await caseDesk.load().catch(() => undefined);
   },
   { immediate: true },
 );
 
-watch(
-  selectedCaseDeskFreshnessKey,
-  async (freshnessKey, previousFreshnessKey) => {
-    if (
-      freshnessKey === previousFreshnessKey ||
-      !canReadSelectedCaseDesk.value ||
-      caseDesk.mutating.value ||
-      caseDesk.exactCase.value?.id !== conversation.selection.value?.case?.id
-    )
-      return;
-    await caseDesk.load().catch(() => undefined);
-  },
-);
+watch(selectedCaseDeskFreshnessKey, async (freshnessKey, previousFreshnessKey) => {
+  if (
+    freshnessKey === previousFreshnessKey ||
+    !canReadSelectedCaseDesk.value ||
+    caseDesk.mutating.value ||
+    caseDesk.exactCase.value?.id !== conversation.selection.value?.case?.id
+  )
+    return;
+  await caseDesk.load().catch(() => undefined);
+});
 
 watch(inboxMode, async () => {
   inbox.reset();
@@ -3320,11 +3037,9 @@ watch(
     const current = supportViews.selection.value;
     const same =
       requested?.kind === current?.kind &&
-      (requested?.kind === "SYSTEM"
-        ? requested.code ===
-          (current?.kind === "SYSTEM" ? current.code : undefined)
-        : requested?.id ===
-          (current?.kind === "SAVED" ? current.id : undefined));
+      (requested?.kind === 'SYSTEM'
+        ? requested.code === (current?.kind === 'SYSTEM' ? current.code : undefined)
+        : requested?.id === (current?.kind === 'SAVED' ? current.id : undefined));
     if (!same) void supportViews.load(requested);
   },
 );
@@ -3333,15 +3048,13 @@ watch(
   requestedSelectionKey,
   (selectionKey, previousSelectionKey) => {
     if (!selectionKey && selectionIntentKey.value) {
-      selectionIntentKey.value = "";
+      selectionIntentKey.value = '';
     }
     if (selectionKey) lastInboxSelectionKey.value = selectionKey;
     if (!selectionKey && previousSelectionKey && isMobileWorkspace.value) {
       void nextTick(() => {
-        [...document.querySelectorAll<HTMLElement>("[data-selection-key]")]
-          .find(
-            (element) => element.dataset.selectionKey === previousSelectionKey,
-          )
+        [...document.querySelectorAll<HTMLElement>('[data-selection-key]')]
+          .find((element) => element.dataset.selectionKey === previousSelectionKey)
           ?.focus({ preventScroll: true });
       });
     }
@@ -3356,12 +3069,12 @@ watch(
     aiSuspensionDialogVisible.value = false;
     aiSuspensionHistoryVisible.value = false;
     internalNotesVisible.value = false;
-    internalNoteDraft.value = "";
+    internalNoteDraft.value = '';
     if (knowledge.activeCitation.value) {
-      reply.draft.value = "";
+      reply.draft.value = '';
       publicKnowledgeDraftPurgeRevision.value += 1;
     }
-    supportComposerMode.value = "PUBLIC_REPLY";
+    supportComposerMode.value = 'PUBLIC_REPLY';
     assignment.resetCase();
     inspector.reset();
     externalWork.reset();
@@ -3383,7 +3096,7 @@ watch(
   ([requested, committed, loading, error]) => {
     const intent = selectionIntentKey.value;
     if (!intent || requested !== intent || loading) return;
-    if (committed === intent || error) selectionIntentKey.value = "";
+    if (committed === intent || error) selectionIntentKey.value = '';
   },
 );
 
@@ -3398,10 +3111,7 @@ watch(mobileInspectorRequested, (requested, previousRequested) => {
     void nextTick(() => {
       if (contextDrawerVisible.value) return;
       const trigger =
-        contextTrigger ??
-        document.querySelector<HTMLElement>(
-          ".conversation-pane .mobile-context",
-        );
+        contextTrigger ?? document.querySelector<HTMLElement>('.conversation-pane .mobile-context');
       if (trigger?.isConnected) trigger.focus({ preventScroll: true });
     });
   }
@@ -3410,17 +3120,14 @@ watch(mobileInspectorRequested, (requested, previousRequested) => {
 watch(mobileInspectorVisible, (visible) => {
   if (!visible) return;
   void nextTick(() => {
-    document
-      .querySelector<HTMLElement>(".mobile-inspector-back")
-      ?.focus({ preventScroll: true });
+    document.querySelector<HTMLElement>('.mobile-inspector-back')?.focus({ preventScroll: true });
   });
 });
 
 watch(contextDrawerVisible, (visible, previousVisible) => {
   if (visible || !previousVisible) return;
   void nextTick(() => {
-    if (contextTrigger?.isConnected)
-      contextTrigger.focus({ preventScroll: true });
+    if (contextTrigger?.isConnected) contextTrigger.focus({ preventScroll: true });
   });
 });
 
@@ -3433,13 +3140,12 @@ watch(
   () => {
     reply.syncSelection();
     supportMacros.reset({ keepQuery: true });
-    if (reply.outcomeState.value === "CHECKING_OUTCOME")
-      void reply.checkOutcome();
+    if (reply.outcomeState.value === 'CHECKING_OUTCOME') void reply.checkOutcome();
     replyTranslationRequested.value = false;
     replyTemplateGalleryVisible.value = false;
     translationSettingsVisible.value = false;
     setSendWithoutTranslationVisible(false);
-    messageViewMode.value = "ORIGINAL";
+    messageViewMode.value = 'ORIGINAL';
     translation.reset();
     if (canManageTranslation.value) void ensureReplyTranslationLoaded();
   },
@@ -3467,23 +3173,18 @@ watch(
 );
 
 watch(
-  [
-    () => auth.project?.id,
-    () => conversation.selection.value?.conversation?.id,
-  ],
+  [() => auth.project?.id, () => conversation.selection.value?.conversation?.id],
   ([projectId, conversationId]) => {
-    void workspaceLive
-      .setSelection(projectId, conversationId)
-      .catch(() => undefined);
+    void workspaceLive.setSelection(projectId, conversationId).catch(() => undefined);
   },
   { immediate: true },
 );
 
 onBeforeUnmount(() => {
   clearSupportSearchTimer();
-  window.removeEventListener("keydown", handleWorkspaceKeydown);
-  mobileWorkspaceMedia?.removeEventListener("change", syncMobileWorkspace);
-  compactWorkspaceMedia?.removeEventListener("change", syncCompactWorkspace);
+  window.removeEventListener('keydown', handleWorkspaceKeydown);
+  mobileWorkspaceMedia?.removeEventListener('change', syncMobileWorkspace);
+  compactWorkspaceMedia?.removeEventListener('change', syncCompactWorkspace);
   mobileWorkspaceMedia = null;
   compactWorkspaceMedia = null;
   stopInternalNotesReconciliation();
@@ -3552,20 +3253,14 @@ onBeforeUnmount(() => {
             :aria-label="availabilityButtonLabel"
             :title="availabilityButtonLabel"
             icon="pi pi-user"
-            :data-availability-state="
-              availability.availability.value?.effectiveState ?? 'UNKNOWN'
-            "
+            :data-availability-state="availability.availability.value?.effectiveState ?? 'UNKNOWN'"
             severity="secondary"
             outlined
             @click="availabilityDialogVisible = true"
           />
           <Button
             :label="workspaceFullscreen ? 'Свернуть' : 'На весь экран'"
-            :icon="
-              workspaceFullscreen
-                ? 'pi pi-window-minimize'
-                : 'pi pi-window-maximize'
-            "
+            :icon="workspaceFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
             severity="secondary"
             outlined
             :disabled="workspacePresentationTransitioning"
@@ -3591,17 +3286,12 @@ onBeforeUnmount(() => {
         </div>
       </header>
 
-      <SupportAssignmentOfferTray
-        v-if="canManageRoutingOffers"
-        :controller="assignment"
-      />
+      <SupportAssignmentOfferTray v-if="canManageRoutingOffers" :controller="assignment" />
 
       <div
         class="support-workspace card"
         :class="{
-          'has-route-selection': Boolean(
-            requestedSelectionKey || selectionIntentKey,
-          ),
+          'has-route-selection': Boolean(requestedSelectionKey || selectionIntentKey),
           'has-mobile-inspector': mobileInspectorVisible,
         }"
       >
@@ -3619,29 +3309,15 @@ onBeforeUnmount(() => {
           :can-search="canUseSupportSearch"
           :search-state="searchState"
           :search-active="searchActive"
-          :search-items="
-            viewActive ? supportViews.items.value : supportSearch.items.value
-          "
-          :search-loading="
-            viewActive
-              ? supportViews.loading.value
-              : supportSearch.loading.value
-          "
-          :search-error="
-            viewActive ? supportViews.error.value : supportSearchVisibleError
-          "
+          :search-items="viewActive ? supportViews.items.value : supportSearch.items.value"
+          :search-loading="viewActive ? supportViews.loading.value : supportSearch.loading.value"
+          :search-error="viewActive ? supportViews.error.value : supportSearchVisibleError"
           :search-failure="supportSearch.failure.value"
           :search-freshness="
-            viewActive
-              ? supportViews.freshness.value
-              : supportSearch.freshness.value
+            viewActive ? supportViews.freshness.value : supportSearch.freshness.value
           "
           :search-has-more="
-            Boolean(
-              viewActive
-                ? supportViews.nextCursor.value
-                : supportSearch.nextCursor.value,
-            )
+            Boolean(viewActive ? supportViews.nextCursor.value : supportSearch.nextCursor.value)
           "
           :view-system="supportViews.system.value"
           :view-saved="supportViews.saved.value"
@@ -3658,9 +3334,7 @@ onBeforeUnmount(() => {
           @submit-search="runSupportSearch"
           @close-search="closeSupportSearch"
           @select-search="openSupportSearchResult"
-          @load-more-search="
-            viewActive ? supportViews.loadMore() : supportSearch.loadMore()
-          "
+          @load-more-search="viewActive ? supportViews.loadMore() : supportSearch.loadMore()"
           @select-view="selectSupportView"
           @create-view="createSupportView"
           @replace-view="replaceSupportView"
@@ -3723,16 +3397,16 @@ onBeforeUnmount(() => {
                 <span class="eyebrow">{{
                   selectedCase
                     ? `Обращение #${selectedCase.projectSequence}`
-                    : selectedConversation.status === "OPEN"
-                      ? "Активный диалог"
-                      : "Архивный диалог"
+                    : selectedConversation.status === 'OPEN'
+                      ? 'Активный диалог'
+                      : 'Архивный диалог'
                 }}</span>
                 <h2>{{ selectedCase?.title ?? selectedConversation.title }}</h2>
                 <p>
                   {{
                     selectedCase
                       ? `${selectedCase.groupCode} · ${selectedConversation.title}`
-                      : "Безопасный контекст доступен в панели диалога."
+                      : 'Безопасный контекст доступен в панели диалога.'
                   }}
                 </p>
               </div>
@@ -3746,14 +3420,8 @@ onBeforeUnmount(() => {
                   @click="openConversationContext"
                 />
                 <Tag
-                  :value="
-                    selectedConversation.status === 'OPEN' ? 'Активен' : 'Архив'
-                  "
-                  :severity="
-                    selectedConversation.status === 'OPEN'
-                      ? 'success'
-                      : 'secondary'
-                  "
+                  :value="selectedConversation.status === 'OPEN' ? 'Активен' : 'Архив'"
+                  :severity="selectedConversation.status === 'OPEN' ? 'success' : 'secondary'"
                 />
               </div>
             </header>
@@ -3769,11 +3437,7 @@ onBeforeUnmount(() => {
               @history="aiSuspensionHistoryVisible = true"
             />
 
-            <Message
-              v-if="conversation.error.value"
-              severity="error"
-              :closable="false"
-            >
+            <Message v-if="conversation.error.value" severity="error" :closable="false">
               {{ conversation.error.value }}
             </Message>
             <SupportConversationPane
@@ -3788,9 +3452,7 @@ onBeforeUnmount(() => {
               :ai-suspension="supportConversationAiSuspension"
               :collaboration="supportConversationCollaboration"
               :internal-notes="supportConversationInternalNotes"
-              :can-download-public-attachments="
-                publicAttachmentCapabilities().download
-              "
+              :can-download-public-attachments="publicAttachmentCapabilities().download"
               :delivery-actions="messageDelivery.deliveryActions.value"
               @load-older="conversation.loadOlder"
               @load-newer="conversation.loadNewer"
@@ -3844,9 +3506,7 @@ onBeforeUnmount(() => {
               :visible="replyTemplateGalleryVisible"
               :macros="supportMacros.items.value"
               :query="supportMacros.query.value"
-              :loading="
-                supportMacros.loading.value || supportMacros.loadingMore.value
-              "
+              :loading="supportMacros.loading.value || supportMacros.loadingMore.value"
               :applying-id="supportMacros.applyingId.value"
               :error="supportMacros.error.value"
               :has-more="Boolean(supportMacros.nextCursor.value)"
@@ -3854,9 +3514,7 @@ onBeforeUnmount(() => {
               @close="replyTemplateGalleryVisible = false"
               @select="applySupportReplyTemplate"
               @search="searchSupportMacros"
-              @load-more="
-                supportMacros.load(supportMacros.nextCursor.value ?? undefined)
-              "
+              @load-more="supportMacros.load(supportMacros.nextCursor.value ?? undefined)"
             />
             <Message
               v-if="canManageTranslation && translation.error.value"
@@ -3898,12 +3556,10 @@ onBeforeUnmount(() => {
                   {{
                     translation.targetLocale.value
                       ? `перевода на ${translation.targetLocale.value.toUpperCase()}`
-                      : "перевода"
+                      : 'перевода'
                   }}.
                 </Message>
-                <label for="support-send-without-translation-reason">
-                  Причина исключения
-                </label>
+                <label for="support-send-without-translation-reason"> Причина исключения </label>
                 <textarea
                   id="support-send-without-translation-reason"
                   v-model="sendWithoutTranslationReason"
@@ -3947,9 +3603,7 @@ onBeforeUnmount(() => {
                   text
                   @click="backToInbox"
                 />
-                <span class="eyebrow"
-                  >Обращение #{{ selectedCase.projectSequence }}</span
-                >
+                <span class="eyebrow">Обращение #{{ selectedCase.projectSequence }}</span>
                 <h2>{{ selectedCase.title }}</h2>
                 <p>Рабочий контекст обращения загружен с сервера.</p>
               </div>
@@ -3966,16 +3620,12 @@ onBeforeUnmount(() => {
               <i class="pi pi-comments" aria-hidden="true" />
               <h2>У обращения нет связанного чата</h2>
               <p>
-                Обращение остаётся доступно как отдельный рабочий объект. Чат
-                здесь не создаётся и не подменяется другим диалогом.
+                Обращение остаётся доступно как отдельный рабочий объект. Чат здесь не создаётся и
+                не подменяется другим диалогом.
               </p>
             </div>
           </div>
-          <div
-            v-else-if="inbox.loading.value"
-            class="empty-selection"
-            aria-busy="true"
-          >
+          <div v-else-if="inbox.loading.value" class="empty-selection" aria-busy="true">
             <i class="pi pi-inbox" aria-hidden="true" />
             <h2>Загружаем входящие</h2>
             <p>Список появится здесь без перестройки рабочего места.</p>
@@ -3984,11 +3634,7 @@ onBeforeUnmount(() => {
             <i class="pi pi-comments" aria-hidden="true" />
             <template v-if="route.params.conversationId || route.params.caseId">
               <h2>
-                {{
-                  route.params.caseId
-                    ? "Обращение недоступно"
-                    : "Диалог недоступен"
-                }}
+                {{ route.params.caseId ? 'Обращение недоступно' : 'Диалог недоступен' }}
               </h2>
               <p>Он не найден или у вас больше нет прав на его просмотр.</p>
             </template>
@@ -4061,9 +3707,7 @@ onBeforeUnmount(() => {
         />
       </Dialog>
       <SupportInternalNotesDialog
-        v-if="
-          canReadSelectedInternalNotes && conversation.selection.value?.case
-        "
+        v-if="canReadSelectedInternalNotes && conversation.selection.value?.case"
         v-model:visible="internalNotesVisible"
         :notes="internalNotes.notes.value"
         :next-cursor="internalNotes.nextCursor.value"
@@ -4084,26 +3728,18 @@ onBeforeUnmount(() => {
         :history-loading-more="internalNotes.historyLoadingMore.value"
         :history-error="internalNotes.historyError.value"
         @reload="internalNotes.load"
-        @load-more="
-          internalNotes.load(internalNotes.nextCursor.value ?? undefined)
-        "
+        @load-more="internalNotes.load(internalNotes.nextCursor.value ?? undefined)"
         @open-history="internalNotes.openHistory"
         @close-history="internalNotes.closeHistory"
         @load-history-more="
-          internalNotes.loadHistory(
-            internalNotes.historyNextCursor.value ?? undefined,
-          )
+          internalNotes.loadHistory(internalNotes.historyNextCursor.value ?? undefined)
         "
         @correct="correctInternalNote"
         @tombstone="tombstoneInternalNote"
         @download-attachment="noteAttachments.download"
       />
       <ConversationAISuspensionDialog
-        v-if="
-          canManageSelectedAiSuspension &&
-          selectedConversation &&
-          selectedAiSuspensionEntry
-        "
+        v-if="canManageSelectedAiSuspension && selectedConversation && selectedAiSuspensionEntry"
         v-model:visible="aiSuspensionDialogVisible"
         :mode="aiSuspensionDialogMode"
         :conversation-label="selectedConversation.title"
@@ -4114,11 +3750,7 @@ onBeforeUnmount(() => {
         @submit="submitAiSuspension"
       />
       <ConversationAISuspensionHistory
-        v-if="
-          canReadSelectedAiSuspension &&
-          selectedConversation &&
-          conversation.selection.value
-        "
+        v-if="canReadSelectedAiSuspension && selectedConversation && conversation.selection.value"
         v-model:visible="aiSuspensionHistoryVisible"
         :project-id="auth.project?.id ?? ''"
         :end-user-id="conversation.selection.value.endUser.id"
@@ -4155,11 +3787,10 @@ onBeforeUnmount(() => {
 .header-actions :deep(.p-button-secondary.p-button-outlined) {
   color: var(--text-primary);
 }
-.availability-button[data-availability-state="AVAILABLE"]
-  :deep(.p-button-icon) {
+.availability-button[data-availability-state='AVAILABLE'] :deep(.p-button-icon) {
   color: var(--status-success-text);
 }
-.availability-button[data-availability-state="OFFLINE"] :deep(.p-button-icon) {
+.availability-button[data-availability-state='OFFLINE'] :deep(.p-button-icon) {
   color: var(--text-muted);
 }
 .conversation-header__actions {
@@ -4224,10 +3855,7 @@ onBeforeUnmount(() => {
   min-height: 620px;
   padding: 0;
   display: grid;
-  grid-template-columns: minmax(270px, 310px) minmax(480px, 1fr) minmax(
-      320px,
-      360px
-    );
+  grid-template-columns: minmax(270px, 310px) minmax(480px, 1fr) minmax(320px, 360px);
   overflow: hidden;
   border-color: color-mix(in srgb, var(--line) 82%, transparent);
   box-shadow: var(--shadow-raised);
@@ -4466,11 +4094,7 @@ onBeforeUnmount(() => {
 }
 .is-outbound .conversation-loading-bubble {
   border-radius: 16px 16px 5px 16px;
-  background: color-mix(
-    in srgb,
-    var(--status-accent-soft) 38%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--status-accent-soft) 38%, var(--surface-card));
 }
 .conversation-loading-bubble i {
   width: 100%;
@@ -4511,11 +4135,7 @@ onBeforeUnmount(() => {
   gap: 10px;
   color: var(--text-secondary);
   text-align: center;
-  background: radial-gradient(
-    circle at center,
-    var(--brand-soft),
-    transparent 46%
-  );
+  background: radial-gradient(circle at center, var(--brand-soft), transparent 46%);
 }
 .case-channel-empty i {
   width: 48px;
@@ -4652,9 +4272,7 @@ onBeforeUnmount(() => {
     padding: 8px 10px;
     gap: 8px;
   }
-  .support-workspace-page--full-tab
-    .support-workspace-header
-    > div:first-child {
+  .support-workspace-page--full-tab .support-workspace-header > div:first-child {
     width: 100%;
   }
   .support-workspace-page--full-tab .support-workspace-header h1 {
@@ -4699,10 +4317,7 @@ onBeforeUnmount(() => {
     max-width: 128px;
     padding: 0 8px;
   }
-  .support-workspace-page--full-tab
-    .header-actions
-    .availability-button
-    :deep(.p-button-label) {
+  .support-workspace-page--full-tab .header-actions .availability-button :deep(.p-button-label) {
     position: static;
     width: auto;
     height: auto;
@@ -4720,9 +4335,7 @@ onBeforeUnmount(() => {
     height: auto;
     display: block;
   }
-  .support-workspace-page--full-tab
-    .support-workspace.has-route-selection
-    .conversation-pane,
+  .support-workspace-page--full-tab .support-workspace.has-route-selection .conversation-pane,
   .support-workspace-page--full-tab
     .support-workspace:not(.has-route-selection)
     .support-inbox-pane {
@@ -4753,10 +4366,7 @@ onBeforeUnmount(() => {
     align-items: center;
     padding: 4px 8px;
   }
-  .support-workspace-page--full-tab
-    .conversation-header
-    > div:first-child
-    > :not(.mobile-back) {
+  .support-workspace-page--full-tab .conversation-header > div:first-child > :not(.mobile-back) {
     display: none;
   }
   .support-workspace-page--full-tab .mobile-back {

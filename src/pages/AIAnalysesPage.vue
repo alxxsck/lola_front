@@ -1,29 +1,22 @@
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  watch,
-} from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import Drawer from "primevue/drawer";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { projectAIAnalysesRepository } from "@/features/project-ai-analyses/api/project-ai-analyses-repository";
-import AIAnalysisCard from "@/features/project-ai-analyses/ui/AIAnalysisCard.vue";
-import AIAnalysisDetailPanel from "@/features/project-ai-analyses/ui/AIAnalysisDetailPanel.vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Drawer from 'primevue/drawer';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { projectAIAnalysesRepository } from '@/features/project-ai-analyses/api/project-ai-analyses-repository';
+import AIAnalysisCard from '@/features/project-ai-analyses/ui/AIAnalysisCard.vue';
+import AIAnalysisDetailPanel from '@/features/project-ai-analyses/ui/AIAnalysisDetailPanel.vue';
 import AIAnalysisFilters, {
   type AIAnalysisFiltersModel,
-} from "@/features/project-ai-analyses/ui/AIAnalysisFilters.vue";
+} from '@/features/project-ai-analyses/ui/AIAnalysisFilters.vue';
 import type {
   ProjectAIAnalysisDetailResponseDto,
   ProjectAIAnalysisListItemDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -36,8 +29,8 @@ const loading = ref(false);
 const loadingMore = ref(false);
 const detailLoading = ref(false);
 const cancelling = ref(false);
-const error = ref("");
-const detailError = ref("");
+const error = ref('');
+const detailError = ref('');
 let generation = 0;
 let listGeneration = 0;
 let detailGeneration = 0;
@@ -65,32 +58,26 @@ let cancellationAttempt: CancellationAttempt | null = null;
 
 const projectId = computed(() => auth.project?.id ?? null);
 const analysisId = computed(() =>
-  typeof route.params.analysisId === "string" ? route.params.analysisId : null,
+  typeof route.params.analysisId === 'string' ? route.params.analysisId : null,
 );
-const permissionCodes = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
+const permissionCodes = computed(() => auth.project?.effectivePermissionCodes ?? []);
 const canReadAnalyses = computed(() =>
-  hasProjectPermission(permissionCodes.value, "project.ai_analyses.read"),
+  hasProjectPermission(permissionCodes.value, 'project.ai_analyses.read'),
 );
 const canReadCost = computed(() =>
-  hasProjectPermission(permissionCodes.value, "project.ai_analysis_cost.read"),
+  hasProjectPermission(permissionCodes.value, 'project.ai_analysis_cost.read'),
 );
 const canReadCmsUsers = computed(
-  () =>
-    auth.user?.platformPermissionCodes?.includes("platform.cms_users.read") ??
-    false,
+  () => auth.user?.platformPermissionCodes?.includes('platform.cms_users.read') ?? false,
 );
 const canManage = computed(() =>
-  hasProjectPermission(permissionCodes.value, "project.ai_analyses.manage"),
+  hasProjectPermission(permissionCodes.value, 'project.ai_analyses.manage'),
 );
 
-function scheduleRefreshDelay(
-  schedule: RefreshableSchedule | null | undefined,
-): number | null {
+function scheduleRefreshDelay(schedule: RefreshableSchedule | null | undefined): number | null {
   if (!schedule) return null;
-  if (schedule.state === "CLAIMED") return FAST_REFRESH_INTERVAL_MS;
-  if (schedule.state !== "ACTIVE") return null;
+  if (schedule.state === 'CLAIMED') return FAST_REFRESH_INTERVAL_MS;
+  if (schedule.state !== 'ACTIVE') return null;
   const nextRunAt = schedule.nextRunAt ?? schedule.runAt;
   if (!nextRunAt) return MAX_SCHEDULE_REFRESH_INTERVAL_MS;
   const timestamp = Date.parse(nextRunAt);
@@ -102,9 +89,7 @@ function scheduleRefreshDelay(
 }
 
 function minimumRefreshDelay(delays: Array<number | null>): number | null {
-  const activeDelays = delays.filter(
-    (delay): delay is number => delay !== null,
-  );
+  const activeDelays = delays.filter((delay): delay is number => delay !== null);
   return activeDelays.length > 0 ? Math.min(...activeDelays) : null;
 }
 
@@ -112,7 +97,7 @@ function listRefreshDelay(): number | null {
   if (loadedPageCount > MAX_AUTO_REFRESH_PAGES) return null;
   return minimumRefreshDelay(
     items.value.flatMap((item) => [
-      ["QUEUED", "RUNNING"].includes(item.latestRun?.status ?? "")
+      ['QUEUED', 'RUNNING'].includes(item.latestRun?.status ?? '')
         ? FAST_REFRESH_INTERVAL_MS
         : null,
       scheduleRefreshDelay(item.schedule),
@@ -124,9 +109,7 @@ function detailRefreshDelay(): number | null {
   const value = detail.value;
   if (!value || value.analysis.compatibility?.readOnly) return null;
   return minimumRefreshDelay([
-    ["QUEUED", "RUNNING"].includes(value.runs[0]?.status ?? "")
-      ? FAST_REFRESH_INTERVAL_MS
-      : null,
+    ['QUEUED', 'RUNNING'].includes(value.runs[0]?.status ?? '') ? FAST_REFRESH_INTERVAL_MS : null,
     scheduleRefreshDelay(value.schedule),
   ]);
 }
@@ -147,7 +130,7 @@ async function loadList(
   const appendCursor = append ? nextCursor.value : null;
   if (append) loadingMore.value = true;
   else if (!silent) loading.value = true;
-  if (!silent) error.value = "";
+  if (!silent) error.value = '';
   try {
     let page = await projectAIAnalysesRepository.list(currentProjectId, {
       limit: 30,
@@ -201,13 +184,9 @@ async function loadList(
     )
       return;
     if (silent) return;
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось загрузить анализы";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить анализы';
   } finally {
-    if (
-      requestGeneration === generation &&
-      requestListGeneration === listGeneration
-    ) {
+    if (requestGeneration === generation && requestListGeneration === listGeneration) {
       if (append) loadingMore.value = false;
       else if (!silent) loading.value = false;
     }
@@ -220,17 +199,14 @@ async function loadDetail(silent = false): Promise<void> {
   const currentAnalysisId = analysisId.value;
   if (!currentProjectId || !currentAnalysisId || !canReadAnalyses.value) {
     detail.value = null;
-    detailError.value = "";
+    detailError.value = '';
     return;
   }
   const requestGeneration = generation;
   if (!silent) detailLoading.value = true;
-  if (!silent) detailError.value = "";
+  if (!silent) detailError.value = '';
   try {
-    const response = await projectAIAnalysesRepository.detail(
-      currentProjectId,
-      currentAnalysisId,
-    );
+    const response = await projectAIAnalysesRepository.detail(currentProjectId, currentAnalysisId);
     if (
       requestGeneration !== generation ||
       requestDetailGeneration !== detailGeneration ||
@@ -250,9 +226,7 @@ async function loadDetail(silent = false): Promise<void> {
     if (silent) return;
     detail.value = null;
     detailError.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить детали анализа";
+      cause instanceof Error ? cause.message : 'Не удалось загрузить детали анализа';
   } finally {
     if (
       requestGeneration === generation &&
@@ -285,8 +259,7 @@ function clearRefreshTimers(): void {
 function scheduleListRefresh(): void {
   clearListRefreshTimer();
   const delay = listRefreshDelay();
-  if (!mounted || document.visibilityState !== "visible" || delay === null)
-    return;
+  if (!mounted || document.visibilityState !== 'visible' || delay === null) return;
   listRefreshTimer = window.setTimeout(async () => {
     listRefreshTimer = null;
     if (loadingMore.value) {
@@ -301,8 +274,7 @@ function scheduleListRefresh(): void {
 function scheduleDetailRefresh(): void {
   clearDetailRefreshTimer();
   const delay = detailRefreshDelay();
-  if (!mounted || document.visibilityState !== "visible" || delay === null)
-    return;
+  if (!mounted || document.visibilityState !== 'visible' || delay === null) return;
   detailRefreshTimer = window.setTimeout(async () => {
     detailRefreshTimer = null;
     await loadDetail(true);
@@ -317,7 +289,7 @@ function scheduleRefresh(): void {
 
 async function refreshVisibleAnalyses(): Promise<void> {
   clearRefreshTimers();
-  if (!mounted || document.visibilityState !== "visible") return;
+  if (!mounted || document.visibilityState !== 'visible') return;
   await Promise.all([
     loadingMore.value || listRefreshDelay() === null
       ? Promise.resolve()
@@ -335,7 +307,7 @@ async function refreshAnalyses(): Promise<void> {
 }
 
 function handleVisibilityChange(): void {
-  if (document.visibilityState === "visible") void refreshVisibleAnalyses();
+  if (document.visibilityState === 'visible') void refreshVisibleAnalyses();
   else clearRefreshTimers();
 }
 
@@ -382,7 +354,7 @@ async function cancelAnalysis(target: CancelTarget): Promise<void> {
   const attempt = cancellationAttempt;
   const requestGeneration = generation;
   cancelling.value = true;
-  detailError.value = "";
+  detailError.value = '';
   try {
     await projectAIAnalysesRepository.cancel(attempt);
     if (
@@ -401,8 +373,7 @@ async function cancelAnalysis(target: CancelTarget): Promise<void> {
       analysisId.value !== currentAnalysisId
     )
       return;
-    detailError.value =
-      cause instanceof Error ? cause.message : "Не удалось отменить анализ";
+    detailError.value = cause instanceof Error ? cause.message : 'Не удалось отменить анализ';
   } finally {
     if (requestGeneration === generation) cancelling.value = false;
   }
@@ -410,21 +381,15 @@ async function cancelAnalysis(target: CancelTarget): Promise<void> {
 
 async function focusDetail(): Promise<void> {
   await nextTick();
-  document
-    .querySelector<HTMLElement>('[data-testid="ai-analysis-detail"]')
-    ?.focus();
+  document.querySelector<HTMLElement>('[data-testid="ai-analysis-detail"]')?.focus();
 }
 
 async function closeDetail(): Promise<void> {
   const selectedId = analysisId.value;
-  await router.push({ name: "ai-analyses" });
+  await router.push({ name: 'ai-analyses' });
   await nextTick();
   if (selectedId)
-    document
-      .querySelector<HTMLElement>(
-        `[data-analysis-id="${selectedId}"] .open-label`,
-      )
-      ?.focus();
+    document.querySelector<HTMLElement>(`[data-analysis-id="${selectedId}"] .open-label`)?.focus();
 }
 
 watch(projectId, async () => {
@@ -483,16 +448,16 @@ watch(canReadAnalyses, async (allowed) => {
   detailLoading.value = false;
   cancelling.value = false;
   cancellationAttempt = null;
-  error.value = "";
-  detailError.value = "";
-  await router.push({ name: "overview" });
+  error.value = '';
+  detailError.value = '';
+  await router.push({ name: 'overview' });
 });
 
 onMounted(async () => {
   mounted = true;
-  document.addEventListener("visibilitychange", handleVisibilityChange);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
   if (!canReadAnalyses.value) {
-    await router.push({ name: "overview" });
+    await router.push({ name: 'overview' });
     return;
   }
   await refreshAnalyses();
@@ -501,7 +466,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   mounted = false;
   clearRefreshTimers();
-  document.removeEventListener("visibilitychange", handleVisibilityChange);
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
   generation += 1;
   detailGeneration += 1;
 });
@@ -514,9 +479,8 @@ onBeforeUnmount(() => {
         <div class="eyebrow">AI workspace</div>
         <h1>AI-анализы</h1>
         <p class="subtitle">
-          Все разовые и отложенные запросы проекта: кто запустил, какие данные
-          использованы, каков результат и, при наличии доступа, сколько это
-          стоило.
+          Все разовые и отложенные запросы проекта: кто запустил, какие данные использованы, каков
+          результат и, при наличии доступа, сколько это стоило.
         </p>
       </div>
       <div class="header-actions">
@@ -572,8 +536,8 @@ onBeforeUnmount(() => {
           <span><i class="pi pi-sparkles" /></span>
           <h2>Анализов пока нет</h2>
           <p>
-            Задайте Retenive вопрос на странице обзора. Здесь появится
-            прозрачная запись с результатом, источниками и атрибуцией.
+            Задайте Retenive вопрос на странице обзора. Здесь появится прозрачная запись с
+            результатом, источниками и атрибуцией.
           </p>
         </div>
         <AIAnalysisCard

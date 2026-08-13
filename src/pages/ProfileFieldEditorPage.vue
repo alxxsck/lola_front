@@ -1,42 +1,42 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, toRaw, watch } from "vue";
-import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Textarea from "primevue/textarea";
-import ToggleSwitch from "primevue/toggleswitch";
-import { useToast } from "primevue/usetoast";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
+import { computed, nextTick, onMounted, ref, toRaw, watch } from 'vue';
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import InputNumber from 'primevue/inputnumber';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Textarea from 'primevue/textarea';
+import ToggleSwitch from 'primevue/toggleswitch';
+import { useToast } from 'primevue/usetoast';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { attributeContractRepository } from '@/features/end-user-attributes/api/attribute-contract-repository';
 import {
   createContractField,
   fieldNeedsPurpose,
   parseAllowedValues,
   validateContractDocument,
-} from "@/features/end-user-attributes/model/contract-domain";
+} from '@/features/end-user-attributes/model/contract-domain';
 import {
   applyProfileFieldPreset,
   profileFieldPreset,
   profileFieldPresets,
   type PresetSuggestedIdentity,
   type ProfileFieldKind,
-} from "@/features/end-user-attributes/model/profile-field-presets";
+} from '@/features/end-user-attributes/model/profile-field-presets';
 import {
   readDemoContractDraft,
   writeDemoContractDraft,
-} from "@/features/end-user-attributes/model/demo-draft-storage";
-import { repository } from "@/shared/api/repository";
+} from '@/features/end-user-attributes/model/demo-draft-storage';
+import { repository } from '@/shared/api/repository';
 import type {
   AttributeContractDraftFieldDto,
   AttributeContractWorkspaceResponseDto,
-} from "@/shared/api/generated/models";
-import { canonicalLocale, localeDisplayName } from "@/shared/lib/locale";
+} from '@/shared/api/generated/models';
+import { canonicalLocale, localeDisplayName } from '@/shared/lib/locale';
 
 const route = useRoute();
 const router = useRouter();
@@ -44,44 +44,44 @@ const auth = useAuthStore();
 const toast = useToast();
 const loading = ref(true);
 const saving = ref(false);
-const error = ref("");
+const error = ref('');
 const fieldErrors = ref<Record<string, string>>({});
 const workspace = ref<AttributeContractWorkspaceResponseDto | null>(null);
 const editingIndex = ref<number | null>(null);
 const form = ref<AttributeContractDraftFieldDto>(createContractField());
-const cmsReadAccess = computed<"HIDDEN" | "BASE" | "RESTRICTED">({
+const cmsReadAccess = computed<'HIDDEN' | 'BASE' | 'RESTRICTED'>({
   get: () => {
     const policy = form.value.policies.cmsRead;
-    return policy.mode === "HIDDEN" ? "HIDDEN" : (policy.access ?? "BASE");
+    return policy.mode === 'HIDDEN' ? 'HIDDEN' : (policy.access ?? 'BASE');
   },
-  set: (access: "HIDDEN" | "BASE" | "RESTRICTED") => {
+  set: (access: 'HIDDEN' | 'BASE' | 'RESTRICTED') => {
     form.value.policies.cmsRead =
-      access === "HIDDEN" ? { mode: "HIDDEN" } : { mode: "VISIBLE", access };
+      access === 'HIDDEN' ? { mode: 'HIDDEN' } : { mode: 'VISIBLE', access };
   },
 });
-const allowedValuesInput = ref("");
-const localeInput = ref("");
+const allowedValuesInput = ref('');
+const localeInput = ref('');
 const selectedFieldKind = ref<ProfileFieldKind | null>(null);
 const suggestedIdentity = ref<PresetSuggestedIdentity | null>(null);
 const pendingPreset = ref<ProfileFieldKind | null>(null);
 const presetChangeSummary = ref<string[]>([]);
-const baseline = ref("");
+const baseline = ref('');
 
 interface PresetSessionDraft {
-  valueType: AttributeContractDraftFieldDto["valueType"];
-  constraints: AttributeContractDraftFieldDto["constraints"];
-  semanticRole: AttributeContractDraftFieldDto["semanticRole"];
+  valueType: AttributeContractDraftFieldDto['valueType'];
+  constraints: AttributeContractDraftFieldDto['constraints'];
+  semanticRole: AttributeContractDraftFieldDto['semanticRole'];
   allowedValuesInput: string;
   suggestedIdentity: PresetSuggestedIdentity | null;
 }
 
 const presetDrafts = new Map<ProfileFieldKind, PresetSessionDraft>();
 
-const isEditing = computed(() => route.name === "profile-field-edit");
+const isEditing = computed(() => route.name === 'profile-field-edit');
 const canEdit = computed(() =>
   hasProjectPermission(
     auth.project?.effectivePermissionCodes ?? [],
-    "project.profile_contract.write",
+    'project.profile_contract.write',
   ),
 );
 const dirty = computed(
@@ -94,44 +94,44 @@ const dirty = computed(
     }) !== baseline.value,
 );
 const valueTypes = [
-  { value: "STRING", label: "Текст" },
-  { value: "BOOLEAN", label: "Да или нет" },
-  { value: "INTEGER", label: "Целое число" },
-  { value: "DECIMAL", label: "Десятичное число" },
-  { value: "DATETIME", label: "Дата и время" },
-  { value: "DATE", label: "Дата" },
-  { value: "COUNTRY_CODE", label: "Страна" },
-  { value: "CURRENCY_CODE", label: "Валюта" },
+  { value: 'STRING', label: 'Текст' },
+  { value: 'BOOLEAN', label: 'Да или нет' },
+  { value: 'INTEGER', label: 'Целое число' },
+  { value: 'DECIMAL', label: 'Десятичное число' },
+  { value: 'DATETIME', label: 'Дата и время' },
+  { value: 'DATE', label: 'Дата' },
+  { value: 'COUNTRY_CODE', label: 'Страна' },
+  { value: 'CURRENCY_CODE', label: 'Валюта' },
 ];
 const requirementOptions = [
-  { value: "OPTIONAL", label: "Можно не передавать" },
+  { value: 'OPTIONAL', label: 'Можно не передавать' },
   {
-    value: "REQUIRED_WARN",
-    label: "Предупреждать, если значения нет",
+    value: 'REQUIRED_WARN',
+    label: 'Предупреждать, если значения нет',
   },
   {
-    value: "REQUIRED_ENFORCED",
-    label: "Не принимать профиль без значения",
+    value: 'REQUIRED_ENFORCED',
+    label: 'Не принимать профиль без значения',
   },
 ];
 const classificationOptions = [
-  { value: "INTERNAL", label: "Служебные данные" },
-  { value: "PERSONAL", label: "Персональные данные" },
-  { value: "SENSITIVE", label: "Чувствительные данные" },
+  { value: 'INTERNAL', label: 'Служебные данные' },
+  { value: 'PERSONAL', label: 'Персональные данные' },
+  { value: 'SENSITIVE', label: 'Чувствительные данные' },
 ];
 const cmsReadOptions = [
-  { value: "HIDDEN", label: "Скрыто" },
-  { value: "BASE", label: "Базовый доступ" },
-  { value: "RESTRICTED", label: "Только с расширенным доступом" },
+  { value: 'HIDDEN', label: 'Скрыто' },
+  { value: 'BASE', label: 'Базовый доступ' },
+  { value: 'RESTRICTED', label: 'Только с расширенным доступом' },
 ];
 const lifecycleOptions = [
-  { value: "ACTIVE", label: "Активно" },
-  { value: "DEPRECATED", label: "Выводится из использования" },
+  { value: 'ACTIVE', label: 'Активно' },
+  { value: 'DEPRECATED', label: 'Выводится из использования' },
 ];
 const indexOptions = [
-  { value: "NONE", label: "Не использовать для поиска" },
-  { value: "EXACT", label: "Искать по точному значению" },
-  { value: "RANGE_SORT", label: "Фильтровать и сортировать" },
+  { value: 'NONE', label: 'Не использовать для поиска' },
+  { value: 'EXACT', label: 'Искать по точному значению' },
+  { value: 'RANGE_SORT', label: 'Фильтровать и сортировать' },
 ];
 const identityLocked = computed(() => {
   const definitionId = form.value.definitionId;
@@ -148,50 +148,40 @@ const publishedSystemPurpose = computed(
       (field) => field.definitionId === form.value.definitionId,
     )?.semanticRole ?? null,
 );
-const isLocaleField = computed(() => form.value.semanticRole === "LOCALE");
-const isTimeZoneField = computed(() => form.value.semanticRole === "TIME_ZONE");
+const isLocaleField = computed(() => form.value.semanticRole === 'LOCALE');
+const isTimeZoneField = computed(() => form.value.semanticRole === 'TIME_ZONE');
 const fieldKind = computed(() => selectedFieldKind.value);
 const localeValues = computed(() =>
   (form.value.constraints.allowedValues ?? []).filter(
-    (value): value is string => typeof value === "string",
+    (value): value is string => typeof value === 'string',
   ),
 );
 const usedSystemPurposeFields = computed(() => {
-  const entries = (workspace.value?.draft.document.fields ?? []).flatMap(
-    (field, index) =>
-      index !== editingIndex.value &&
-      field.lifecycle === "ACTIVE" &&
-      field.semanticRole
-        ? ([[field.semanticRole, field]] as const)
-        : [],
+  const entries = (workspace.value?.draft.document.fields ?? []).flatMap((field, index) =>
+    index !== editingIndex.value && field.lifecycle === 'ACTIVE' && field.semanticRole
+      ? ([[field.semanticRole, field]] as const)
+      : [],
   );
   return new Map(entries);
 });
-const usedSystemPurposes = computed(
-  () => new Set(usedSystemPurposeFields.value.keys()),
-);
+const usedSystemPurposes = computed(() => new Set(usedSystemPurposeFields.value.keys()));
 const showsAllowedValues = computed(
-  () =>
-    !isTimeZoneField.value &&
-    !["BOOLEAN", "DATETIME"].includes(form.value.valueType),
+  () => !isTimeZoneField.value && !['BOOLEAN', 'DATETIME'].includes(form.value.valueType),
 );
-const showsTextLimits = computed(() => form.value.valueType === "STRING");
-const showsNumberLimits = computed(() =>
-  ["INTEGER", "DECIMAL"].includes(form.value.valueType),
-);
-const showsDecimalSettings = computed(() => form.value.valueType === "DECIMAL");
+const showsTextLimits = computed(() => form.value.valueType === 'STRING');
+const showsNumberLimits = computed(() => ['INTEGER', 'DECIMAL'].includes(form.value.valueType));
+const showsDecimalSettings = computed(() => form.value.valueType === 'DECIMAL');
 const typeHelp = computed(
   () =>
     ({
-      STRING: "Для имён, статусов и других текстовых значений.",
-      BOOLEAN: "Для признака с двумя значениями: да или нет.",
-      INTEGER: "Целое число без дробной части, например количество заказов.",
-      DECIMAL:
-        "Для денег, балансов и рейтингов. Передавайте без пробелов, например 1250.50.",
-      DATE: "Календарная дата без времени, например 2026-07-19.",
-      DATETIME: "Дата и время с часовым поясом, например 2026-07-19T08:30:00Z.",
-      COUNTRY_CODE: "Двухбуквенный код страны, например ES или RU.",
-      CURRENCY_CODE: "Трёхбуквенный код валюты, например EUR или RUB.",
+      STRING: 'Для имён, статусов и других текстовых значений.',
+      BOOLEAN: 'Для признака с двумя значениями: да или нет.',
+      INTEGER: 'Целое число без дробной части, например количество заказов.',
+      DECIMAL: 'Для денег, балансов и рейтингов. Передавайте без пробелов, например 1250.50.',
+      DATE: 'Календарная дата без времени, например 2026-07-19.',
+      DATETIME: 'Дата и время с часовым поясом, например 2026-07-19T08:30:00Z.',
+      COUNTRY_CODE: 'Двухбуквенный код страны, например ES или RU.',
+      CURRENCY_CODE: 'Трёхбуквенный код валюты, например EUR или RUB.',
     })[form.value.valueType],
 );
 const purposeRequired = computed(() => fieldNeedsPurpose(form.value));
@@ -230,55 +220,42 @@ watch(
 function presetUnavailable(kind: ProfileFieldKind) {
   if (kind === fieldKind.value) return false;
   if (publishedSystemPurpose.value) return true;
-  if (kind === "CUSTOM") return false;
+  if (kind === 'CUSTOM') return false;
   if (identityLocked.value) return true;
   const preset = profileFieldPreset(kind);
   return (
     usedSystemPurposes.value.has(kind) ||
-    Boolean(
-      identityLocked.value &&
-      preset.valueType &&
-      preset.valueType !== form.value.valueType,
-    )
+    Boolean(identityLocked.value && preset.valueType && preset.valueType !== form.value.valueType)
   );
 }
 
 function presetUnavailableReason(kind: ProfileFieldKind) {
   if (kind !== fieldKind.value && publishedSystemPurpose.value)
-    return "Назначение опубликованного поля зафиксировано";
-  if (kind !== "CUSTOM" && usedSystemPurposes.value.has(kind))
-    return "Уже используется";
+    return 'Назначение опубликованного поля зафиксировано';
+  if (kind !== 'CUSTOM' && usedSystemPurposes.value.has(kind)) return 'Уже используется';
   if (kind !== fieldKind.value && identityLocked.value)
-    return "Для опубликованного поля создайте поле-замену";
-  if (presetUnavailable(kind)) return "Несовместимо с опубликованным типом";
-  return "";
+    return 'Для опубликованного поля создайте поле-замену';
+  if (presetUnavailable(kind)) return 'Несовместимо с опубликованным типом';
+  return '';
 }
 
 function occupiedSystemField(kind: ProfileFieldKind) {
-  return kind === "CUSTOM" ? null : usedSystemPurposeFields.value.get(kind);
+  return kind === 'CUSTOM' ? null : usedSystemPurposeFields.value.get(kind);
 }
 
 function presetSwitchSummary(kind: ProfileFieldKind) {
   const summary: string[] = [];
   const next = profileFieldPreset(kind);
   if (next.valueType && next.valueType !== form.value.valueType)
-    summary.push(
-      `Тип данных изменится на «${valueTypeLabel(next.valueType)}».`,
-    );
-  if (
-    Object.values(form.value.constraints).some((value) => value !== undefined)
-  )
-    summary.push(
-      "Ограничения текущей заготовки будут сохранены в её черновике.",
-    );
+    summary.push(`Тип данных изменится на «${valueTypeLabel(next.valueType)}».`);
+  if (Object.values(form.value.constraints).some((value) => value !== undefined))
+    summary.push('Ограничения текущей заготовки будут сохранены в её черновике.');
   if (allowedValuesInput.value.trim() && !isLocaleField.value)
-    summary.push(
-      "Допустимые значения останутся в черновике текущей заготовки.",
-    );
+    summary.push('Допустимые значения останутся в черновике текущей заготовки.');
   return summary;
 }
 
-function valueTypeLabel(value: AttributeContractDraftFieldDto["valueType"]) {
+function valueTypeLabel(value: AttributeContractDraftFieldDto['valueType']) {
   return valueTypes.find((option) => option.value === value)?.label ?? value;
 }
 
@@ -305,15 +282,14 @@ function snapshotCurrentPreset() {
 }
 
 function applyFieldKind(kind: ProfileFieldKind) {
-  error.value = "";
+  error.value = '';
   snapshotCurrentPreset();
   const cached = presetDrafts.get(kind);
   if (cached) {
     const next = structuredClone(toRaw(form.value));
     if (
       !next.label.trim() ||
-      (suggestedIdentity.value?.label &&
-        next.label === suggestedIdentity.value.label)
+      (suggestedIdentity.value?.label && next.label === suggestedIdentity.value.label)
     )
       next.label = cached.suggestedIdentity?.label ?? next.label;
     if (
@@ -330,16 +306,12 @@ function applyFieldKind(kind: ProfileFieldKind) {
   } else {
     const next = structuredClone(toRaw(form.value));
     next.constraints = {};
-    suggestedIdentity.value = applyProfileFieldPreset(
-      next,
-      kind,
-      suggestedIdentity.value,
-    );
+    suggestedIdentity.value = applyProfileFieldPreset(next, kind, suggestedIdentity.value);
     form.value = next;
-    allowedValuesInput.value = "";
+    allowedValuesInput.value = '';
   }
   selectedFieldKind.value = kind;
-  localeInput.value = "";
+  localeInput.value = '';
   pendingPreset.value = null;
   presetChangeSummary.value = [];
 }
@@ -354,39 +326,37 @@ function confirmPresetChange() {
 }
 
 function syncLocaleInput() {
-  allowedValuesInput.value = localeValues.value.join("\n");
+  allowedValuesInput.value = localeValues.value.join('\n');
 }
 
 function addLocale() {
-  error.value = "";
+  error.value = '';
   const canonical = canonicalLocale(localeInput.value);
   if (!canonical) {
-    error.value = "Введите корректный BCP 47 tag, например en или pt-BR.";
+    error.value = 'Введите корректный BCP 47 tag, например en или pt-BR.';
     return;
   }
-  if (
-    localeValues.value.some((locale) => canonicalLocale(locale) === canonical)
-  ) {
+  if (localeValues.value.some((locale) => canonicalLocale(locale) === canonical)) {
     error.value = `Язык ${canonical} уже добавлен.`;
     return;
   }
   if (localeValues.value.length >= 20) {
-    error.value = "Можно добавить не больше 20 языков.";
+    error.value = 'Можно добавить не больше 20 языков.';
     return;
   }
   form.value.constraints.allowedValues = [...localeValues.value, canonical];
   form.value.constraints.defaultLocale ??= canonical;
-  localeInput.value = "";
+  localeInput.value = '';
   syncLocaleInput();
 }
 
 function removeLocale(locale: string) {
   if (localeValues.value.length === 1) {
-    error.value = "Нельзя удалить последний язык проекта.";
+    error.value = 'Нельзя удалить последний язык проекта.';
     return;
   }
   if (form.value.constraints.defaultLocale === locale) {
-    error.value = "Сначала выберите другой основной язык проекта.";
+    error.value = 'Сначала выберите другой основной язык проекта.';
     return;
   }
   form.value.constraints.allowedValues = localeValues.value.filter(
@@ -406,63 +376,60 @@ function moveLocale(locale: string, offset: number) {
 }
 
 function userFacingError(cause: unknown, fallback: string) {
-  if (cause instanceof Error && /[А-Яа-яЁё]/.test(cause.message))
-    return cause.message;
+  if (cause instanceof Error && /[А-Яа-яЁё]/.test(cause.message)) return cause.message;
   return fallback;
 }
 
 onMounted(load);
 onBeforeRouteLeave(() =>
-  !dirty.value
-    ? true
-    : window.confirm("Уйти со страницы и потерять изменения поля?"),
+  !dirty.value ? true : window.confirm('Уйти со страницы и потерять изменения поля?'),
 );
 
 function mockWorkspace(): AttributeContractWorkspaceResponseDto {
-  const projectId = auth.project?.id ?? "demo";
+  const projectId = auth.project?.id ?? 'demo';
   const first = createContractField(10);
   const fields: AttributeContractDraftFieldDto[] = [
     {
       ...first,
-      definitionId: "attr-name",
-      key: "displayName",
-      label: "Отображаемое имя",
-      purpose: "Показывать имя пользователя в интерфейсе и сообщениях",
-      semanticRole: "DISPLAY_NAME",
+      definitionId: 'attr-name',
+      key: 'displayName',
+      label: 'Отображаемое имя',
+      purpose: 'Показывать имя пользователя в интерфейсе и сообщениях',
+      semanticRole: 'DISPLAY_NAME',
       policies: { ...first.policies, clientRead: true, templateRead: true },
     },
     {
       ...createContractField(20),
-      definitionId: "attr-tier",
-      key: "loyaltyTier",
-      label: "Уровень лояльности",
-      purpose: "Собирать сегменты и подставлять уровень в сообщения",
-      constraints: { allowedValues: ["basic", "silver", "gold"] },
+      definitionId: 'attr-tier',
+      key: 'loyaltyTier',
+      label: 'Уровень лояльности',
+      purpose: 'Собирать сегменты и подставлять уровень в сообщения',
+      constraints: { allowedValues: ['basic', 'silver', 'gold'] },
       policies: {
         ...createContractField().policies,
         audienceRead: true,
         templateRead: true,
-        indexPolicy: "EXACT",
+        indexPolicy: 'EXACT',
       },
     },
     {
       ...createContractField(30),
-      definitionId: "attr-balance",
-      key: "accountBalance",
-      label: "Баланс",
-      valueType: "DECIMAL",
-      classification: "SENSITIVE",
-      purpose: "Персонализация ответа о балансе",
+      definitionId: 'attr-balance',
+      key: 'accountBalance',
+      label: 'Баланс',
+      valueType: 'DECIMAL',
+      classification: 'SENSITIVE',
+      purpose: 'Персонализация ответа о балансе',
       policies: {
         ...createContractField().policies,
-        cmsRead: { mode: "VISIBLE", access: "RESTRICTED" },
+        cmsRead: { mode: 'VISIBLE', access: 'RESTRICTED' },
         aiRead: true,
       },
     },
   ];
   const changes = {
     contractChanged: false,
-    contractCompatibility: "UNCHANGED" as const,
+    contractCompatibility: 'UNCHANGED' as const,
     lifecycleChanged: false,
     metadataChanged: false,
     policyChanged: false,
@@ -481,13 +448,13 @@ function mockWorkspace(): AttributeContractWorkspaceResponseDto {
     validation: {
       valid: true,
       draftVersion: 3,
-      validationHash: "demo",
+      validationHash: 'demo',
       issues: [],
       artifact: {
         fields: [],
         schema: {
-          $schema: "https://json-schema.org/draft/2020-12/schema",
-          type: "object",
+          $schema: 'https://json-schema.org/draft/2020-12/schema',
+          type: 'object',
           additionalProperties: false,
           properties: {},
           required: [],
@@ -502,35 +469,28 @@ async function load() {
   const projectId = auth.project?.id;
   if (!projectId) return;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   fieldErrors.value = {};
   try {
     workspace.value =
-      repository.mode === "mock"
+      repository.mode === 'mock'
         ? mockWorkspace()
         : await attributeContractRepository.workspace(projectId);
     if (isEditing.value) {
-      const identity = String(route.params.definitionId ?? "");
+      const identity = String(route.params.definitionId ?? '');
       const index = workspace.value.draft.document.fields.findIndex(
         (field) => field.definitionId === identity || field.key === identity,
       );
-      if (index < 0) throw new Error("Поле не найдено в текущем черновике.");
+      if (index < 0) throw new Error('Поле не найдено в текущем черновике.');
       editingIndex.value = index;
-      form.value = structuredClone(
-        toRaw(workspace.value.draft.document.fields[index]!),
-      );
-      selectedFieldKind.value = form.value.semanticRole ?? "CUSTOM";
+      form.value = structuredClone(toRaw(workspace.value.draft.document.fields[index]!));
+      selectedFieldKind.value = form.value.semanticRole ?? 'CUSTOM';
       allowedValuesInput.value = (form.value.constraints.allowedValues ?? [])
         .map(String)
-        .join("\n");
+        .join('\n');
     } else {
       const position =
-        Math.max(
-          0,
-          ...workspace.value.draft.document.fields.map(
-            (field) => field.position,
-          ),
-        ) + 10;
+        Math.max(0, ...workspace.value.draft.document.fields.map((field) => field.position)) + 10;
       form.value = createContractField(position);
       const requestedPreset = profileFieldPresets.find(
         (preset) => preset.value === route.query?.semanticRole,
@@ -547,7 +507,7 @@ async function load() {
       selectedFieldKind: selectedFieldKind.value,
     });
   } catch (cause) {
-    error.value = userFacingError(cause, "Не удалось открыть поле.");
+    error.value = userFacingError(cause, 'Не удалось открыть поле.');
   } finally {
     loading.value = false;
   }
@@ -556,13 +516,11 @@ async function load() {
 async function save() {
   const projectId = auth.project?.id;
   if (!projectId || !workspace.value || !canEdit.value) return;
-  error.value = "";
+  error.value = '';
   try {
     if (isLocaleField.value) {
-      if (!localeValues.value.length)
-        throw new Error("Добавьте хотя бы один язык контента.");
-      if (!form.value.constraints.defaultLocale)
-        throw new Error("Выберите основной язык проекта.");
+      if (!localeValues.value.length) throw new Error('Добавьте хотя бы один язык контента.');
+      if (!form.value.constraints.defaultLocale) throw new Error('Выберите основной язык проекта.');
     } else {
       form.value.constraints.allowedValues = parseAllowedValues(
         form.value.valueType,
@@ -571,37 +529,32 @@ async function save() {
       delete form.value.constraints.defaultLocale;
     }
     const document = structuredClone(toRaw(workspace.value.draft.document));
-    if (editingIndex.value === null)
-      document.fields.push(structuredClone(toRaw(form.value)));
-    else
-      document.fields[editingIndex.value] = structuredClone(toRaw(form.value));
+    if (editingIndex.value === null) document.fields.push(structuredClone(toRaw(form.value)));
+    else document.fields[editingIndex.value] = structuredClone(toRaw(form.value));
     const validationErrors = validateContractDocument(document).filter(
-      (issue) => issue.severity === "error",
+      (issue) => issue.severity === 'error',
     );
     fieldErrors.value = Object.fromEntries(
-      validationErrors.map((issue) => [
-        issue.path.split(".").at(-1),
-        issue.message,
-      ]),
+      validationErrors.map((issue) => [issue.path.split('.').at(-1), issue.message]),
     );
     const firstError = validationErrors[0];
     if (firstError) {
       error.value = firstError.message;
       await nextTick();
-      const fieldName = firstError.path.split(".").at(-1);
+      const fieldName = firstError.path.split('.').at(-1);
       const selector =
-        fieldName === "label"
-          ? "#profile-field-label"
-          : fieldName === "key"
-            ? "#profile-field-key"
-            : fieldName === "purpose"
-              ? "#profile-field-purpose"
-              : ".form-error";
+        fieldName === 'label'
+          ? '#profile-field-label'
+          : fieldName === 'key'
+            ? '#profile-field-key'
+            : fieldName === 'purpose'
+              ? '#profile-field-purpose'
+              : '.form-error';
       window.document.querySelector<HTMLElement>(selector)?.focus();
       return;
     }
     saving.value = true;
-    if (repository.mode === "mock") writeDemoContractDraft(projectId, document);
+    if (repository.mode === 'mock') writeDemoContractDraft(projectId, document);
     else
       await attributeContractRepository.saveDraft(projectId, {
         expectedDraftVersion: workspace.value.draft.draftVersion,
@@ -613,16 +566,16 @@ async function save() {
       selectedFieldKind: selectedFieldKind.value,
     });
     toast.add({
-      severity: "success",
-      summary: isEditing.value ? "Изменения сохранены" : "Поле добавлено",
-      detail: "Поле находится в черновике. Проверьте и опубликуйте изменения.",
+      severity: 'success',
+      summary: isEditing.value ? 'Изменения сохранены' : 'Поле добавлено',
+      detail: 'Поле находится в черновике. Проверьте и опубликуйте изменения.',
       life: 3200,
     });
-    await router.push("/profile-fields");
+    await router.push('/profile-fields');
   } catch (cause) {
     error.value = userFacingError(
       cause,
-      "Не удалось сохранить поле. Проверьте обязательные настройки и повторите попытку.",
+      'Не удалось сохранить поле. Проверьте обязательные настройки и повторите попытку.',
     );
   } finally {
     saving.value = false;
@@ -638,10 +591,9 @@ async function save() {
     <header class="editor-header">
       <div>
         <div class="eyebrow">Поля профиля пользователей</div>
-        <h1>{{ isEditing ? "Изменить поле" : "Новое поле профиля" }}</h1>
+        <h1>{{ isEditing ? 'Изменить поле' : 'Новое поле профиля' }}</h1>
         <p class="subtitle">
-          Укажите, какие данные передаёт ваш продукт и где Retenive сможет их
-          использовать.
+          Укажите, какие данные передаёт ваш продукт и где Retenive сможет их использовать.
         </p>
       </div>
       <div class="editor-support">
@@ -653,9 +605,7 @@ async function save() {
           as="router-link"
           :to="{ name: 'profile-fields-guide' }"
         />
-        <div class="draft-state">
-          <i class="pi pi-file-edit" /> Изменения попадут в черновик
-        </div>
+        <div class="draft-state"><i class="pi pi-file-edit" /> Изменения попадут в черновик</div>
       </div>
     </header>
 
@@ -677,8 +627,8 @@ async function save() {
         <div class="preset-dialog-notice">
           <i class="pi pi-history" />
           <span>
-            Заполненные данные сохранятся в черновике текущей заготовки и
-            восстановятся, если вы вернётесь.
+            Заполненные данные сохранятся в черновике текущей заготовки и восстановятся, если вы
+            вернётесь.
           </span>
         </div>
         <ul>
@@ -694,12 +644,7 @@ async function save() {
             outlined
             @click="cancelPresetChange"
           />
-          <Button
-            type="button"
-            label="Сменить"
-            icon="pi pi-check"
-            @click="confirmPresetChange"
-          />
+          <Button type="button" label="Сменить" icon="pi pi-check" @click="confirmPresetChange" />
         </div>
       </template>
     </Dialog>
@@ -717,34 +662,22 @@ async function save() {
       :class="{ 'preset-only': !fieldKind }"
       @submit.prevent="save"
     >
-      <Message
-        v-if="error"
-        class="form-error"
-        severity="error"
-        :closable="false"
-        tabindex="-1"
-        >{{ error }}</Message
-      >
+      <Message v-if="error" class="form-error" severity="error" :closable="false" tabindex="-1">{{
+        error
+      }}</Message>
       <main class="editor-main">
         <fieldset
           class="editor-section preset-section card"
           aria-describedby="profile-field-kind-description"
         >
-          <legend class="visually-hidden">
-            Как Retenive должна понимать это поле?
-          </legend>
-          <div
-            id="profile-field-kind-description"
-            class="section-heading preset-heading"
-          >
+          <legend class="visually-hidden">Как Retenive должна понимать это поле?</legend>
+          <div id="profile-field-kind-description" class="section-heading preset-heading">
             <span class="section-number"><i class="pi pi-sparkles" /></span>
             <span>
-              <span class="preset-title"
-                >Как Retenive должна понимать это поле?</span
-              >
+              <span class="preset-title">Как Retenive должна понимать это поле?</span>
               <small>
-                Сначала выберите назначение. Для системного поля Retenive
-                подставит безопасную заготовку и сразу покажет нужные настройки.
+                Сначала выберите назначение. Для системного поля Retenive подставит безопасную
+                заготовку и сразу покажет нужные настройки.
               </small>
               <small class="preset-required">Выберите один вариант.</small>
             </span>
@@ -768,25 +701,15 @@ async function save() {
                 :disabled="presetUnavailable(preset.value)"
                 @click.prevent="requestFieldKind(preset.value)"
               />
-              <label
-                class="preset-choice"
-                :for="`profile-field-kind-${preset.value}`"
-              >
-                <span class="preset-icon"
-                  ><i :class="['pi', preset.icon]"
-                /></span>
+              <label class="preset-choice" :for="`profile-field-kind-${preset.value}`">
+                <span class="preset-icon"><i :class="['pi', preset.icon]" /></span>
                 <span class="preset-copy">
                   <strong>{{ preset.label }}</strong>
                   <small>{{ preset.hint }}</small>
-                  <small
-                    v-if="presetUnavailableReason(preset.value)"
-                    class="preset-unavailable"
-                    >{{ presetUnavailableReason(preset.value) }}</small
-                  >
-                  <small
-                    v-else-if="fieldKind === preset.value"
-                    class="preset-selected"
-                  >
+                  <small v-if="presetUnavailableReason(preset.value)" class="preset-unavailable">{{
+                    presetUnavailableReason(preset.value)
+                  }}</small>
+                  <small v-else-if="fieldKind === preset.value" class="preset-selected">
                     <i class="pi pi-check" /> Выбрано
                   </small>
                 </span>
@@ -802,8 +725,8 @@ async function save() {
             </div>
           </div>
           <p class="preset-note">
-            Системное назначение бывает только у одного активного поля в
-            проекте. Обычные поля можно добавлять без ограничений.
+            Системное назначение бывает только у одного активного поля в проекте. Обычные поля можно
+            добавлять без ограничений.
           </p>
         </fieldset>
 
@@ -813,10 +736,7 @@ async function save() {
               <span class="section-number">1</span>
               <div>
                 <h2>Что хранится в поле</h2>
-                <p>
-                  Название увидит администратор, а ключ будет использовать ваш
-                  сервер.
-                </p>
+                <p>Название увидит администратор, а ключ будет использовать ваш сервер.</p>
               </div>
             </div>
             <div class="form-grid two-columns">
@@ -844,12 +764,10 @@ async function save() {
                   :disabled="identityLocked"
                   placeholder="loyaltyTier"
                 />
-                <small v-if="fieldErrors.key" class="control-error">{{
-                  fieldErrors.key
-                }}</small>
+                <small v-if="fieldErrors.key" class="control-error">{{ fieldErrors.key }}</small>
                 <small
-                  >Латинские буквы без пробелов. После первой публикации ключ и
-                  тип данных изменить нельзя.</small
+                  >Латинские буквы без пробелов. После первой публикации ключ и тип данных изменить
+                  нельзя.</small
                 >
               </label>
               <label class="field-control">
@@ -859,22 +777,18 @@ async function save() {
                   :options="valueTypes"
                   option-label="label"
                   option-value="value"
-                  :disabled="
-                    identityLocked ||
-                    fieldKind === 'LOCALE' ||
-                    fieldKind === 'TIME_ZONE'
-                  "
+                  :disabled="identityLocked || fieldKind === 'LOCALE' || fieldKind === 'TIME_ZONE'"
                 />
                 <small v-if="fieldKind === 'LOCALE'"
                   >Тип задан системным назначением языка. {{ typeHelp }}</small
                 >
                 <small v-else-if="fieldKind === 'TIME_ZONE'">
-                  Тип зафиксирован как строка. Передавайте canonical IANA ID,
-                  например Europe/Madrid, а не CET или UTC+2.
+                  Тип зафиксирован как строка. Передавайте canonical IANA ID, например
+                  Europe/Madrid, а не CET или UTC+2.
                 </small>
                 <small v-else-if="fieldKind !== 'CUSTOM'"
-                  >Заготовка рекомендует этот тип, но до публикации его можно
-                  изменить. {{ typeHelp }}</small
+                  >Заготовка рекомендует этот тип, но до публикации его можно изменить.
+                  {{ typeHelp }}</small
                 >
                 <small v-else>{{ typeHelp }}</small>
               </label>
@@ -886,9 +800,7 @@ async function save() {
                   option-label="label"
                   option-value="value"
                 />
-                <small
-                  >Обязательность начнёт действовать после публикации.</small
-                >
+                <small>Обязательность начнёт действовать после публикации.</small>
               </label>
             </div>
             <label class="field-control">
@@ -902,9 +814,7 @@ async function save() {
               />
             </label>
             <label class="field-control purpose-control">
-              <span
-                >Для чего нужно это поле?{{ purposeRequired ? " *" : "" }}</span
-              >
+              <span>Для чего нужно это поле?{{ purposeRequired ? ' *' : '' }}</span>
               <Textarea
                 id="profile-field-purpose"
                 v-model="form.purpose"
@@ -918,29 +828,24 @@ async function save() {
                 fieldErrors.purpose
               }}</small>
               <small v-if="purposeRequired"
-                >Обязательно для персональных и чувствительных данных, а также
-                если поле доступно хотя бы в одном разделе.</small
+                >Обязательно для персональных и чувствительных данных, а также если поле доступно
+                хотя бы в одном разделе.</small
               >
               <small v-else
-                >Необязательно для внутреннего поля, недоступного другим
-                разделам.</small
+                >Необязательно для внутреннего поля, недоступного другим разделам.</small
               >
               <small class="purpose-example">
                 <i class="pi pi-sparkles" />
                 <span
-                  ><strong>Пример для ИИ.</strong> «Уровень программы лояльности
-                  клиента. Учитывай его, когда объясняешь доступные
-                  привилегии».</span
+                  ><strong>Пример для ИИ.</strong> «Уровень программы лояльности клиента. Учитывай
+                  его, когда объясняешь доступные привилегии».</span
                 >
               </small>
             </label>
             <div v-if="isLocaleField" class="locale-editor">
               <div>
                 <strong>Языки контента</strong>
-                <p>
-                  Значение этого атрибута у пользователя определяет язык
-                  сообщений сценария.
-                </p>
+                <p>Значение этого атрибута у пользователя определяет язык сообщений сценария.</p>
               </div>
               <div class="locale-add-row">
                 <InputText
@@ -949,23 +854,10 @@ async function save() {
                   aria-label="Добавить язык контента"
                   @keydown.enter.prevent="addLocale"
                 />
-                <Button
-                  type="button"
-                  label="Добавить язык"
-                  icon="pi pi-plus"
-                  @click="addLocale"
-                />
+                <Button type="button" label="Добавить язык" icon="pi pi-plus" @click="addLocale" />
               </div>
-              <div
-                v-if="localeValues.length"
-                class="locale-chips"
-                aria-label="Выбранные языки"
-              >
-                <div
-                  v-for="(locale, index) in localeValues"
-                  :key="locale"
-                  class="locale-chip"
-                >
+              <div v-if="localeValues.length" class="locale-chips" aria-label="Выбранные языки">
+                <div v-for="(locale, index) in localeValues" :key="locale" class="locale-chip">
                   <span
                     ><strong>{{ localeDisplayName(locale) }}</strong
                     ><code>{{ locale }}</code></span
@@ -1015,38 +907,26 @@ async function save() {
                   option-value="value"
                 />
                 <small
-                  >Он показывается первым в редакторе и используется как
-                  безопасный fallback.</small
+                  >Он показывается первым в редакторе и используется как безопасный fallback.</small
                 >
               </label>
               <small>{{ localeValues.length }}/20 языков</small>
             </div>
-            <Message
-              v-else-if="isTimeZoneField"
-              severity="info"
-              :closable="false"
-            >
-              Значение используется для локальных суток и тихих часов. Это не
-              язык интерфейса и не числовое смещение от UTC.
+            <Message v-else-if="isTimeZoneField" severity="info" :closable="false">
+              Значение используется для локальных суток и тихих часов. Это не язык интерфейса и не
+              числовое смещение от UTC.
             </Message>
-            <label
-              v-if="showsAllowedValues && !isLocaleField"
-              class="field-control"
-            >
+            <label v-if="showsAllowedValues && !isLocaleField" class="field-control">
               <span>Допустимые значения</span>
               <Textarea
                 v-model="allowedValuesInput"
                 rows="3"
                 auto-resize
-                :placeholder="
-                  form.valueType === 'DECIMAL'
-                    ? '10.00\n99.95'
-                    : 'basic\npremium'
-                "
+                :placeholder="form.valueType === 'DECIMAL' ? '10.00\n99.95' : 'basic\npremium'"
               />
               <small
-                >Необязательно. Укажите по одному значению на строку, если
-                список должен быть ограничен.</small
+                >Необязательно. Укажите по одному значению на строку, если список должен быть
+                ограничен.</small
               >
             </label>
           </section>
@@ -1056,16 +936,11 @@ async function save() {
               <span class="section-number">2</span>
               <div>
                 <h2>Где можно использовать поле</h2>
-                <p>
-                  Включайте только те разделы, которым действительно нужны эти
-                  данные.
-                </p>
+                <p>Включайте только те разделы, которым действительно нужны эти данные.</p>
               </div>
             </div>
             <div class="classification-panel">
-              <span class="classification-icon"
-                ><i class="pi pi-shield"
-              /></span>
+              <span class="classification-icon"><i class="pi pi-shield" /></span>
               <label class="field-control">
                 <span>Категория данных</span>
                 <Select
@@ -1075,8 +950,8 @@ async function save() {
                   option-value="value"
                 />
                 <small
-                  >Сначала оцените чувствительность данных, затем включайте
-                  доступ для ИИ, сайта и экспорта.</small
+                  >Сначала оцените чувствительность данных, затем включайте доступ для ИИ, сайта и
+                  экспорта.</small
                 >
               </label>
             </div>
@@ -1085,8 +960,8 @@ async function save() {
                 <span
                   ><i class="pi pi-user-edit" /><strong>Доступ в CMS</strong
                   ><small
-                    >Выберите, скрыть поле или показывать его только сотрудникам
-                    с подходящим уровнем доступа.</small
+                    >Выберите, скрыть поле или показывать его только сотрудникам с подходящим
+                    уровнем доступа.</small
                   ></span
                 >
                 <Select
@@ -1099,38 +974,34 @@ async function save() {
               </label>
               <label class="usage-option">
                 <span
-                  ><i class="pi pi-filter" /><strong
-                    >Использовать в сегментах</strong
+                  ><i class="pi pi-filter" /><strong>Использовать в сегментах</strong
                   ><small>По значению можно собирать аудитории.</small></span
                 >
                 <ToggleSwitch v-model="form.policies.audienceRead" />
               </label>
               <label class="usage-option">
                 <span
-                  ><i class="pi pi-comment" /><strong
-                    >Использовать в шаблонах</strong
+                  ><i class="pi pi-comment" /><strong>Использовать в шаблонах</strong
                   ><small>Значение можно подставлять в сообщения.</small></span
                 >
                 <ToggleSwitch v-model="form.policies.templateRead" />
               </label>
               <label class="usage-option">
                 <span
-                  ><i class="pi pi-sparkles" /><strong
-                    >Разрешить ИИ использовать значение</strong
+                  ><i class="pi pi-sparkles" /><strong>Разрешить ИИ использовать значение</strong
                   ><small
-                    >ИИ получит значение и описание поля, чтобы понимать, что
-                    оно означает. Не включайте для паролей и токенов.</small
+                    >ИИ получит значение и описание поля, чтобы понимать, что оно означает. Не
+                    включайте для паролей и токенов.</small
                   ></span
                 >
                 <ToggleSwitch v-model="form.policies.aiRead" />
               </label>
               <label class="usage-option">
                 <span
-                  ><i class="pi pi-desktop" /><strong
-                    >Показывать на сайте</strong
+                  ><i class="pi pi-desktop" /><strong>Показывать на сайте</strong
                   ><small
-                    >Поле придёт во фронтенд, и его можно будет увидеть в
-                    браузере пользователя. Не включайте для секретов.</small
+                    >Поле придёт во фронтенд, и его можно будет увидеть в браузере пользователя. Не
+                    включайте для секретов.</small
                   ></span
                 >
                 <ToggleSwitch v-model="form.policies.clientRead" />
@@ -1150,10 +1021,7 @@ async function save() {
               <span class="advanced-icon"><i class="pi pi-sliders-h" /></span>
               <span
                 ><strong>Расширенные настройки</strong
-                ><small
-                  >Ограничения значений, поиск и вывод поля из
-                  использования.</small
-                ></span
+                ><small>Ограничения значений, поиск и вывод поля из использования.</small></span
               >
               <i class="pi pi-chevron-down" />
             </summary>
@@ -1178,10 +1046,7 @@ async function save() {
                   />
                 </label>
               </div>
-              <div
-                v-if="showsTextLimits || showsNumberLimits"
-                class="limits-panel"
-              >
+              <div v-if="showsTextLimits || showsNumberLimits" class="limits-panel">
                 <h3>Ограничения значения</h3>
                 <div class="form-grid two-columns">
                   <label v-if="showsTextLimits" class="field-control"
@@ -1196,33 +1061,25 @@ async function save() {
                     ><span>Минимальное значение</span
                     ><InputText
                       :model-value="String(form.constraints.minimum ?? '')"
-                      @update:model-value="
-                        form.constraints.minimum = $event || undefined
-                      "
+                      @update:model-value="form.constraints.minimum = $event || undefined"
                   /></label>
                   <label v-if="showsNumberLimits" class="field-control"
                     ><span>Максимальное значение</span
                     ><InputText
                       :model-value="String(form.constraints.maximum ?? '')"
-                      @update:model-value="
-                        form.constraints.maximum = $event || undefined
-                      "
+                      @update:model-value="form.constraints.maximum = $event || undefined"
                   /></label>
                   <label v-if="showsDecimalSettings" class="field-control"
                     ><span>Всего цифр</span
-                    ><InputNumber
-                      v-model="form.constraints.precision"
-                      :min="1"
-                      :max="38"
-                    /><small>Например, 6 для числа 1250.50.</small></label
+                    ><InputNumber v-model="form.constraints.precision" :min="1" :max="38" /><small
+                      >Например, 6 для числа 1250.50.</small
+                    ></label
                   >
                   <label v-if="showsDecimalSettings" class="field-control"
                     ><span>Знаков после запятой</span
-                    ><InputNumber
-                      v-model="form.constraints.scale"
-                      :min="0"
-                      :max="38"
-                    /><small>Например, 2 для числа 1250.50.</small></label
+                    ><InputNumber v-model="form.constraints.scale" :min="0" :max="38" /><small
+                      >Например, 2 для числа 1250.50.</small
+                    ></label
                   >
                 </div>
               </div>
@@ -1231,15 +1088,11 @@ async function save() {
                 <div class="form-grid two-columns">
                   <label class="field-control"
                     ><span>ID поля-замены</span
-                    ><InputText
-                      v-model="form.replacementDefinitionId"
-                      class="mono"
+                    ><InputText v-model="form.replacementDefinitionId" class="mono"
                   /></label>
                   <label class="field-control"
                     ><span>Не использовать после</span
-                    ><InputText
-                      v-model="form.sunsetAt"
-                      placeholder="2026-12-31T00:00:00Z"
+                    ><InputText v-model="form.sunsetAt" placeholder="2026-12-31T00:00:00Z"
                   /></label>
                 </div>
               </div>
@@ -1252,13 +1105,8 @@ async function save() {
         <div class="save-card">
           <span class="save-icon"><i class="pi pi-file-edit" /></span>
           <div>
-            <strong>{{
-              dirty ? "Есть несохранённые изменения" : "Изменений пока нет"
-            }}</strong>
-            <p>
-              После сохранения вернитесь к списку, проверьте черновик и
-              опубликуйте его.
-            </p>
+            <strong>{{ dirty ? 'Есть несохранённые изменения' : 'Изменений пока нет' }}</strong>
+            <p>После сохранения вернитесь к списку, проверьте черновик и опубликуйте его.</p>
           </div>
           <Button
             type="submit"

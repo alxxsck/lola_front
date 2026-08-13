@@ -42,16 +42,11 @@
   color: var(--text-primary);
 }
 
-.integration-page .integration-tabs button[aria-selected="true"] {
+.integration-page .integration-tabs button[aria-selected='true'] {
   border-color: color-mix(in srgb, var(--action-primary) 28%, transparent);
-  background: color-mix(
-    in srgb,
-    var(--action-primary) 10%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--action-primary) 10%, var(--surface-card));
   color: var(--action-primary);
-  box-shadow: 0 1px 2px
-    color-mix(in srgb, var(--action-primary) 10%, transparent);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--action-primary) 10%, transparent);
 }
 
 .integration-page .integration-tab-panel {
@@ -142,13 +137,10 @@
   color: var(--on-action-primary);
   font-size: 1.25rem;
   font-weight: 850;
-  box-shadow: 0 8px 24px
-    color-mix(in srgb, var(--action-primary) 24%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--action-primary) 24%, transparent);
 }
 
-.integration-page
-  .provider-workspace__hero--amplitude
-  .provider-workspace__mark {
+.integration-page .provider-workspace__hero--amplitude .provider-workspace__mark {
   background: var(--status-warning-text);
 }
 
@@ -212,7 +204,7 @@
   color: var(--action-primary);
 }
 
-.integration-page .provider-workspace__direction[data-direction="inbound"] {
+.integration-page .provider-workspace__direction[data-direction='inbound'] {
   background: linear-gradient(
     105deg,
     color-mix(in srgb, var(--status-info-text) 8%, var(--surface-card)),
@@ -221,7 +213,7 @@
 }
 
 .integration-page
-  .provider-workspace__direction[data-direction="inbound"]
+  .provider-workspace__direction[data-direction='inbound']
   .provider-workspace__direction-icon {
   background: var(--status-info-soft);
   color: var(--status-info-text);
@@ -238,7 +230,7 @@
 }
 
 .integration-page
-  .provider-workspace__direction[data-direction="inbound"]
+  .provider-workspace__direction[data-direction='inbound']
   .provider-workspace__direction-label {
   color: var(--status-info-text);
 }
@@ -319,24 +311,24 @@
   height: 7px;
   border-radius: 50%;
   background: currentColor;
-  content: "";
+  content: '';
 }
 
-.integration-page .status[data-status="ACTIVE"],
-.integration-page .status[data-status="HEALTHY"] {
+.integration-page .status[data-status='ACTIVE'],
+.integration-page .status[data-status='HEALTHY'] {
   background: var(--status-success-soft);
   color: var(--status-success-text);
 }
 
-.integration-page .status[data-status="INVALID"],
-.integration-page .status[data-status="FAILED"] {
+.integration-page .status[data-status='INVALID'],
+.integration-page .status[data-status='FAILED'] {
   background: var(--status-danger-soft);
   color: var(--status-danger-text);
 }
 
-.integration-page .status[data-status="PENDING_TEST"],
-.integration-page .status[data-status="PENDING_SETUP"],
-.integration-page .status[data-status="PROCESSING"] {
+.integration-page .status[data-status='PENDING_TEST'],
+.integration-page .status[data-status='PENDING_SETUP'],
+.integration-page .status[data-status='PROCESSING'] {
   background: var(--status-warning-soft);
   color: var(--status-warning-text);
 }
@@ -473,10 +465,8 @@
   min-width: 0;
 }
 
-.integration-page
-  .route-form
-  input:not([type="checkbox"]):not(.paged-search-select__search-input),
-.integration-page .mapping-fields input:not([type="checkbox"]) {
+.integration-page .route-form input:not([type='checkbox']):not(.paged-search-select__search-input),
+.integration-page .mapping-fields input:not([type='checkbox']) {
   width: 100%;
   height: var(--control-height);
   min-height: var(--control-height);
@@ -492,8 +482,8 @@
   overflow: visible;
 }
 
-.integration-page .route-form input:not([type="checkbox"]):focus-visible,
-.integration-page .mapping-fields input:not([type="checkbox"]):focus-visible {
+.integration-page .route-form input:not([type='checkbox']):focus-visible,
+.integration-page .mapping-fields input:not([type='checkbox']):focus-visible {
   border-color: var(--focus-ring);
   box-shadow: 0 0 0 3px var(--focus-ring-outer);
 }

@@ -1,19 +1,12 @@
 <script setup lang="ts">
-import {
-  computed,
-  onBeforeUnmount,
-  onMounted,
-  reactive,
-  ref,
-  watch,
-} from "vue";
-import Select from "primevue/select";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import Select from 'primevue/select';
 import type {
   IntegrationConnectionResponseDto,
   IntegrationConnectionTestResponseDto,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
-import { integrationConnectionsApi } from "./integration-connections.api";
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
+import { integrationConnectionsApi } from './integration-connections.api';
 import {
   integrationRegionOptions,
   outboundProviderUi,
@@ -21,7 +14,7 @@ import {
   type ProviderConnection,
   type ProviderCreateConnectionInput,
   type ProviderRotateCredentialInput,
-} from "@/features/integrations/provider-ui";
+} from '@/features/integrations/provider-ui';
 
 const props = withDefaults(
   defineProps<{
@@ -30,7 +23,7 @@ const props = withDefaults(
     canManage: boolean;
     provider?: OutboundIntegrationProvider;
   }>(),
-  { provider: "AMPLITUDE" },
+  { provider: 'AMPLITUDE' },
 );
 const emit = defineEmits<{
   connectionsChanged: [];
@@ -41,7 +34,7 @@ type Operation = { projectId: string; epoch: number };
 type MetadataDraft = { displayName: string; remoteProjectLabel: string };
 type SecretRetry<T> = { input: T; idempotencyKey: string };
 type RequestingTestReceipt = {
-  state: "REQUESTING";
+  state: 'REQUESTING';
   projectId: string;
   connectionId: string;
   credentialRevision: number;
@@ -49,7 +42,7 @@ type RequestingTestReceipt = {
   idempotencyKey: string;
 };
 type PollingTestReceipt = {
-  state: "POLLING";
+  state: 'POLLING';
   projectId: string;
   connectionId: string;
   credentialRevision: number;
@@ -63,13 +56,13 @@ type UnresolvedSecretMarkerBase = {
 };
 type UnresolvedSecretMarker =
   | (UnresolvedSecretMarkerBase & {
-      operation: "CREATE";
+      operation: 'CREATE';
       displayName: string;
-      region: "US" | "EU";
+      region: 'US' | 'EU';
       remoteProjectLabel?: string;
     })
   | (UnresolvedSecretMarkerBase & {
-      operation: "ROTATE";
+      operation: 'ROTATE';
       connectionId: string;
       expectedVersion: number;
     });
@@ -80,20 +73,18 @@ const loading = ref(true);
 const pendingConnectionId = ref<string | null>(null);
 const creating = ref(false);
 const showCreate = ref(false);
-const loadError = ref("");
-const actionError = ref("");
-const success = ref("");
+const loadError = ref('');
+const actionError = ref('');
+const success = ref('');
 const displayName = ref(providerUi.value.defaultDisplayName);
-const region = ref<"US" | "EU">("EU");
-const remoteProjectLabel = ref("");
-const credentialSecret = ref("");
+const region = ref<'US' | 'EU'>('EU');
+const remoteProjectLabel = ref('');
+const credentialSecret = ref('');
 const metadataDrafts = reactive<Record<string, MetadataDraft>>({});
 const rotationKeys = reactive<Record<string, string>>({});
 const pendingTests = reactive<Record<string, PendingTestReceipt>>({});
 const commandKeys = new Map<string, string>();
-const createRetry = ref<SecretRetry<ProviderCreateConnectionInput> | null>(
-  null,
-);
+const createRetry = ref<SecretRetry<ProviderCreateConnectionInput> | null>(null);
 const rotateRetry = ref<
   | (SecretRetry<ProviderRotateCredentialInput> & {
       connectionId: string;
@@ -128,12 +119,12 @@ function isCurrent(operation: Operation): boolean {
 }
 
 function clearFeedback(): void {
-  actionError.value = "";
-  success.value = "";
+  actionError.value = '';
+  success.value = '';
 }
 
 function resetSensitiveState(): void {
-  credentialSecret.value = "";
+  credentialSecret.value = '';
   createRetry.value = null;
   rotateRetry.value = null;
   for (const key of Object.keys(rotationKeys)) delete rotationKeys[key];
@@ -154,19 +145,14 @@ function unresolvedSecretStorageKey(projectId: string): string {
 }
 
 function isPositiveInteger(value: unknown): value is number {
-  return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
 }
 
 function persistPendingTests(projectId: string): void {
-  const receipts = Object.values(pendingTests).filter(
-    (receipt) => receipt.projectId === projectId,
-  );
+  const receipts = Object.values(pendingTests).filter((receipt) => receipt.projectId === projectId);
   try {
     if (receipts.length) {
-      window.sessionStorage.setItem(
-        pendingTestsStorageKey(projectId),
-        JSON.stringify(receipts),
-      );
+      window.sessionStorage.setItem(pendingTestsStorageKey(projectId), JSON.stringify(receipts));
     } else {
       window.sessionStorage.removeItem(pendingTestsStorageKey(projectId));
     }
@@ -178,35 +164,33 @@ function persistPendingTests(projectId: string): void {
 function restorePendingTests(projectId: string): void {
   clearPendingTestsView();
   try {
-    const raw = window.sessionStorage.getItem(
-      pendingTestsStorageKey(projectId),
-    );
+    const raw = window.sessionStorage.getItem(pendingTestsStorageKey(projectId));
     const parsed: unknown = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(parsed)) return;
     for (const value of parsed.slice(0, 100)) {
       if (
         value &&
-        typeof value === "object" &&
-        "projectId" in value &&
+        typeof value === 'object' &&
+        'projectId' in value &&
         value.projectId === projectId &&
-        "connectionId" in value &&
-        typeof value.connectionId === "string" &&
+        'connectionId' in value &&
+        typeof value.connectionId === 'string' &&
         SAFE_ID_PATTERN.test(value.connectionId) &&
-        "credentialRevision" in value &&
+        'credentialRevision' in value &&
         isPositiveInteger(value.credentialRevision) &&
-        "state" in value &&
-        (value.state === "REQUESTING" || value.state === "POLLING")
+        'state' in value &&
+        (value.state === 'REQUESTING' || value.state === 'POLLING')
       ) {
         if (
-          value.state === "REQUESTING" &&
-          "expectedVersion" in value &&
+          value.state === 'REQUESTING' &&
+          'expectedVersion' in value &&
           isPositiveInteger(value.expectedVersion) &&
-          "idempotencyKey" in value &&
-          typeof value.idempotencyKey === "string" &&
+          'idempotencyKey' in value &&
+          typeof value.idempotencyKey === 'string' &&
           SAFE_ID_PATTERN.test(value.idempotencyKey)
         ) {
           pendingTests[value.connectionId] = {
-            state: "REQUESTING",
+            state: 'REQUESTING',
             projectId,
             connectionId: value.connectionId,
             credentialRevision: value.credentialRevision,
@@ -214,13 +198,13 @@ function restorePendingTests(projectId: string): void {
             idempotencyKey: value.idempotencyKey,
           };
         } else if (
-          value.state === "POLLING" &&
-          "testId" in value &&
-          typeof value.testId === "string" &&
+          value.state === 'POLLING' &&
+          'testId' in value &&
+          typeof value.testId === 'string' &&
           SAFE_ID_PATTERN.test(value.testId)
         ) {
           pendingTests[value.connectionId] = {
-            state: "POLLING",
+            state: 'POLLING',
             projectId,
             connectionId: value.connectionId,
             credentialRevision: value.credentialRevision,
@@ -247,9 +231,8 @@ function forgetPendingTest(receipt: PendingTestReceipt): void {
   const current = pendingTests[receipt.connectionId];
   const isSame =
     current?.state === receipt.state &&
-    (current.state === "REQUESTING"
-      ? current.idempotencyKey ===
-        (receipt as RequestingTestReceipt).idempotencyKey
+    (current.state === 'REQUESTING'
+      ? current.idempotencyKey === (receipt as RequestingTestReceipt).idempotencyKey
       : current.testId === (receipt as PollingTestReceipt).testId);
   if (isSame) {
     delete pendingTests[receipt.connectionId];
@@ -272,44 +255,41 @@ function rememberUnresolvedSecret(marker: UnresolvedSecretMarker): void {
 function restoreUnresolvedSecret(projectId: string): void {
   unresolvedSecretMarker.value = null;
   try {
-    const raw = window.sessionStorage.getItem(
-      unresolvedSecretStorageKey(projectId),
-    );
+    const raw = window.sessionStorage.getItem(unresolvedSecretStorageKey(projectId));
     const value: unknown = raw ? JSON.parse(raw) : null;
     if (
       value &&
-      typeof value === "object" &&
-      "projectId" in value &&
+      typeof value === 'object' &&
+      'projectId' in value &&
       value.projectId === projectId &&
-      "operation" in value &&
-      "idempotencyKey" in value &&
-      typeof value.idempotencyKey === "string" &&
+      'operation' in value &&
+      'idempotencyKey' in value &&
+      typeof value.idempotencyKey === 'string' &&
       SAFE_ID_PATTERN.test(value.idempotencyKey) &&
-      "createdAt" in value &&
-      typeof value.createdAt === "string" &&
+      'createdAt' in value &&
+      typeof value.createdAt === 'string' &&
       !Number.isNaN(Date.parse(value.createdAt))
     ) {
       if (
-        value.operation === "CREATE" &&
-        "displayName" in value &&
-        typeof value.displayName === "string" &&
+        value.operation === 'CREATE' &&
+        'displayName' in value &&
+        typeof value.displayName === 'string' &&
         value.displayName.length >= 1 &&
         value.displayName.length <= 120 &&
-        "region" in value &&
-        (value.region === "US" || value.region === "EU") &&
-        (!("remoteProjectLabel" in value) ||
-          (typeof value.remoteProjectLabel === "string" &&
-            value.remoteProjectLabel.length <= 120))
+        'region' in value &&
+        (value.region === 'US' || value.region === 'EU') &&
+        (!('remoteProjectLabel' in value) ||
+          (typeof value.remoteProjectLabel === 'string' && value.remoteProjectLabel.length <= 120))
       ) {
         const remoteProjectLabel =
-          "remoteProjectLabel" in value &&
-          typeof value.remoteProjectLabel === "string" &&
+          'remoteProjectLabel' in value &&
+          typeof value.remoteProjectLabel === 'string' &&
           value.remoteProjectLabel
             ? value.remoteProjectLabel
             : undefined;
         const marker: UnresolvedSecretMarker = {
           projectId,
-          operation: "CREATE",
+          operation: 'CREATE',
           idempotencyKey: value.idempotencyKey,
           createdAt: value.createdAt,
           displayName: value.displayName,
@@ -322,23 +302,21 @@ function restoreUnresolvedSecret(projectId: string): void {
           input: providerUi.value.createInput({
             displayName: marker.displayName,
             region: marker.region,
-            secret: "",
-            ...(marker.remoteProjectLabel
-              ? { remoteProjectLabel: marker.remoteProjectLabel }
-              : {}),
+            secret: '',
+            ...(marker.remoteProjectLabel ? { remoteProjectLabel: marker.remoteProjectLabel } : {}),
           }),
         };
       } else if (
-        value.operation === "ROTATE" &&
-        "connectionId" in value &&
-        typeof value.connectionId === "string" &&
+        value.operation === 'ROTATE' &&
+        'connectionId' in value &&
+        typeof value.connectionId === 'string' &&
         SAFE_ID_PATTERN.test(value.connectionId) &&
-        "expectedVersion" in value &&
+        'expectedVersion' in value &&
         isPositiveInteger(value.expectedVersion)
       ) {
         const marker: UnresolvedSecretMarker = {
           projectId,
-          operation: "ROTATE",
+          operation: 'ROTATE',
           idempotencyKey: value.idempotencyKey,
           createdAt: value.createdAt,
           connectionId: value.connectionId,
@@ -348,7 +326,7 @@ function restoreUnresolvedSecret(projectId: string): void {
         rotateRetry.value = {
           connectionId: marker.connectionId,
           idempotencyKey: marker.idempotencyKey,
-          input: providerUi.value.rotateInput(marker.expectedVersion, ""),
+          input: providerUi.value.rotateInput(marker.expectedVersion, ''),
         };
       }
     }
@@ -402,17 +380,15 @@ function cancelPollWaits(): void {
 }
 
 function terminalTest(test: IntegrationConnectionTestResponseDto): boolean {
-  return ["SUCCEEDED", "FAILED", "OUTCOME_UNKNOWN", "CANCELLED"].includes(
-    test.status,
-  );
+  return ['SUCCEEDED', 'FAILED', 'OUTCOME_UNKNOWN', 'CANCELLED'].includes(test.status);
 }
 
 function initializeDraft(connection: ProviderConnection): void {
   metadataDrafts[connection.id] = {
     displayName: connection.displayName,
-    remoteProjectLabel: connection.remoteProjectLabel ?? "",
+    remoteProjectLabel: connection.remoteProjectLabel ?? '',
   };
-  rotationKeys[connection.id] = "";
+  rotationKeys[connection.id] = '';
 }
 
 function isOutboundConnection(
@@ -432,19 +408,18 @@ async function load(): Promise<boolean> {
     if (request === loadRequest) {
       connections.value = [];
       loading.value = false;
-      loadError.value = "";
+      loadError.value = '';
     }
     return false;
   }
   loading.value = true;
-  loadError.value = "";
+  loadError.value = '';
   try {
     const response = await integrationConnectionsApi.list(operation.projectId);
     if (request !== loadRequest || !isCurrent(operation)) return false;
     connections.value = response.items.filter(
       (connection): connection is ProviderConnection =>
-        connection.projectId === operation.projectId &&
-        isOutboundConnection(connection),
+        connection.projectId === operation.projectId && isOutboundConnection(connection),
     );
     for (const connection of connections.value) initializeDraft(connection);
     if (!connections.value.length && props.canManage) showCreate.value = true;
@@ -475,7 +450,7 @@ async function awaitTest(
   }
   if (!receipt) {
     receipt = {
-      state: "REQUESTING",
+      state: 'REQUESTING',
       projectId: operation.projectId,
       connectionId: connection.id,
       credentialRevision: connection.credential.revision,
@@ -485,7 +460,7 @@ async function awaitTest(
     rememberPendingTest(receipt);
   }
   let test: IntegrationConnectionTestResponseDto;
-  if (receipt.state === "POLLING") {
+  if (receipt.state === 'POLLING') {
     try {
       test = await integrationConnectionsApi.getTest(
         operation.projectId,
@@ -514,10 +489,10 @@ async function awaitTest(
       test.credentialRevision !== receipt.credentialRevision
     ) {
       forgetPendingTest(receipt);
-      throw new Error("Unexpected integration test identity");
+      throw new Error('Unexpected integration test identity');
     }
     receipt = {
-      state: "POLLING",
+      state: 'POLLING',
       projectId: operation.projectId,
       connectionId: connection.id,
       credentialRevision: receipt.credentialRevision,
@@ -531,23 +506,19 @@ async function awaitTest(
     test.credentialRevision !== receipt.credentialRevision
   ) {
     forgetPendingTest(receipt);
-    throw new Error("Unexpected integration test identity");
+    throw new Error('Unexpected integration test identity');
   }
   for (let attempt = 0; attempt < 20 && !terminalTest(test); attempt += 1) {
     await waitForPoll(500);
     if (!isCurrent(operation)) return null;
-    test = await integrationConnectionsApi.getTest(
-      operation.projectId,
-      connection.id,
-      test.id,
-    );
+    test = await integrationConnectionsApi.getTest(operation.projectId, connection.id, test.id);
     if (
       test.projectId !== operation.projectId ||
       test.connectionId !== connection.id ||
       test.credentialRevision !== receipt.credentialRevision
     ) {
       forgetPendingTest(receipt);
-      throw new Error("Unexpected integration test identity");
+      throw new Error('Unexpected integration test identity');
     }
   }
   if (terminalTest(test) && receipt) forgetPendingTest(receipt);
@@ -559,34 +530,32 @@ function testMessage(test: IntegrationConnectionTestResponseDto): {
   error: boolean;
 } {
   switch (test.status) {
-    case "SUCCEEDED":
+    case 'SUCCEEDED':
       return {
         message: providerUi.value.connectionTestSucceeded,
         error: false,
       };
-    case "PENDING":
-    case "PROCESSING":
-    case "RETRY_WAIT":
+    case 'PENDING':
+    case 'PROCESSING':
+    case 'RETRY_WAIT':
       return {
-        message: "Проверка продолжается в фоне. Обновите статус позже.",
+        message: 'Проверка продолжается в фоне. Обновите статус позже.',
         error: false,
       };
-    case "OUTCOME_UNKNOWN":
+    case 'OUTCOME_UNKNOWN':
       return {
-        message:
-          "Результат проверки не подтверждён. Не активируйте подключение и повторите тест.",
+        message: 'Результат проверки не подтверждён. Не активируйте подключение и повторите тест.',
         error: true,
       };
-    case "CANCELLED":
+    case 'CANCELLED':
       return {
-        message: "Проверка отменена. Запустите её ещё раз.",
+        message: 'Проверка отменена. Запустите её ещё раз.',
         error: true,
       };
-    case "FAILED":
+    case 'FAILED':
       return {
         message:
-          test.errorCode !== null &&
-          providerUi.value.credentialRejectedCodes.has(test.errorCode)
+          test.errorCode !== null && providerUi.value.credentialRejectedCodes.has(test.errorCode)
             ? providerUi.value.connectionTestCredentialRejected
             : providerUi.value.connectionTestRejected,
         error: true,
@@ -624,8 +593,7 @@ async function performCreate(
       retry.input,
       retry.idempotencyKey,
     );
-    if (!isCurrent(operation) || created.projectId !== operation.projectId)
-      return;
+    if (!isCurrent(operation) || created.projectId !== operation.projectId) return;
     createRetry.value = null;
     clearUnresolvedSecret(operation.projectId);
     replaceConnection(created);
@@ -644,10 +612,7 @@ async function performCreate(
     } else if (createRetry.value) {
       createRetry.value = {
         ...createRetry.value,
-        input: providerUi.value.withCreateCredential(
-          createRetry.value.input,
-          "",
-        ),
+        input: providerUi.value.withCreateCredential(createRetry.value.input, ''),
       };
     }
     setActionFailure(cause, createRetry.value !== null);
@@ -655,10 +620,7 @@ async function performCreate(
     if (createRetry.value?.idempotencyKey === retry.idempotencyKey) {
       createRetry.value = {
         ...createRetry.value,
-        input: providerUi.value.withCreateCredential(
-          createRetry.value.input,
-          "",
-        ),
+        input: providerUi.value.withCreateCredential(createRetry.value.input, ''),
       };
     }
     if (isCurrent(operation)) creating.value = false;
@@ -669,16 +631,10 @@ async function create(): Promise<void> {
   const operation = beginOperation();
   const key = credentialSecret.value.trim();
   const name = displayName.value.trim();
-  if (
-    !operation ||
-    !props.canManage ||
-    creating.value ||
-    pendingConnectionId.value
-  )
-    return;
+  if (!operation || !props.canManage || creating.value || pendingConnectionId.value) return;
   if (secretRetryPending.value) {
     actionError.value =
-      "Сначала повторите или отмените предыдущий неподтверждённый запрос с credential.";
+      'Сначала повторите или отмените предыдущий неподтверждённый запрос с credential.';
     return;
   }
   if (!name || !providerUi.value.credentialValid(key)) {
@@ -702,7 +658,7 @@ async function create(): Promise<void> {
   createRetry.value = retry;
   rememberUnresolvedSecret({
     projectId: operation.projectId,
-    operation: "CREATE",
+    operation: 'CREATE',
     idempotencyKey: retry.idempotencyKey,
     createdAt: new Date().toISOString(),
     displayName: name,
@@ -711,15 +667,14 @@ async function create(): Promise<void> {
       ? { remoteProjectLabel: remoteProjectLabel.value.trim() }
       : {}),
   });
-  credentialSecret.value = "";
+  credentialSecret.value = '';
   await performCreate(operation, retry);
 }
 
 async function retryCreate(): Promise<void> {
   const operation = beginOperation();
   const retry = createRetry.value;
-  if (!operation || !retry || creating.value || pendingConnectionId.value)
-    return;
+  if (!operation || !retry || creating.value || pendingConnectionId.value) return;
   const key = credentialSecret.value.trim();
   if (!providerUi.value.credentialValid(key)) {
     actionError.value = `Повторно укажите корректный ${providerUi.value.credentialLabel}.`;
@@ -730,7 +685,7 @@ async function retryCreate(): Promise<void> {
     input: providerUi.value.withCreateCredential(retry.input, key),
   };
   createRetry.value = retryWithSecret;
-  credentialSecret.value = "";
+  credentialSecret.value = '';
   clearFeedback();
   creating.value = true;
   await performCreate(operation, retryWithSecret);
@@ -743,23 +698,22 @@ async function reconcileUnresolvedSecret(): Promise<void> {
   const reconciled = await load();
   if (!reconciled) {
     actionError.value =
-      "Не удалось сверить подключения. Защита от повторной отправки credential сохранена.";
+      'Не удалось сверить подключения. Защита от повторной отправки credential сохранена.';
     return;
   }
   if (
     !window.confirm(
-      "Сервер не может доказать итог предыдущего запроса. Он всё ещё мог выполниться после обновления списка. Снимая блокировку, вы принимаете риск повторного создания или ротации. Вы проверили результат вручную и хотите продолжить?",
+      'Сервер не может доказать итог предыдущего запроса. Он всё ещё мог выполниться после обновления списка. Снимая блокировку, вы принимаете риск повторного создания или ротации. Вы проверили результат вручную и хотите продолжить?',
     )
   ) {
     actionError.value =
-      "Защита сохранена. Проверьте результат предыдущей операции перед новой отправкой credential.";
+      'Защита сохранена. Проверьте результат предыдущей операции перед новой отправкой credential.';
     return;
   }
   createRetry.value = null;
   rotateRetry.value = null;
   clearUnresolvedSecret(marker.projectId);
-  success.value =
-    "Администратор снял защиту после ручной проверки неизвестного результата.";
+  success.value = 'Администратор снял защиту после ручной проверки неизвестного результата.';
 }
 
 async function discardCreateRetry(): Promise<void> {
@@ -769,11 +723,10 @@ async function discardCreateRetry(): Promise<void> {
 async function updateMetadata(connection: ProviderConnection): Promise<void> {
   const operation = beginOperation();
   const draft = metadataDrafts[connection.id];
-  if (!operation || !draft || !props.canManage || pendingConnectionId.value)
-    return;
+  if (!operation || !draft || !props.canManage || pendingConnectionId.value) return;
   const name = draft.displayName.trim();
   if (!name) {
-    actionError.value = "Название подключения не может быть пустым.";
+    actionError.value = 'Название подключения не может быть пустым.';
     return;
   }
   clearFeedback();
@@ -793,11 +746,9 @@ async function updateMetadata(connection: ProviderConnection): Promise<void> {
       commandKey(signature),
     );
     confirmCommand(signature);
-    if (!isCurrent(operation) || updated.projectId !== operation.projectId)
-      return;
+    if (!isCurrent(operation) || updated.projectId !== operation.projectId) return;
     if (!isOutboundConnection(updated)) {
-      actionError.value =
-        "Backend не вернул безопасное outbound-подключение. Обновите список.";
+      actionError.value = 'Backend не вернул безопасное outbound-подключение. Обновите список.';
       await load();
       return;
     }
@@ -824,8 +775,7 @@ async function performRotate(
       retry.input,
       retry.idempotencyKey,
     );
-    if (!isCurrent(operation) || rotated.projectId !== operation.projectId)
-      return;
+    if (!isCurrent(operation) || rotated.projectId !== operation.projectId) return;
     rotateRetry.value = null;
     clearUnresolvedSecret(operation.projectId);
     replaceConnection(rotated);
@@ -843,10 +793,7 @@ async function performRotate(
     } else if (rotateRetry.value) {
       rotateRetry.value = {
         ...rotateRetry.value,
-        input: providerUi.value.withRotateCredential(
-          rotateRetry.value.input,
-          "",
-        ),
+        input: providerUi.value.withRotateCredential(rotateRetry.value.input, ''),
       };
     }
     setActionFailure(cause, rotateRetry.value !== null);
@@ -854,10 +801,7 @@ async function performRotate(
     if (rotateRetry.value?.idempotencyKey === retry.idempotencyKey) {
       rotateRetry.value = {
         ...rotateRetry.value,
-        input: providerUi.value.withRotateCredential(
-          rotateRetry.value.input,
-          "",
-        ),
+        input: providerUi.value.withRotateCredential(rotateRetry.value.input, ''),
       };
     }
     if (isCurrent(operation)) pendingConnectionId.value = null;
@@ -866,11 +810,11 @@ async function performRotate(
 
 async function rotate(connection: ProviderConnection): Promise<void> {
   const operation = beginOperation();
-  const key = rotationKeys[connection.id]?.trim() ?? "";
+  const key = rotationKeys[connection.id]?.trim() ?? '';
   if (!operation || !props.canManage || pendingConnectionId.value) return;
   if (secretRetryPending.value) {
     actionError.value =
-      "Сначала повторите или отмените предыдущий неподтверждённый запрос с credential.";
+      'Сначала повторите или отмените предыдущий неподтверждённый запрос с credential.';
     return;
   }
   if (!providerUi.value.credentialValid(key)) {
@@ -895,27 +839,22 @@ async function rotate(connection: ProviderConnection): Promise<void> {
   rotateRetry.value = retry;
   rememberUnresolvedSecret({
     projectId: operation.projectId,
-    operation: "ROTATE",
+    operation: 'ROTATE',
     connectionId: connection.id,
     idempotencyKey: retry.idempotencyKey,
     createdAt: new Date().toISOString(),
     expectedVersion: connection.version,
   });
-  rotationKeys[connection.id] = "";
+  rotationKeys[connection.id] = '';
   await performRotate(operation, connection, retry);
 }
 
 async function retryRotate(connection: ProviderConnection): Promise<void> {
   const operation = beginOperation();
   const retry = rotateRetry.value;
-  if (
-    !operation ||
-    !retry ||
-    retry.connectionId !== connection.id ||
-    pendingConnectionId.value
-  )
+  if (!operation || !retry || retry.connectionId !== connection.id || pendingConnectionId.value)
     return;
-  const key = rotationKeys[connection.id]?.trim() ?? "";
+  const key = rotationKeys[connection.id]?.trim() ?? '';
   if (!providerUi.value.credentialValid(key)) {
     actionError.value = `Повторно укажите корректный ${providerUi.value.credentialLabel}.`;
     return;
@@ -925,7 +864,7 @@ async function retryRotate(connection: ProviderConnection): Promise<void> {
     input: providerUi.value.withRotateCredential(retry.input, key),
   };
   rotateRetry.value = retryWithSecret;
-  rotationKeys[connection.id] = "";
+  rotationKeys[connection.id] = '';
   clearFeedback();
   pendingConnectionId.value = connection.id;
   await performRotate(operation, connection, retryWithSecret);
@@ -937,21 +876,19 @@ async function discardRotateRetry(): Promise<void> {
 
 async function changeLifecycle(
   connection: ProviderConnection,
-  desired: "ACTIVE" | "PAUSED",
+  desired: 'ACTIVE' | 'PAUSED',
 ): Promise<void> {
   const operation = beginOperation();
   if (!operation || !props.canManage || pendingConnectionId.value) return;
   if (
-    desired === "ACTIVE" &&
+    desired === 'ACTIVE' &&
     providerUi.value.activationConfirmation &&
     !window.confirm(providerUi.value.activationConfirmation)
   )
     return;
   if (
-    desired === "PAUSED" &&
-    !window.confirm(
-      `Отключить ${providerUi.value.title}-подключение «${connection.displayName}»?`,
-    )
+    desired === 'PAUSED' &&
+    !window.confirm(`Отключить ${providerUi.value.title}-подключение «${connection.displayName}»?`)
   )
     return;
   clearFeedback();
@@ -959,7 +896,7 @@ async function changeLifecycle(
   const signature = `${desired.toLowerCase()}:${connection.id}:${connection.version}`;
   try {
     const updated =
-      desired === "ACTIVE"
+      desired === 'ACTIVE'
         ? await integrationConnectionsApi.activate(
             operation.projectId,
             connection.id,
@@ -973,19 +910,14 @@ async function changeLifecycle(
             commandKey(signature),
           );
     confirmCommand(signature);
-    if (!isCurrent(operation) || updated.projectId !== operation.projectId)
-      return;
+    if (!isCurrent(operation) || updated.projectId !== operation.projectId) return;
     if (!isOutboundConnection(updated)) {
-      actionError.value =
-        "Backend не вернул безопасное outbound-подключение. Обновите список.";
+      actionError.value = 'Backend не вернул безопасное outbound-подключение. Обновите список.';
       await load();
       return;
     }
     replaceConnection(updated);
-    success.value =
-      desired === "ACTIVE"
-        ? providerUi.value.enabled
-        : providerUi.value.disabled;
+    success.value = desired === 'ACTIVE' ? providerUi.value.enabled : providerUi.value.disabled;
   } catch (cause) {
     if (isCurrent(operation)) setActionFailure(cause);
   } finally {
@@ -994,64 +926,55 @@ async function changeLifecycle(
 }
 
 function replaceConnection(updated: ProviderConnection): void {
-  const existing = connections.value.some(
-    (connection) => connection.id === updated.id,
-  );
+  const existing = connections.value.some((connection) => connection.id === updated.id);
   connections.value = existing
-    ? connections.value.map((connection) =>
-        connection.id === updated.id ? updated : connection,
-      )
+    ? connections.value.map((connection) => (connection.id === updated.id ? updated : connection))
     : [...connections.value, updated];
   initializeDraft(updated);
-  emit("connectionsChanged");
+  emit('connectionsChanged');
 }
 
 function readyToActivate(connection: ProviderConnection): boolean {
   return (
-    connection.lifecycle !== "ARCHIVED" &&
-    connection.health === "HEALTHY" &&
+    connection.lifecycle !== 'ARCHIVED' &&
+    connection.health === 'HEALTHY' &&
     connection.credential.testedRevision === connection.credential.revision &&
-    connection.lifecycle !== "ACTIVE"
+    connection.lifecycle !== 'ACTIVE'
   );
 }
 
 function statusLabel(connection: ProviderConnection): string {
-  if (connection.lifecycle === "ARCHIVED") return "В архиве";
-  if (connection.outboundCircuitPermanent)
-    return "Ключ отклонён — нужна проверка";
+  if (connection.lifecycle === 'ARCHIVED') return 'В архиве';
+  if (connection.outboundCircuitPermanent) return 'Ключ отклонён — нужна проверка';
   if (
     connection.outboundCircuitOpenUntil &&
     Date.parse(connection.outboundCircuitOpenUntil) > Date.now()
   )
-    return "Отправка временно приостановлена";
-  if (connection.health === "FAILING") return "Требует внимания";
-  if (connection.health === "DEGRADED") return "Результат не подтверждён";
-  if (connection.lifecycle === "ACTIVE") return "Активно";
-  if (connection.lifecycle === "PAUSED") return "Отключено";
-  return connection.health === "HEALTHY" ? "Проверено" : "Черновик";
+    return 'Отправка временно приостановлена';
+  if (connection.health === 'FAILING') return 'Требует внимания';
+  if (connection.health === 'DEGRADED') return 'Результат не подтверждён';
+  if (connection.lifecycle === 'ACTIVE') return 'Активно';
+  if (connection.lifecycle === 'PAUSED') return 'Отключено';
+  return connection.health === 'HEALTHY' ? 'Проверено' : 'Черновик';
 }
 
 function circuitLabel(connection: ProviderConnection): string {
-  if (connection.outboundCircuitPermanent) return "Открыт до проверки ключа";
-  if (!connection.outboundCircuitOpenUntil) return "Закрыт";
+  if (connection.outboundCircuitPermanent) return 'Открыт до проверки ключа';
+  if (!connection.outboundCircuitOpenUntil) return 'Закрыт';
   return `До ${formatTimestamp(connection.outboundCircuitOpenUntil)}`;
 }
 
 function statusTone(connection: ProviderConnection): string {
-  if (connection.health === "FAILING" || connection.health === "DEGRADED")
-    return "INVALID";
-  if (connection.lifecycle === "ACTIVE") return "ACTIVE";
-  if (connection.health === "HEALTHY" && connection.lifecycle === "DRAFT")
-    return "HEALTHY";
+  if (connection.health === 'FAILING' || connection.health === 'DEGRADED') return 'INVALID';
+  if (connection.lifecycle === 'ACTIVE') return 'ACTIVE';
+  if (connection.health === 'HEALTHY' && connection.lifecycle === 'DRAFT') return 'HEALTHY';
   return connection.lifecycle;
 }
 
 function formatTimestamp(value: string | null): string {
-  if (!value) return "Ещё не выполнялась";
+  if (!value) return 'Ещё не выполнялась';
   const timestamp = new Date(value);
-  return Number.isNaN(timestamp.getTime())
-    ? "—"
-    : timestamp.toLocaleString("ru-RU");
+  return Number.isNaN(timestamp.getTime()) ? '—' : timestamp.toLocaleString('ru-RU');
 }
 
 function isAmbiguous(cause: unknown): boolean {
@@ -1061,37 +984,36 @@ function isAmbiguous(cause: unknown): boolean {
 
 function isIdempotencyConflict(cause: unknown): boolean {
   const error = normalizeApiError(cause);
-  return error.status === 409 && error.code === "IDEMPOTENCY_KEY_CONFLICT";
+  return error.status === 409 && error.code === 'IDEMPOTENCY_KEY_CONFLICT';
 }
 
 function setActionFailure(cause: unknown, retryAvailable = false): void {
   const error = normalizeApiError(cause);
-  if (error.code === "INTEGRATION_CONNECTION_VERSION_CONFLICT") {
+  if (error.code === 'INTEGRATION_CONNECTION_VERSION_CONFLICT') {
     void load();
     actionError.value =
-      "Подключение уже изменилось в другой вкладке. Данные обновлены — повторите действие.";
+      'Подключение уже изменилось в другой вкладке. Данные обновлены — повторите действие.';
     return;
   }
   if (error.code === providerUi.value.credentialInvalidCode) {
     actionError.value = `${providerUi.value.credentialLabel} имеет неверный формат.`;
     return;
   }
-  if (error.code === "INTEGRATION_CONNECTION_CURRENT_CREDENTIAL_UNTESTED") {
+  if (error.code === 'INTEGRATION_CONNECTION_CURRENT_CREDENTIAL_UNTESTED') {
     actionError.value = `Сначала успешно проверьте текущий ${providerUi.value.credentialShortLabel}.`;
     return;
   }
-  if (error.code === "FORBIDDEN" || error.status === 403) {
-    actionError.value = "Недостаточно прав для изменения интеграции.";
+  if (error.code === 'FORBIDDEN' || error.status === 403) {
+    actionError.value = 'Недостаточно прав для изменения интеграции.';
     return;
   }
   actionError.value = retryAvailable
-    ? "Сервер не подтвердил результат. Повторите запрос — Retenive использует тот же безопасный ключ повтора."
+    ? 'Сервер не подтвердил результат. Повторите запрос — Retenive использует тот же безопасный ключ повтора.'
     : providerUi.value.connectionMutationError;
 }
 
 watch(
-  () =>
-    [props.projectId, props.canRead, props.canManage, props.provider] as const,
+  () => [props.projectId, props.canRead, props.canManage, props.provider] as const,
   () => {
     epoch += 1;
     loadRequest += 1;
@@ -1139,27 +1061,15 @@ onBeforeUnmount(() => {
     :aria-labelledby="`${providerUi.slug}-title`"
   >
     <div class="card-heading">
-      <div
-        class="provider-mark"
-        :class="`provider-mark--${providerUi.slug}`"
-        aria-hidden="true"
-      >
+      <div class="provider-mark" :class="`provider-mark--${providerUi.slug}`" aria-hidden="true">
         {{ providerUi.mark }}
       </div>
       <div class="card-title">
-        <h2 :id="`${providerUi.slug}-title`">
-          Подключение к {{ providerUi.title }}
-        </h2>
-        <p>
-          Подключайте проекты, проверяйте доступ и управляйте отправкой событий.
-        </p>
+        <h2 :id="`${providerUi.slug}-title`">Подключение к {{ providerUi.title }}</h2>
+        <p>Подключайте проекты, проверяйте доступ и управляйте отправкой событий.</p>
       </div>
       <span class="status" :data-status="hasConnections ? 'ACTIVE' : 'EMPTY'">
-        {{
-          hasConnections
-            ? `Подключений: ${connections.length}`
-            : "Не подключено"
-        }}
+        {{ hasConnections ? `Подключений: ${connections.length}` : 'Не подключено' }}
       </span>
     </div>
 
@@ -1179,9 +1089,9 @@ onBeforeUnmount(() => {
       role="alert"
     >
       <p>
-        Предыдущий запрос с credential не был подтверждён и всё ещё мог
-        выполниться. Новая отправка заблокирована. Обновите список, проверьте
-        результат вручную и снимайте защиту только если принимаете риск повтора.
+        Предыдущий запрос с credential не был подтверждён и всё ещё мог выполниться. Новая отправка
+        заблокирована. Обновите список, проверьте результат вручную и снимайте защиту только если
+        принимаете риск повтора.
       </p>
       <button
         type="button"
@@ -1193,9 +1103,7 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
-    <div v-if="loading" class="skeleton" aria-live="polite">
-      Загружаем {{ providerUi.title }}…
-    </div>
+    <div v-if="loading" class="skeleton" aria-live="polite">Загружаем {{ providerUi.title }}…</div>
 
     <button
       v-if="!loading && canManage && hasConnections"
@@ -1205,11 +1113,8 @@ onBeforeUnmount(() => {
       :aria-controls="`${providerUi.slug}-create-connection`"
       @click="showCreate = !showCreate"
     >
-      <i
-        :class="showCreate ? 'pi pi-times' : 'pi pi-plus'"
-        aria-hidden="true"
-      />
-      {{ showCreate ? "Закрыть форму" : "Подключить ещё проект" }}
+      <i :class="showCreate ? 'pi pi-times' : 'pi pi-plus'" aria-hidden="true" />
+      {{ showCreate ? 'Закрыть форму' : 'Подключить ещё проект' }}
     </button>
 
     <div v-if="!loading" class="provider-connections">
@@ -1223,10 +1128,7 @@ onBeforeUnmount(() => {
           <div>
             <h3>{{ connection.displayName }}</h3>
             <p>
-              {{
-                connection.remoteProjectLabel ||
-                "Без подписи удалённого проекта"
-              }}
+              {{ connection.remoteProjectLabel || 'Без подписи удалённого проекта' }}
             </p>
           </div>
           <span class="status" :data-status="statusTone(connection)">
@@ -1251,7 +1153,7 @@ onBeforeUnmount(() => {
           </div>
           <div>
             <dt>Проверенная версия</dt>
-            <dd>{{ connection.credential.testedRevision ?? "—" }}</dd>
+            <dd>{{ connection.credential.testedRevision ?? '—' }}</dd>
           </div>
           <div>
             <dt>Последняя успешная проверка</dt>
@@ -1259,7 +1161,7 @@ onBeforeUnmount(() => {
           </div>
           <div>
             <dt>Последняя ошибка</dt>
-            <dd>{{ connection.lastTestErrorCode ?? "Нет" }}</dd>
+            <dd>{{ connection.lastTestErrorCode ?? 'Нет' }}</dd>
           </div>
           <div>
             <dt>Контур отправки</dt>
@@ -1271,10 +1173,7 @@ onBeforeUnmount(() => {
           </div>
         </dl>
 
-        <div
-          v-if="canManage && connection.lifecycle !== 'ARCHIVED'"
-          class="actions"
-        >
+        <div v-if="canManage && connection.lifecycle !== 'ARCHIVED'" class="actions">
           <button
             type="button"
             :data-action="`test-${providerUi.slug}`"
@@ -1305,18 +1204,11 @@ onBeforeUnmount(() => {
         </div>
 
         <details
-          v-if="
-            canManage &&
-            connection.lifecycle !== 'ARCHIVED' &&
-            metadataDrafts[connection.id]
-          "
+          v-if="canManage && connection.lifecycle !== 'ARCHIVED' && metadataDrafts[connection.id]"
           class="connection-settings"
         >
           <summary>
-            <span
-              ><i class="pi pi-cog" aria-hidden="true" />Настройки
-              подключения</span
-            >
+            <span><i class="pi pi-cog" aria-hidden="true" />Настройки подключения</span>
             <small>Название, внешний проект и ключ доступа</small>
           </summary>
           <div class="connection-settings__content">
@@ -1327,17 +1219,11 @@ onBeforeUnmount(() => {
             >
               <div class="settings-section-heading">
                 <h4>Название и проект</h4>
-                <p>
-                  Эти подписи помогают отличать подключения и не влияют на
-                  передачу данных.
-                </p>
+                <p>Эти подписи помогают отличать подключения и не влияют на передачу данных.</p>
               </div>
               <label class="integration-field">
                 <span>Название в Retenive</span>
-                <input
-                  v-model="metadataDrafts[connection.id]!.displayName"
-                  maxlength="120"
-                />
+                <input v-model="metadataDrafts[connection.id]!.displayName" maxlength="120" />
               </label>
               <label class="integration-field">
                 <span>Проект в {{ providerUi.title }} (необязательно)</span>
@@ -1364,9 +1250,7 @@ onBeforeUnmount(() => {
             >
               <div class="settings-section-heading">
                 <h4>Заменить ключ доступа</h4>
-                <p>
-                  Текущий ключ не отображается. Новый ключ будет сразу проверен.
-                </p>
+                <p>Текущий ключ не отображается. Новый ключ будет сразу проверен.</p>
               </div>
               <label class="integration-field">
                 <span>Новый {{ providerUi.credentialShortLabel }}</span>
@@ -1377,10 +1261,7 @@ onBeforeUnmount(() => {
                   autocomplete="off"
                   :maxlength="providerUi.credentialMaxLength"
                   :placeholder="providerUi.credentialPlaceholder"
-                  :disabled="
-                    secretRetryPending &&
-                    rotateRetry?.connectionId !== connection.id
-                  "
+                  :disabled="secretRetryPending && rotateRetry?.connectionId !== connection.id"
                 />
               </label>
               <div class="form-actions">
@@ -1402,9 +1283,7 @@ onBeforeUnmount(() => {
                   class="secondary"
                   :data-action="`retry-rotate-${providerUi.slug}`"
                   :disabled="
-                    pendingConnectionId !== null ||
-                    creating ||
-                    !rotationKeys[connection.id]
+                    pendingConnectionId !== null || creating || !rotationKeys[connection.id]
                   "
                   @click="retryRotate(connection)"
                 >
@@ -1443,21 +1322,12 @@ onBeforeUnmount(() => {
         @submit.prevent="create"
       >
         <div class="form-intro">
-          <span class="setup-step"
-            ><i class="pi pi-plus" aria-hidden="true"
-          /></span>
+          <span class="setup-step"><i class="pi pi-plus" aria-hidden="true" /></span>
           <div>
             <h3>
-              {{
-                hasConnections
-                  ? "Новое подключение"
-                  : "Подключите первый проект"
-              }}
+              {{ hasConnections ? 'Новое подключение' : 'Подключите первый проект' }}
             </h3>
-            <p>
-              Retenive сохранит ключ в зашифрованном виде и сразу выполнит тестовую
-              отправку.
-            </p>
+            <p>Retenive сохранит ключ в зашифрованном виде и сразу выполнит тестовую отправку.</p>
           </div>
         </div>
         <label class="integration-field">
@@ -1480,8 +1350,8 @@ onBeforeUnmount(() => {
             fluid
           />
           <small>
-            Выберите регион внешнего проекта. От него зависит адрес API, в
-            который Retenive отправляет события.
+            Выберите регион внешнего проекта. От него зависит адрес API, в который Retenive
+            отправляет события.
           </small>
         </label>
         <label class="integration-field">
@@ -1492,8 +1362,7 @@ onBeforeUnmount(() => {
             maxlength="120"
           />
           <small>
-            Любая понятная подпись внешнего проекта или рабочего пространства.
-            Это справочное поле.
+            Любая понятная подпись внешнего проекта или рабочего пространства. Это справочное поле.
           </small>
         </label>
         <label class="integration-field">
@@ -1512,9 +1381,7 @@ onBeforeUnmount(() => {
         <div class="form-actions">
           <button
             type="submit"
-            :disabled="
-              creating || pendingConnectionId !== null || secretRetryPending
-            "
+            :disabled="creating || pendingConnectionId !== null || secretRetryPending"
           >
             Создать и проверить
           </button>
@@ -1523,9 +1390,7 @@ onBeforeUnmount(() => {
             type="button"
             class="secondary"
             :data-action="`retry-create-${providerUi.slug}`"
-            :disabled="
-              creating || pendingConnectionId !== null || !credentialSecret
-            "
+            :disabled="creating || pendingConnectionId !== null || !credentialSecret"
             @click="retryCreate"
           >
             Повторить неподтверждённый запрос
@@ -1636,7 +1501,7 @@ onBeforeUnmount(() => {
   border-right: 2px solid currentColor;
   border-bottom: 2px solid currentColor;
   color: var(--text-secondary);
-  content: "";
+  content: '';
   transform: rotate(45deg);
   transition: transform 0.16s ease;
 }

@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch } from 'vue';
 import type {
   ScenarioLocalizationCatalogResponseDto,
   ScenarioLocalizationPolicyDto,
-} from "@/shared/api/generated/models";
-import type { ScenarioAction } from "@/shared/types/domain";
-import { localeDisplayName } from "@/shared/lib/locale";
-import { requiredLocales, resolveLocalizedContent } from "../model";
+} from '@/shared/api/generated/models';
+import type { ScenarioAction } from '@/shared/types/domain';
+import { localeDisplayName } from '@/shared/lib/locale';
+import { requiredLocales, resolveLocalizedContent } from '../model';
 
 const props = defineProps<{
   actions: ScenarioAction[];
@@ -23,7 +23,7 @@ watch(
 );
 
 function record(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value)
+  return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
 }
@@ -43,11 +43,7 @@ function resolve(value: unknown) {
       fallbackReason: `${requestedLocale.value} не включён в языки сценария — используется основной язык`,
     };
   }
-  return resolveLocalizedContent(
-    value,
-    requestedLocale.value,
-    props.catalog.defaultLocale,
-  );
+  return resolveLocalizedContent(value, requestedLocale.value, props.catalog.defaultLocale);
 }
 
 const rows = computed(() =>
@@ -56,7 +52,7 @@ const rows = computed(() =>
     return props.catalog.paths
       .filter((descriptor) => descriptor.actionType === action.type)
       .flatMap((descriptor) => {
-        if (descriptor.path === "config.options[].label") {
+        if (descriptor.path === 'config.options[].label') {
           return Array.isArray(config.options)
             ? config.options.map((option, index) => ({
                 key: `${action.nodeKey}:option:${record(option).id ?? index}`,
@@ -94,7 +90,7 @@ const rows = computed(() =>
     <div v-if="rows.length" class="preview-rows">
       <article v-for="row in rows" :key="row.key">
         <small>{{ row.action }} · {{ row.field }}</small>
-        <p>{{ row.text || "Контент не заполнен" }}</p>
+        <p>{{ row.text || 'Контент не заполнен' }}</p>
         <span>
           {{ requestedLocale }} → {{ row.contentLocale }}
           <template v-if="row.fallbackReason"> · {{ row.fallbackReason }}</template>
@@ -106,12 +102,52 @@ const rows = computed(() =>
 </template>
 
 <style scoped>
-.locale-preview { display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-subtle); }
-.locale-preview > label { display: grid; gap: 5px; color: var(--text-secondary); font-size: .68rem; font-weight: 700; }
-select { min-height: 34px; border: 1px solid var(--border-default); border-radius: 8px; padding: 5px 8px; background: var(--surface-card); color: var(--text-primary); }
-.preview-rows { display: grid; gap: 6px; max-height: 230px; overflow: auto; }
-article { padding: 8px; border-radius: 9px; background: var(--surface-subtle); }
-article small, article span, .empty-preview { color: var(--text-small-muted); font-size: .62rem; }
-article p { margin: 4px 0; font-size: .72rem; line-height: 1.4; white-space: pre-wrap; }
-.empty-preview { margin: 0; }
+.locale-preview {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+.locale-preview > label {
+  display: grid;
+  gap: 5px;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+select {
+  min-height: 34px;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 5px 8px;
+  background: var(--surface-card);
+  color: var(--text-primary);
+}
+.preview-rows {
+  display: grid;
+  gap: 6px;
+  max-height: 230px;
+  overflow: auto;
+}
+article {
+  padding: 8px;
+  border-radius: 9px;
+  background: var(--surface-subtle);
+}
+article small,
+article span,
+.empty-preview {
+  color: var(--text-small-muted);
+  font-size: 0.62rem;
+}
+article p {
+  margin: 4px 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+.empty-preview {
+  margin: 0;
+}
 </style>

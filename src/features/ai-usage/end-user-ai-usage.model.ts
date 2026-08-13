@@ -4,8 +4,8 @@ import {
   type AiUsageEventQueryBreakdown,
   type AiUsageRangeKey,
   type AiTextToSpeechPricingContext,
-} from "./ai-usage.model";
-import type { DecimalString } from "@/shared/lib/decimal-money";
+} from './ai-usage.model';
+import type { DecimalString } from '@/shared/lib/decimal-money';
 
 export type EndUserAiUsageCategory = AiUsageCategory;
 
@@ -53,13 +53,11 @@ export const END_USER_AI_USAGE_WINDOWS: ReadonlyArray<{
   label: string;
   value: AiUsageRangeKey;
 }> = [
-  { label: "Сегодня", value: "today" },
-  { label: "7 дней", value: "7d" },
-  { label: "30 дней", value: "30d" },
-  { label: "Всё", value: "all" },
+  { label: 'Сегодня', value: 'today' },
+  { label: '7 дней', value: '7d' },
+  { label: '30 дней', value: '30d' },
+  { label: 'Всё', value: 'all' },
 ];
 
-export const END_USER_AI_USAGE_CATEGORY_LABELS: Record<
-  EndUserAiUsageCategory,
-  string
-> = AI_USAGE_CATEGORY_LABELS;
+export const END_USER_AI_USAGE_CATEGORY_LABELS: Record<EndUserAiUsageCategory, string> =
+  AI_USAGE_CATEGORY_LABELS;

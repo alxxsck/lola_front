@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import hljs from "highlight.js/lib/core";
-import jsonLanguage from "highlight.js/lib/languages/json";
-import { computed, onBeforeUnmount, ref, useId, watch } from "vue";
+import hljs from 'highlight.js/lib/core';
+import jsonLanguage from 'highlight.js/lib/languages/json';
+import { computed, onBeforeUnmount, ref, useId, watch } from 'vue';
 
-hljs.registerLanguage("json", jsonLanguage);
+hljs.registerLanguage('json', jsonLanguage);
 
 const props = withDefaults(
   defineProps<{
@@ -14,44 +14,43 @@ const props = withDefaults(
     collapsedLines?: number;
   }>(),
   {
-    language: "JSON",
+    language: 'JSON',
     collapsible: false,
     collapsedLines: 10,
   },
 );
 
-type CopyState = "idle" | "copied" | "error";
+type CopyState = 'idle' | 'copied' | 'error';
 
-const copyState = ref<CopyState>("idle");
+const copyState = ref<CopyState>('idle');
 const expanded = ref(false);
 const contentId = `code-block-${useId()}`;
 const copyStatus = computed(() => {
-  if (copyState.value === "copied") return "Скопировано";
-  if (copyState.value === "error") return "Не удалось скопировать";
-  return "";
+  if (copyState.value === 'copied') return 'Скопировано';
+  if (copyState.value === 'error') return 'Не удалось скопировать';
+  return '';
 });
 const copyLabel = computed(() => {
-  if (copyState.value === "copied") return "Скопировано";
-  if (copyState.value === "error") return "Ошибка";
-  return "Копировать";
+  if (copyState.value === 'copied') return 'Скопировано';
+  if (copyState.value === 'error') return 'Ошибка';
+  return 'Копировать';
 });
 const copyIcon = computed(() => {
-  if (copyState.value === "copied") return "pi pi-check";
-  if (copyState.value === "error") return "pi pi-times";
-  return "pi pi-copy";
+  if (copyState.value === 'copied') return 'pi pi-check';
+  if (copyState.value === 'error') return 'pi pi-times';
+  return 'pi pi-copy';
 });
 const isLong = computed(
-  () =>
-    props.collapsible && props.code.split("\n").length > props.collapsedLines,
+  () => props.collapsible && props.code.split('\n').length > props.collapsedLines,
 );
 const isCollapsed = computed(() => isLong.value && !expanded.value);
 const collapsedStyle = computed(() => ({
-  "--collapsed-lines": String(props.collapsedLines),
+  '--collapsed-lines': String(props.collapsedLines),
 }));
 const highlightedCode = computed(() =>
-  props.language.toLowerCase() === "json"
-    ? hljs.highlight(props.code, { language: "json" }).value
-    : "",
+  props.language.toLowerCase() === 'json'
+    ? hljs.highlight(props.code, { language: 'json' }).value
+    : '',
 );
 let copyFeedbackTimer: number | undefined;
 
@@ -65,13 +64,13 @@ watch(
 async function copy() {
   try {
     await navigator.clipboard.writeText(props.code);
-    copyState.value = "copied";
+    copyState.value = 'copied';
   } catch {
-    copyState.value = "error";
+    copyState.value = 'error';
   }
   window.clearTimeout(copyFeedbackTimer);
   copyFeedbackTimer = window.setTimeout(() => {
-    copyState.value = "idle";
+    copyState.value = 'idle';
   }, 1800);
 }
 
@@ -84,17 +83,11 @@ onBeforeUnmount(() => window.clearTimeout(copyFeedbackTimer));
       <span><i class="pi pi-code" />{{ title }}</span>
       <span class="code-actions">
         <small>{{ language }}</small>
-        <button
-          type="button"
-          :aria-label="`Скопировать: ${title}`"
-          @click="copy"
-        >
+        <button type="button" :aria-label="`Скопировать: ${title}`" @click="copy">
           <i :class="copyIcon" />
           {{ copyLabel }}
         </button>
-        <span class="sr-only" role="status" aria-live="polite">{{
-          copyStatus
-        }}</span>
+        <span class="sr-only" role="status" aria-live="polite">{{ copyStatus }}</span>
       </span>
     </figcaption>
     <pre
@@ -103,13 +96,12 @@ onBeforeUnmount(() => window.clearTimeout(copyFeedbackTimer));
       :aria-label="title"
       :class="{ 'is-collapsed': isCollapsed }"
       :style="collapsedStyle"
-      ><code
+    ><code
         v-if="highlightedCode"
         class="hljs"
         v-html="highlightedCode"
       ></code
-      ><code v-else>{{ code }}</code></pre
-    >
+      ><code v-else>{{ code }}</code></pre>
     <button
       v-if="isLong"
       class="code-disclosure"
@@ -119,7 +111,7 @@ onBeforeUnmount(() => window.clearTimeout(copyFeedbackTimer));
       @click="expanded = !expanded"
     >
       <i :class="expanded ? 'pi pi-angle-up' : 'pi pi-angle-down'" />
-      {{ expanded ? "Свернуть" : "Показать полностью" }}
+      {{ expanded ? 'Свернуть' : 'Показать полностью' }}
     </button>
   </figure>
 </template>

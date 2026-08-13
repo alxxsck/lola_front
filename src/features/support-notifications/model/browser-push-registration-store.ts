@@ -18,13 +18,12 @@ export function readStoredBrowserPushRegistration(
     const raw = localStorage.getItem(key(actorId));
     if (!raw) return null;
     const value = JSON.parse(raw) as Partial<StoredBrowserPushRegistration>;
-    return typeof value.deviceId === "string" &&
-      typeof value.endpoint === "string" &&
-      typeof value.applicationServerKey === "string" &&
-      (typeof value.applicationServerKeyRevision === "string" ||
+    return typeof value.deviceId === 'string' &&
+      typeof value.endpoint === 'string' &&
+      typeof value.applicationServerKey === 'string' &&
+      (typeof value.applicationServerKeyRevision === 'string' ||
         value.applicationServerKeyRevision === null) &&
-      (value.resumeAfterLogin === undefined ||
-        typeof value.resumeAfterLogin === "boolean")
+      (value.resumeAfterLogin === undefined || typeof value.resumeAfterLogin === 'boolean')
       ? (value as StoredBrowserPushRegistration)
       : null;
   } catch {
@@ -32,9 +31,7 @@ export function readStoredBrowserPushRegistration(
   }
 }
 
-export function markStoredBrowserPushRegistrationForResume(
-  actorId: string | undefined,
-): void {
+export function markStoredBrowserPushRegistrationForResume(actorId: string | undefined): void {
   const registration = readStoredBrowserPushRegistration(actorId);
   if (!actorId || !registration) return;
   writeStoredBrowserPushRegistration(actorId, {

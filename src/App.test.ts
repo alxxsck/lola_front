@@ -1,35 +1,35 @@
-import { nextTick } from "vue";
-import { shallowMount } from "@vue/test-utils";
-import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it } from "vitest";
-import { useAuthStore } from "@/features/auth/auth.store";
-import App from "./App.vue";
+import { nextTick } from 'vue';
+import { shallowMount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { useAuthStore } from '@/features/auth/auth.store';
+import App from './App.vue';
 
 function project(id: string, name: string) {
   return {
     id,
     name,
-    slug: name.toLowerCase().replaceAll(" ", "-"),
-    status: "ACTIVE" as const,
-    supportedLocales: ["ru"],
+    slug: name.toLowerCase().replaceAll(' ', '-'),
+    status: 'ACTIVE' as const,
+    supportedLocales: ['ru'],
     effectivePermissionCodes: [],
   };
 }
 
-describe("App", () => {
+describe('App', () => {
   beforeEach(() => {
     sessionStorage.clear();
-    document.title = "";
+    document.title = '';
   });
 
-  it("shows the selected Project in the browser tab title", async () => {
+  it('shows the selected Project in the browser tab title', async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const auth = useAuthStore();
-    const firstProject = project("project-1", "Project One");
-    const secondProject = project("project-2", "Project Two");
+    const firstProject = project('project-1', 'Project One');
+    const secondProject = project('project-2', 'Project Two');
     auth.$patch({
-      phase: "AUTHENTICATED",
+      phase: 'AUTHENTICATED',
       projects: [firstProject, secondProject],
       project: firstProject,
     });
@@ -43,11 +43,11 @@ describe("App", () => {
       },
     });
 
-    expect(document.title).toBe("Retenive | Project One");
+    expect(document.title).toBe('Retenive | Project One');
 
-    auth.selectProject("project-2");
+    auth.selectProject('project-2');
     await nextTick();
 
-    expect(document.title).toBe("Retenive | Project Two");
+    expect(document.title).toBe('Retenive | Project Two');
   });
 });

@@ -1,8 +1,7 @@
-export type IntegrationActivityType = "CONNECTION" | "PERSONAL_MESSAGE";
+export type IntegrationActivityType = 'CONNECTION' | 'PERSONAL_MESSAGE';
 export type IntegrationActivityStatus =
-  "PENDING" | "SUCCEEDED" | "FAILED" | "CANCELLED" | "OUTCOME_UNKNOWN";
-export type IntegrationActivityContentState =
-  "AVAILABLE" | "REDACTED" | "NOT_APPLICABLE";
+  'PENDING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED' | 'OUTCOME_UNKNOWN';
+export type IntegrationActivityContentState = 'AVAILABLE' | 'REDACTED' | 'NOT_APPLICABLE';
 
 export interface IntegrationActivityItem {
   id: string;
@@ -46,7 +45,7 @@ export interface IntegrationActivityDetail extends IntegrationActivityItem {
 }
 
 export interface IntegrationActivityContent {
-  state: "AVAILABLE" | "REDACTED";
+  state: 'AVAILABLE' | 'REDACTED';
   kind: string;
   text: string | null;
   attachment: {
@@ -75,48 +74,39 @@ export interface IntegrationActivityPage {
 }
 
 export interface IntegrationActivityRepository {
-  list(
-    projectId: string,
-    filters?: IntegrationActivityFilters,
-  ): Promise<IntegrationActivityPage>;
-  get(
-    projectId: string,
-    activityId: string,
-  ): Promise<IntegrationActivityDetail>;
-  content(
-    projectId: string,
-    activityId: string,
-  ): Promise<IntegrationActivityContent>;
+  list(projectId: string, filters?: IntegrationActivityFilters): Promise<IntegrationActivityPage>;
+  get(projectId: string, activityId: string): Promise<IntegrationActivityDetail>;
+  content(projectId: string, activityId: string): Promise<IntegrationActivityContent>;
 }
 
 export const activityStatusOptions: Array<{
   label: string;
   value: IntegrationActivityStatus;
 }> = [
-  { label: "Ожидает", value: "PENDING" },
-  { label: "Успешно", value: "SUCCEEDED" },
-  { label: "Ошибка", value: "FAILED" },
-  { label: "Отменено", value: "CANCELLED" },
-  { label: "Результат неизвестен", value: "OUTCOME_UNKNOWN" },
+  { label: 'Ожидает', value: 'PENDING' },
+  { label: 'Успешно', value: 'SUCCEEDED' },
+  { label: 'Ошибка', value: 'FAILED' },
+  { label: 'Отменено', value: 'CANCELLED' },
+  { label: 'Результат неизвестен', value: 'OUTCOME_UNKNOWN' },
 ];
 
 const stateLabels: Record<string, string> = {
-  AWAITING_TELEGRAM: "Ожидает открытия Telegram",
-  AWAITING_CONFIRMATION: "Ожидает подтверждения",
-  CONNECTED: "Telegram подключён",
-  RELINKED: "Telegram переподключён",
-  EXPIRED: "Попытка истекла",
-  CANCELLED: "Попытка отменена",
-  ATTEMPTS_EXHAUSTED: "Попытки исчерпаны",
-  DISCONNECTED: "Telegram отключён",
-  STOPPED: "Пользователь остановил бота",
-  BLOCKED: "Бот заблокирован",
-  QUEUED: "В очереди",
-  SENDING: "Отправляется",
-  RETRY_WAIT: "Повторная попытка",
-  SENT: "Отправлено",
-  FAILED_PERMANENT: "Не доставлено",
-  OUTCOME_UNKNOWN: "Результат неизвестен",
+  AWAITING_TELEGRAM: 'Ожидает открытия Telegram',
+  AWAITING_CONFIRMATION: 'Ожидает подтверждения',
+  CONNECTED: 'Telegram подключён',
+  RELINKED: 'Telegram переподключён',
+  EXPIRED: 'Попытка истекла',
+  CANCELLED: 'Попытка отменена',
+  ATTEMPTS_EXHAUSTED: 'Попытки исчерпаны',
+  DISCONNECTED: 'Telegram отключён',
+  STOPPED: 'Пользователь остановил бота',
+  BLOCKED: 'Бот заблокирован',
+  QUEUED: 'В очереди',
+  SENDING: 'Отправляется',
+  RETRY_WAIT: 'Повторная попытка',
+  SENT: 'Отправлено',
+  FAILED_PERMANENT: 'Не доставлено',
+  OUTCOME_UNKNOWN: 'Результат неизвестен',
 };
 
 export function activityStateLabel(state: string): string {
@@ -124,34 +114,31 @@ export function activityStateLabel(state: string): string {
 }
 
 export function activityTypeLabel(type: IntegrationActivityType): string {
-  return type === "CONNECTION" ? "Подключение" : "Личное сообщение";
+  return type === 'CONNECTION' ? 'Подключение' : 'Личное сообщение';
 }
 
 export function activityOriginLabel(kind: string): string {
   return (
     {
-      CMS_USER: "CMS User",
-      AI: "Retenive AI",
-      SCENARIO: "Сценарий",
-      SYSTEM: "Система",
-      END_USER: "End User",
+      CMS_USER: 'CMS User',
+      AI: 'Retenive AI',
+      SCENARIO: 'Сценарий',
+      SYSTEM: 'Система',
+      END_USER: 'End User',
     }[kind] ?? kind
   );
 }
 
 export function activityStatusLabel(status: IntegrationActivityStatus): string {
-  return (
-    activityStatusOptions.find((option) => option.value === status)?.label ??
-    status
-  );
+  return activityStatusOptions.find((option) => option.value === status)?.label ?? status;
 }
 
 export function activityStatusSeverity(
   status: IntegrationActivityStatus,
-): "success" | "danger" | "warn" | "info" | "secondary" {
-  if (status === "SUCCEEDED") return "success";
-  if (status === "FAILED") return "danger";
-  if (status === "PENDING") return "info";
-  if (status === "OUTCOME_UNKNOWN") return "warn";
-  return "secondary";
+): 'success' | 'danger' | 'warn' | 'info' | 'secondary' {
+  if (status === 'SUCCEEDED') return 'success';
+  if (status === 'FAILED') return 'danger';
+  if (status === 'PENDING') return 'info';
+  if (status === 'OUTCOME_UNKNOWN') return 'warn';
+  return 'secondary';
 }

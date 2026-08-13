@@ -1,35 +1,31 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import type { ResourceReceipt } from "../model/reporting-types";
+import { ref } from 'vue';
+import type { ResourceReceipt } from '../model/reporting-types';
 
 defineProps<{ receipt: ResourceReceipt }>();
 const expanded = ref(false);
 
-function exactnessLabel(value: ResourceReceipt["exactness"]): string {
-  return value === "EXACT" ? "Точные данные" : "Оценка";
+function exactnessLabel(value: ResourceReceipt['exactness']): string {
+  return value === 'EXACT' ? 'Точные данные' : 'Оценка';
 }
 
-function completenessLabel(value: ResourceReceipt["completeness"]): string {
-  return value === "COMPLETE" ? "Полные данные" : "Есть исключения";
+function completenessLabel(value: ResourceReceipt['completeness']): string {
+  return value === 'COMPLETE' ? 'Полные данные' : 'Есть исключения';
 }
 </script>
 
 <template>
   <div class="evidence">
     <div class="evidence-summary">
-      <span
-        ><i class="pi pi-calendar" aria-hidden="true" />{{
-          receipt.periodLabel
-        }}</span
-      >
+      <span><i class="pi pi-calendar" aria-hidden="true" />{{ receipt.periodLabel }}</span>
       <span
         ><i class="pi pi-clock" aria-hidden="true" />данные по
         {{
-          new Date(receipt.dataAsOf).toLocaleString("ru", {
-            day: "numeric",
-            month: "short",
-            hour: "2-digit",
-            minute: "2-digit",
+          new Date(receipt.dataAsOf).toLocaleString('ru', {
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit',
           })
         }}</span
       >
@@ -43,16 +39,9 @@ function completenessLabel(value: ResourceReceipt["completeness"]): string {
           exactnessLabel(receipt.exactness)
         }}</span
       >
-      <button
-        type="button"
-        :aria-expanded="expanded"
-        @click="expanded = !expanded"
-      >
+      <button type="button" :aria-expanded="expanded" @click="expanded = !expanded">
         Объяснить
-        <i
-          :class="expanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
-          aria-hidden="true"
-        />
+        <i :class="expanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" aria-hidden="true" />
       </button>
     </div>
     <Transition name="evidence-reveal">
@@ -72,9 +61,7 @@ function completenessLabel(value: ResourceReceipt["completeness"]): string {
         <div>
           <dt>Исключения</dt>
           <dd>
-            {{
-              receipt.exclusions.length ? receipt.exclusions.join(", ") : "Нет"
-            }}
+            {{ receipt.exclusions.length ? receipt.exclusions.join(', ') : 'Нет' }}
           </dd>
         </div>
       </dl>

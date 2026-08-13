@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import type { RouteLocationRaw } from "vue-router";
-import Tag from "primevue/tag";
-import { cmsUserDetailRoute } from "@/features/cms-user-management/model/cms-user-route";
-import type { ProjectAIAnalysisListItemDto } from "@/shared/api/generated/models";
-import TechnicalIdentifier from "@/shared/ui/TechnicalIdentifier.vue";
+import { computed } from 'vue';
+import type { RouteLocationRaw } from 'vue-router';
+import Tag from 'primevue/tag';
+import { cmsUserDetailRoute } from '@/features/cms-user-management/model/cms-user-route';
+import type { ProjectAIAnalysisListItemDto } from '@/shared/api/generated/models';
+import TechnicalIdentifier from '@/shared/ui/TechnicalIdentifier.vue';
 import {
   formatUsdTicks,
   presentAnalysisCostStatus,
   presentAnalysisStatus,
-} from "../model/project-ai-analysis-presentation";
+} from '../model/project-ai-analysis-presentation';
 
 const props = defineProps<{
   item: ProjectAIAnalysisListItemDto;
@@ -25,60 +25,50 @@ interface TechnicalFact {
 }
 
 const effectiveStatus = computed(() => {
-  if (["PAUSED", "CANCELLED"].includes(props.item.state))
-    return props.item.state;
-  if (props.item.schedule && !props.item.latestRun) return "SCHEDULED";
+  if (['PAUSED', 'CANCELLED'].includes(props.item.state)) return props.item.state;
+  if (props.item.schedule && !props.item.latestRun) return 'SCHEDULED';
   return props.item.latestRun?.status ?? props.item.state;
 });
 const status = computed(() => presentAnalysisStatus(effectiveStatus.value));
 const author = computed(() => {
   if (props.item.createdByCmsUserId) return props.item.createdByCmsUserId;
-  return props.item.compatibility?.attributionStatus === "REQUESTER_UNKNOWN"
-    ? "Автор неизвестен (историческая запись)"
-    : "Автор не указан";
+  return props.item.compatibility?.attributionStatus === 'REQUESTER_UNKNOWN'
+    ? 'Автор неизвестен (историческая запись)'
+    : 'Автор не указан';
 });
 const compatibility = computed(() => {
   const value = props.item.compatibility;
   if (!value) return null;
   return {
     source:
-      value.sourceKind === "AI_REVIEW"
-        ? "Исторический AI Review"
-        : "Исторический AI-результат",
+      value.sourceKind === 'AI_REVIEW' ? 'Исторический AI Review' : 'Исторический AI-результат',
     provenance:
-      value.provenanceStatus === "PARTIAL"
-        ? "Provenance частичный"
-        : "Provenance неизвестен",
+      value.provenanceStatus === 'PARTIAL' ? 'Provenance частичный' : 'Provenance неизвестен',
   };
 });
 const detailTo = computed(() => ({
-  name: "ai-analysis-detail",
+  name: 'ai-analysis-detail',
   params: { analysisId: props.item.analysisId },
   ...(props.projectId ? { query: { projectId: props.projectId } } : {}),
 }));
 const technicalFacts = computed<TechnicalFact[]>(() => [
-  { label: "Analysis ID", value: props.item.analysisId },
+  { label: 'Analysis ID', value: props.item.analysisId },
   {
-    label: "Создал",
+    label: 'Создал',
     value: author.value,
     to: props.item.createdByCmsUserId
-      ? cmsUserDetailRoute(
-          props.item.createdByCmsUserId,
-          Boolean(props.canReadCmsUsers),
-        )
+      ? cmsUserDetailRoute(props.item.createdByCmsUserId, Boolean(props.canReadCmsUsers))
       : undefined,
   },
   ...(props.item.endUserId
     ? [
         {
-          label: "Пользователь данных",
+          label: 'Пользователь данных',
           value: props.item.endUserId,
           to: {
-            name: "users",
+            name: 'users',
             params: { endUserId: props.item.endUserId },
-            ...(props.projectId
-              ? { query: { projectId: props.projectId } }
-              : {}),
+            ...(props.projectId ? { query: { projectId: props.projectId } } : {}),
           },
         },
       ]
@@ -86,7 +76,7 @@ const technicalFacts = computed<TechnicalFact[]>(() => [
   ...(props.canReadCost && props.item.latestRun?.costAttributedToCmsUserId
     ? [
         {
-          label: "Расход администратора",
+          label: 'Расход администратора',
           value: props.item.latestRun.costAttributedToCmsUserId,
           to: cmsUserDetailRoute(
             props.item.latestRun.costAttributedToCmsUserId,
@@ -97,9 +87,9 @@ const technicalFacts = computed<TechnicalFact[]>(() => [
     : []),
 ]);
 
-const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
-  dateStyle: "medium",
-  timeStyle: "short",
+const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
 });
 
 function formatDate(value: string): string {
@@ -111,7 +101,7 @@ function formatDate(value: string): string {
   <article class="analysis-card" :data-analysis-id="item.analysisId">
     <header>
       <div class="analysis-title">
-        <span class="sequence">#{{ item.projectSequence ?? "—" }}</span>
+        <span class="sequence">#{{ item.projectSequence ?? '—' }}</span>
         <RouterLink :to="detailTo" class="title-link">
           <h2>{{ item.title }}</h2>
         </RouterLink>
@@ -127,11 +117,11 @@ function formatDate(value: string): string {
       <span>
         <small>Область</small>
         {{
-          item.scopeKind === "PROJECT"
-            ? "Весь проект"
-            : item.scopeKind === "END_USER"
-              ? "Пользователь"
-              : "Когорта"
+          item.scopeKind === 'PROJECT'
+            ? 'Весь проект'
+            : item.scopeKind === 'END_USER'
+              ? 'Пользователь'
+              : 'Когорта'
         }}
       </span>
       <span v-if="item.schedule?.nextRunAt">
@@ -154,10 +144,7 @@ function formatDate(value: string): string {
         <small>Зарезервировано</small>
         {{ formatUsdTicks(item.latestRun.reservedAiCostUsdTicks) }}
       </span>
-      <span
-        v-if="canReadCost && item.latestRun?.budgetReconciliationPending"
-        class="cost-pending"
-      >
+      <span v-if="canReadCost && item.latestRun?.budgetReconciliationPending" class="cost-pending">
         <small>Статус стоимости</small>
         Сверка стоимости ожидается
       </span>
@@ -221,16 +208,14 @@ function formatDate(value: string): string {
   background: var(--surface-card);
   border: 1px solid var(--line);
   border-radius: 20px;
-  box-shadow: 0 12px 34px
-    color-mix(in srgb, var(--surface-emphasis) 5%, transparent);
+  box-shadow: 0 12px 34px color-mix(in srgb, var(--surface-emphasis) 5%, transparent);
   transition:
     border-color 0.18s ease,
     box-shadow 0.18s ease;
 }
 .analysis-card:hover {
   border-color: color-mix(in srgb, var(--action-primary) 40%, var(--line));
-  box-shadow: 0 16px 40px
-    color-mix(in srgb, var(--surface-emphasis) 8%, transparent);
+  box-shadow: 0 16px 40px color-mix(in srgb, var(--surface-emphasis) 8%, transparent);
 }
 .title-link:focus-visible,
 .open-label:focus-visible,

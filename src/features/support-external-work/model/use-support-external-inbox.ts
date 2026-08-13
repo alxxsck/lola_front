@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { ref } from 'vue';
 import type {
   SupportExternalCommandStatusResponseDto,
   SupportExternalInboxListFreshness,
@@ -6,14 +6,14 @@ import type {
   SupportExternalItemListProvider,
   SupportExternalProjectItemResponseDto,
   SupportExternalTimelineMessageResponseDto,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
-import type { SupportExternalWorkSource } from "../api/support-external-work-source";
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
+import type { SupportExternalWorkSource } from '../api/support-external-work-source';
 
-export type SupportExternalInboxMode = "ATTENTION" | "LINKED";
-export type SupportExternalInboxAge = "ALL" | "24H" | "7D";
+export type SupportExternalInboxMode = 'ATTENTION' | 'LINKED';
+export type SupportExternalInboxAge = 'ALL' | '24H' | '7D';
 type CommandAttempt = {
-  kind: "RETRY" | "REFRESH_EVIDENCE";
+  kind: 'RETRY' | 'REFRESH_EVIDENCE';
   caseId: string;
   commandId: string;
   remoteItemId: string;
@@ -23,7 +23,7 @@ type CommandAttempt = {
 
 interface RetainedCommandAttempt {
   attempt: CommandAttempt;
-  state: "UNKNOWN_OUTCOME" | "RETRYABLE_FAILURE";
+  state: 'UNKNOWN_OUTCOME' | 'RETRYABLE_FAILURE';
 }
 
 const retainedCommandAttempts = new Map<string, RetainedCommandAttempt>();
@@ -45,13 +45,11 @@ export function createSupportExternalInboxController(
   context: SupportExternalInboxContext,
   source: SupportExternalWorkSource,
 ) {
-  const mode = ref<SupportExternalInboxMode>(
-    context.canReadInbox() ? "ATTENTION" : "LINKED",
-  );
-  const provider = ref<"ALL" | SupportExternalItemListProvider>("ALL");
-  const freshness = ref<"ALL" | SupportExternalItemListFreshness>("ALL");
-  const status = ref("");
-  const age = ref<SupportExternalInboxAge>("ALL");
+  const mode = ref<SupportExternalInboxMode>(context.canReadInbox() ? 'ATTENTION' : 'LINKED');
+  const provider = ref<'ALL' | SupportExternalItemListProvider>('ALL');
+  const freshness = ref<'ALL' | SupportExternalItemListFreshness>('ALL');
+  const status = ref('');
+  const age = ref<SupportExternalInboxAge>('ALL');
   const items = ref<SupportExternalProjectItemResponseDto[]>([]);
   const detail = ref<SupportExternalProjectItemResponseDto | null>(null);
   const timeline = ref<SupportExternalTimelineMessageResponseDto[]>([]);
@@ -64,9 +62,9 @@ export function createSupportExternalInboxController(
   const loading = ref(false);
   const loadingDetail = ref(false);
   const mutating = ref(false);
-  const error = ref("");
-  const success = ref("");
-  const recovery = ref<"UNKNOWN_OUTCOME" | "RETRYABLE_FAILURE" | null>(null);
+  const error = ref('');
+  const success = ref('');
+  const recovery = ref<'UNKNOWN_OUTCOME' | 'RETRYABLE_FAILURE' | null>(null);
   let generation = 0;
   let selectionGeneration = 0;
   let listAbort: AbortController | null = null;
@@ -107,7 +105,7 @@ export function createSupportExternalInboxController(
     if (pendingAttemptScope && pendingAttempt && (mutating.value || recovery.value))
       retainedCommandAttempts.set(pendingAttemptScope, {
         attempt: pendingAttempt,
-        state: recovery.value ?? "UNKNOWN_OUTCOME",
+        state: recovery.value ?? 'UNKNOWN_OUTCOME',
       });
     generation += 1;
     listAbort?.abort();
@@ -120,8 +118,8 @@ export function createSupportExternalInboxController(
     cursorHistory = [null];
     loading.value = false;
     mutating.value = false;
-    error.value = "";
-    success.value = "";
+    error.value = '';
+    success.value = '';
     recovery.value = null;
     pendingAttempt = null;
     pendingAttemptScope = null;
@@ -129,9 +127,9 @@ export function createSupportExternalInboxController(
   }
 
   function updatedAfter(): string | undefined {
-    if (age.value === "ALL") return undefined;
+    if (age.value === 'ALL') return undefined;
     const time = new Date((context.now?.() ?? new Date()).getTime());
-    time.setUTCHours(time.getUTCHours() - (age.value === "24H" ? 24 : 24 * 7));
+    time.setUTCHours(time.getUTCHours() - (age.value === '24H' ? 24 : 24 * 7));
     return time.toISOString();
   }
 
@@ -142,15 +140,15 @@ export function createSupportExternalInboxController(
       value.status !== 403 &&
       value.status !== 404 &&
       value.status !== 428 &&
-      value.code !== "MFA_REQUIRED" &&
-      value.code !== "MFA_ENROLLMENT_REQUIRED"
+      value.code !== 'MFA_REQUIRED' &&
+      value.code !== 'MFA_ENROLLMENT_REQUIRED'
     )
       return false;
     if (pendingAttemptScope) retainedCommandAttempts.delete(pendingAttemptScope);
     pendingAttempt = null;
     pendingAttemptScope = null;
     reset();
-    error.value = "Очередь внешних задач недоступна для текущего проекта или роли.";
+    error.value = 'Очередь внешних задач недоступна для текущего проекта или роли.';
     await context.onForbidden?.();
     return true;
   }
@@ -163,13 +161,11 @@ export function createSupportExternalInboxController(
       reset();
       return;
     }
-    if (mode.value === "ATTENTION" && !context.canReadInbox())
-      mode.value = "LINKED";
-    if (mode.value === "LINKED" && !context.canReadLinked())
-      mode.value = "ATTENTION";
+    if (mode.value === 'ATTENTION' && !context.canReadInbox()) mode.value = 'LINKED';
+    if (mode.value === 'LINKED' && !context.canReadLinked()) mode.value = 'ATTENTION';
     if (
-      (mode.value === "ATTENTION" && !context.canReadInbox()) ||
-      (mode.value === "LINKED" && !context.canReadLinked())
+      (mode.value === 'ATTENTION' && !context.canReadInbox()) ||
+      (mode.value === 'LINKED' && !context.canReadLinked())
     ) {
       reset();
       return;
@@ -179,20 +175,19 @@ export function createSupportExternalInboxController(
     const abort = new AbortController();
     listAbort = abort;
     loading.value = true;
-    error.value = "";
-    success.value = "";
+    error.value = '';
+    success.value = '';
     try {
       const page =
-        mode.value === "ATTENTION"
+        mode.value === 'ATTENTION'
           ? await source.listInbox(
               projectId,
               {
                 limit: 50,
                 ...(cursor ? { cursor } : {}),
-                ...(freshness.value !== "ALL"
+                ...(freshness.value !== 'ALL'
                   ? {
-                      freshness:
-                        freshness.value as SupportExternalInboxListFreshness,
+                      freshness: freshness.value as SupportExternalInboxListFreshness,
                     }
                   : {}),
               },
@@ -203,11 +198,9 @@ export function createSupportExternalInboxController(
               {
                 limit: 50,
                 ...(cursor ? { cursor } : {}),
-                linked: "LINKED",
-                ...(provider.value !== "ALL" ? { provider: provider.value } : {}),
-                ...(freshness.value !== "ALL"
-                  ? { freshness: freshness.value }
-                  : {}),
+                linked: 'LINKED',
+                ...(provider.value !== 'ALL' ? { provider: provider.value } : {}),
+                ...(freshness.value !== 'ALL' ? { freshness: freshness.value } : {}),
                 ...(status.value.trim() ? { status: status.value.trim() } : {}),
                 ...(updatedAfter() ? { updatedAfter: updatedAfter() } : {}),
               },
@@ -222,14 +215,14 @@ export function createSupportExternalInboxController(
         pendingAttempt = retained.attempt;
         pendingAttemptScope = scope;
         recovery.value = retained.state;
-        error.value = "Команда восстановления не подтверждена. Разрешён только точный повтор.";
+        error.value = 'Команда восстановления не подтверждена. Разрешён только точный повтор.';
       }
     } catch (cause) {
       if (!current(scope, requestGeneration)) return;
-      if (normalizeApiError(cause).name === "AbortError") return;
+      if (normalizeApiError(cause).name === 'AbortError') return;
       if (await handleAccessFailure(cause)) return;
       items.value = [];
-      error.value = "Не удалось загрузить очередь внешних задач.";
+      error.value = 'Не удалось загрузить очередь внешних задач.';
     } finally {
       if (current(scope, requestGeneration)) {
         loading.value = false;
@@ -278,20 +271,20 @@ export function createSupportExternalInboxController(
     timeline.value = [];
     commands.value = [];
     loadingDetail.value = true;
-    error.value = "";
+    error.value = '';
     const sameSelection = () =>
       requestGeneration === selectionGeneration &&
       scopeKey() === scope &&
       selectedItemId.value === itemId;
     try {
       const item =
-        mode.value === "ATTENTION"
+        mode.value === 'ATTENTION'
           ? await source.readInboxItem(projectId, itemId, abort.signal)
           : await source.readItem(projectId, itemId, abort.signal);
       if (!sameSelection()) return;
       detail.value = item;
       const timelineRequest =
-        mode.value === "ATTENTION"
+        mode.value === 'ATTENTION'
           ? source.readInboxTimeline(projectId, itemId, { limit: 100 }, abort.signal)
           : item.link
             ? source.readLinkedTimeline(
@@ -303,18 +296,10 @@ export function createSupportExternalInboxController(
               )
             : Promise.resolve({ items: [], nextCursor: null });
       const commandRequest =
-        mode.value === "LINKED" && item.link && context.canReadLinked()
-          ? source.listCaseCommands(
-              projectId,
-              item.link.caseId,
-              { limit: 50 },
-              abort.signal,
-            )
+        mode.value === 'LINKED' && item.link && context.canReadLinked()
+          ? source.listCaseCommands(projectId, item.link.caseId, { limit: 50 }, abort.signal)
           : Promise.resolve({ items: [], nextCursor: null });
-      const [timelinePage, commandPage] = await Promise.all([
-        timelineRequest,
-        commandRequest,
-      ]);
+      const [timelinePage, commandPage] = await Promise.all([timelineRequest, commandRequest]);
       if (!sameSelection()) return;
       timeline.value = timelinePage.items;
       commands.value = commandPage.items;
@@ -322,12 +307,12 @@ export function createSupportExternalInboxController(
       commandNextCursor.value = commandPage.nextCursor;
     } catch (cause) {
       if (!sameSelection()) return;
-      if (normalizeApiError(cause).name === "AbortError") return;
+      if (normalizeApiError(cause).name === 'AbortError') return;
       if (await handleAccessFailure(cause)) return;
       detail.value = null;
       timeline.value = [];
       commands.value = [];
-      error.value = "Не удалось загрузить подробности и историю внешней задачи.";
+      error.value = 'Не удалось загрузить подробности и историю внешней задачи.';
     } finally {
       if (sameSelection()) {
         loadingDetail.value = false;
@@ -348,7 +333,7 @@ export function createSupportExternalInboxController(
     loadingDetail.value = true;
     try {
       const page =
-        mode.value === "ATTENTION"
+        mode.value === 'ATTENTION'
           ? await source.readInboxTimeline(
               projectId,
               item.itemId,
@@ -379,9 +364,9 @@ export function createSupportExternalInboxController(
         selectedItemId.value !== item.itemId
       )
         return;
-      if (normalizeApiError(cause).name === "AbortError") return;
+      if (normalizeApiError(cause).name === 'AbortError') return;
       if (await handleAccessFailure(cause)) return;
-      error.value = "Следующая страница истории пока недоступна.";
+      error.value = 'Следующая страница истории пока недоступна.';
     } finally {
       if (detailAbort === abort) {
         detailAbort = null;
@@ -422,9 +407,9 @@ export function createSupportExternalInboxController(
         selectedItemId.value !== item.itemId
       )
         return;
-      if (normalizeApiError(cause).name === "AbortError") return;
+      if (normalizeApiError(cause).name === 'AbortError') return;
       if (await handleAccessFailure(cause)) return;
-      error.value = "Следующая страница команд пока недоступна.";
+      error.value = 'Следующая страница команд пока недоступна.';
     } finally {
       if (detailAbort === abort) {
         detailAbort = null;
@@ -437,10 +422,7 @@ export function createSupportExternalInboxController(
     if (mutating.value) return;
     const projectId = context.projectId();
     const scope = scopeKey();
-    const allowed =
-      attempt.kind === "RETRY"
-        ? context.canRetry()
-        : context.canResolveUnknown();
+    const allowed = attempt.kind === 'RETRY' ? context.canRetry() : context.canResolveUnknown();
     if (!projectId || !scope || !allowed) return;
     const abort = new AbortController();
     mutationAbort = abort;
@@ -448,13 +430,13 @@ export function createSupportExternalInboxController(
     pendingAttemptScope = scope;
     retainedCommandAttempts.set(scope, {
       attempt,
-      state: "UNKNOWN_OUTCOME",
+      state: 'UNKNOWN_OUTCOME',
     });
     mutating.value = true;
-    error.value = "";
-    success.value = "";
+    error.value = '';
+    success.value = '';
     try {
-      if (attempt.kind === "RETRY")
+      if (attempt.kind === 'RETRY')
         await source.retryCommand(
           projectId,
           attempt.caseId,
@@ -480,7 +462,7 @@ export function createSupportExternalInboxController(
       recovery.value = null;
       const selected = selectedItemId.value;
       if (selected) await selectItem(selected);
-      success.value = "Команда восстановления подтверждена сервером.";
+      success.value = 'Команда восстановления подтверждена сервером.';
     } catch (cause) {
       const value = normalizeApiError(cause);
       const terminal =
@@ -488,31 +470,32 @@ export function createSupportExternalInboxController(
         value.status === 403 ||
         value.status === 404 ||
         value.status === 428 ||
-        value.code === "MFA_REQUIRED" ||
-        value.code === "MFA_ENROLLMENT_REQUIRED";
+        value.code === 'MFA_REQUIRED' ||
+        value.code === 'MFA_ENROLLMENT_REQUIRED';
       if (terminal) retainedCommandAttempts.delete(scope);
       if (scopeKey() !== scope) return;
       if (await handleAccessFailure(value)) return;
       if (value.status === 0) {
         retainedCommandAttempts.set(scope, {
           attempt,
-          state: "UNKNOWN_OUTCOME",
+          state: 'UNKNOWN_OUTCOME',
         });
-        recovery.value = "UNKNOWN_OUTCOME";
-        error.value = "Результат команды восстановления неизвестен. Разрешён только точный повтор.";
+        recovery.value = 'UNKNOWN_OUTCOME';
+        error.value = 'Результат команды восстановления неизвестен. Разрешён только точный повтор.';
       } else if (value.status === 429 || value.status === 503) {
         retainedCommandAttempts.set(scope, {
           attempt,
-          state: "RETRYABLE_FAILURE",
+          state: 'RETRYABLE_FAILURE',
         });
-        recovery.value = "RETRYABLE_FAILURE";
-        error.value = "Внешняя система временно недоступна. Исходная команда восстановления сохранена.";
+        recovery.value = 'RETRYABLE_FAILURE';
+        error.value =
+          'Внешняя система временно недоступна. Исходная команда восстановления сохранена.';
       } else {
         retainedCommandAttempts.delete(scope);
         pendingAttempt = null;
         pendingAttemptScope = null;
         recovery.value = null;
-        error.value = "Команда восстановления отклонена; состояние на сервере перечитано.";
+        error.value = 'Команда восстановления отклонена; состояние на сервере перечитано.';
         const selected = selectedItemId.value;
         if (selected) await selectItem(selected);
       }
@@ -533,19 +516,18 @@ export function createSupportExternalInboxController(
     const target = command(commandId);
     if (
       !item?.link ||
-      !target?.allowedActions.includes("RETRY") ||
+      !target?.allowedActions.includes('RETRY') ||
       !context.canRetry() ||
       recovery.value
     )
       return;
     await runCommand({
-      kind: "RETRY",
+      kind: 'RETRY',
       caseId: item.link.caseId,
       commandId,
       remoteItemId: item.remoteItemId,
       expectedVersion: target.version,
-      idempotencyKey:
-        context.createIdempotencyKey?.() ?? crypto.randomUUID(),
+      idempotencyKey: context.createIdempotencyKey?.() ?? crypto.randomUUID(),
     });
   }
 
@@ -554,19 +536,18 @@ export function createSupportExternalInboxController(
     const target = command(commandId);
     if (
       !item?.link ||
-      !target?.allowedActions.includes("REFRESH_EVIDENCE") ||
+      !target?.allowedActions.includes('REFRESH_EVIDENCE') ||
       !context.canResolveUnknown() ||
       recovery.value
     )
       return;
     await runCommand({
-      kind: "REFRESH_EVIDENCE",
+      kind: 'REFRESH_EVIDENCE',
       caseId: item.link.caseId,
       commandId,
       remoteItemId: item.remoteItemId,
       expectedVersion: target.version,
-      idempotencyKey:
-        context.createIdempotencyKey?.() ?? crypto.randomUUID(),
+      idempotencyKey: context.createIdempotencyKey?.() ?? crypto.randomUUID(),
     });
   }
 

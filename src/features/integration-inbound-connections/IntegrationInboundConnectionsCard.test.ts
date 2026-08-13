@@ -1,11 +1,11 @@
-import { flushPromises, mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import IntegrationInboundConnectionsCard from "./IntegrationInboundConnectionsCard.vue";
+import { flushPromises, mount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import IntegrationInboundConnectionsCard from './IntegrationInboundConnectionsCard.vue';
 
-vi.mock("primevue/select", () => ({
+vi.mock('primevue/select', () => ({
   default: {
-    props: ["modelValue", "options", "optionLabel", "optionValue", "name"],
-    emits: ["update:modelValue"],
+    props: ['modelValue', 'options', 'optionLabel', 'optionValue', 'name'],
+    emits: ['update:modelValue'],
     template: `<select :name="name" :value="modelValue" @change="$emit('update:modelValue', $event.target.value)">
       <option v-for="option in options" :key="option[optionValue]" :value="option[optionValue]">{{ option[optionLabel] }}</option>
     </select>`,
@@ -20,16 +20,16 @@ const api = vi.hoisted(() => ({
   activate: vi.fn(),
 }));
 
-vi.mock("./integration-inbound-connections.api", () => ({
+vi.mock('./integration-inbound-connections.api', () => ({
   integrationInboundConnectionsApi: api,
 }));
 
 const inboundConnection = (overrides: Record<string, unknown> = {}) => ({
-  id: "connection-1",
-  projectId: "project-1",
-  provider: "AMPLITUDE",
-  displayName: "Amplitude inbound",
-  region: "EU",
+  id: 'connection-1',
+  projectId: 'project-1',
+  provider: 'AMPLITUDE',
+  displayName: 'Amplitude inbound',
+  region: 'EU',
   remoteProjectLabel: null,
   inboundEnabled: true,
   inbound: {
@@ -41,106 +41,96 @@ const inboundConnection = (overrides: Record<string, unknown> = {}) => ({
     admissionReady: false,
   },
   outboundEnabled: false,
-  lifecycle: "DRAFT",
-  health: "UNKNOWN",
+  lifecycle: 'DRAFT',
+  health: 'UNKNOWN',
   credential: null,
   version: 1,
-  updatedAt: "2026-08-04T10:00:00.000Z",
+  updatedAt: '2026-08-04T10:00:00.000Z',
   ...overrides,
 });
 
-describe("IntegrationInboundConnectionsCard", () => {
+describe('IntegrationInboundConnectionsCard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     api.list.mockResolvedValue({ items: [inboundConnection()] });
-    vi.stubGlobal("crypto", { randomUUID: vi.fn(() => "command-key") });
+    vi.stubGlobal('crypto', { randomUUID: vi.fn(() => 'command-key') });
   });
 
-  it("shows inbound state without reading the nullable outbound credential", async () => {
+  it('shows inbound state without reading the nullable outbound credential', async () => {
     const wrapper = mount(IntegrationInboundConnectionsCard, {
       props: {
-        projectId: "project-1",
-        provider: "AMPLITUDE",
+        projectId: 'project-1',
+        provider: 'AMPLITUDE',
         canRead: true,
         canManage: false,
       },
     });
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Amplitude inbound");
-    expect(wrapper.text()).toContain("Webhook ещё не настроен");
-    expect(wrapper.text()).not.toContain("Project API Key");
+    expect(wrapper.text()).toContain('Amplitude inbound');
+    expect(wrapper.text()).toContain('Webhook ещё не настроен');
+    expect(wrapper.text()).not.toContain('Project API Key');
   });
 
-  it("explains that inbound protection is not a second provider account", async () => {
+  it('explains that inbound protection is not a second provider account', async () => {
     const wrapper = mount(IntegrationInboundConnectionsCard, {
       props: {
-        projectId: "project-1",
-        provider: "CUSTOMER_IO",
+        projectId: 'project-1',
+        provider: 'CUSTOMER_IO',
         canRead: true,
         canManage: true,
       },
     });
     await flushPromises();
 
-    expect(wrapper.text()).toContain(
-      "Это не второй аккаунт Customer.io и не ещё один API-ключ",
-    );
-    expect(wrapper.text()).toContain("отдельный адрес webhook и секрет");
+    expect(wrapper.text()).toContain('Это не второй аккаунт Customer.io и не ещё один API-ключ');
+    expect(wrapper.text()).toContain('отдельный адрес webhook и секрет');
   });
 
-  it("creates a draft first, then configures and displays the one-time secret", async () => {
-    const draft = inboundConnection({ id: "connection-new", version: 1 });
-    api.list
-      .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValue({ items: [draft] });
+  it('creates a draft first, then configures and displays the one-time secret', async () => {
+    const draft = inboundConnection({ id: 'connection-new', version: 1 });
+    api.list.mockResolvedValueOnce({ items: [] }).mockResolvedValue({ items: [draft] });
     api.create.mockResolvedValue(draft);
     api.setup.mockResolvedValue({
       replayed: false,
-      connectionId: "connection-new",
+      connectionId: 'connection-new',
       connectionVersion: 2,
-      endpointPath: "/api/v1/integrations/inbound/amplitude/public-key",
-      headerName: "x-retenive-amplitude-secret",
-      secret: "one-time-secret",
+      endpointPath: '/api/v1/integrations/inbound/amplitude/public-key',
+      headerName: 'x-retenive-amplitude-secret',
+      secret: 'one-time-secret',
       credentialRevision: 1,
-      credentialFingerprint: "1234567890abcdef",
+      credentialFingerprint: '1234567890abcdef',
       admissionReady: true,
       overlapEndsAt: null,
-      payloadTemplate: { event_type: "${event_type}" },
+      payloadTemplate: { event_type: '${event_type}' },
     });
 
     const wrapper = mount(IntegrationInboundConnectionsCard, {
       props: {
-        projectId: "project-1",
-        provider: "AMPLITUDE",
+        projectId: 'project-1',
+        provider: 'AMPLITUDE',
         canRead: true,
         canManage: true,
       },
     });
     await flushPromises();
-    await wrapper
-      .get('input[name="inboundDisplayName"]')
-      .setValue("Amplitude inbound");
-    await wrapper
-      .get('form[data-form="create-inbound-amplitude"]')
-      .trigger("submit");
+    await wrapper.get('input[name="inboundDisplayName"]').setValue('Amplitude inbound');
+    await wrapper.get('form[data-form="create-inbound-amplitude"]').trigger('submit');
     await flushPromises();
-    await wrapper
-      .get('button[data-action="setup-inbound-amplitude"]')
-      .trigger("click");
+    await wrapper.get('button[data-action="setup-inbound-amplitude"]').trigger('click');
     await flushPromises();
 
     expect(api.create).toHaveBeenCalledBefore(api.setup);
-    expect(wrapper.text()).toContain("one-time-secret");
-    expect(wrapper.text()).toContain("x-retenive-amplitude-secret");
-    expect(wrapper.text()).toContain("event_type");
+    expect(wrapper.text()).toContain('one-time-secret');
+    expect(wrapper.text()).toContain('x-retenive-amplitude-secret');
+    expect(wrapper.text()).toContain('event_type');
 
     await wrapper.setProps({ canManage: false });
     await flushPromises();
-    expect(wrapper.text()).not.toContain("one-time-secret");
+    expect(wrapper.text()).not.toContain('one-time-secret');
   });
 
-  it("drops an in-flight one-time secret when manage permission is revoked", async () => {
+  it('drops an in-flight one-time secret when manage permission is revoked', async () => {
     let resolveSetup!: (value: Record<string, unknown>) => void;
     api.setup.mockReturnValue(
       new Promise((resolve) => {
@@ -149,45 +139,43 @@ describe("IntegrationInboundConnectionsCard", () => {
     );
     const wrapper = mount(IntegrationInboundConnectionsCard, {
       props: {
-        projectId: "project-1",
-        provider: "AMPLITUDE",
+        projectId: 'project-1',
+        provider: 'AMPLITUDE',
         canRead: true,
         canManage: true,
       },
     });
     await flushPromises();
-    await wrapper
-      .get('button[data-action="setup-inbound-amplitude"]')
-      .trigger("click");
+    await wrapper.get('button[data-action="setup-inbound-amplitude"]').trigger('click');
     await wrapper.setProps({ canManage: false });
     resolveSetup({
       replayed: false,
-      connectionId: "connection-1",
+      connectionId: 'connection-1',
       connectionVersion: 2,
-      endpointPath: "/api/v1/integrations/inbound/amplitude/public-key",
-      headerName: "x-retenive-amplitude-secret",
-      secret: "late-one-time-secret",
+      endpointPath: '/api/v1/integrations/inbound/amplitude/public-key',
+      headerName: 'x-retenive-amplitude-secret',
+      secret: 'late-one-time-secret',
       credentialRevision: 1,
-      credentialFingerprint: "1234567890abcdef",
+      credentialFingerprint: '1234567890abcdef',
       admissionReady: true,
       overlapEndsAt: null,
       payloadTemplate: {},
     });
     await flushPromises();
 
-    expect(wrapper.text()).not.toContain("late-one-time-secret");
+    expect(wrapper.text()).not.toContain('late-one-time-secret');
   });
 
-  it("groups secret rotation with its transition period field", async () => {
+  it('groups secret rotation with its transition period field', async () => {
     api.list.mockResolvedValue({
       items: [
         inboundConnection({
-          lifecycle: "ACTIVE",
+          lifecycle: 'ACTIVE',
           inbound: {
             configured: true,
             credentialRevision: 2,
-            credentialFingerprint: "1234567890abcdef",
-            rotatedAt: "2026-08-04T10:00:00.000Z",
+            credentialFingerprint: '1234567890abcdef',
+            rotatedAt: '2026-08-04T10:00:00.000Z',
             overlapEndsAt: null,
             admissionReady: true,
           },
@@ -196,21 +184,19 @@ describe("IntegrationInboundConnectionsCard", () => {
     });
     const wrapper = mount(IntegrationInboundConnectionsCard, {
       props: {
-        projectId: "project-1",
-        provider: "AMPLITUDE",
+        projectId: 'project-1',
+        provider: 'AMPLITUDE',
         canRead: true,
         canManage: true,
       },
     });
     await flushPromises();
 
-    const rotation = wrapper.get(".credential-rotation");
-    expect(
-      rotation.get('input[name="overlapSeconds"]').attributes(),
-    ).toMatchObject({
-      min: "0",
-      max: "3600",
+    const rotation = wrapper.get('.credential-rotation');
+    expect(rotation.get('input[name="overlapSeconds"]').attributes()).toMatchObject({
+      min: '0',
+      max: '3600',
     });
-    expect(rotation.get("button").text()).toBe("Заменить секрет");
+    expect(rotation.get('button').text()).toBe('Заменить секрет');
   });
 });

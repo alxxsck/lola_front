@@ -1,18 +1,14 @@
-import js from '@eslint/js'
-import pluginVue from 'eslint-plugin-vue'
-import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
+import js from '@eslint/js';
+import pluginVue from 'eslint-plugin-vue';
+import skipFormatting from '@vue/eslint-config-prettier/skip-formatting';
+import { withVueTs, vueTsConfigs } from '@vue/eslint-config-typescript';
 
-export default defineConfigWithVueTs(
+export default withVueTs(
   {
-    ignores: [
-      'dist/**',
-      'coverage/**',
-      '.worktrees/**',
-      'src/shared/api/generated/**',
-    ],
+    ignores: ['dist/**', 'coverage/**', '.worktrees/**', 'src/shared/api/generated/**'],
   },
   js.configs.recommended,
-  pluginVue.configs['flat/essential'],
+  pluginVue.configs['flat/strongly-recommended'],
   vueTsConfigs.recommended,
   {
     files: ['scripts/**/*.mjs'],
@@ -30,4 +26,5 @@ export default defineConfigWithVueTs(
       '@typescript-eslint/no-explicit-any': 'off',
     },
   },
-)
+  skipFormatting,
+);

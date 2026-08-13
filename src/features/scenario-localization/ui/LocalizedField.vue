@@ -1,27 +1,23 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch } from 'vue';
 import type {
   ScenarioLocalizationCatalogResponseDto,
   ScenarioLocalizationPolicyDto,
   ScenarioTranslationCatalogResponseDto,
-} from "@/shared/api/generated/models";
-import { localeDisplayName } from "@/shared/lib/locale";
-import {
-  requiredLocales,
-  targetLocalesForTranslation,
-  type LocalizedText,
-} from "../model";
+} from '@/shared/api/generated/models';
+import { localeDisplayName } from '@/shared/lib/locale';
+import { requiredLocales, targetLocalesForTranslation, type LocalizedText } from '../model';
 
 export type TranslationUiState =
-  | "IDLE"
-  | "PENDING"
-  | "RUNNING"
-  | "MACHINE_UNSAVED"
-  | "MANUAL"
-  | "ERROR"
-  | "STALE_SOURCE"
-  | "TARGET_CONFLICT"
-  | "CANCELLED";
+  | 'IDLE'
+  | 'PENDING'
+  | 'RUNNING'
+  | 'MACHINE_UNSAVED'
+  | 'MANUAL'
+  | 'ERROR'
+  | 'STALE_SOURCE'
+  | 'TARGET_CONFLICT'
+  | 'CANCELLED';
 
 const props = withDefaults(
   defineProps<{
@@ -46,27 +42,26 @@ const props = withDefaults(
     maxLength: undefined,
     supportsTemplates: false,
     readonly: false,
-    focusLocale: "",
+    focusLocale: '',
     showTranslationActions: true,
   },
 );
 
 const emit = defineEmits<{
-  "update:modelValue": [value: LocalizedText];
-  "translation-request": [targets: string[]];
-  "manual-edit": [locale: string];
+  'update:modelValue': [value: LocalizedText];
+  'translation-request': [targets: string[]];
+  'manual-edit': [locale: string];
   retry: [locale: string];
   cancel: [];
 }>();
 
 const expanded = ref(false);
-const search = ref("");
+const search = ref('');
 const targetPickerOpen = ref(false);
 const pickedTargets = ref<string[]>([]);
 const translationMenu = ref<HTMLDetailsElement | null>(null);
 const activeTarget = ref(
-  props.catalog.locales.find(({ code }) => code !== props.sourceLocale)?.code ??
-    "",
+  props.catalog.locales.find(({ code }) => code !== props.sourceLocale)?.code ?? '',
 );
 const orderedLocales = computed(() => [
   ...props.catalog.locales.filter(({ code }) => code === props.sourceLocale),
@@ -85,8 +80,7 @@ const filteredTargets = computed(() => {
 });
 const required = computed(() => requiredLocales(props.catalog, props.policy));
 const filled = computed(
-  () =>
-    required.value.filter((locale) => props.modelValue[locale]?.trim()).length,
+  () => required.value.filter((locale) => props.modelValue[locale]?.trim()).length,
 );
 const generateTargets = computed(() =>
   targetLocalesForTranslation({
@@ -108,14 +102,10 @@ const allTranslatableTargets = computed(() =>
   }),
 );
 const filledTargets = computed(() =>
-  allTranslatableTargets.value.filter((locale) =>
-    props.modelValue[locale]?.trim(),
-  ),
+  allTranslatableTargets.value.filter((locale) => props.modelValue[locale]?.trim()),
 );
 const translationBusy = computed(() =>
-  Object.values(props.translationStates).some((state) =>
-    ["PENDING", "RUNNING"].includes(state),
-  ),
+  Object.values(props.translationStates).some((state) => ['PENDING', 'RUNNING'].includes(state)),
 );
 watch(
   () => props.focusLocale,
@@ -128,33 +118,30 @@ watch(
 );
 
 const statusLabels: Record<TranslationUiState, string> = {
-  IDLE: "Не заполнен",
-  PENDING: "В очереди",
-  RUNNING: "Переводится",
-  MACHINE_UNSAVED: "Сгенерирован · не сохранён",
-  MANUAL: "Изменён вручную",
-  ERROR: "Ошибка · повторить",
-  STALE_SOURCE: "Устарел: исходный текст изменился",
-  TARGET_CONFLICT: "Конфликт — перевод готов",
-  CANCELLED: "Отменён",
+  IDLE: 'Не заполнен',
+  PENDING: 'В очереди',
+  RUNNING: 'Переводится',
+  MACHINE_UNSAVED: 'Сгенерирован · не сохранён',
+  MANUAL: 'Изменён вручную',
+  ERROR: 'Ошибка · повторить',
+  STALE_SOURCE: 'Устарел: исходный текст изменился',
+  TARGET_CONFLICT: 'Конфликт — перевод готов',
+  CANCELLED: 'Отменён',
 };
 
 function update(locale: string, value: string) {
-  emit("update:modelValue", { ...props.modelValue, [locale]: value });
-  if (locale !== props.sourceLocale) emit("manual-edit", locale);
+  emit('update:modelValue', { ...props.modelValue, [locale]: value });
+  if (locale !== props.sourceLocale) emit('manual-edit', locale);
 }
 
 function localeStatus(locale: string) {
-  return (
-    props.translationStates[locale] ??
-    (props.modelValue[locale]?.trim() ? "MANUAL" : "IDLE")
-  );
+  return props.translationStates[locale] ?? (props.modelValue[locale]?.trim() ? 'MANUAL' : 'IDLE');
 }
 
 function openTargetPicker() {
   pickedTargets.value = [...generateTargets.value];
   targetPickerOpen.value = true;
-  translationMenu.value?.removeAttribute("open");
+  translationMenu.value?.removeAttribute('open');
 }
 
 function requestTargets(targets: string[]) {
@@ -164,13 +151,13 @@ function requestTargets(targets: string[]) {
     !window.confirm(
       `Заменить существующие переводы: ${filled
         .map((locale) => `${localeDisplayName(locale)} (${locale})`)
-        .join(", ")}?`,
+        .join(', ')}?`,
     )
   )
     return;
-  translationMenu.value?.removeAttribute("open");
+  translationMenu.value?.removeAttribute('open');
   targetPickerOpen.value = false;
-  if (targets.length) emit("translation-request", targets);
+  if (targets.length) emit('translation-request', targets);
 }
 </script>
 
@@ -198,7 +185,7 @@ function requestTargets(targets: string[]) {
           @click="emit('translation-request', generateTargets)"
         >
           <i aria-hidden="true" class="pi pi-language" />
-          {{ translationBusy ? "Переводим…" : "Перевести" }}
+          {{ translationBusy ? 'Переводим…' : 'Перевести' }}
         </button>
         <details
           v-if="allTranslatableTargets.length"
@@ -214,9 +201,7 @@ function requestTargets(targets: string[]) {
             >
               Перевести только незаполненные
             </button>
-            <button type="button" @click="openTargetPicker">
-              Выбрать языки…
-            </button>
+            <button type="button" @click="openTargetPicker">Выбрать языки…</button>
             <button
               v-if="filledTargets.length"
               type="button"
@@ -239,13 +224,9 @@ function requestTargets(targets: string[]) {
         Отменить
       </button>
     </div>
-    <small
-      v-if="showTranslationActions && translation.enabled"
-      class="translation-privacy"
-    >
-      Для автоматического перевода Retenive использует Grok от xAI. Передаётся
-      только статический текст поля — без данных пользователей и значений
-      шаблонов.
+    <small v-if="showTranslationActions && translation.enabled" class="translation-privacy">
+      Для автоматического перевода Retenive использует Grok от xAI. Передаётся только статический
+      текст поля — без данных пользователей и значений шаблонов.
     </small>
     <div
       v-if="targetPickerOpen"
@@ -259,11 +240,7 @@ function requestTargets(targets: string[]) {
         <small v-if="modelValue[locale]?.trim()">Будет заменён</small>
       </label>
       <div>
-        <button
-          type="button"
-          class="cancel-button"
-          @click="targetPickerOpen = false"
-        >
+        <button type="button" class="cancel-button" @click="targetPickerOpen = false">
           Закрыть
         </button>
         <button
@@ -283,9 +260,7 @@ function requestTargets(targets: string[]) {
       :readonly="readonly"
       rows="3"
       :aria-label="`${label}, основной язык ${sourceLocale}`"
-      @input="
-        update(sourceLocale, ($event.target as HTMLTextAreaElement).value)
-      "
+      @input="update(sourceLocale, ($event.target as HTMLTextAreaElement).value)"
     />
 
     <button
@@ -298,7 +273,7 @@ function requestTargets(targets: string[]) {
     >
       <span>Переводы {{ filled }}/{{ required.length }}</span>
       <span v-if="translationBusy">· Переводится</span>
-      <span aria-hidden="true">{{ expanded ? "⌃" : "⌄" }}</span>
+      <span aria-hidden="true">{{ expanded ? '⌃' : '⌄' }}</span>
     </button>
 
     <section v-if="expanded" class="translations" aria-label="Переводы поля">
@@ -306,9 +281,7 @@ function requestTargets(targets: string[]) {
         <div v-for="locale in targets" :key="locale.code" class="target-editor">
           <label :for="`${scenarioId}-${fieldPath}-${locale.code}`">
             {{ localeDisplayName(locale.code) }} ({{ locale.code }})
-            <span class="locale-status">{{
-              statusLabels[localeStatus(locale.code)]
-            }}</span>
+            <span class="locale-status">{{ statusLabels[localeStatus(locale.code)] }}</span>
           </label>
           <button
             v-if="localeStatus(locale.code) === 'ERROR'"
@@ -325,9 +298,7 @@ function requestTargets(targets: string[]) {
             :readonly="readonly"
             rows="3"
             :aria-label="`${label}, перевод ${locale.code}`"
-            @input="
-              update(locale.code, ($event.target as HTMLTextAreaElement).value)
-            "
+            @input="update(locale.code, ($event.target as HTMLTextAreaElement).value)"
           />
         </div>
       </template>
@@ -346,18 +317,14 @@ function requestTargets(targets: string[]) {
             :class="{ active: activeTarget === locale.code }"
             @click="activeTarget = locale.code"
           >
-            <span
-              >{{ localeDisplayName(locale.code) }} ({{ locale.code }})</span
-            >
+            <span>{{ localeDisplayName(locale.code) }} ({{ locale.code }})</span>
             <small>{{ statusLabels[localeStatus(locale.code)] }}</small>
           </button>
         </div>
         <div v-if="activeTarget" class="target-editor">
           <label :for="`${scenarioId}-${fieldPath}-${activeTarget}`">
             {{ localeDisplayName(activeTarget) }} ({{ activeTarget }})
-            <span class="locale-status">{{
-              statusLabels[localeStatus(activeTarget)]
-            }}</span>
+            <span class="locale-status">{{ statusLabels[localeStatus(activeTarget)] }}</span>
           </label>
           <button
             v-if="localeStatus(activeTarget) === 'ERROR'"
@@ -374,9 +341,7 @@ function requestTargets(targets: string[]) {
             :readonly="readonly"
             rows="4"
             :aria-label="`${label}, перевод ${activeTarget}`"
-            @input="
-              update(activeTarget, ($event.target as HTMLTextAreaElement).value)
-            "
+            @input="update(activeTarget, ($event.target as HTMLTextAreaElement).value)"
           />
         </div>
       </div>
@@ -416,7 +381,7 @@ label {
   font-size: 0.62rem;
 }
 textarea,
-input[type="search"] {
+input[type='search'] {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid var(--border-default);

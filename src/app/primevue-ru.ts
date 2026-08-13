@@ -8,15 +8,7 @@ export const primeVueRussianLocale = {
   cancel: 'Отмена',
   completed: 'Завершено',
   pending: 'Ожидает',
-  dayNames: [
-    'Воскресенье',
-    'Понедельник',
-    'Вторник',
-    'Среда',
-    'Четверг',
-    'Пятница',
-    'Суббота',
-  ],
+  dayNames: ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'],
   dayNamesShort: ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
   dayNamesMin: ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
   monthNames: [
@@ -91,4 +83,4 @@ export const primeVueRussianLocale = {
     hideFilterMenu: 'Скрыть фильтры',
     listLabel: 'Список вариантов',
   },
-}
+};

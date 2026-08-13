@@ -1,35 +1,28 @@
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  watch,
-} from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import MultiSelect from "primevue/multiselect";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import Textarea from "primevue/textarea";
-import FormFieldLabel from "@/shared/ui/FormFieldLabel.vue";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import InputNumber from 'primevue/inputnumber';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import MultiSelect from 'primevue/multiselect';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import Textarea from 'primevue/textarea';
+import FormFieldLabel from '@/shared/ui/FormFieldLabel.vue';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
 import type {
   EscalationAmbiguousRule,
   EscalationPhraseRule,
   EscalationScenario,
   EscalationSimulationStep,
-} from "@/features/support-case-intelligence/model/support-case-escalation-domain";
-import { localeDisplayName } from "@/shared/lib/locale";
-import type { CaseIntelligenceAuthority } from "@/features/support-case-intelligence/model/use-support-case-intelligence";
-import { useSupportCaseEscalation } from "@/features/support-case-intelligence/model/use-support-case-escalation";
+} from '@/features/support-case-intelligence/model/support-case-escalation-domain';
+import { localeDisplayName } from '@/shared/lib/locale';
+import type { CaseIntelligenceAuthority } from '@/features/support-case-intelligence/model/use-support-case-intelligence';
+import { useSupportCaseEscalation } from '@/features/support-case-intelligence/model/use-support-case-escalation';
 import {
   cloneEscalation,
   createAmbiguousRequestRule,
@@ -45,45 +38,35 @@ import {
   trustedOutcomeLabel,
   urgencyLabel,
   validateEscalationPolicy,
-} from "@/features/support-case-intelligence/model/support-case-escalation-policy";
+} from '@/features/support-case-intelligence/model/support-case-escalation-policy';
 
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 const accessDenied = ref(false);
-const editorKind = ref<
-  "EXPLICIT" | "AMBIGUOUS" | "EXCLUDE" | "SCENARIO" | null
->(null);
+const editorKind = ref<'EXPLICIT' | 'AMBIGUOUS' | 'EXCLUDE' | 'SCENARIO' | null>(null);
 const editorIndex = ref(-1);
-const editedPhraseRule = ref<
-  EscalationPhraseRule | EscalationAmbiguousRule | null
->(null);
+const editedPhraseRule = ref<EscalationPhraseRule | EscalationAmbiguousRule | null>(null);
 const editedScenario = ref<EscalationScenario | null>(null);
-const phrasesText = ref("");
-const dataToCollectText = ref("");
+const phrasesText = ref('');
+const dataToCollectText = ref('');
 const simulatorVisible = ref(false);
-const mobileSimulatorView = ref<"events" | "result">("events");
+const mobileSimulatorView = ref<'events' | 'result'>('events');
 const openedPanelFromPage = ref(false);
 const publishVisible = ref(false);
 const discardVisible = ref(false);
-const reason = ref("");
-const newStepKind = ref<EscalationSimulationStep["kind"]>(
-  "EXPLICIT_HUMAN_REQUEST",
-);
+const reason = ref('');
+const newStepKind = ref<EscalationSimulationStep['kind']>('EXPLICIT_HUMAN_REQUEST');
 const stepEditorIndex = ref(-1);
 const editedStep = ref<EscalationSimulationStep | null>(null);
 const editedStepDelayMinutes = ref(0);
 
-const permissions = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
-const permissionSignature = computed(() =>
-  [...permissions.value].sort().join(","),
-);
+const permissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
+const permissionSignature = computed(() => [...permissions.value].sort().join(','));
 const canRead = computed(
   () =>
     !accessDenied.value &&
-    hasProjectPermission(permissions.value, "project.case_intelligence.read"),
+    hasProjectPermission(permissions.value, 'project.case_intelligence.read'),
 );
 
 function authority(): CaseIntelligenceAuthority | null {
@@ -113,7 +96,7 @@ const controller = useSupportCaseEscalation({
       /* local authority is already gone */
     } finally {
       await router.replace({
-        path: "/login",
+        path: '/login',
         query: { redirect: route.fullPath },
       });
     }
@@ -122,166 +105,163 @@ const controller = useSupportCaseEscalation({
 
 const localeOptions = computed(() => {
   const values = new Set([
-    "ru-RU",
-    "en-US",
-    "en-GB",
-    "es-ES",
-    "de-DE",
-    "fr-FR",
-    "pt-BR",
-    "tr-TR",
+    'ru-RU',
+    'en-US',
+    'en-GB',
+    'es-ES',
+    'de-DE',
+    'fr-FR',
+    'pt-BR',
+    'tr-TR',
     ...(auth.project?.supportedLocales ?? []),
   ]);
   return [...values].map((value) => ({
     value,
-    label: `${localeDisplayName(value, "ru") ?? value} · ${value}`,
+    label: `${localeDisplayName(value, 'ru') ?? value} · ${value}`,
   }));
 });
 const actionOptions = [
-  { value: "OFFER", label: "Предложить оператора" },
-  { value: "ASK_REASON_ONCE", label: "Один раз уточнить причину" },
-  { value: "ESCALATE", label: "Передать сразу" },
+  { value: 'OFFER', label: 'Предложить оператора' },
+  { value: 'ASK_REASON_ONCE', label: 'Один раз уточнить причину' },
+  { value: 'ESCALATE', label: 'Передать сразу' },
 ];
-const urgencyOptions = ["LOW", "MEDIUM", "HIGH", "IMMEDIATE"].map((value) => ({
+const urgencyOptions = ['LOW', 'MEDIUM', 'HIGH', 'IMMEDIATE'].map((value) => ({
   value,
   label: urgencyLabel(value),
 }));
 const simulationKindOptions = [
-  ["EXPLICIT_HUMAN_REQUEST", "Явная просьба позвать человека"],
-  ["AMBIGUOUS_HUMAN_TERM", "Неоднозначное упоминание оператора"],
-  ["SCENARIO", "Продуктовый сценарий"],
-  ["TRUSTED_OUTCOME", "Проверенный неудачный результат Lola"],
-  ["CLARIFICATION", "Дополнительный вопрос Lola"],
-  ["NO_MATCH", "Lola не поняла сообщение"],
-  ["REPEAT", "Повтор проблемы"],
-  ["OFFER_ACCEPTED", "Пользователь принял предложение"],
-  ["OFFER_DECLINED", "Пользователь отказался"],
-  ["OFFER_TIMEOUT", "Пользователь не ответил"],
-  ["VERIFIED_RESOLUTION", "Решение подтверждено"],
-  ["NEW_CASE_OR_TOPIC", "Новая тема обращения"],
-  ["CASE_TERMINAL", "Обращение завершено"],
-  ["ESCALATION_COMMITTED", "Передача зафиксирована"],
-  ["POLICY_SWITCH", "Правила сменились"],
+  ['EXPLICIT_HUMAN_REQUEST', 'Явная просьба позвать человека'],
+  ['AMBIGUOUS_HUMAN_TERM', 'Неоднозначное упоминание оператора'],
+  ['SCENARIO', 'Продуктовый сценарий'],
+  ['TRUSTED_OUTCOME', 'Проверенный неудачный результат Lola'],
+  ['CLARIFICATION', 'Дополнительный вопрос Lola'],
+  ['NO_MATCH', 'Lola не поняла сообщение'],
+  ['REPEAT', 'Повтор проблемы'],
+  ['OFFER_ACCEPTED', 'Пользователь принял предложение'],
+  ['OFFER_DECLINED', 'Пользователь отказался'],
+  ['OFFER_TIMEOUT', 'Пользователь не ответил'],
+  ['VERIFIED_RESOLUTION', 'Решение подтверждено'],
+  ['NEW_CASE_OR_TOPIC', 'Новая тема обращения'],
+  ['CASE_TERMINAL', 'Обращение завершено'],
+  ['ESCALATION_COMMITTED', 'Передача зафиксирована'],
+  ['POLICY_SWITCH', 'Правила сменились'],
 ] as const;
 
 const safetyClassLabels: Record<string, string> = {
-  SELF_HARM_OR_SUICIDE: "Риск причинения вреда себе",
-  CREDIBLE_THREAT_OR_VIOLENCE: "Реальная угроза или насилие",
-  HARM_INVOLVING_MINORS: "Риск для несовершеннолетних",
-  RESPONSIBLE_GAMING_CRISIS: "Кризис ответственной игры",
+  SELF_HARM_OR_SUICIDE: 'Риск причинения вреда себе',
+  CREDIBLE_THREAT_OR_VIOLENCE: 'Реальная угроза или насилие',
+  HARM_INVOLVING_MINORS: 'Риск для несовершеннолетних',
+  RESPONSIBLE_GAMING_CRISIS: 'Кризис ответственной игры',
 };
 const consequenceLabels: Record<string, string> = {
-  SAFE_RESPONSE: "Безопасный ответ",
-  SAFETY_OCCURRENCE: "Зафиксировать риск",
-  CASE_ESCALATION: "Передать человеку",
-  OPERATIONAL_ALERT: "Оповестить ответственную команду",
+  SAFE_RESPONSE: 'Безопасный ответ',
+  SAFETY_OCCURRENCE: 'Зафиксировать риск',
+  CASE_ESCALATION: 'Передать человеку',
+  OPERATIONAL_ALERT: 'Оповестить ответственную команду',
 };
 const safetyStateLabels: Record<string, string> = {
-  CLEAR: "Риск не обнаружен",
-  PENDING: "Проверка продолжается",
-  FAILED: "Проверка не завершилась",
-  SUSPECTED: "Обнаружен возможный риск",
-  URGENT: "Требуется немедленное действие",
+  CLEAR: 'Риск не обнаружен',
+  PENDING: 'Проверка продолжается',
+  FAILED: 'Проверка не завершилась',
+  SUSPECTED: 'Обнаружен возможный риск',
+  URGENT: 'Требуется немедленное действие',
 };
 const simulationStatusLabels: Record<string, string> = {
-  OPEN: "Обращение открыто",
-  OFFERED: "Оператор предложен",
-  COOLDOWN: "Пауза перед новым предложением",
-  ESCALATED: "Передача зафиксирована",
-  FROZEN: "Решение зафиксировано",
+  OPEN: 'Обращение открыто',
+  OFFERED: 'Оператор предложен',
+  COOLDOWN: 'Пауза перед новым предложением',
+  ESCALATED: 'Передача зафиксирована',
+  FROZEN: 'Решение зафиксировано',
 };
 const dispositionLabels: Record<string, string> = {
-  APPLIED: "Событие применено",
-  BLOCKED: "Событие заблокировано",
-  CONFLICT: "Событие конфликтует с уже зафиксированным решением",
+  APPLIED: 'Событие применено',
+  BLOCKED: 'Событие заблокировано',
+  CONFLICT: 'Событие конфликтует с уже зафиксированным решением',
 };
 const effectLabels: Record<string, string> = {
-  STATE_FROZEN: "Состояние решения зафиксировано",
-  SAFE_RESPONSE: "Подготовлен безопасный ответ",
-  OPERATIONAL_ALERT: "Ответственная команда оповещена",
+  STATE_FROZEN: 'Состояние решения зафиксировано',
+  SAFE_RESPONSE: 'Подготовлен безопасный ответ',
+  OPERATIONAL_ALERT: 'Ответственная команда оповещена',
 };
 const channelLabels: Record<string, string> = {
-  TEXT: "Текст",
-  VOICE: "Голос",
-  TELEGRAM: "Telegram",
+  TEXT: 'Текст',
+  VOICE: 'Голос',
+  TELEGRAM: 'Telegram',
 };
 const businessStateOptions = [
-  { value: "OPEN", label: "Обращение открыто" },
-  { value: "CLOSED", label: "Обращение закрыто" },
-  { value: "RUNTIME_MISMATCH", label: "Состояние сервера ещё сверяется" },
+  { value: 'OPEN', label: 'Обращение открыто' },
+  { value: 'CLOSED', label: 'Обращение закрыто' },
+  { value: 'RUNTIME_MISMATCH', label: 'Состояние сервера ещё сверяется' },
 ];
 const queueStateOptions = [
-  { value: "WINNER", label: "Команда готова принять" },
-  { value: "NO_ELIGIBLE_OPERATOR", label: "Нет доступного оператора" },
-  { value: "NO_ACTIVATION", label: "Правила распределения не активны" },
-  { value: "MISSING", label: "Команда не найдена" },
-  { value: "UNKNOWN", label: "Состояние очереди неизвестно" },
+  { value: 'WINNER', label: 'Команда готова принять' },
+  { value: 'NO_ELIGIBLE_OPERATOR', label: 'Нет доступного оператора' },
+  { value: 'NO_ACTIVATION', label: 'Правила распределения не активны' },
+  { value: 'MISSING', label: 'Команда не найдена' },
+  { value: 'UNKNOWN', label: 'Состояние очереди неизвестно' },
 ];
-const safetyStateOptions = Object.entries(safetyStateLabels).map(
-  ([value, label]) => ({ value, label }),
-);
+const safetyStateOptions = Object.entries(safetyStateLabels).map(([value, label]) => ({
+  value,
+  label,
+}));
 const safetyRiskOptions = [
-  { value: null, label: "Класс риска не задан" },
+  { value: null, label: 'Класс риска не задан' },
   ...Object.entries(safetyClassLabels).map(([value, label]) => ({
     value,
     label,
   })),
 ];
 const trustedOutcomeOptions = [
-  "NO_ANSWER",
-  "KNOWLEDGE_INSUFFICIENT",
-  "TOOL_FAILED",
-  "UNRESOLVED",
+  'NO_ANSWER',
+  'KNOWLEDGE_INSUFFICIENT',
+  'TOOL_FAILED',
+  'UNRESOLVED',
 ].map((value) => ({ value, label: trustedOutcomeLabel(value) }));
 
 const currentSafetyPresentation = computed(() => {
   const value = controller.snapshot.value?.safety;
   if (!value)
     return {
-      severity: "warn" as const,
-      title: "Состояние безопасности загружается",
-      copy: "До сверки обычные ответы Lola не считаются разрешёнными.",
+      severity: 'warn' as const,
+      title: 'Состояние безопасности загружается',
+      copy: 'До сверки обычные ответы Lola не считаются разрешёнными.',
     };
-  if (value.state === "READY" && value.assistantReleaseGate === "ALLOW")
+  if (value.state === 'READY' && value.assistantReleaseGate === 'ALLOW')
     return {
-      severity: "success" as const,
-      title: "Безопасность готова",
-      copy: "Сервер сверил обязательные правила и разрешил обычные ответы Lola.",
+      severity: 'success' as const,
+      title: 'Безопасность готова',
+      copy: 'Сервер сверил обязательные правила и разрешил обычные ответы Lola.',
     };
-  if (value.state === "UNAVAILABLE")
+  if (value.state === 'UNAVAILABLE')
     return {
-      severity: "error" as const,
-      title: "Проверка безопасности не завершилась",
-      copy: "Обычный ответ Lola заблокирован. Сервер повторит проверку, а ответственная команда увидит предупреждение.",
+      severity: 'error' as const,
+      title: 'Проверка безопасности не завершилась',
+      copy: 'Обычный ответ Lola заблокирован. Сервер повторит проверку, а ответственная команда увидит предупреждение.',
     };
   return {
-    severity: "warn" as const,
-    title: "Правила безопасности сверяются",
-    copy: "Пока сверка не закончена, используется безопасный ответ и передача человеку остаётся доступной.",
+    severity: 'warn' as const,
+    title: 'Правила безопасности сверяются',
+    copy: 'Пока сверка не закончена, используется безопасный ответ и передача человеку остаётся доступной.',
   };
 });
 const committedSimulationStep = computed(() =>
   controller.simulation.value?.steps.find(
     (step) =>
-      step.kind === "ESCALATION_COMMITTED" &&
-      step.disposition === "APPLIED" &&
-      step.after.status === "FROZEN" &&
-      step.effects.includes("STATE_FROZEN"),
+      step.kind === 'ESCALATION_COMMITTED' &&
+      step.disposition === 'APPLIED' &&
+      step.after.status === 'FROZEN' &&
+      step.effects.includes('STATE_FROZEN'),
   ),
 );
 const stepShapeIssue = computed(() => {
   const step = editedStep.value;
-  return step
-    ? simulationStepReferenceIssue(step, controller.policy.value)
-    : "";
+  return step ? simulationStepReferenceIssue(step, controller.policy.value) : '';
 });
 const stepSafetyIssue = computed(() => {
   const step = editedStep.value;
-  return step ? simulationStepSafetyIssue(step) : "";
+  return step ? simulationStepSafetyIssue(step) : '';
 });
-const stepEditorIssue = computed(
-  () => stepShapeIssue.value || stepSafetyIssue.value,
-);
+const stepEditorIssue = computed(() => stepShapeIssue.value || stepSafetyIssue.value);
 const simulationStepIssues = computed(() =>
   controller.simulationSteps.value.map(
     (step) =>
@@ -294,10 +274,8 @@ function issue(path: string) {
   return (
     controller.issues.value.find(
       (item) =>
-        item.path === path ||
-        item.path.startsWith(`${path}.`) ||
-        item.path.startsWith(`${path}[`),
-    )?.message ?? ""
+        item.path === path || item.path.startsWith(`${path}.`) || item.path.startsWith(`${path}[`),
+    )?.message ?? ''
   );
 }
 
@@ -306,31 +284,25 @@ const editorIssues = computed(() => {
   if (editedPhraseRule.value && editorKind.value) {
     const editedRule = cloneEscalation(editedPhraseRule.value);
     editedRule.phrases = phrasesText.value
-      .split("\n")
+      .split('\n')
       .map((item) => item.trim())
       .filter(Boolean);
     const collection =
-      editorKind.value === "EXPLICIT"
+      editorKind.value === 'EXPLICIT'
         ? candidate.explicitHumanRequestRules
-        : editorKind.value === "AMBIGUOUS"
+        : editorKind.value === 'AMBIGUOUS'
           ? candidate.ambiguousHumanTermRules
-          : (candidate.doNotEscalateRules ??
-            (candidate.doNotEscalateRules = []));
+          : (candidate.doNotEscalateRules ?? (candidate.doNotEscalateRules = []));
     const index = editorIndex.value < 0 ? collection.length : editorIndex.value;
-    collection.splice(
-      index,
-      editorIndex.value < 0 ? 0 : 1,
-      editedRule as never,
-    );
+    collection.splice(index, editorIndex.value < 0 ? 0 : 1, editedRule as never);
   }
-  if (editedScenario.value && editorKind.value === "SCENARIO") {
+  if (editedScenario.value && editorKind.value === 'SCENARIO') {
     const scenario = cloneEscalation(editedScenario.value);
     scenario.dataToCollect = dataToCollectText.value
-      .split("\n")
+      .split('\n')
       .map((item) => item.trim().toUpperCase())
       .filter(Boolean);
-    const index =
-      editorIndex.value < 0 ? candidate.scenarios.length : editorIndex.value;
+    const index = editorIndex.value < 0 ? candidate.scenarios.length : editorIndex.value;
     candidate.scenarios.splice(index, editorIndex.value < 0 ? 0 : 1, scenario);
   }
   return validateEscalationPolicy(candidate);
@@ -338,28 +310,27 @@ const editorIssues = computed(() => {
 
 function editorIssue(field: string) {
   const collection =
-    editorKind.value === "EXPLICIT"
-      ? "explicitHumanRequestRules"
-      : editorKind.value === "AMBIGUOUS"
-        ? "ambiguousHumanTermRules"
-        : editorKind.value === "EXCLUDE"
-          ? "doNotEscalateRules"
-          : "scenarios";
+    editorKind.value === 'EXPLICIT'
+      ? 'explicitHumanRequestRules'
+      : editorKind.value === 'AMBIGUOUS'
+        ? 'ambiguousHumanTermRules'
+        : editorKind.value === 'EXCLUDE'
+          ? 'doNotEscalateRules'
+          : 'scenarios';
   const index =
     editorIndex.value < 0
-      ? editorKind.value === "SCENARIO"
+      ? editorKind.value === 'SCENARIO'
         ? controller.policy.value.scenarios.length
-        : editorKind.value === "EXPLICIT"
+        : editorKind.value === 'EXPLICIT'
           ? controller.policy.value.explicitHumanRequestRules.length
-          : editorKind.value === "AMBIGUOUS"
+          : editorKind.value === 'AMBIGUOUS'
             ? controller.policy.value.ambiguousHumanTermRules.length
             : (controller.policy.value.doNotEscalateRules?.length ?? 0)
       : editorIndex.value;
   const prefix = `${collection}[${index}].${field}`;
   return (
-    editorIssues.value.find(
-      (item) => item.path === prefix || item.path.startsWith(`${prefix}[`),
-    )?.message ?? ""
+    editorIssues.value.find((item) => item.path === prefix || item.path.startsWith(`${prefix}[`))
+      ?.message ?? ''
   );
 }
 
@@ -370,12 +341,10 @@ async function focusIssue(path: string) {
     );
   if (match) {
     const index = Number(match[2]);
-    if (match[1] === "explicitHumanRequestRules")
-      openPhraseEditor("EXPLICIT", index);
-    if (match[1] === "ambiguousHumanTermRules")
-      openPhraseEditor("AMBIGUOUS", index);
-    if (match[1] === "doNotEscalateRules") openPhraseEditor("EXCLUDE", index);
-    if (match[1] === "scenarios") openScenarioEditor(index);
+    if (match[1] === 'explicitHumanRequestRules') openPhraseEditor('EXPLICIT', index);
+    if (match[1] === 'ambiguousHumanTermRules') openPhraseEditor('AMBIGUOUS', index);
+    if (match[1] === 'doNotEscalateRules') openPhraseEditor('EXCLUDE', index);
+    if (match[1] === 'scenarios') openScenarioEditor(index);
     await nextTick();
     document.getElementById(issueControlId(path))?.focus();
     return;
@@ -386,46 +355,42 @@ async function focusIssue(path: string) {
 function issueControlId(path: string) {
   const field =
     path
-      .split(".")
+      .split('.')
       .at(-1)
-      ?.replace(/\[\d+\]/gu, "") ?? "";
-  if (path.startsWith("scenarios["))
+      ?.replace(/\[\d+\]/gu, '') ?? '';
+  if (path.startsWith('scenarios['))
     return (
       {
-        code: "escalation-scenario-code",
-        reasonCode: "escalation-scenario-reason",
-        dataToCollect: "escalation-scenario-data",
-      }[field] ?? "escalation-scenario-code"
+        code: 'escalation-scenario-code',
+        reasonCode: 'escalation-scenario-reason',
+        dataToCollect: 'escalation-scenario-data',
+      }[field] ?? 'escalation-scenario-code'
     );
-  if (
-    /^(explicitHumanRequestRules|ambiguousHumanTermRules|doNotEscalateRules)\[/u.test(
-      path,
-    )
-  )
+  if (/^(explicitHumanRequestRules|ambiguousHumanTermRules|doNotEscalateRules)\[/u.test(path))
     return (
       {
-        code: "escalation-rule-code",
-        locales: "escalation-rule-locales",
-        phrases: "escalation-rule-phrases",
-      }[field] ?? "escalation-rule-code"
+        code: 'escalation-rule-code',
+        locales: 'escalation-rule-locales',
+        phrases: 'escalation-rule-phrases',
+      }[field] ?? 'escalation-rule-code'
     );
-  if (path.startsWith("trustedOutcomeLimits."))
-    return `escalation-outcome-${path.split(".").at(-1)}`;
+  if (path.startsWith('trustedOutcomeLimits.'))
+    return `escalation-outcome-${path.split('.').at(-1)}`;
   return (
     {
-      clarificationLimit: "escalation-clarification",
-      noMatchLimit: "escalation-no-match",
-      repeatLimit: "escalation-repeat",
-      failedResolutionLimit: "escalation-failed",
-      routingPolicyRevisionId: "escalation-routing",
-      offerCooldownSeconds: "escalation-cooldown",
-      offerResponseTimeoutSeconds: "escalation-timeout",
-    }[path] ?? "escalation-validation-summary"
+      clarificationLimit: 'escalation-clarification',
+      noMatchLimit: 'escalation-no-match',
+      repeatLimit: 'escalation-repeat',
+      failedResolutionLimit: 'escalation-failed',
+      routingPolicyRevisionId: 'escalation-routing',
+      offerCooldownSeconds: 'escalation-cooldown',
+      offerResponseTimeoutSeconds: 'escalation-timeout',
+    }[path] ?? 'escalation-validation-summary'
   );
 }
 
 function writePanel(
-  panel: "rule" | "simulator" | "event" | "result",
+  panel: 'rule' | 'simulator' | 'event' | 'result',
   extra: Record<string, string> = {},
 ) {
   openedPanelFromPage.value = true;
@@ -438,7 +403,7 @@ function writePanel(
   });
 }
 
-function clearPanel(fallback: "simulator" | null = null) {
+function clearPanel(fallback: 'simulator' | null = null) {
   const query = { ...route.query };
   delete query.escalationPanel;
   delete query.ruleKind;
@@ -450,7 +415,7 @@ function clearPanel(fallback: "simulator" | null = null) {
 }
 
 function openPhraseEditor(
-  kind: "EXPLICIT" | "AMBIGUOUS" | "EXCLUDE",
+  kind: 'EXPLICIT' | 'AMBIGUOUS' | 'EXCLUDE',
   index = -1,
   updateRoute = true,
 ) {
@@ -458,35 +423,33 @@ function openPhraseEditor(
   editorKind.value = kind;
   editorIndex.value = index;
   const collection =
-    kind === "EXPLICIT"
+    kind === 'EXPLICIT'
       ? controller.policy.value.explicitHumanRequestRules
-      : kind === "AMBIGUOUS"
+      : kind === 'AMBIGUOUS'
         ? controller.policy.value.ambiguousHumanTermRules
         : (controller.policy.value.doNotEscalateRules ??= []);
   const value =
     collection[index] ??
-    (kind === "EXPLICIT"
+    (kind === 'EXPLICIT'
       ? createExplicitRequestRule(collection.length)
-      : kind === "AMBIGUOUS"
+      : kind === 'AMBIGUOUS'
         ? createAmbiguousRequestRule(collection.length)
         : createDoNotEscalateRule(collection.length));
   editedPhraseRule.value = cloneEscalation(value);
-  phrasesText.value = value.phrases.join("\n");
-  if (updateRoute)
-    writePanel("rule", { ruleKind: kind, ruleIndex: String(index) });
+  phrasesText.value = value.phrases.join('\n');
+  if (updateRoute) writePanel('rule', { ruleKind: kind, ruleIndex: String(index) });
 }
 
 function openScenarioEditor(index = -1, updateRoute = true) {
   if (!canRead.value) return;
-  editorKind.value = "SCENARIO";
+  editorKind.value = 'SCENARIO';
   editorIndex.value = index;
   const value =
     controller.policy.value.scenarios[index] ??
     createEscalationScenario(controller.policy.value.scenarios.length);
   editedScenario.value = cloneEscalation(value);
-  dataToCollectText.value = value.dataToCollect.join("\n");
-  if (updateRoute)
-    writePanel("rule", { ruleKind: "SCENARIO", ruleIndex: String(index) });
+  dataToCollectText.value = value.dataToCollect.join('\n');
+  if (updateRoute) writePanel('rule', { ruleKind: 'SCENARIO', ruleIndex: String(index) });
 }
 
 function closeEditor() {
@@ -494,45 +457,37 @@ function closeEditor() {
   editorIndex.value = -1;
   editedPhraseRule.value = null;
   editedScenario.value = null;
-  if (route.query.escalationPanel === "rule") clearPanel();
+  if (route.query.escalationPanel === 'rule') clearPanel();
 }
 
 function saveEditor() {
   if (!controller.canManage.value || editorIssues.value.length) return;
   if (
-    (editorKind.value === "EXPLICIT" ||
-      editorKind.value === "AMBIGUOUS" ||
-      editorKind.value === "EXCLUDE") &&
+    (editorKind.value === 'EXPLICIT' ||
+      editorKind.value === 'AMBIGUOUS' ||
+      editorKind.value === 'EXCLUDE') &&
     editedPhraseRule.value
   ) {
     editedPhraseRule.value.phrases = phrasesText.value
-      .split("\n")
+      .split('\n')
       .map((item) => item.trim())
       .filter(Boolean);
     const collection =
-      editorKind.value === "EXPLICIT"
+      editorKind.value === 'EXPLICIT'
         ? controller.policy.value.explicitHumanRequestRules
-        : editorKind.value === "AMBIGUOUS"
+        : editorKind.value === 'AMBIGUOUS'
           ? controller.policy.value.ambiguousHumanTermRules
           : (controller.policy.value.doNotEscalateRules ??= []);
-    if (editorIndex.value < 0)
-      collection.push(cloneEscalation(editedPhraseRule.value) as never);
-    else
-      collection.splice(
-        editorIndex.value,
-        1,
-        cloneEscalation(editedPhraseRule.value) as never,
-      );
+    if (editorIndex.value < 0) collection.push(cloneEscalation(editedPhraseRule.value) as never);
+    else collection.splice(editorIndex.value, 1, cloneEscalation(editedPhraseRule.value) as never);
   }
-  if (editorKind.value === "SCENARIO" && editedScenario.value) {
+  if (editorKind.value === 'SCENARIO' && editedScenario.value) {
     editedScenario.value.dataToCollect = dataToCollectText.value
-      .split("\n")
+      .split('\n')
       .map((item) => item.trim().toUpperCase())
       .filter(Boolean);
     if (editorIndex.value < 0)
-      controller.policy.value.scenarios.push(
-        cloneEscalation(editedScenario.value),
-      );
+      controller.policy.value.scenarios.push(cloneEscalation(editedScenario.value));
     else
       controller.policy.value.scenarios.splice(
         editorIndex.value,
@@ -546,37 +501,26 @@ function saveEditor() {
 function removeEditorItem() {
   if (!controller.canManage.value) return;
   if (editorIndex.value < 0) return closeEditor();
-  if (editorKind.value === "EXPLICIT")
-    controller.policy.value.explicitHumanRequestRules.splice(
-      editorIndex.value,
-      1,
-    );
-  if (editorKind.value === "AMBIGUOUS")
-    controller.policy.value.ambiguousHumanTermRules.splice(
-      editorIndex.value,
-      1,
-    );
-  if (editorKind.value === "EXCLUDE")
+  if (editorKind.value === 'EXPLICIT')
+    controller.policy.value.explicitHumanRequestRules.splice(editorIndex.value, 1);
+  if (editorKind.value === 'AMBIGUOUS')
+    controller.policy.value.ambiguousHumanTermRules.splice(editorIndex.value, 1);
+  if (editorKind.value === 'EXCLUDE')
     controller.policy.value.doNotEscalateRules?.splice(editorIndex.value, 1);
-  if (editorKind.value === "SCENARIO")
+  if (editorKind.value === 'SCENARIO')
     controller.policy.value.scenarios.splice(editorIndex.value, 1);
   closeEditor();
 }
 
 function addSimulationStep() {
-  const step = createSimulationStep(
-    newStepKind.value,
-    controller.simulationSteps.value.length,
-  );
-  if (step.kind === "EXPLICIT_HUMAN_REQUEST")
+  const step = createSimulationStep(newStepKind.value, controller.simulationSteps.value.length);
+  if (step.kind === 'EXPLICIT_HUMAN_REQUEST')
     step.ruleCode = controller.policy.value.explicitHumanRequestRules[0]?.code;
-  if (step.kind === "AMBIGUOUS_HUMAN_TERM")
+  if (step.kind === 'AMBIGUOUS_HUMAN_TERM')
     step.ruleCode = controller.policy.value.ambiguousHumanTermRules[0]?.code;
-  if (step.kind === "SCENARIO")
-    step.scenarioCode = controller.policy.value.scenarios[0]?.code;
-  if (step.kind === "TRUSTED_OUTCOME") step.outcome = "NO_ANSWER";
-  if (step.kind === "POLICY_SWITCH")
-    step.nextDefinition = cloneEscalation(controller.policy.value);
+  if (step.kind === 'SCENARIO') step.scenarioCode = controller.policy.value.scenarios[0]?.code;
+  if (step.kind === 'TRUSTED_OUTCOME') step.outcome = 'NO_ANSWER';
+  if (step.kind === 'POLICY_SWITCH') step.nextDefinition = cloneEscalation(controller.policy.value);
   controller.simulationSteps.value.push(step);
 }
 
@@ -584,48 +528,37 @@ function openStepEditor(index: number) {
   stepEditorIndex.value = index;
   editedStep.value = cloneEscalation(controller.simulationSteps.value[index]);
   const startedAt = new Date(
-    controller.simulationSteps.value[0]?.observedAt ??
-      editedStep.value.observedAt,
+    controller.simulationSteps.value[0]?.observedAt ?? editedStep.value.observedAt,
   ).getTime();
   editedStepDelayMinutes.value = Math.max(
     0,
-    Math.round(
-      (new Date(editedStep.value.observedAt).getTime() - startedAt) / 60_000,
-    ),
+    Math.round((new Date(editedStep.value.observedAt).getTime() - startedAt) / 60_000),
   );
-  writePanel("event");
+  writePanel('event');
 }
 
 function closeStepEditor() {
   stepEditorIndex.value = -1;
   editedStep.value = null;
-  if (route.query.escalationPanel === "event") clearPanel("simulator");
+  if (route.query.escalationPanel === 'event') clearPanel('simulator');
 }
 
 function saveStepEditor() {
-  if (!editedStep.value || stepEditorIndex.value < 0 || stepEditorIssue.value)
-    return;
+  if (!editedStep.value || stepEditorIndex.value < 0 || stepEditorIssue.value) return;
   const startedAt = new Date(
-    controller.simulationSteps.value[0]?.observedAt ??
-      editedStep.value.observedAt,
+    controller.simulationSteps.value[0]?.observedAt ?? editedStep.value.observedAt,
   ).getTime();
   editedStep.value.observedAt = new Date(
     startedAt + editedStepDelayMinutes.value * 60_000,
   ).toISOString();
   editedStep.value = normalizeSimulationStepSafety(editedStep.value);
-  if (editedStep.value.kind === "POLICY_SWITCH")
+  if (editedStep.value.kind === 'POLICY_SWITCH')
     editedStep.value.nextDefinition = cloneEscalation(controller.policy.value);
   else delete editedStep.value.nextDefinition;
-  if (
-    !["EXPLICIT_HUMAN_REQUEST", "AMBIGUOUS_HUMAN_TERM"].includes(
-      editedStep.value.kind,
-    )
-  )
+  if (!['EXPLICIT_HUMAN_REQUEST', 'AMBIGUOUS_HUMAN_TERM'].includes(editedStep.value.kind))
     delete editedStep.value.ruleCode;
-  if (editedStep.value.kind !== "SCENARIO")
-    delete editedStep.value.scenarioCode;
-  if (editedStep.value.kind !== "TRUSTED_OUTCOME")
-    delete editedStep.value.outcome;
+  if (editedStep.value.kind !== 'SCENARIO') delete editedStep.value.scenarioCode;
+  if (editedStep.value.kind !== 'TRUSTED_OUTCOME') delete editedStep.value.outcome;
   controller.simulationSteps.value.splice(
     stepEditorIndex.value,
     1,
@@ -638,9 +571,7 @@ function repeatSimulationStep(index: number) {
   const sourceStep = controller.simulationSteps.value[index];
   const copy = cloneEscalation(sourceStep);
   copy.stepId = `STEP_${controller.simulationSteps.value.length + 1}`;
-  copy.observedAt = new Date(
-    new Date(sourceStep.observedAt).getTime() + 60_000,
-  ).toISOString();
+  copy.observedAt = new Date(new Date(sourceStep.observedAt).getTime() + 60_000).toISOString();
   controller.simulationSteps.value.splice(index + 1, 0, copy);
 }
 
@@ -648,36 +579,31 @@ function removeSimulationStep(index: number) {
   controller.simulationSteps.value.splice(index, 1);
 }
 
-function loadPreset(kind: "DIRECT" | "OFFER" | "FAILURE" | "SAFETY") {
-  const kinds: Record<typeof kind, EscalationSimulationStep["kind"][]> = {
-    DIRECT: ["EXPLICIT_HUMAN_REQUEST", "ESCALATION_COMMITTED"],
-    OFFER: ["AMBIGUOUS_HUMAN_TERM", "OFFER_ACCEPTED", "ESCALATION_COMMITTED"],
-    FAILURE: ["TRUSTED_OUTCOME", "TRUSTED_OUTCOME", "ESCALATION_COMMITTED"],
-    SAFETY: ["SCENARIO", "ESCALATION_COMMITTED"],
+function loadPreset(kind: 'DIRECT' | 'OFFER' | 'FAILURE' | 'SAFETY') {
+  const kinds: Record<typeof kind, EscalationSimulationStep['kind'][]> = {
+    DIRECT: ['EXPLICIT_HUMAN_REQUEST', 'ESCALATION_COMMITTED'],
+    OFFER: ['AMBIGUOUS_HUMAN_TERM', 'OFFER_ACCEPTED', 'ESCALATION_COMMITTED'],
+    FAILURE: ['TRUSTED_OUTCOME', 'TRUSTED_OUTCOME', 'ESCALATION_COMMITTED'],
+    SAFETY: ['SCENARIO', 'ESCALATION_COMMITTED'],
   };
   controller.simulationSteps.value = kinds[kind].map((stepKind, index) => {
     const step = createSimulationStep(stepKind, index);
-    if (stepKind === "EXPLICIT_HUMAN_REQUEST")
-      step.ruleCode =
-        controller.policy.value.explicitHumanRequestRules[0]?.code;
-    if (stepKind === "AMBIGUOUS_HUMAN_TERM")
+    if (stepKind === 'EXPLICIT_HUMAN_REQUEST')
+      step.ruleCode = controller.policy.value.explicitHumanRequestRules[0]?.code;
+    if (stepKind === 'AMBIGUOUS_HUMAN_TERM')
       step.ruleCode = controller.policy.value.ambiguousHumanTermRules[0]?.code;
-    if (stepKind === "SCENARIO")
-      step.scenarioCode = controller.policy.value.scenarios[0]?.code;
-    if (stepKind === "TRUSTED_OUTCOME") step.outcome = "NO_ANSWER";
-    if (kind === "SAFETY") {
-      step.safetyState = "URGENT";
-      step.safetyRiskClass = "SELF_HARM_OR_SUICIDE";
+    if (stepKind === 'SCENARIO') step.scenarioCode = controller.policy.value.scenarios[0]?.code;
+    if (stepKind === 'TRUSTED_OUTCOME') step.outcome = 'NO_ANSWER';
+    if (kind === 'SAFETY') {
+      step.safetyState = 'URGENT';
+      step.safetyRiskClass = 'SELF_HARM_OR_SUICIDE';
     }
     return step;
   });
 }
 
 function simulationStepLabel(kind: string) {
-  return (
-    simulationKindOptions.find(([value]) => value === kind)?.[1] ??
-    "Неизвестное событие"
-  );
+  return simulationKindOptions.find(([value]) => value === kind)?.[1] ?? 'Неизвестное событие';
 }
 function simulationStepOffset(index: number) {
   const first = controller.simulationSteps.value[0];
@@ -686,32 +612,26 @@ function simulationStepOffset(index: number) {
   return Math.max(
     0,
     Math.round(
-      (new Date(current.observedAt).getTime() -
-        new Date(first.observedAt).getTime()) /
-        60_000,
+      (new Date(current.observedAt).getTime() - new Date(first.observedAt).getTime()) / 60_000,
     ),
   );
 }
 function dataFieldCount(value: number) {
-  if (value === 1) return "1 поле до передачи";
+  if (value === 1) return '1 поле до передачи';
   if (value > 1 && value < 5) return `${value} поля до передачи`;
   return `${value} полей до передачи`;
 }
 
 function openSimulator() {
   simulatorVisible.value = true;
-  mobileSimulatorView.value = "events";
-  writePanel("simulator");
+  mobileSimulatorView.value = 'events';
+  writePanel('simulator');
 }
 
 function closeSimulator() {
   simulatorVisible.value = false;
   editedStep.value = null;
-  if (
-    ["simulator", "result", "event"].includes(
-      String(route.query.escalationPanel),
-    )
-  ) {
+  if (['simulator', 'result', 'event'].includes(String(route.query.escalationPanel))) {
     const query = { ...route.query };
     delete query.escalationPanel;
     void router.replace({ query });
@@ -721,20 +641,20 @@ function closeSimulator() {
 
 async function runAndShowResult() {
   if (await controller.runSimulation()) {
-    mobileSimulatorView.value = "result";
-    const query = { ...route.query, escalationPanel: "result" };
+    mobileSimulatorView.value = 'result';
+    const query = { ...route.query, escalationPanel: 'result' };
     await router.push({ query });
   }
 }
 
-function showSimulatorView(view: "events" | "result") {
+function showSimulatorView(view: 'events' | 'result') {
   mobileSimulatorView.value = view;
-  if (view === "events" && route.query.escalationPanel === "result") {
+  if (view === 'events' && route.query.escalationPanel === 'result') {
     void router.back();
     return;
   }
-  if (view === "result" && controller.simulation.value) {
-    void router.push({ query: { ...route.query, escalationPanel: "result" } });
+  if (view === 'result' && controller.simulation.value) {
+    void router.push({ query: { ...route.query, escalationPanel: 'result' } });
   }
 }
 
@@ -747,35 +667,30 @@ function closeProtectedOverlays() {
   simulatorVisible.value = false;
   publishVisible.value = false;
   discardVisible.value = false;
-  reason.value = "";
+  reason.value = '';
 }
 
 async function refresh() {
   accessDenied.value = false;
   await controller.load();
-  if (route.query.escalationPanel === "rule" && controller.canManage.value) {
-    const kind =
-      typeof route.query.ruleKind === "string" ? route.query.ruleKind : "";
-    const index = Number.parseInt(String(route.query.ruleIndex ?? "-1"), 10);
-    if (kind === "SCENARIO") openScenarioEditor(index, false);
-    if (["EXPLICIT", "AMBIGUOUS", "EXCLUDE"].includes(kind))
-      openPhraseEditor(
-        kind as "EXPLICIT" | "AMBIGUOUS" | "EXCLUDE",
-        index,
-        false,
-      );
+  if (route.query.escalationPanel === 'rule' && controller.canManage.value) {
+    const kind = typeof route.query.ruleKind === 'string' ? route.query.ruleKind : '';
+    const index = Number.parseInt(String(route.query.ruleIndex ?? '-1'), 10);
+    if (kind === 'SCENARIO') openScenarioEditor(index, false);
+    if (['EXPLICIT', 'AMBIGUOUS', 'EXCLUDE'].includes(kind))
+      openPhraseEditor(kind as 'EXPLICIT' | 'AMBIGUOUS' | 'EXCLUDE', index, false);
   }
 }
 async function confirmPublish() {
   if (await controller.publish(reason.value)) {
     publishVisible.value = false;
-    reason.value = "";
+    reason.value = '';
   }
 }
 async function confirmDiscard() {
   if (await controller.discard(reason.value)) {
     discardVisible.value = false;
-    reason.value = "";
+    reason.value = '';
   }
 }
 
@@ -787,24 +702,15 @@ watch(
     controller.reset({ forgetRetained: actorChanged || !nextActor });
     void refresh();
   },
-  { flush: "sync" },
+  { flush: 'sync' },
 );
 watch(permissionSignature, (_next, previous) => {
   const lostAuthority =
     Boolean(previous) &&
-    (!hasProjectPermission(
-      permissions.value,
-      "project.case_intelligence.read",
-    ) ||
+    (!hasProjectPermission(permissions.value, 'project.case_intelligence.read') ||
       (controller.hasUnknownOutcome.value &&
-        !hasProjectPermission(
-          permissions.value,
-          "project.case_intelligence.escalation.manage",
-        ) &&
-        !hasProjectPermission(
-          permissions.value,
-          "project.case_intelligence.release.manage",
-        )));
+        !hasProjectPermission(permissions.value, 'project.case_intelligence.escalation.manage') &&
+        !hasProjectPermission(permissions.value, 'project.case_intelligence.release.manage')));
   closeProtectedOverlays();
   controller.reset({ forgetRetained: lostAuthority });
   void refresh();
@@ -812,10 +718,10 @@ watch(permissionSignature, (_next, previous) => {
 watch(
   () => route.query.escalationPanel,
   (panel) => {
-    if (panel === "simulator" || panel === "result" || panel === "event") {
+    if (panel === 'simulator' || panel === 'result' || panel === 'event') {
       simulatorVisible.value = true;
-      mobileSimulatorView.value = panel === "result" ? "result" : "events";
-      if (panel !== "event") editedStep.value = null;
+      mobileSimulatorView.value = panel === 'result' ? 'result' : 'events';
+      if (panel !== 'event') editedStep.value = null;
     } else if (!panel) {
       simulatorVisible.value = false;
       editedStep.value = null;
@@ -831,46 +737,28 @@ watch(
   [() => editedStep.value?.kind, () => editedStep.value?.safetyState],
   ([kind, safetyState]) => {
     if (!editedStep.value) return;
-    if (kind === "EXPLICIT_HUMAN_REQUEST") {
-      const codes = controller.policy.value.explicitHumanRequestRules.map(
-        (rule) => rule.code,
-      );
-      if (
-        !editedStep.value.ruleCode ||
-        !codes.includes(editedStep.value.ruleCode)
-      )
+    if (kind === 'EXPLICIT_HUMAN_REQUEST') {
+      const codes = controller.policy.value.explicitHumanRequestRules.map((rule) => rule.code);
+      if (!editedStep.value.ruleCode || !codes.includes(editedStep.value.ruleCode))
         editedStep.value.ruleCode = codes[0];
-    } else if (kind === "AMBIGUOUS_HUMAN_TERM") {
-      const codes = controller.policy.value.ambiguousHumanTermRules.map(
-        (rule) => rule.code,
-      );
-      if (
-        !editedStep.value.ruleCode ||
-        !codes.includes(editedStep.value.ruleCode)
-      )
+    } else if (kind === 'AMBIGUOUS_HUMAN_TERM') {
+      const codes = controller.policy.value.ambiguousHumanTermRules.map((rule) => rule.code);
+      if (!editedStep.value.ruleCode || !codes.includes(editedStep.value.ruleCode))
         editedStep.value.ruleCode = codes[0];
     } else {
       delete editedStep.value.ruleCode;
     }
-    if (kind === "SCENARIO") {
+    if (kind === 'SCENARIO') {
       const codes = controller.policy.value.scenarios.map((item) => item.code);
-      if (
-        !editedStep.value.scenarioCode ||
-        !codes.includes(editedStep.value.scenarioCode)
-      )
+      if (!editedStep.value.scenarioCode || !codes.includes(editedStep.value.scenarioCode))
         editedStep.value.scenarioCode = codes[0];
     } else delete editedStep.value.scenarioCode;
-    if (kind === "TRUSTED_OUTCOME") editedStep.value.outcome ??= "NO_ANSWER";
+    if (kind === 'TRUSTED_OUTCOME') editedStep.value.outcome ??= 'NO_ANSWER';
     else delete editedStep.value.outcome;
-    if (kind === "POLICY_SWITCH")
-      editedStep.value.nextDefinition ??= cloneEscalation(
-        controller.policy.value,
-      );
+    if (kind === 'POLICY_SWITCH')
+      editedStep.value.nextDefinition ??= cloneEscalation(controller.policy.value);
     else delete editedStep.value.nextDefinition;
-    if (
-      kind === "POLICY_SWITCH" ||
-      (safetyState && !["SUSPECTED", "URGENT"].includes(safetyState))
-    )
+    if (kind === 'POLICY_SWITCH' || (safetyState && !['SUSPECTED', 'URGENT'].includes(safetyState)))
       editedStep.value = normalizeSimulationStepSafety(editedStep.value);
   },
 );
@@ -885,8 +773,8 @@ onBeforeUnmount(() => controller.reset());
         <div class="eyebrow"><i class="pi pi-users" /> Настройки поддержки</div>
         <h1 id="escalation-title">Передача оператору</h1>
         <p>
-          Настройте, когда Lola предлагает помощь человека, уточняет причину или
-          сразу передаёт обращение.
+          Настройте, когда Lola предлагает помощь человека, уточняет причину или сразу передаёт
+          обращение.
         </p>
       </div>
       <div class="header-actions">
@@ -916,8 +804,7 @@ onBeforeUnmount(() => controller.reset());
     </header>
 
     <Message v-if="!canRead" severity="warn" :closable="false"
-      >Для этого раздела нужен доступ к правилам обращений текущего
-      проекта.</Message
+      >Для этого раздела нужен доступ к правилам обращений текущего проекта.</Message
     >
     <template v-else>
       <nav class="section-tabs" aria-label="Разделы правил обращений">
@@ -927,9 +814,7 @@ onBeforeUnmount(() => controller.reset());
         <RouterLink to="/support/settings/case-intelligence/detection"
           ><i class="pi pi-tags" /> Категории и правила</RouterLink
         >
-        <RouterLink
-          to="/support/settings/case-intelligence/escalation"
-          aria-current="page"
+        <RouterLink to="/support/settings/case-intelligence/escalation" aria-current="page"
           ><i class="pi pi-users" /> Передача оператору</RouterLink
         >
         <RouterLink to="/support/settings/case-intelligence/models-budget"
@@ -937,44 +822,25 @@ onBeforeUnmount(() => controller.reset());
         >
       </nav>
 
-      <Message
-        v-if="controller.safetyUnavailable.value"
-        severity="warn"
-        :closable="false"
-      >
-        Обязательная политика безопасности ещё не опубликована администратором
-        платформы. Это не проблема вашей роли: правила передачи можно открыть и
-        подготовить, но сервер не разрешит проверку и публикацию до настройки
-        политики безопасности.
+      <Message v-if="controller.safetyUnavailable.value" severity="warn" :closable="false">
+        Обязательная политика безопасности ещё не опубликована администратором платформы. Это не
+        проблема вашей роли: правила передачи можно открыть и подготовить, но сервер не разрешит
+        проверку и публикацию до настройки политики безопасности.
       </Message>
 
       <div class="live-region" aria-live="polite" aria-atomic="true">
-        <Message
-          v-if="controller.error.value"
-          severity="error"
-          :closable="false"
-          >{{ controller.error.value }}</Message
-        >
-        <Message
-          v-else-if="controller.feedback.value"
-          severity="success"
-          :closable="false"
-          >{{ controller.feedback.value }}</Message
-        >
-        <Message
-          v-if="controller.hasUnknownOutcome.value"
-          severity="warn"
-          :closable="false"
-        >
+        <Message v-if="controller.error.value" severity="error" :closable="false">{{
+          controller.error.value
+        }}</Message>
+        <Message v-else-if="controller.feedback.value" severity="success" :closable="false">{{
+          controller.feedback.value
+        }}</Message>
+        <Message v-if="controller.hasUnknownOutcome.value" severity="warn" :closable="false">
           <div class="recovery">
             <span
-              >Предыдущая команда ждёт подтверждения сервера. Новые изменения
-              временно заблокированы.</span
-            ><Button
-              label="Проверить эту попытку"
-              size="small"
-              @click="controller.retryPending"
-            />
+              >Предыдущая команда ждёт подтверждения сервера. Новые изменения временно
+              заблокированы.</span
+            ><Button label="Проверить эту попытку" size="small" @click="controller.retryPending" />
           </div>
         </Message>
       </div>
@@ -989,19 +855,11 @@ onBeforeUnmount(() => controller.reset());
           border-radius="14px"
         /><Skeleton height="18rem" border-radius="14px" />
       </div>
-      <section
-        v-else-if="!controller.snapshot.value"
-        class="empty-state"
-        role="alert"
-      >
+      <section v-else-if="!controller.snapshot.value" class="empty-state" role="alert">
         <i class="pi pi-cloud-off" />
         <h2>Правила не загрузились</h2>
         <p>Ничего не изменено. Проверьте соединение и попробуйте ещё раз.</p>
-        <Button
-          label="Попробовать снова"
-          icon="pi pi-refresh"
-          @click="refresh"
-        />
+        <Button label="Попробовать снова" icon="pi pi-refresh" @click="refresh" />
       </section>
 
       <template v-else>
@@ -1010,9 +868,8 @@ onBeforeUnmount(() => controller.reset());
             <div class="card-kicker">Как работает передача</div>
             <h2 id="handoff-flow-title">Как обращение попадает к человеку</h2>
             <p>
-              Явная просьба всегда передаёт обращение. Для неоднозначной фразы
-              или сценария можно сначала предложить оператора либо один раз
-              уточнить причину.
+              Явная просьба всегда передаёт обращение. Для неоднозначной фразы или сценария можно
+              сначала предложить оператора либо один раз уточнить причину.
             </p>
           </div>
           <div class="brief-actions">
@@ -1030,28 +887,19 @@ onBeforeUnmount(() => controller.reset());
               icon="pi pi-save"
               :loading="controller.mutating.value"
               :disabled="
-                Boolean(controller.issues.value.length) ||
-                controller.hasUnknownOutcome.value
+                Boolean(controller.issues.value.length) || controller.hasUnknownOutcome.value
               "
               @click="controller.save"
             />
           </div>
           <ol class="handoff-path" aria-label="Этапы передачи обращения">
+            <li><span>1</span><strong>Сигнал</strong><small>Фраза, сценарий или риск</small></li>
             <li>
-              <span>1</span><strong>Сигнал</strong
-              ><small>Фраза, сценарий или риск</small>
+              <span>2</span><strong>Решение</strong><small>Предложить, уточнить или передать</small>
             </li>
+            <li><span>3</span><strong>Сведения</strong><small>Собрать нужный контекст</small></li>
             <li>
-              <span>2</span><strong>Решение</strong
-              ><small>Предложить, уточнить или передать</small>
-            </li>
-            <li>
-              <span>3</span><strong>Сведения</strong
-              ><small>Собрать нужный контекст</small>
-            </li>
-            <li>
-              <span>4</span><strong>Распределение</strong
-              ><small>Выбрать очередь и SLA</small>
+              <span>4</span><strong>Распределение</strong><small>Выбрать очередь и SLA</small>
             </li>
           </ol>
           <dl class="brief-facts">
@@ -1061,18 +909,14 @@ onBeforeUnmount(() => controller.reset());
                 {{
                   controller.published.value
                     ? `Версия ${controller.published.value.version}`
-                    : "Нет"
+                    : 'Нет'
                 }}
               </dd>
             </div>
             <div>
               <dt>Черновик</dt>
               <dd>
-                {{
-                  controller.draft.value
-                    ? `Версия ${controller.draft.value.version}`
-                    : "Нет"
-                }}
+                {{ controller.draft.value ? `Версия ${controller.draft.value.version}` : 'Нет' }}
               </dd>
             </div>
             <div>
@@ -1093,8 +937,8 @@ onBeforeUnmount(() => controller.reset());
                 <span class="card-kicker">Просьба позвать человека</span>
                 <h2 id="requests-title">Фразы человека</h2>
                 <p>
-                  Три отдельных списка: подтверждённая просьба, неясное
-                  упоминание и точное исключение.
+                  Три отдельных списка: подтверждённая просьба, неясное упоминание и точное
+                  исключение.
                 </p>
               </div>
             </div>
@@ -1109,10 +953,7 @@ onBeforeUnmount(() => controller.reset());
                         controller.policy.value.explicitHumanRequestRules.length
                       }}</span>
                     </div>
-                    <p>
-                      «Позовите оператора» — передаём сразу, без дополнительного
-                      вопроса.
-                    </p>
+                    <p>«Позовите оператора» — передаём сразу, без дополнительного вопроса.</p>
                   </div>
                   <Button
                     v-if="controller.canManage.value"
@@ -1125,29 +966,23 @@ onBeforeUnmount(() => controller.reset());
                 </div>
                 <div class="rule-list">
                   <button
-                    v-for="(rule, index) in controller.policy.value
-                      .explicitHumanRequestRules"
+                    v-for="(rule, index) in controller.policy.value.explicitHumanRequestRules"
                     :key="rule.code"
                     class="rule-row"
                     type="button"
                     @click="openPhraseEditor('EXPLICIT', index)"
                   >
                     <span class="rule-main"
-                      ><strong>{{
-                        rule.phrases[0] || "Фразы не добавлены"
-                      }}</strong
+                      ><strong>{{ rule.phrases[0] || 'Фразы не добавлены' }}</strong
                       ><small
-                        ><code>{{ rule.code }}</code> ·
-                        {{ rule.phrases.length }} фраз</small
+                        ><code>{{ rule.code }}</code> · {{ rule.phrases.length }} фраз</small
                       ></span
                     ><Tag value="Передать сразу" severity="danger" /><i
                       class="pi pi-chevron-right"
                     />
                   </button>
                   <div
-                    v-if="
-                      !controller.policy.value.explicitHumanRequestRules.length
-                    "
+                    v-if="!controller.policy.value.explicitHumanRequestRules.length"
                     class="inline-empty"
                   >
                     Добавьте подтверждённые формулировки по языкам проекта.
@@ -1158,18 +993,13 @@ onBeforeUnmount(() => controller.reset());
                 <div class="rule-group__head">
                   <div>
                     <div class="rule-group__title">
-                      <span class="group-mark"
-                        ><i class="pi pi-comments"
-                      /></span>
+                      <span class="group-mark"><i class="pi pi-comments" /></span>
                       <h3>Неясное упоминание</h3>
                       <span class="group-count">{{
                         controller.policy.value.ambiguousHumanTermRules.length
                       }}</span>
                     </div>
-                    <p>
-                      «Оператор» без просьбы — можно предложить помощь или
-                      уточнить причину.
-                    </p>
+                    <p>«Оператор» без просьбы — можно предложить помощь или уточнить причину.</p>
                   </div>
                   <Button
                     v-if="controller.canManage.value"
@@ -1182,34 +1012,26 @@ onBeforeUnmount(() => controller.reset());
                 </div>
                 <div class="rule-list">
                   <button
-                    v-for="(rule, index) in controller.policy.value
-                      .ambiguousHumanTermRules"
+                    v-for="(rule, index) in controller.policy.value.ambiguousHumanTermRules"
                     :key="rule.code"
                     class="rule-row"
                     type="button"
                     @click="openPhraseEditor('AMBIGUOUS', index)"
                   >
                     <span class="rule-main"
-                      ><strong>{{
-                        rule.phrases[0] || "Фразы не добавлены"
-                      }}</strong
+                      ><strong>{{ rule.phrases[0] || 'Фразы не добавлены' }}</strong
                       ><small
-                        ><code>{{ rule.code }}</code> ·
-                        {{ rule.phrases.length }} фраз</small
+                        ><code>{{ rule.code }}</code> · {{ rule.phrases.length }} фраз</small
                       ></span
-                    ><Tag
-                      :value="escalationActionLabel(rule.action)"
-                      severity="warn"
-                    /><i class="pi pi-chevron-right" />
+                    ><Tag :value="escalationActionLabel(rule.action)" severity="warn" /><i
+                      class="pi pi-chevron-right"
+                    />
                   </button>
                   <div
-                    v-if="
-                      !controller.policy.value.ambiguousHumanTermRules.length
-                    "
+                    v-if="!controller.policy.value.ambiguousHumanTermRules.length"
                     class="inline-empty"
                   >
-                    Необязательный список: Lola может опираться на сценарии и
-                    проверенные исходы.
+                    Необязательный список: Lola может опираться на сценарии и проверенные исходы.
                   </div>
                 </div>
               </article>
@@ -1217,17 +1039,15 @@ onBeforeUnmount(() => controller.reset());
                 <div class="rule-group__head">
                   <div>
                     <div class="rule-group__title">
-                      <span class="group-mark"
-                        ><i class="pi pi-minus-circle"
-                      /></span>
+                      <span class="group-mark"><i class="pi pi-minus-circle" /></span>
                       <h3>Точные исключения</h3>
                       <span class="group-count">{{
                         controller.policy.value.doNotEscalateRules?.length ?? 0
                       }}</span>
                     </div>
                     <p>
-                      Не передавать только по известной ложной формулировке.
-                      Безопасность и явная просьба важнее.
+                      Не передавать только по известной ложной формулировке. Безопасность и явная
+                      просьба важнее.
                     </p>
                   </div>
                   <Button
@@ -1241,20 +1061,16 @@ onBeforeUnmount(() => controller.reset());
                 </div>
                 <div class="rule-list">
                   <button
-                    v-for="(rule, index) in controller.policy.value
-                      .doNotEscalateRules ?? []"
+                    v-for="(rule, index) in controller.policy.value.doNotEscalateRules ?? []"
                     :key="rule.code"
                     class="rule-row"
                     type="button"
                     @click="openPhraseEditor('EXCLUDE', index)"
                   >
                     <span class="rule-main"
-                      ><strong>{{
-                        rule.phrases[0] || "Фразы не добавлены"
-                      }}</strong
+                      ><strong>{{ rule.phrases[0] || 'Фразы не добавлены' }}</strong
                       ><small
-                        ><code>{{ rule.code }}</code> ·
-                        {{ rule.phrases.length }} фраз</small
+                        ><code>{{ rule.code }}</code> · {{ rule.phrases.length }} фраз</small
                       ></span
                     ><Tag value="Не передавать" severity="secondary" /><i
                       class="pi pi-chevron-right"
@@ -1264,8 +1080,7 @@ onBeforeUnmount(() => controller.reset());
                     v-if="!controller.policy.value.doNotEscalateRules?.length"
                     class="inline-empty"
                   >
-                    Исключений нет. Добавляйте их только для известных ложных
-                    срабатываний.
+                    Исключений нет. Добавляйте их только для известных ложных срабатываний.
                   </div>
                 </div>
               </article>
@@ -1277,10 +1092,7 @@ onBeforeUnmount(() => controller.reset());
               <div>
                 <span class="card-kicker">Продуктовые ситуации</span>
                 <h2 id="scenario-title">Сценарии обращения</h2>
-                <p>
-                  Сценарий задаёт решение и срочность. Он не назначает
-                  сотрудника напрямую.
-                </p>
+                <p>Сценарий задаёт решение и срочность. Он не назначает сотрудника напрямую.</p>
               </div>
               <Button
                 v-if="controller.canManage.value"
@@ -1305,21 +1117,16 @@ onBeforeUnmount(() => controller.reset());
                     {{
                       scenario.dataToCollect.length
                         ? dataFieldCount(scenario.dataToCollect.length)
-                        : "Без обязательных полей"
+                        : 'Без обязательных полей'
                     }}</small
                   ></span
                 ><span class="scenario-meta"
-                  ><Tag
-                    :value="urgencyLabel(scenario.urgency)"
-                    severity="secondary" /></span
+                  ><Tag :value="urgencyLabel(scenario.urgency)" severity="secondary" /></span
                 ><i class="pi pi-chevron-right" />
               </button>
-              <div
-                v-if="!controller.policy.value.scenarios.length"
-                class="inline-empty"
-              >
-                Сценариев пока нет. Явная просьба человека всё равно остаётся
-                обязательным основанием для передачи.
+              <div v-if="!controller.policy.value.scenarios.length" class="inline-empty">
+                Сценариев пока нет. Явная просьба человека всё равно остаётся обязательным
+                основанием для передачи.
               </div>
             </div>
           </section>
@@ -1330,8 +1137,8 @@ onBeforeUnmount(() => controller.reset());
                 <span class="card-kicker">Повторные неудачи Lola</span>
                 <h2 id="thresholds-title">Пороги и проверенные результаты</h2>
                 <p>
-                  Эти счётчики ведёт сервер по подтверждённым исходам. Браузер
-                  не угадывает их по числу сообщений.
+                  Эти счётчики ведёт сервер по подтверждённым исходам. Браузер не угадывает их по
+                  числу сообщений.
                 </p>
               </div>
             </div>
@@ -1354,7 +1161,7 @@ onBeforeUnmount(() => controller.reset());
                   v-if="issue('clarificationLimit')"
                   id="escalation-clarification-error"
                   class="field-error"
-                  >{{ issue("clarificationLimit") }}</small
+                  >{{ issue('clarificationLimit') }}</small
                 ></label
               >
               <label
@@ -1369,13 +1176,12 @@ onBeforeUnmount(() => controller.reset());
                   :disabled="!controller.canManage.value"
                   :aria-invalid="Boolean(issue('noMatchLimit'))"
                   aria-describedby="escalation-no-match-help escalation-no-match-error"
-                /><small id="escalation-no-match-help"
-                  >Предел непонятых сообщений подряд.</small
+                /><small id="escalation-no-match-help">Предел непонятых сообщений подряд.</small
                 ><small
                   v-if="issue('noMatchLimit')"
                   id="escalation-no-match-error"
                   class="field-error"
-                  >{{ issue("noMatchLimit") }}</small
+                  >{{ issue('noMatchLimit') }}</small
                 ></label
               >
               <label
@@ -1396,7 +1202,7 @@ onBeforeUnmount(() => controller.reset());
                   v-if="issue('repeatLimit')"
                   id="escalation-repeat-error"
                   class="field-error"
-                  >{{ issue("repeatLimit") }}</small
+                  >{{ issue('repeatLimit') }}</small
                 ></label
               >
               <label
@@ -1417,7 +1223,7 @@ onBeforeUnmount(() => controller.reset());
                   v-if="issue('failedResolutionLimit')"
                   id="escalation-failed-error"
                   class="field-error"
-                  >{{ issue("failedResolutionLimit") }}</small
+                  >{{ issue('failedResolutionLimit') }}</small
                 ></label
               >
             </div>
@@ -1430,41 +1236,32 @@ onBeforeUnmount(() => controller.reset());
                     :text="trustedOutcomeLabel(item.outcome)"
                     help="Серверный результат обращения. Счётчик растёт только после подтверждённого исхода, а не по словам в сообщении."
                   />
-                  ><small
-                    >Серверный результат, а не поиск слов в ответе.</small
-                  ></span
+                  ><small>Серверный результат, а не поиск слов в ответе.</small></span
                 ><InputNumber
                   :input-id="'escalation-outcome-' + item.outcome"
                   v-model="item.limit"
                   :min="1"
                   :max="20"
                   :disabled="!controller.canManage.value"
-                  :aria-invalid="
-                    Boolean(issue('trustedOutcomeLimits.' + item.outcome))
-                  "
-                  :aria-describedby="
-                    'escalation-outcome-' + item.outcome + '-error'
-                  "
+                  :aria-invalid="Boolean(issue('trustedOutcomeLimits.' + item.outcome))"
+                  :aria-describedby="'escalation-outcome-' + item.outcome + '-error'"
                 /><small
                   v-if="issue('trustedOutcomeLimits.' + item.outcome)"
                   :id="'escalation-outcome-' + item.outcome + '-error'"
                   class="field-error"
-                  >{{ issue("trustedOutcomeLimits." + item.outcome) }}</small
+                  >{{ issue('trustedOutcomeLimits.' + item.outcome) }}</small
                 ></label
               >
             </div>
           </section>
 
-          <section
-            class="policy-section routing-section"
-            aria-labelledby="routing-title"
-          >
+          <section class="policy-section routing-section" aria-labelledby="routing-title">
             <div>
               <span class="card-kicker">После решения</span>
               <h2 id="routing-title">Распределение и время ожидания</h2>
               <p>
-                Эта ссылка выбирает правила команды, рабочего времени и SLA.
-                Здесь нельзя назначить конкретного сотрудника.
+                Эта ссылка выбирает правила команды, рабочего времени и SLA. Здесь нельзя назначить
+                конкретного сотрудника.
               </p>
             </div>
             <label class="routing-field"
@@ -1479,14 +1276,14 @@ onBeforeUnmount(() => controller.reset());
                 :aria-invalid="Boolean(issue('routingPolicyRevisionId'))"
                 aria-describedby="escalation-routing-error"
               /><small>{{
-                issue("routingPolicyRevisionId") ||
-                "Используйте опубликованную версию правил распределения поддержки."
+                issue('routingPolicyRevisionId') ||
+                'Используйте опубликованную версию правил распределения поддержки.'
               }}</small
               ><small
                 v-if="issue('routingPolicyRevisionId')"
                 id="escalation-routing-error"
                 class="field-error"
-                >{{ issue("routingPolicyRevisionId") }}</small
+                >{{ issue('routingPolicyRevisionId') }}</small
               ></label
             >
             <div class="threshold-grid threshold-grid--two">
@@ -1496,25 +1293,20 @@ onBeforeUnmount(() => controller.reset());
                   help="Минимальная пауза перед тем, как Lola снова предложит оператора после отказа или пропуска."
                 /><InputNumber
                   input-id="escalation-cooldown"
-                  :model-value="
-                    Math.round(
-                      controller.policy.value.offerCooldownSeconds / 60,
-                    )
-                  "
+                  :model-value="Math.round(controller.policy.value.offerCooldownSeconds / 60)"
                   :min="1"
                   :max="10080"
                   :disabled="!controller.canManage.value"
                   :aria-invalid="Boolean(issue('offerCooldownSeconds'))"
                   aria-describedby="escalation-cooldown-error"
                   @update:model-value="
-                    controller.policy.value.offerCooldownSeconds =
-                      Number($event) * 60
+                    controller.policy.value.offerCooldownSeconds = Number($event) * 60
                   "
                 /><small
                   v-if="issue('offerCooldownSeconds')"
                   id="escalation-cooldown-error"
                   class="field-error"
-                  >{{ issue("offerCooldownSeconds") }}</small
+                  >{{ issue('offerCooldownSeconds') }}</small
                 ></label
               ><label
                 ><FormFieldLabel
@@ -1523,9 +1315,7 @@ onBeforeUnmount(() => controller.reset());
                 /><InputNumber
                   input-id="escalation-timeout"
                   :model-value="
-                    Math.round(
-                      controller.policy.value.offerResponseTimeoutSeconds / 60,
-                    )
+                    Math.round(controller.policy.value.offerResponseTimeoutSeconds / 60)
                   "
                   :min="1"
                   :max="1440"
@@ -1533,14 +1323,13 @@ onBeforeUnmount(() => controller.reset());
                   :aria-invalid="Boolean(issue('offerResponseTimeoutSeconds'))"
                   aria-describedby="escalation-timeout-error"
                   @update:model-value="
-                    controller.policy.value.offerResponseTimeoutSeconds =
-                      Number($event) * 60
+                    controller.policy.value.offerResponseTimeoutSeconds = Number($event) * 60
                   "
                 /><small
                   v-if="issue('offerResponseTimeoutSeconds')"
                   id="escalation-timeout-error"
                   class="field-error"
-                  >{{ issue("offerResponseTimeoutSeconds") }}</small
+                  >{{ issue('offerResponseTimeoutSeconds') }}</small
                 ></label
               >
             </div>
@@ -1550,22 +1339,16 @@ onBeforeUnmount(() => controller.reset());
             <div class="safety-heading">
               <span class="lock-mark"><i class="pi pi-lock" /></span>
               <div>
-                <span class="card-kicker"
-                  >Обязательные правила платформы · только просмотр</span
-                >
-                <h2 id="safety-title">
-                  Безопасность нельзя отключить в проекте
-                </h2>
+                <span class="card-kicker">Обязательные правила платформы · только просмотр</span>
+                <h2 id="safety-title">Безопасность нельзя отключить в проекте</h2>
                 <p>
-                  При риске обычный ответ Lola блокируется. Платформа даёт
-                  безопасный ответ, фиксирует событие, создаёт передачу и при
-                  необходимости оповещает ответственную команду.
+                  При риске обычный ответ Lola блокируется. Платформа даёт безопасный ответ,
+                  фиксирует событие, создаёт передачу и при необходимости оповещает ответственную
+                  команду.
                 </p>
               </div>
               <Tag
-                :value="
-                  controller.safety.value ? 'Проверено сервером' : 'Загрузка'
-                "
+                :value="controller.safety.value ? 'Проверено сервером' : 'Загрузка'"
                 severity="secondary"
               />
             </div>
@@ -1579,27 +1362,17 @@ onBeforeUnmount(() => controller.reset());
               {{ currentSafetyPresentation.copy }}
             </Message>
             <div class="safety-classes">
-              <article
-                v-for="item in controller.safety.value?.classes ?? []"
-                :key="item.code"
-              >
+              <article v-for="item in controller.safety.value?.classes ?? []" :key="item.code">
                 <div>
-                  <strong>{{
-                    safetyClassLabels[item.code] ?? "Неизвестный класс риска"
-                  }}</strong
+                  <strong>{{ safetyClassLabels[item.code] ?? 'Неизвестный класс риска' }}</strong
                   ><Tag
-                    :value="
-                      item.severity === 'URGENT' ? 'Немедленно' : 'Высокий риск'
-                    "
+                    :value="item.severity === 'URGENT' ? 'Немедленно' : 'Высокий риск'"
                     severity="danger"
                   />
                 </div>
                 <ul>
                   <li v-for="effect in item.consequences" :key="effect">
-                    {{
-                      consequenceLabels[effect] ??
-                      "Обязательное действие платформы"
-                    }}
+                    {{ consequenceLabels[effect] ?? 'Обязательное действие платформы' }}
                   </li>
                 </ul>
               </article>
@@ -1609,15 +1382,15 @@ onBeforeUnmount(() => controller.reset());
                 ><i class="pi pi-language" />
                 {{
                   controller.safety.value?.locales
-                    .map((value) => localeDisplayName(value, "ru") ?? value)
-                    .join(", ")
+                    .map((value) => localeDisplayName(value, 'ru') ?? value)
+                    .join(', ')
                 }}</span
               ><span
                 ><i class="pi pi-comments" />
                 {{
                   controller.safety.value?.channels
-                    .map((value) => channelLabels[value] ?? "Неизвестный канал")
-                    .join(", ")
+                    .map((value) => channelLabels[value] ?? 'Неизвестный канал')
+                    .join(', ')
                 }}</span
               >
             </div>
@@ -1655,8 +1428,7 @@ onBeforeUnmount(() => controller.reset());
               label="Сохранить черновик"
               icon="pi pi-save"
               :disabled="
-                Boolean(controller.issues.value.length) ||
-                controller.hasUnknownOutcome.value
+                Boolean(controller.issues.value.length) || controller.hasUnknownOutcome.value
               "
               :loading="controller.mutating.value"
               @click="controller.save"
@@ -1694,20 +1466,13 @@ onBeforeUnmount(() => controller.reset());
       @update:visible="!$event && closeEditor()"
     >
       <div v-if="editedPhraseRule" class="dialog-form">
-        <Message
-          v-if="editorKind === 'EXPLICIT'"
-          severity="info"
-          :closable="false"
-          >Подтверждённая просьба всегда создаёт передачу. Это действие нельзя
-          ослабить до предложения.</Message
+        <Message v-if="editorKind === 'EXPLICIT'" severity="info" :closable="false"
+          >Подтверждённая просьба всегда создаёт передачу. Это действие нельзя ослабить до
+          предложения.</Message
         >
-        <Message
-          v-if="editorKind === 'EXCLUDE'"
-          severity="warn"
-          :closable="false"
-          >Исключение действует только для обычной автоматической проверки.
-          Явная просьба человека и обязательные правила безопасности всегда
-          имеют приоритет.</Message
+        <Message v-if="editorKind === 'EXCLUDE'" severity="warn" :closable="false"
+          >Исключение действует только для обычной автоматической проверки. Явная просьба человека и
+          обязательные правила безопасности всегда имеют приоритет.</Message
         >
         <label
           ><FormFieldLabel
@@ -1729,7 +1494,7 @@ onBeforeUnmount(() => controller.reset());
             v-if="editorIssue('locales')"
             id="escalation-rule-locales-error"
             class="field-error"
-            >{{ editorIssue("locales") }}</small
+            >{{ editorIssue('locales') }}</small
           ></label
         >
         <label v-if="editorKind === 'AMBIGUOUS'"
@@ -1756,13 +1521,13 @@ onBeforeUnmount(() => controller.reset());
             :aria-invalid="Boolean(editorIssue('phrases'))"
             aria-describedby="escalation-rule-phrases-help escalation-rule-phrases-error"
           /><small id="escalation-rule-phrases-help"
-            >Одна фраза в строке. Добавляйте полноценные формулировки, а не
-            отдельные слова без контекста.</small
+            >Одна фраза в строке. Добавляйте полноценные формулировки, а не отдельные слова без
+            контекста.</small
           ><small
             v-if="editorIssue('phrases')"
             id="escalation-rule-phrases-error"
             class="field-error"
-            >{{ editorIssue("phrases") }}</small
+            >{{ editorIssue('phrases') }}</small
           ></label
         >
         <details class="technical-fields" :open="Boolean(editorIssue('code'))">
@@ -1784,15 +1549,11 @@ onBeforeUnmount(() => controller.reset());
               aria-describedby="escalation-rule-code-help escalation-rule-code-error"
             />
             <small id="escalation-rule-code-help"
-              >Например, HUMAN_REQUEST_RU. Это не текст, который увидит
-              пользователь.</small
+              >Например, HUMAN_REQUEST_RU. Это не текст, который увидит пользователь.</small
             >
-            <small
-              v-if="editorIssue('code')"
-              id="escalation-rule-code-error"
-              class="field-error"
-              >{{ editorIssue("code") }}</small
-            >
+            <small v-if="editorIssue('code')" id="escalation-rule-code-error" class="field-error">{{
+              editorIssue('code')
+            }}</small>
           </label>
         </details>
       </div>
@@ -1831,13 +1592,13 @@ onBeforeUnmount(() => controller.reset());
             :aria-invalid="Boolean(editorIssue('dataToCollect'))"
             aria-describedby="escalation-scenario-data-help escalation-scenario-data-error"
           /><small id="escalation-scenario-data-help"
-            >Один постоянный код поля в строке, например PAYMENT_ID. Не вводите
-            имя сотрудника или команды.</small
+            >Один постоянный код поля в строке, например PAYMENT_ID. Не вводите имя сотрудника или
+            команды.</small
           ><small
             v-if="editorIssue('dataToCollect')"
             id="escalation-scenario-data-error"
             class="field-error"
-            >{{ editorIssue("dataToCollect") }}</small
+            >{{ editorIssue('dataToCollect') }}</small
           ></label
         >
         <details
@@ -1866,7 +1627,7 @@ onBeforeUnmount(() => controller.reset());
                 v-if="editorIssue('code')"
                 id="escalation-scenario-code-error"
                 class="field-error"
-                >{{ editorIssue("code") }}</small
+                >{{ editorIssue('code') }}</small
               >
             </label>
             <label class="technical-field">
@@ -1886,7 +1647,7 @@ onBeforeUnmount(() => controller.reset());
                 v-if="editorIssue('reasonCode')"
                 id="escalation-scenario-reason-error"
                 class="field-error"
-                >{{ editorIssue("reasonCode") }}</small
+                >{{ editorIssue('reasonCode') }}</small
               >
             </label>
           </div>
@@ -1930,8 +1691,8 @@ onBeforeUnmount(() => controller.reset());
         <div>
           <strong>Без реальных действий</strong
           ><span
-            >Проверка не создаёт обращений, не вызывает операторов и не
-            отправляет уведомления.</span
+            >Проверка не создаёт обращений, не вызывает операторов и не отправляет
+            уведомления.</span
           >
         </div>
       </div>
@@ -1982,10 +1743,7 @@ onBeforeUnmount(() => controller.reset());
               <span class="card-kicker">События</span>
               <h2 id="steps-title">Что произойдёт по порядку</h2>
             </div>
-            <Tag
-              :value="`${controller.simulationSteps.value.length}/100`"
-              severity="secondary"
-            />
+            <Tag :value="`${controller.simulationSteps.value.length}/100`" severity="secondary" />
           </div>
           <div class="add-step">
             <Select
@@ -1999,11 +1757,7 @@ onBeforeUnmount(() => controller.reset());
               option-label="label"
               option-value="value"
               filter
-            /><Button
-              label="Добавить"
-              icon="pi pi-plus"
-              @click="addSimulationStep"
-            />
+            /><Button label="Добавить" icon="pi pi-plus" @click="addSimulationStep" />
           </div>
           <ol class="step-list">
             <li
@@ -2011,17 +1765,13 @@ onBeforeUnmount(() => controller.reset());
               :key="`${step.stepId}-${index}`"
             >
               <span>{{ index + 1 }}</span
-              ><button
-                type="button"
-                class="step-summary"
-                @click="openStepEditor(index)"
-              >
+              ><button type="button" class="step-summary" @click="openStepEditor(index)">
                 <strong>{{ simulationStepLabel(step.kind) }}</strong
                 ><small>{{
                   step.ruleCode ||
                   step.scenarioCode ||
                   (step.outcome && trustedOutcomeLabel(step.outcome)) ||
-                  "Сервер применит текущее состояние"
+                  'Сервер применит текущее состояние'
                 }}</small>
                 <small>Через {{ simulationStepOffset(index) }} мин.</small>
                 <small v-if="simulationStepIssues[index]" class="field-error">{{
@@ -2047,10 +1797,7 @@ onBeforeUnmount(() => controller.reset());
               </div>
             </li>
           </ol>
-          <div
-            v-if="!controller.simulationSteps.value.length"
-            class="inline-empty"
-          >
+          <div v-if="!controller.simulationSteps.value.length" class="inline-empty">
             Выберите готовую проверку или добавьте события вручную.
           </div>
           <Button
@@ -2076,28 +1823,19 @@ onBeforeUnmount(() => controller.reset());
               <span class="card-kicker">Результат сервера</span>
               <h2 id="result-title">Хронология решения</h2>
             </div>
-            <Tag
-              v-if="controller.simulation.value"
-              value="Без записи"
-              severity="success"
-            />
+            <Tag v-if="controller.simulation.value" value="Без записи" severity="success" />
           </div>
           <div v-if="!controller.simulation.value" class="result-empty">
-            <i class="pi pi-play-circle" /><strong
-              >Результат появится здесь</strong
+            <i class="pi pi-play-circle" /><strong>Результат появится здесь</strong
             ><span
-              >Вы увидите изменение счётчиков, действие, безопасность и допуск
-              распределения на каждом шаге.</span
+              >Вы увидите изменение счётчиков, действие, безопасность и допуск распределения на
+              каждом шаге.</span
             >
           </div>
-          <Message
-            v-if="committedSimulationStep"
-            severity="success"
-            :closable="false"
-          >
+          <Message v-if="committedSimulationStep" severity="success" :closable="false">
             <strong>Передача оператору зафиксирована</strong><br />
-            Шаг {{ committedSimulationStep.index + 1 }} создал серверный
-            результат. Проверка не записала его в рабочее обращение.
+            Шаг {{ committedSimulationStep.index + 1 }} создал серверный результат. Проверка не
+            записала его в рабочее обращение.
           </Message>
           <ol v-if="controller.simulation.value" class="timeline">
             <li
@@ -2126,8 +1864,7 @@ onBeforeUnmount(() => controller.reset());
                   <li>
                     <span>1</span>
                     <div>
-                      <small>Сигнал</small
-                      ><strong>{{ simulationStepLabel(step.kind) }}</strong>
+                      <small>Сигнал</small><strong>{{ simulationStepLabel(step.kind) }}</strong>
                     </div>
                   </li>
                   <li>
@@ -2135,8 +1872,7 @@ onBeforeUnmount(() => controller.reset());
                     <div>
                       <small>Безопасность</small
                       ><strong>{{
-                        safetyStateLabels[step.safety.state] ??
-                        "Состояние неизвестно"
+                        safetyStateLabels[step.safety.state] ?? 'Состояние неизвестно'
                       }}</strong>
                     </div>
                   </li>
@@ -2145,16 +1881,14 @@ onBeforeUnmount(() => controller.reset());
                     <div>
                       <small>Допуск передачи</small
                       ><strong>{{
-                        routingAdmissionPresentation(step.routingAdmission)
-                          .label
+                        routingAdmissionPresentation(step.routingAdmission).label
                       }}</strong>
                     </div>
                   </li>
                   <li>
                     <span>4</span>
                     <div>
-                      <small>Итог</small
-                      ><strong>{{ escalationActionLabel(step.action) }}</strong>
+                      <small>Итог</small><strong>{{ escalationActionLabel(step.action) }}</strong>
                     </div>
                   </li>
                 </ol>
@@ -2177,66 +1911,44 @@ onBeforeUnmount(() => controller.reset());
                       {{ step.after.noMatchCount }}</span
                     >
                     <span
-                      >Повторы {{ step.before.repeatCount }} →
-                      {{ step.after.repeatCount }}</span
+                      >Повторы {{ step.before.repeatCount }} → {{ step.after.repeatCount }}</span
                     >
                   </div>
                   <div class="result-facts">
                     <span
-                      >{{
-                        simulationStatusLabels[step.before.status] ??
-                        "Состояние неизвестно"
-                      }}
+                      >{{ simulationStatusLabels[step.before.status] ?? 'Состояние неизвестно' }}
                       →
                       {{
-                        simulationStatusLabels[step.after.status] ??
-                        "Состояние неизвестно"
+                        simulationStatusLabels[step.after.status] ?? 'Состояние неизвестно'
                       }}</span
                     >
                     <span>{{
-                      dispositionLabels[step.disposition] ??
-                      "Решение сервера не описано"
+                      dispositionLabels[step.disposition] ?? 'Решение сервера не описано'
                     }}</span>
                     <span>Событие № {{ step.occurrenceNumber }}</span>
                     <span v-if="step.policyMigration !== 'NONE'"
                       >Смена правил:
                       {{
-                        step.policyMigration === "APPLIED"
-                          ? "применена"
-                          : "требуется сверка"
+                        step.policyMigration === 'APPLIED' ? 'применена' : 'требуется сверка'
                       }}</span
                     >
                     <span>Причина: {{ step.reasonCode }}</span>
-                    <span v-if="step.policyReasonCode"
-                      >Правило: {{ step.policyReasonCode }}</span
-                    >
-                    <span v-if="step.sourceCode"
-                      >Источник: {{ step.sourceCode }}</span
-                    >
-                    <span v-if="step.urgency"
-                      >Срочность: {{ urgencyLabel(step.urgency) }}</span
-                    >
+                    <span v-if="step.policyReasonCode">Правило: {{ step.policyReasonCode }}</span>
+                    <span v-if="step.sourceCode">Источник: {{ step.sourceCode }}</span>
+                    <span v-if="step.urgency">Срочность: {{ urgencyLabel(step.urgency) }}</span>
                     <span v-if="step.dataToCollect.length"
-                      >Собрать: {{ step.dataToCollect.join(", ") }}</span
+                      >Собрать: {{ step.dataToCollect.join(', ') }}</span
                     >
                     <span v-if="step.offerDeadline"
-                      >Ответ до
-                      {{
-                        new Date(step.offerDeadline).toLocaleString("ru-RU")
-                      }}</span
+                      >Ответ до {{ new Date(step.offerDeadline).toLocaleString('ru-RU') }}</span
                     >
                     <span v-if="step.cooldownUntil"
-                      >Повтор после
-                      {{
-                        new Date(step.cooldownUntil).toLocaleString("ru-RU")
-                      }}</span
+                      >Повтор после {{ new Date(step.cooldownUntil).toLocaleString('ru-RU') }}</span
                     >
                     <span
-                      v-for="(count, outcome) in step.after
-                        .trustedOutcomeCounts ?? {}"
+                      v-for="(count, outcome) in step.after.trustedOutcomeCounts ?? {}"
                       :key="outcome"
-                      >{{ trustedOutcomeLabel(String(outcome)) }}:
-                      {{ count }}</span
+                      >{{ trustedOutcomeLabel(String(outcome)) }}: {{ count }}</span
                     >
                   </div>
                 </details>
@@ -2247,27 +1959,23 @@ onBeforeUnmount(() => controller.reset());
                   >Обычный ответ Lola заблокирован.
                   {{
                     step.safety.retryScheduled
-                      ? "Проверка будет повторена."
-                      : "Используется безопасный ответ."
+                      ? 'Проверка будет повторена.'
+                      : 'Используется безопасный ответ.'
                   }}
                   {{
                     step.safety.operationalAlertRequired
-                      ? "Ответственная команда получит оповещение."
-                      : ""
+                      ? 'Ответственная команда получит оповещение.'
+                      : ''
                   }}</Message
                 ><small v-if="step.replay"
-                  >Повтор шага {{ Number(step.replayOfStep) + 1 }}: счётчики не
-                  увеличены второй раз.</small
+                  >Повтор шага {{ Number(step.replayOfStep) + 1 }}: счётчики не увеличены второй
+                  раз.</small
                 ><small v-if="step.effects.length"
                   >Результаты сервера:
                   {{
                     step.effects
-                      .map(
-                        (effect) =>
-                          effectLabels[effect] ??
-                          "Служебное действие выполнено",
-                      )
-                      .join(", ")
+                      .map((effect) => effectLabels[effect] ?? 'Служебное действие выполнено')
+                      .join(', ')
                   }}</small
                 >
               </article>
@@ -2291,17 +1999,15 @@ onBeforeUnmount(() => controller.reset());
     >
       <div v-if="editedStep" class="dialog-form">
         <Message severity="info" :closable="false"
-          >Изменения действуют только внутри проверки и ничего не отправляют
-          пользователям или операторам.</Message
+          >Изменения действуют только внутри проверки и ничего не отправляют пользователям или
+          операторам.</Message
         >
         <label
           ><FormFieldLabel
             text="Событие"
             help="Какой факт проверка должна воспроизвести на этом шаге. Реальных обращений и передач она не создаёт." /><Select
             v-model="editedStep.kind"
-            :options="
-              simulationKindOptions.map(([value, label]) => ({ value, label }))
-            "
+            :options="simulationKindOptions.map(([value, label]) => ({ value, label }))"
             option-label="label"
             option-value="value"
             filter
@@ -2374,12 +2080,9 @@ onBeforeUnmount(() => controller.reset());
             :aria-invalid="Boolean(stepShapeIssue)"
             aria-describedby="escalation-step-shape-error"
         /></label>
-        <small
-          v-if="stepShapeIssue"
-          id="escalation-step-shape-error"
-          class="field-error"
-          >{{ stepShapeIssue }}</small
-        >
+        <small v-if="stepShapeIssue" id="escalation-step-shape-error" class="field-error">{{
+          stepShapeIssue
+        }}</small>
         <div class="field-grid">
           <label
             ><FormFieldLabel
@@ -2398,17 +2101,12 @@ onBeforeUnmount(() => controller.reset());
               :options="safetyRiskOptions"
               option-label="label"
               option-value="value"
-              :disabled="
-                !['SUSPECTED', 'URGENT'].includes(editedStep.safetyState)
-              "
+              :disabled="!['SUSPECTED', 'URGENT'].includes(editedStep.safetyState)"
               :aria-invalid="Boolean(stepSafetyIssue)"
               aria-describedby="escalation-step-safety-error"
-            /><small
-              v-if="stepSafetyIssue"
-              id="escalation-step-safety-error"
-              class="field-error"
-              >{{ stepSafetyIssue }}</small
-            ></label
+            /><small v-if="stepSafetyIssue" id="escalation-step-safety-error" class="field-error">{{
+              stepSafetyIssue
+            }}</small></label
           >
         </div>
         <div class="field-grid">
@@ -2431,27 +2129,18 @@ onBeforeUnmount(() => controller.reset());
           /></label>
         </div>
         <label class="check-row"
-          ><input
-            v-model="editedStep.routing.currentAssignment"
-            type="checkbox" />
+          ><input v-model="editedStep.routing.currentAssignment" type="checkbox" />
           <FormFieldLabel
             text="Обращение уже назначено оператору"
             help="Включите, чтобы проверить поведение уже назначенного обращения и не создавать повторную передачу."
         /></label>
-        <Message
-          v-if="editedStep.kind === 'POLICY_SWITCH'"
-          severity="warn"
-          :closable="false"
-          >На этом шаге сервер сверит состояние с текущим черновиком правил и
-          покажет, нужна ли миграция.</Message
+        <Message v-if="editedStep.kind === 'POLICY_SWITCH'" severity="warn" :closable="false"
+          >На этом шаге сервер сверит состояние с текущим черновиком правил и покажет, нужна ли
+          миграция.</Message
         >
       </div>
       <template #footer
-        ><Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="closeStepEditor" /><Button
+        ><Button label="Отмена" severity="secondary" text @click="closeStepEditor" /><Button
           label="Готово"
           :disabled="Boolean(stepEditorIssue)"
           @click="saveStepEditor"
@@ -2465,8 +2154,8 @@ onBeforeUnmount(() => controller.reset());
       header="Опубликовать правила передачи"
       class="confirm-dialog"
       ><p>
-        Публикация подготовит эту версию для следующей общей рабочей версии Case
-        Intelligence. Она не меняет правила категорий или Safety.
+        Публикация подготовит эту версию для следующей общей рабочей версии Case Intelligence. Она
+        не меняет правила категорий или Safety.
       </p>
       <label
         ><FormFieldLabel
@@ -2476,11 +2165,7 @@ onBeforeUnmount(() => controller.reset());
           rows="3"
           maxlength="500" /></label
       ><template #footer
-        ><Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="publishVisible = false" /><Button
+        ><Button label="Отмена" severity="secondary" text @click="publishVisible = false" /><Button
           label="Опубликовать"
           severity="success"
           :disabled="reason.trim().length < 3"
@@ -2501,11 +2186,7 @@ onBeforeUnmount(() => controller.reset());
           rows="3"
           maxlength="500" /></label
       ><template #footer
-        ><Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="discardVisible = false" /><Button
+        ><Button label="Отмена" severity="secondary" text @click="discardVisible = false" /><Button
           label="Удалить"
           severity="danger"
           :disabled="reason.trim().length < 3"
@@ -2518,11 +2199,7 @@ onBeforeUnmount(() => controller.reset());
 .escalation-page {
   --line: color-mix(in srgb, var(--border-color) 78%, transparent);
   --soft: color-mix(in srgb, var(--primary-color) 7%, var(--surface-card));
-  --text-color-secondary: color-mix(
-    in srgb,
-    var(--text-primary) 70%,
-    var(--surface-card)
-  );
+  --text-color-secondary: color-mix(in srgb, var(--text-primary) 70%, var(--surface-card));
   max-width: 1480px;
   margin: 0 auto;
   padding: 28px clamp(16px, 3vw, 32px) 64px;
@@ -2631,7 +2308,7 @@ onBeforeUnmount(() => controller.reset());
 .section-tabs a:hover {
   background: var(--soft);
 }
-.section-tabs a[aria-current="page"] {
+.section-tabs a[aria-current='page'] {
   background: color-mix(in srgb, var(--primary-color) 12%, transparent);
   color: color-mix(in srgb, var(--primary-color) 78%, var(--text-primary));
 }
@@ -2719,11 +2396,7 @@ onBeforeUnmount(() => controller.reset());
   height: 26px;
   border-radius: 50%;
   color: var(--action-primary);
-  background: color-mix(
-    in srgb,
-    var(--action-primary) 10%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--action-primary) 10%, var(--surface-card));
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -2805,19 +2478,11 @@ onBeforeUnmount(() => controller.reset());
   height: 30px;
   border-radius: 9px;
   color: var(--action-primary);
-  background: color-mix(
-    in srgb,
-    var(--action-primary) 10%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--action-primary) 10%, var(--surface-card));
 }
 .rule-group--explicit .group-mark {
   color: var(--status-danger-text);
-  background: color-mix(
-    in srgb,
-    var(--status-danger-text) 9%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--status-danger-text) 9%, var(--surface-card));
 }
 .rule-group--exception .group-mark {
   color: var(--text-color-secondary);
@@ -2978,11 +2643,7 @@ onBeforeUnmount(() => controller.reset());
   margin: 0;
 }
 .safety-section {
-  --text-color-secondary: color-mix(
-    in srgb,
-    var(--text-primary) 72%,
-    var(--surface-card)
-  );
+  --text-color-secondary: color-mix(in srgb, var(--text-primary) 72%, var(--surface-card));
   background: color-mix(in srgb, var(--surface-card) 94%, var(--primary-color));
 }
 .safety-heading {
@@ -3032,8 +2693,7 @@ onBeforeUnmount(() => controller.reset());
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  box-shadow: 0 12px 32px
-    color-mix(in srgb, var(--text-primary) 14%, transparent);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--text-primary) 14%, transparent);
 }
 .action-bar > div {
   align-items: center;
@@ -3317,7 +2977,7 @@ onBeforeUnmount(() => controller.reset());
   position: relative;
 }
 .timeline li:not(:last-child)::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 13px;
   top: 30px;
@@ -3381,11 +3041,7 @@ onBeforeUnmount(() => controller.reset());
   height: 22px;
   border-radius: 50%;
   color: var(--action-primary);
-  background: color-mix(
-    in srgb,
-    var(--action-primary) 10%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--action-primary) 10%, var(--surface-card));
   font-size: 0.7rem;
   font-weight: 700;
 }

@@ -5,33 +5,27 @@ import {
   pluralizeRu,
   type AiTextToSpeechPricingContext,
   type AiUsageCategoryBreakdown,
-} from '../ai-usage.model'
-import AiTtsPricingContext from './AiTtsPricingContext.vue'
+} from '../ai-usage.model';
+import AiTtsPricingContext from './AiTtsPricingContext.vue';
 
 const props = defineProps<{
-  usage?: AiUsageCategoryBreakdown
-  pricing: AiTextToSpeechPricingContext
-  fallbackCurrency?: string
-}>()
+  usage?: AiUsageCategoryBreakdown;
+  pricing: AiTextToSpeechPricingContext;
+  fallbackCurrency?: string;
+}>();
 
 function generationCount(value: number) {
-  return `${formatTokenCount(value)} ${pluralizeRu(value, 'генерация', 'генерации', 'генераций')}`
+  return `${formatTokenCount(value)} ${pluralizeRu(value, 'генерация', 'генерации', 'генераций')}`;
 }
 </script>
 
 <template>
-  <section
-    class="ai-usage-slice speech-slice"
-    aria-labelledby="speech-usage-title"
-  >
+  <section class="ai-usage-slice speech-slice" aria-labelledby="speech-usage-title">
     <header class="slice-header">
       <div>
         <span class="provider-kicker">Text to Speech</span>
         <h4 id="speech-usage-title">Озвучивание текста</h4>
-        <p>
-          Расчёт по входным символам; xAI не возвращает per-request фактическую
-          стоимость.
-        </p>
+        <p>Расчёт по входным символам; xAI не возвращает per-request фактическую стоимость.</p>
       </div>
       <span class="slice-icon"><i class="pi pi-volume-up" /></span>
     </header>

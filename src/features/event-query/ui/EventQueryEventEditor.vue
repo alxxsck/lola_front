@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import Button from "primevue/button";
+import { computed } from 'vue';
+import Button from 'primevue/button';
 import type {
   EventQueryPolicyFieldDto,
   EventQueryPolicyItemDto,
-} from "@/shared/api/generated/models";
-import type { SchemaField } from "../model/event-query-policy";
-import { schemaTypeToSemanticType } from "../model/event-query-policy";
+} from '@/shared/api/generated/models';
+import type { SchemaField } from '../model/event-query-policy';
+import { schemaTypeToSemanticType } from '../model/event-query-policy';
 
 const props = defineProps<{
   modelValue: EventQueryPolicyItemDto;
@@ -14,23 +14,20 @@ const props = defineProps<{
   disabled?: boolean;
 }>();
 const emit = defineEmits<{
-  "update:modelValue": [value: EventQueryPolicyItemDto];
+  'update:modelValue': [value: EventQueryPolicyItemDto];
 }>();
 
 const availableFields = computed(() =>
   props.schemaFields.filter(
-    (field) =>
-      !props.modelValue.safeFields.some(
-        (current) => current.path === field.path,
-      ),
+    (field) => !props.modelValue.safeFields.some((current) => current.path === field.path),
   ),
 );
 
 function patch(patch: Partial<EventQueryPolicyItemDto>) {
-  emit("update:modelValue", { ...props.modelValue, ...patch });
+  emit('update:modelValue', { ...props.modelValue, ...patch });
 }
 
-function setMode(mode: "SUMMARY" | "AGGREGATE" | "LATEST", enabled: boolean) {
+function setMode(mode: 'SUMMARY' | 'AGGREGATE' | 'LATEST', enabled: boolean) {
   const modes = new Set(props.modelValue.allowedModes);
   if (enabled) modes.add(mode);
   else modes.delete(mode);
@@ -39,18 +36,16 @@ function setMode(mode: "SUMMARY" | "AGGREGATE" | "LATEST", enabled: boolean) {
 
 function addField(event: Event) {
   const select = event.target as HTMLSelectElement;
-  const schemaField = props.schemaFields.find(
-    (field) => field.path === select.value,
-  );
+  const schemaField = props.schemaFields.find((field) => field.path === select.value);
   if (!schemaField) return;
   const field: EventQueryPolicyFieldDto = {
     path: schemaField.path,
     semanticType: schemaTypeToSemanticType(schemaField.schemaType),
-    sensitivity: "FORBIDDEN",
+    sensitivity: 'FORBIDDEN',
     operations: [],
   };
   patch({ safeFields: [...props.modelValue.safeFields, field] });
-  select.value = "";
+  select.value = '';
 }
 
 function patchField(index: number, value: Partial<EventQueryPolicyFieldDto>) {
@@ -63,15 +58,13 @@ function patchField(index: number, value: Partial<EventQueryPolicyFieldDto>) {
 
 function removeField(index: number) {
   patch({
-    safeFields: props.modelValue.safeFields.filter(
-      (_field, fieldIndex) => fieldIndex !== index,
-    ),
+    safeFields: props.modelValue.safeFields.filter((_field, fieldIndex) => fieldIndex !== index),
   });
 }
 
 function setFieldOperation(
   index: number,
-  operation: EventQueryPolicyFieldDto["operations"][number],
+  operation: EventQueryPolicyFieldDto['operations'][number],
   enabled: boolean,
 ) {
   const operations = new Set(props.modelValue.safeFields[index]?.operations);
@@ -81,10 +74,7 @@ function setFieldOperation(
 }
 
 function schemaType(path: string) {
-  return (
-    props.schemaFields.find((field) => field.path === path)?.schemaType ??
-    "unknown"
-  );
+  return props.schemaFields.find((field) => field.path === path)?.schemaType ?? 'unknown';
 }
 </script>
 
@@ -135,9 +125,7 @@ function schemaType(path: string) {
           :disabled="disabled"
           @input="
             patch({
-              maxInteractiveLookbackHours: Number(
-                ($event.target as HTMLInputElement).value,
-              ),
+              maxInteractiveLookbackHours: Number(($event.target as HTMLInputElement).value),
             })
           "
         />
@@ -152,9 +140,7 @@ function schemaType(path: string) {
           :disabled="disabled"
           @input="
             patch({
-              maxVerificationLookbackHours: Number(
-                ($event.target as HTMLInputElement).value,
-              ),
+              maxVerificationLookbackHours: Number(($event.target as HTMLInputElement).value),
             })
           "
         />
@@ -173,25 +159,17 @@ function schemaType(path: string) {
           @change="addField"
         >
           <option value="">Добавить поле…</option>
-          <option
-            v-for="field in availableFields"
-            :key="field.path"
-            :value="field.path"
-          >
+          <option v-for="field in availableFields" :key="field.path" :value="field.path">
             {{ field.path }} · {{ field.schemaType }}
           </option>
         </select>
       </div>
 
       <div v-if="!modelValue.safeFields.length" class="empty-fields">
-        Поля payload не передаются. AI сможет считать только события и
-        уникальных пользователей, но не суммы и другие значения payload.
+        Поля payload не передаются. AI сможет считать только события и уникальных пользователей, но
+        не суммы и другие значения payload.
       </div>
-      <div
-        v-for="(field, index) in modelValue.safeFields"
-        :key="field.path"
-        class="field-row"
-      >
+      <div v-for="(field, index) in modelValue.safeFields" :key="field.path" class="field-row">
         <div>
           <code>{{ field.path }}</code>
           <small>{{ schemaType(field.path) }}</small>
@@ -202,8 +180,7 @@ function schemaType(path: string) {
           :disabled="disabled"
           @change="
             patchField(index, {
-              semanticType: ($event.target as HTMLSelectElement)
-                .value as typeof field.semanticType,
+              semanticType: ($event.target as HTMLSelectElement).value as typeof field.semanticType,
             })
           "
         >
@@ -231,8 +208,7 @@ function schemaType(path: string) {
           :disabled="disabled"
           @change="
             patchField(index, {
-              sensitivity: ($event.target as HTMLSelectElement)
-                .value as typeof field.sensitivity,
+              sensitivity: ($event.target as HTMLSelectElement).value as typeof field.sensitivity,
             })
           "
         >
@@ -246,15 +222,7 @@ function schemaType(path: string) {
         <fieldset class="operations">
           <legend>Операции</legend>
           <label
-            v-for="operation in [
-              'PROJECT',
-              'FILTER',
-              'GROUP_BY',
-              'SUM',
-              'MIN',
-              'MAX',
-              'AVG',
-            ]"
+            v-for="operation in ['PROJECT', 'FILTER', 'GROUP_BY', 'SUM', 'MIN', 'MAX', 'AVG']"
             :key="operation"
           >
             <input
@@ -280,8 +248,7 @@ function schemaType(path: string) {
           :disabled="disabled"
           @input="
             patchField(index, {
-              currencyPath:
-                ($event.target as HTMLInputElement).value || undefined,
+              currencyPath: ($event.target as HTMLInputElement).value || undefined,
             })
           "
         />

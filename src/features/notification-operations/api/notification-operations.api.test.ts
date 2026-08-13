@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const generated = vi.hoisted(() => ({
   health: vi.fn(),
@@ -8,7 +8,7 @@ const generated = vi.hoisted(() => ({
   quarantine: vi.fn(),
 }));
 
-vi.mock("@/shared/api/generated/retenive-backend", () => ({
+vi.mock('@/shared/api/generated/retenive-backend', () => ({
   notificationOperationsHealth: generated.health,
   notificationOperationsDeliveries: generated.deliveries,
   notificationOperationsIntegrations: generated.integrations,
@@ -16,35 +16,35 @@ vi.mock("@/shared/api/generated/retenive-backend", () => ({
   notificationOperationsQuarantine: generated.quarantine,
 }));
 
-import { notificationOperationsApi } from "./notification-operations.api";
+import { notificationOperationsApi } from './notification-operations.api';
 
 const filters = {
-  projectId: "00000000-0000-4000-8000-000000000010",
-  channel: "SLACK_WEBHOOK" as const,
-  status: "DEAD_LETTER" as const,
-  integrationKind: "SLACK_DESTINATION" as const,
-  integrationStatus: "ACTIVE",
+  projectId: '00000000-0000-4000-8000-000000000010',
+  channel: 'SLACK_WEBHOOK' as const,
+  status: 'DEAD_LETTER' as const,
+  integrationKind: 'SLACK_DESTINATION' as const,
+  integrationStatus: 'ACTIVE',
 };
 
-describe("notification operations generated adapter", () => {
+describe('notification operations generated adapter', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     generated.health.mockResolvedValue({
-      observedAt: "2026-07-23T10:00:00.000Z",
+      observedAt: '2026-07-23T10:00:00.000Z',
       queues: [
         {
-          queueKind: "OPERATIONAL_NOTIFICATION",
-          channel: "SLACK_WEBHOOK",
-          status: "DEAD_LETTER",
+          queueKind: 'OPERATIONAL_NOTIFICATION',
+          channel: 'SLACK_WEBHOOK',
+          status: 'DEAD_LETTER',
           count: 2,
           oldestAgeSeconds: 40,
           attemptsInWindow: 5,
-          rawProviderSecret: "must-not-survive",
+          rawProviderSecret: 'must-not-survive',
         },
         {
-          queueKind: "PRIVATE_SECRET_KIND",
-          channel: "PRIVATE_SECRET_CHANNEL",
-          status: "PRIVATE_SECRET_STATUS",
+          queueKind: 'PRIVATE_SECRET_KIND',
+          channel: 'PRIVATE_SECRET_CHANNEL',
+          status: 'PRIVATE_SECRET_STATUS',
           count: 1,
           oldestAgeSeconds: 1,
           attemptsInWindow: 1,
@@ -54,10 +54,10 @@ describe("notification operations generated adapter", () => {
       ambiguousCount: 2,
       suppressedCount: 3,
       deadLetterCount: 4,
-      providers: [{ channel: "SLACK_WEBHOOK", state: "DEGRADED" }],
+      providers: [{ channel: 'SLACK_WEBHOOK', state: 'DEGRADED' }],
       telegramProductAdmission: [
         {
-          scope: "INSTALLATION",
+          scope: 'INSTALLATION',
           exhaustedBucketCount: 1,
           maximumRetryDelaySeconds: 3,
         },
@@ -70,82 +70,82 @@ describe("notification operations generated adapter", () => {
         operationalEvidenceBacklog: 5,
         lastSuccessfulBatchAt: null,
       },
-      webhookUrl: "https://secret.example",
+      webhookUrl: 'https://secret.example',
     });
     generated.deliveries.mockResolvedValue({
       items: [
         {
-          id: "delivery-1",
+          id: 'delivery-1',
           projectId: filters.projectId,
-          channel: "SLACK_WEBHOOK",
-          status: "DEAD_LETTER",
-          errorCategory: "RATE_LIMITED",
+          channel: 'SLACK_WEBHOOK',
+          status: 'DEAD_LETTER',
+          errorCategory: 'RATE_LIMITED',
           attemptCount: 3,
           operationsVersion: 2,
-          replayEligibility: "ELIGIBLE_KNOWN_NOT_ACCEPTED",
+          replayEligibility: 'ELIGIBLE_KNOWN_NOT_ACCEPTED',
           contentAvailable: false,
-          createdAt: "2026-07-23T09:00:00.000Z",
-          updatedAt: "2026-07-23T10:00:00.000Z",
-          payload: "must-not-survive",
-          providerRef: "must-not-survive",
+          createdAt: '2026-07-23T09:00:00.000Z',
+          updatedAt: '2026-07-23T10:00:00.000Z',
+          payload: 'must-not-survive',
+          providerRef: 'must-not-survive',
         },
       ],
-      nextCursor: "delivery-cursor",
+      nextCursor: 'delivery-cursor',
     });
     generated.integrations.mockResolvedValue({
       items: [
         {
-          integrationId: "integration-1",
-          kind: "SLACK_DESTINATION",
+          integrationId: 'integration-1',
+          kind: 'SLACK_DESTINATION',
           projectId: filters.projectId,
-          status: "ACTIVE",
+          status: 'ACTIVE',
           version: 4,
-          maskedIdentity: "Slack •••• ation-1",
+          maskedIdentity: 'Slack •••• ation-1',
           quarantineAllowed: true,
-          webhookUrl: "must-not-survive",
+          webhookUrl: 'must-not-survive',
         },
       ],
-      nextCursor: "integration-cursor",
+      nextCursor: 'integration-cursor',
     });
   });
 
-  it("maps health and pages through a strict runtime privacy allowlist", async () => {
+  it('maps health and pages through a strict runtime privacy allowlist', async () => {
     const signal = new AbortController().signal;
     const [health, deliveries, integrations] = await Promise.all([
       notificationOperationsApi.health({ signal }),
-      notificationOperationsApi.deliveries(filters, "deliveries-next", {
+      notificationOperationsApi.deliveries(filters, 'deliveries-next', {
         signal,
       }),
-      notificationOperationsApi.integrations(filters, "integrations-next", {
+      notificationOperationsApi.integrations(filters, 'integrations-next', {
         signal,
       }),
     ]);
 
     expect(health.queues[1]).toMatchObject({
-      queueKind: "OTHER",
-      channel: "OTHER",
-      status: "OTHER",
+      queueKind: 'OTHER',
+      channel: 'OTHER',
+      status: 'OTHER',
     });
     expect(deliveries.items[0]).toEqual({
-      id: "delivery-1",
+      id: 'delivery-1',
       projectId: filters.projectId,
-      channel: "SLACK_WEBHOOK",
-      status: "DEAD_LETTER",
-      errorCategory: "RATE_LIMITED",
+      channel: 'SLACK_WEBHOOK',
+      status: 'DEAD_LETTER',
+      errorCategory: 'RATE_LIMITED',
       attemptCount: 3,
       operationsVersion: 2,
-      replayEligibility: "ELIGIBLE_KNOWN_NOT_ACCEPTED",
+      replayEligibility: 'ELIGIBLE_KNOWN_NOT_ACCEPTED',
       contentAvailable: false,
-      createdAt: "2026-07-23T09:00:00.000Z",
-      updatedAt: "2026-07-23T10:00:00.000Z",
+      createdAt: '2026-07-23T09:00:00.000Z',
+      updatedAt: '2026-07-23T10:00:00.000Z',
     });
     expect(integrations.items[0]).toEqual({
-      integrationId: "integration-1",
-      kind: "SLACK_DESTINATION",
+      integrationId: 'integration-1',
+      kind: 'SLACK_DESTINATION',
       projectId: filters.projectId,
-      status: "ACTIVE",
+      status: 'ACTIVE',
       version: 4,
-      maskedIdentity: "Slack •••• ation-1",
+      maskedIdentity: 'Slack •••• ation-1',
       quarantineAllowed: true,
     });
     expect(JSON.stringify({ health, deliveries, integrations })).not.toMatch(
@@ -154,84 +154,84 @@ describe("notification operations generated adapter", () => {
     expect(generated.deliveries).toHaveBeenCalledWith(
       {
         limit: 50,
-        cursor: "deliveries-next",
+        cursor: 'deliveries-next',
         projectId: filters.projectId,
-        channel: "SLACK_WEBHOOK",
-        status: "DEAD_LETTER",
+        channel: 'SLACK_WEBHOOK',
+        status: 'DEAD_LETTER',
       },
       { signal },
     );
     expect(generated.integrations).toHaveBeenCalledWith(
       {
         limit: 50,
-        cursor: "integrations-next",
+        cursor: 'integrations-next',
         projectId: filters.projectId,
-        kind: "SLACK_DESTINATION",
-        status: "ACTIVE",
+        kind: 'SLACK_DESTINATION',
+        status: 'ACTIVE',
       },
       { signal },
     );
   });
 
-  it("sends canonical OCC and idempotency headers through generated commands", async () => {
+  it('sends canonical OCC and idempotency headers through generated commands', async () => {
     const signal = new AbortController().signal;
     generated.replay.mockResolvedValue({
-      id: "delivery-1",
+      id: 'delivery-1',
       projectId: filters.projectId,
-      channel: "SLACK_WEBHOOK",
-      status: "PENDING",
+      channel: 'SLACK_WEBHOOK',
+      status: 'PENDING',
       operationsVersion: 3,
       attemptCount: 3,
       contentAvailable: false,
       replayed: false,
     });
     generated.quarantine.mockResolvedValue({
-      integrationId: "integration-1",
-      kind: "SLACK_DESTINATION",
+      integrationId: 'integration-1',
+      kind: 'SLACK_DESTINATION',
       projectId: filters.projectId,
-      status: "INVALID",
+      status: 'INVALID',
       version: 5,
-      maskedIdentity: "Slack •••• ation-1",
+      maskedIdentity: 'Slack •••• ation-1',
       suppressedQueuedCount: 2,
       replayed: false,
     });
 
     await notificationOperationsApi.replay(
-      { id: "delivery-1", operationsVersion: 2 },
-      { signal, idempotencyKey: "replay-intent-1" },
+      { id: 'delivery-1', operationsVersion: 2 },
+      { signal, idempotencyKey: 'replay-intent-1' },
     );
     await notificationOperationsApi.quarantine(
       {
-        kind: "SLACK_DESTINATION",
-        integrationId: "integration-1",
+        kind: 'SLACK_DESTINATION',
+        integrationId: 'integration-1',
         version: 4,
       },
       {
-        reason: "CREDENTIAL_COMPROMISED",
-        confirmation: "Slack •••• ation-1",
+        reason: 'CREDENTIAL_COMPROMISED',
+        confirmation: 'Slack •••• ation-1',
       },
-      { signal, idempotencyKey: "quarantine-intent-1" },
+      { signal, idempotencyKey: 'quarantine-intent-1' },
     );
 
-    expect(generated.replay).toHaveBeenCalledWith("delivery-1", {
+    expect(generated.replay).toHaveBeenCalledWith('delivery-1', {
       signal,
       headers: {
-        "Expected-Version": "2",
-        "Idempotency-Key": "replay-intent-1",
+        'Expected-Version': '2',
+        'Idempotency-Key': 'replay-intent-1',
       },
     });
     expect(generated.quarantine).toHaveBeenCalledWith(
-      "SLACK_DESTINATION",
-      "integration-1",
+      'SLACK_DESTINATION',
+      'integration-1',
       {
-        reason: "CREDENTIAL_COMPROMISED",
-        confirmation: "Slack •••• ation-1",
+        reason: 'CREDENTIAL_COMPROMISED',
+        confirmation: 'Slack •••• ation-1',
       },
       {
         signal,
         headers: {
-          "Expected-Version": "4",
-          "Idempotency-Key": "quarantine-intent-1",
+          'Expected-Version': '4',
+          'Idempotency-Key': 'quarantine-intent-1',
         },
       },
     );

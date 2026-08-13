@@ -9,8 +9,7 @@ export function paginateByCursor<T>(
   limit: number,
 ): CursorPage<T> {
   const parsedOffset = Number(cursor);
-  const offset =
-    Number.isSafeInteger(parsedOffset) && parsedOffset >= 0 ? parsedOffset : 0;
+  const offset = Number.isSafeInteger(parsedOffset) && parsedOffset >= 0 ? parsedOffset : 0;
   const page = items.slice(offset, offset + limit);
   const nextOffset = offset + page.length;
   return {

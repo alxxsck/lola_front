@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
-import EventDefinitionSelect from "@/features/events/EventDefinitionSelect.vue";
+import { computed, onMounted, ref, watch } from 'vue';
+import EventDefinitionSelect from '@/features/events/EventDefinitionSelect.vue';
 import type {
   CanonicalIdentityPolicyPreviewResponseDto,
   CanonicalIdentityPolicyResponseDto,
   EventDefinitionCatalogResponseDto,
   IntegrationEventRouteResponseDto,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
-import { integrationCanonicalIdentityApi } from "./integration-canonical-identity.api";
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
+import { integrationCanonicalIdentityApi } from './integration-canonical-identity.api';
 
 const props = defineProps<{
   projectId: string;
@@ -17,21 +17,21 @@ const props = defineProps<{
 }>();
 
 type CurrentPolicy = CanonicalIdentityPolicyResponseDto & {
-  runtimeActivation: "PENDING_WORKER_CUTOVER" | "ACTIVE";
+  runtimeActivation: 'PENDING_WORKER_CUTOVER' | 'ACTIVE';
 };
 
 const definitions = ref<EventDefinitionCatalogResponseDto[]>([]);
 const routes = ref<IntegrationEventRouteResponseDto[]>([]);
-const eventDefinitionKeyId = ref("");
-const canonicalKeyName = ref("");
+const eventDefinitionKeyId = ref('');
+const canonicalKeyName = ref('');
 const selectedRouteIds = ref<string[]>([]);
 const currentPolicy = ref<CurrentPolicy | null>(null);
 const preview = ref<CanonicalIdentityPolicyPreviewResponseDto | null>(null);
 const loading = ref(false);
 const pending = ref(false);
-const loadError = ref("");
-const actionError = ref("");
-const notice = ref("");
+const loadError = ref('');
+const actionError = ref('');
+const notice = ref('');
 let epoch = 0;
 let publishRetry: { signature: string; key: string } | null = null;
 
@@ -43,25 +43,19 @@ const eligibleRoutes = computed(() =>
   routes.value.filter((route) => {
     const revision = route.publishedRevision;
     return (
-      route.direction === "INBOUND" &&
-      route.lifecycle === "ACTIVE" &&
+      route.direction === 'INBOUND' &&
+      route.lifecycle === 'ACTIVE' &&
       revision?.eventDefinitionKeyId === eventDefinitionKeyId.value &&
-      revision.eventDefinitionRevisionId ===
-        selectedDefinition.value?.currentRevision?.id &&
+      revision.eventDefinitionRevisionId === selectedDefinition.value?.currentRevision?.id &&
       Boolean(revision.canonicalKeyExtractor?.sourcePath.length)
     );
   }),
 );
 const selectedRoutes = computed(() =>
-  eligibleRoutes.value.filter((route) =>
-    selectedRouteIds.value.includes(route.id),
-  ),
+  eligibleRoutes.value.filter((route) => selectedRouteIds.value.includes(route.id)),
 );
 const selectedProviders = computed(
-  () =>
-    new Set(
-      selectedRoutes.value.map((route) => route.publishedRevision?.provider),
-    ),
+  () => new Set(selectedRoutes.value.map((route) => route.publishedRevision?.provider)),
 );
 const canPreview = computed(
   () =>
@@ -81,32 +75,30 @@ function participants() {
 
 function resetDraft(): void {
   preview.value = null;
-  actionError.value = "";
-  notice.value = "";
+  actionError.value = '';
+  notice.value = '';
   publishRetry = null;
 }
 
 function normalizationLabel(value: string): string {
   switch (value) {
-    case "TRIM":
-      return "пробелы по краям удаляются";
-    case "LOWERCASE":
-      return "сравнение в нижнем регистре";
-    case "TRIM_LOWERCASE":
-      return "пробелы удаляются, сравнение в нижнем регистре";
+    case 'TRIM':
+      return 'пробелы по краям удаляются';
+    case 'LOWERCASE':
+      return 'сравнение в нижнем регистре';
+    case 'TRIM_LOWERCASE':
+      return 'пробелы удаляются, сравнение в нижнем регистре';
     default:
-      return "без нормализации";
+      return 'без нормализации';
   }
 }
 
 function providerLabel(value: string): string {
-  return value === "CUSTOMER_IO" ? "Customer.io" : "Amplitude";
+  return value === 'CUSTOMER_IO' ? 'Customer.io' : 'Amplitude';
 }
 
 function activationLabel(value: string): string {
-  return value === "ACTIVE"
-    ? "Правило действует"
-    : "Ожидает включения обработчика";
+  return value === 'ACTIVE' ? 'Правило действует' : 'Ожидает включения обработчика';
 }
 
 function routeName(routeId: string): string {
@@ -115,26 +107,26 @@ function routeName(routeId: string): string {
 
 function policyError(cause: unknown): string {
   switch (normalizeApiError(cause).code) {
-    case "INTEGRATION_IDENTITY_POLICY_VERSION_CONFLICT":
-      return "Правило уже изменилось. Обновите данные и повторите проверку.";
-    case "INTEGRATION_IDENTITY_POLICY_PARTICIPANTS_INCOMPLETE":
-      return "Выберите все активные входящие маршруты этого события.";
-    case "INTEGRATION_IDENTITY_POLICY_PROVIDERS_NOT_DISTINCT":
-      return "Для объединения нужны правила приёма минимум двух разных провайдеров.";
-    case "INTEGRATION_IDENTITY_POLICY_PARTICIPANT_NOT_ELIGIBLE":
-    case "INTEGRATION_IDENTITY_POLICY_TARGET_REVISION_MISMATCH":
-      return "Один из маршрутов больше не совместим с текущей ревизией события.";
-    case "IDEMPOTENCY_KEY_CONFLICT":
-      return "Повтор команды не совпал с исходной публикацией. Обновите данные и снова проверьте правило.";
+    case 'INTEGRATION_IDENTITY_POLICY_VERSION_CONFLICT':
+      return 'Правило уже изменилось. Обновите данные и повторите проверку.';
+    case 'INTEGRATION_IDENTITY_POLICY_PARTICIPANTS_INCOMPLETE':
+      return 'Выберите все активные входящие маршруты этого события.';
+    case 'INTEGRATION_IDENTITY_POLICY_PROVIDERS_NOT_DISTINCT':
+      return 'Для объединения нужны правила приёма минимум двух разных провайдеров.';
+    case 'INTEGRATION_IDENTITY_POLICY_PARTICIPANT_NOT_ELIGIBLE':
+    case 'INTEGRATION_IDENTITY_POLICY_TARGET_REVISION_MISMATCH':
+      return 'Один из маршрутов больше не совместим с текущей ревизией события.';
+    case 'IDEMPOTENCY_KEY_CONFLICT':
+      return 'Повтор команды не совпал с исходной публикацией. Обновите данные и снова проверьте правило.';
     default:
-      return "Правило уже изменилось. Обновите данные и повторите проверку.";
+      return 'Правило уже изменилось. Обновите данные и повторите проверку.';
   }
 }
 
 function applyCurrent(policy: CurrentPolicy | null): void {
   currentPolicy.value = policy;
   if (!policy) {
-    canonicalKeyName.value = "";
+    canonicalKeyName.value = '';
     selectedRouteIds.value = [];
     return;
   }
@@ -147,10 +139,7 @@ async function loadCurrent(
   selectedEventId: string,
   requestEpoch: number,
 ): Promise<void> {
-  const policy = await integrationCanonicalIdentityApi.current(
-    selectedProjectId,
-    selectedEventId,
-  );
+  const policy = await integrationCanonicalIdentityApi.current(selectedProjectId, selectedEventId);
   if (
     requestEpoch !== epoch ||
     selectedProjectId !== props.projectId ||
@@ -169,7 +158,7 @@ async function load(): Promise<void> {
   preview.value = null;
   if (!selectedProjectId || !props.canRead) return;
   loading.value = true;
-  loadError.value = "";
+  loadError.value = '';
   try {
     const [definitionResult, routeResult] = await Promise.all([
       integrationCanonicalIdentityApi.listDefinitions(selectedProjectId),
@@ -183,19 +172,14 @@ async function load(): Promise<void> {
     );
     eventDefinitionKeyId.value = requestedEventStillExists
       ? eventDefinitionKeyId.value
-      : (definitionResult[0]?.id ?? "");
+      : (definitionResult[0]?.id ?? '');
     if (eventDefinitionKeyId.value)
-      await loadCurrent(
-        selectedProjectId,
-        eventDefinitionKeyId.value,
-        requestEpoch,
-      );
+      await loadCurrent(selectedProjectId, eventDefinitionKeyId.value, requestEpoch);
   } catch {
     if (requestEpoch === epoch && selectedProjectId === props.projectId)
-      loadError.value = "Не удалось загрузить правила объединения событий.";
+      loadError.value = 'Не удалось загрузить правила объединения событий.';
   } finally {
-    if (requestEpoch === epoch && selectedProjectId === props.projectId)
-      loading.value = false;
+    if (requestEpoch === epoch && selectedProjectId === props.projectId) loading.value = false;
   }
 }
 
@@ -205,16 +189,16 @@ async function selectEvent(): Promise<void> {
   const selectedEventId = eventDefinitionKeyId.value;
   resetDraft();
   currentPolicy.value = null;
-  canonicalKeyName.value = "";
+  canonicalKeyName.value = '';
   selectedRouteIds.value = [];
   if (!selectedProjectId || !selectedEventId || !props.canRead) return;
   loading.value = true;
-  loadError.value = "";
+  loadError.value = '';
   try {
     await loadCurrent(selectedProjectId, selectedEventId, requestEpoch);
   } catch {
     if (requestEpoch === epoch)
-      loadError.value = "Не удалось загрузить правило выбранного события.";
+      loadError.value = 'Не удалось загрузить правило выбранного события.';
   } finally {
     if (requestEpoch === epoch) loading.value = false;
   }
@@ -223,15 +207,15 @@ async function selectEvent(): Promise<void> {
 async function runPreview(): Promise<void> {
   if (!canPreview.value) {
     actionError.value =
-      "Выберите минимум два правила приёма разных провайдеров со стабильным идентификатором.";
+      'Выберите минимум два правила приёма разных провайдеров со стабильным идентификатором.';
     return;
   }
   const selectedProjectId = props.projectId;
   const selectedEventId = eventDefinitionKeyId.value;
   const requestEpoch = epoch;
   pending.value = true;
-  actionError.value = "";
-  notice.value = "";
+  actionError.value = '';
+  notice.value = '';
   try {
     const result = await integrationCanonicalIdentityApi.preview(
       selectedProjectId,
@@ -275,8 +259,8 @@ async function publish(): Promise<void> {
     participants: selectedParticipants,
   });
   pending.value = true;
-  actionError.value = "";
-  notice.value = "";
+  actionError.value = '';
+  notice.value = '';
   try {
     await integrationCanonicalIdentityApi.publish(
       selectedProjectId,
@@ -285,22 +269,18 @@ async function publish(): Promise<void> {
         canonicalKeyName: snapshot.canonicalKeyName,
         expectedVersion: snapshot.expectedVersion,
         participants: selectedParticipants,
-        reason: "Публикация canonical identity policy через CMS",
+        reason: 'Публикация canonical identity policy через CMS',
       },
       publishKey(signature),
     );
-    if (
-      selectedProjectId !== props.projectId ||
-      selectedEventId !== eventDefinitionKeyId.value
-    )
+    if (selectedProjectId !== props.projectId || selectedEventId !== eventDefinitionKeyId.value)
       return;
     publishRetry = null;
     preview.value = null;
     await loadCurrent(selectedProjectId, selectedEventId, epoch);
-    notice.value = "Правило объединения событий опубликовано.";
+    notice.value = 'Правило объединения событий опубликовано.';
   } catch (cause) {
-    if (selectedProjectId === props.projectId)
-      actionError.value = policyError(cause);
+    if (selectedProjectId === props.projectId) actionError.value = policyError(cause);
   } finally {
     if (selectedProjectId === props.projectId) pending.value = false;
   }
@@ -320,16 +300,11 @@ onMounted(() => void load());
       <div>
         <h2>Объединение одинаковых событий</h2>
         <p>
-          Не создаёт дубль, когда одно бизнес-событие приходит из Customer.io и
-          Amplitude с одинаковым стабильным идентификатором.
+          Не создаёт дубль, когда одно бизнес-событие приходит из Customer.io и Amplitude с
+          одинаковым стабильным идентификатором.
         </p>
       </div>
-      <button
-        type="button"
-        class="secondary"
-        :disabled="loading || pending"
-        @click="load"
-      >
+      <button type="button" class="secondary" :disabled="loading || pending" @click="load">
         Обновить
       </button>
     </div>
@@ -377,16 +352,13 @@ onMounted(() => void load());
         </div>
       </dl>
       <ul class="activity-list">
-        <li
-          v-for="participant in currentPolicy.participants"
-          :key="participant.routeRevisionId"
-        >
+        <li v-for="participant in currentPolicy.participants" :key="participant.routeRevisionId">
           <strong
             >{{ providerLabel(participant.provider) }} ·
             {{ routeName(participant.routeId) }}</strong
           >
           <span
-            ><code>{{ participant.sourcePath.join(".") }}</code> ·
+            ><code>{{ participant.sourcePath.join('.') }}</code> ·
             {{ normalizationLabel(participant.normalization) }}</span
           >
         </li>
@@ -403,37 +375,22 @@ onMounted(() => void load());
         <span class="setup-step">Необязательно</span>
         <div>
           <h3>
-            {{ currentPolicy ? "Новая версия правила" : "Новое правило" }}
+            {{ currentPolicy ? 'Новая версия правила' : 'Новое правило' }}
           </h3>
-          <p>
-            Используйте только для события, которое реально приходит из двух
-            разных источников.
-          </p>
+          <p>Используйте только для события, которое реально приходит из двух разных источников.</p>
         </div>
       </div>
       <label>
         <span>Название стабильного ключа</span>
-        <input
-          v-model="canonicalKeyName"
-          name="canonicalKeyName"
-          maxlength="64"
-          required
-        />
-        <small>
-          Понятное техническое имя, например <code>transaction_id</code>.
-        </small>
+        <input v-model="canonicalKeyName" name="canonicalKeyName" maxlength="64" required />
+        <small> Понятное техническое имя, например <code>transaction_id</code>. </small>
       </label>
       <fieldset class="mapping-fields">
         <legend>Источники события — минимум два разных провайдера</legend>
         <small
-          >Показываются только включённые правила приёма для текущей версии
-          события Retenive.</small
+          >Показываются только включённые правила приёма для текущей версии события Retenive.</small
         >
-        <label
-          v-for="route in eligibleRoutes"
-          :key="route.id"
-          class="mapping-row"
-        >
+        <label v-for="route in eligibleRoutes" :key="route.id" class="mapping-row">
           <input
             v-model="selectedRouteIds"
             name="canonicalParticipant"
@@ -442,38 +399,24 @@ onMounted(() => void load());
           />
           <span>
             <strong
-              >{{ providerLabel(route.publishedRevision!.provider) }} ·
-              {{ route.name }}</strong
+              >{{ providerLabel(route.publishedRevision!.provider) }} · {{ route.name }}</strong
             ><br />
-            <code>{{
-              route.publishedRevision!.canonicalKeyExtractor!.sourcePath.join(
-                ".",
-              )
-            }}</code>
+            <code>{{ route.publishedRevision!.canonicalKeyExtractor!.sourcePath.join('.') }}</code>
             ·
-            {{
-              normalizationLabel(
-                route.publishedRevision!.canonicalKeyExtractor!.normalization,
-              )
-            }}
+            {{ normalizationLabel(route.publishedRevision!.canonicalKeyExtractor!.normalization) }}
           </span>
         </label>
         <p v-if="!eligibleRoutes.length" class="empty-state">
-          Сначала опубликуйте правила приёма и укажите в них путь к стабильному
-          идентификатору.
+          Сначала опубликуйте правила приёма и укажите в них путь к стабильному идентификатору.
         </p>
       </fieldset>
       <p class="read-only-note">
-        Одинаковый идентификатор и одинаковые данные будут приняты один раз.
-        Если идентификатор совпадает, а данные различаются, Retenive зафиксирует
-        конфликт и не станет объединять события автоматически.
+        Одинаковый идентификатор и одинаковые данные будут приняты один раз. Если идентификатор
+        совпадает, а данные различаются, Retenive зафиксирует конфликт и не станет объединять
+        события автоматически.
       </p>
       <div class="form-actions">
-        <button
-          type="submit"
-          data-action="preview-canonical-policy"
-          :disabled="!canPreview"
-        >
+        <button type="submit" data-action="preview-canonical-policy" :disabled="!canPreview">
           Проверить правило
         </button>
       </div>
@@ -487,13 +430,10 @@ onMounted(() => void load());
       </p>
       <p>{{ activationLabel(preview.runtimeActivation) }}</p>
       <ul class="activity-list">
-        <li
-          v-for="participant in preview.participants"
-          :key="participant.routeRevisionId"
-        >
+        <li v-for="participant in preview.participants" :key="participant.routeRevisionId">
           <strong>{{ providerLabel(participant.provider) }}</strong>
           <span
-            ><code>{{ participant.sourcePath.join(".") }}</code> ·
+            ><code>{{ participant.sourcePath.join('.') }}</code> ·
             {{ normalizationLabel(participant.normalization) }}</span
           >
         </li>

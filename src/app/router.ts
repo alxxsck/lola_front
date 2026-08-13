@@ -1,58 +1,47 @@
-import {
-  createRouter,
-  createWebHistory,
-  type RouterScrollBehavior,
-} from "vue-router";
-import { useAuthStore } from "@/features/auth/auth.store";
+import { createRouter, createWebHistory, type RouterScrollBehavior } from 'vue-router';
+import { useAuthStore } from '@/features/auth/auth.store';
 import {
   hasProjectPermission,
   PROJECT_SETTINGS_SURFACE_READ_PERMISSIONS,
-} from "@/features/auth/permission-access";
-import { canReadProjectMemberships } from "@/features/project-memberships/model/project-membership-permissions";
-import { canReadProjectRoles } from "@/features/project-roles/model/project-role-permissions";
+} from '@/features/auth/permission-access';
+import { canReadProjectMemberships } from '@/features/project-memberships/model/project-membership-permissions';
+import { canReadProjectRoles } from '@/features/project-roles/model/project-role-permissions';
 import {
   captureEmailActionCapability,
   clearEmailActionCapability,
   type EmailActionKind,
-} from "@/features/email-identity/email-action-capability";
-import AppShell from "@/widgets/layout/AppShell.vue";
-import { registerMfaRequirementHandler } from "@/shared/api/http/axios-instance";
-import { installAuthSessionNavigation } from "@/features/auth/auth-session-navigation";
-import { safeInternalRedirect } from "@/features/auth/post-authentication-redirect";
+} from '@/features/email-identity/email-action-capability';
+import AppShell from '@/widgets/layout/AppShell.vue';
+import { registerMfaRequirementHandler } from '@/shared/api/http/axios-instance';
+import { installAuthSessionNavigation } from '@/features/auth/auth-session-navigation';
+import { safeInternalRedirect } from '@/features/auth/post-authentication-redirect';
 import {
   canReadSupportControl,
   canAccessSupportNotificationSettings,
   canReadSupportWorkspace,
-} from "@/features/support-workspace/model/support-workspace-access";
-import { captureSupportNotificationCapability } from "@/features/support-notifications/model/support-notification-capability";
-import { reportingMvpEnabled } from "@/features/reporting/model/reporting-feature";
+} from '@/features/support-workspace/model/support-workspace-access';
+import { captureSupportNotificationCapability } from '@/features/support-notifications/model/support-notification-capability';
+import { reportingMvpEnabled } from '@/features/reporting/model/reporting-feature';
 import {
   canCreateDashboard,
   canCreateSavedReport,
   canEditDashboard,
   canEditSavedReport,
   canReadReporting,
-} from "@/features/reporting/model/reporting-permissions";
+} from '@/features/reporting/model/reporting-permissions';
 
 const AI_LEDGER_ROUTE_GROUPS = new Map([
-  ["ai-analyses", "analyses"],
-  ["ai-analysis-detail", "analyses"],
-  ["ai-operations", "operations"],
-  ["ai-operation-detail", "operations"],
+  ['ai-analyses', 'analyses'],
+  ['ai-analysis-detail', 'analyses'],
+  ['ai-operations', 'operations'],
+  ['ai-operation-detail', 'operations'],
 ]);
 
-export const appScrollBehavior: RouterScrollBehavior = (
-  to,
-  from,
-  savedPosition,
-) => {
+export const appScrollBehavior: RouterScrollBehavior = (to, from, savedPosition) => {
   if (savedPosition) return savedPosition;
 
-  const targetGroup = AI_LEDGER_ROUTE_GROUPS.get(String(to.name ?? ""));
-  if (
-    targetGroup &&
-    targetGroup === AI_LEDGER_ROUTE_GROUPS.get(String(from.name ?? ""))
-  ) {
+  const targetGroup = AI_LEDGER_ROUTE_GROUPS.get(String(to.name ?? ''));
+  if (targetGroup && targetGroup === AI_LEDGER_ROUTE_GROUPS.get(String(from.name ?? ''))) {
     return false;
   }
 
@@ -64,733 +53,733 @@ export const router = createRouter({
   scrollBehavior: appScrollBehavior,
   routes: [
     {
-      path: "/login",
-      name: "login",
-      component: () => import("@/pages/LoginPage.vue"),
+      path: '/login',
+      name: 'login',
+      component: () => import('@/pages/LoginPage.vue'),
       meta: { public: true },
     },
     {
-      path: "/password/setup",
-      name: "password-setup",
-      component: () => import("@/pages/PasswordSetupPage.vue"),
+      path: '/password/setup',
+      name: 'password-setup',
+      component: () => import('@/pages/PasswordSetupPage.vue'),
       meta: { public: true },
     },
     {
-      path: "/auth/mfa",
-      name: "mfa",
-      component: () => import("@/pages/MfaPage.vue"),
+      path: '/auth/mfa',
+      name: 'mfa',
+      component: () => import('@/pages/MfaPage.vue'),
       meta: { public: true },
     },
     {
-      path: "/forgot-password",
-      name: "forgot-password",
-      component: () => import("@/pages/ForgotPasswordPage.vue"),
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: () => import('@/pages/ForgotPasswordPage.vue'),
       meta: { public: true, skipAuthRestore: true },
     },
     {
-      path: "/auth/initial-access",
-      name: "email-initial-access",
-      component: () => import("@/pages/EmailActionLandingPage.vue"),
-      props: { action: "initial-access" },
-      meta: { public: true, emailAction: "initial-access" },
+      path: '/auth/initial-access',
+      name: 'email-initial-access',
+      component: () => import('@/pages/EmailActionLandingPage.vue'),
+      props: { action: 'initial-access' },
+      meta: { public: true, emailAction: 'initial-access' },
     },
     {
-      path: "/auth/email-verification",
-      name: "email-verification",
-      component: () => import("@/pages/EmailActionLandingPage.vue"),
-      props: { action: "verification" },
-      meta: { public: true, emailAction: "verification" },
+      path: '/auth/email-verification',
+      name: 'email-verification',
+      component: () => import('@/pages/EmailActionLandingPage.vue'),
+      props: { action: 'verification' },
+      meta: { public: true, emailAction: 'verification' },
     },
     {
-      path: "/auth/email-change",
-      name: "email-change",
-      component: () => import("@/pages/EmailActionLandingPage.vue"),
-      props: { action: "email-change" },
-      meta: { public: true, emailAction: "email-change" },
+      path: '/auth/email-change',
+      name: 'email-change',
+      component: () => import('@/pages/EmailActionLandingPage.vue'),
+      props: { action: 'email-change' },
+      meta: { public: true, emailAction: 'email-change' },
     },
     {
-      path: "/auth/password-reset",
-      name: "password-reset",
-      component: () => import("@/pages/PasswordResetPage.vue"),
-      meta: { public: true, emailAction: "password-reset" },
+      path: '/auth/password-reset',
+      name: 'password-reset',
+      component: () => import('@/pages/PasswordResetPage.vue'),
+      meta: { public: true, emailAction: 'password-reset' },
     },
     {
-      path: "/",
+      path: '/',
       component: AppShell,
       children: [
-        { path: "", redirect: "/overview" },
+        { path: '', redirect: '/overview' },
         {
-          path: "overview",
-          name: "overview",
-          component: () => import("@/pages/OverviewPage.vue"),
+          path: 'overview',
+          name: 'overview',
+          component: () => import('@/pages/OverviewPage.vue'),
         },
         {
-          path: "reports",
-          name: "reports",
-          component: () => import("@/pages/ReportsPage.vue"),
-          meta: { reportingAccess: "READ" },
+          path: 'reports',
+          name: 'reports',
+          component: () => import('@/pages/ReportsPage.vue'),
+          meta: { reportingAccess: 'READ' },
         },
         {
-          path: "reports/new",
-          name: "saved-report-create",
-          component: () => import("@/pages/SavedReportPage.vue"),
-          meta: { reportingAccess: "SAVED_REPORT_CREATE" },
+          path: 'reports/new',
+          name: 'saved-report-create',
+          component: () => import('@/pages/SavedReportPage.vue'),
+          meta: { reportingAccess: 'SAVED_REPORT_CREATE' },
         },
         {
-          path: "reports/:reportId",
-          name: "saved-report-view",
-          component: () => import("@/pages/SavedReportPage.vue"),
-          meta: { reportingAccess: "READ" },
+          path: 'reports/:reportId',
+          name: 'saved-report-view',
+          component: () => import('@/pages/SavedReportPage.vue'),
+          meta: { reportingAccess: 'READ' },
         },
         {
-          path: "reports/:reportId/edit",
-          name: "saved-report-edit",
-          component: () => import("@/pages/SavedReportPage.vue"),
-          meta: { reportingAccess: "SAVED_REPORT_EDIT" },
+          path: 'reports/:reportId/edit',
+          name: 'saved-report-edit',
+          component: () => import('@/pages/SavedReportPage.vue'),
+          meta: { reportingAccess: 'SAVED_REPORT_EDIT' },
         },
         {
-          path: "dashboards/new",
-          name: "dashboard-create",
-          component: () => import("@/pages/DashboardPage.vue"),
-          meta: { reportingAccess: "DASHBOARD_CREATE" },
+          path: 'dashboards/new',
+          name: 'dashboard-create',
+          component: () => import('@/pages/DashboardPage.vue'),
+          meta: { reportingAccess: 'DASHBOARD_CREATE' },
         },
         {
-          path: "dashboards/:dashboardId",
-          name: "dashboard-view",
-          component: () => import("@/pages/DashboardPage.vue"),
-          meta: { reportingAccess: "READ" },
+          path: 'dashboards/:dashboardId',
+          name: 'dashboard-view',
+          component: () => import('@/pages/DashboardPage.vue'),
+          meta: { reportingAccess: 'READ' },
         },
         {
-          path: "dashboards/:dashboardId/edit",
-          name: "dashboard-edit",
-          component: () => import("@/pages/DashboardPage.vue"),
-          meta: { reportingAccess: "DASHBOARD_EDIT" },
+          path: 'dashboards/:dashboardId/edit',
+          name: 'dashboard-edit',
+          component: () => import('@/pages/DashboardPage.vue'),
+          meta: { reportingAccess: 'DASHBOARD_EDIT' },
         },
         {
-          path: "settings/security",
-          name: "security-settings",
-          component: () => import("@/pages/SecuritySettingsPage.vue"),
+          path: 'settings/security',
+          name: 'security-settings',
+          component: () => import('@/pages/SecuritySettingsPage.vue'),
         },
         {
-          path: "settings/integrations",
-          name: "project-integrations",
-          component: () => import("@/pages/ProjectIntegrationsPage.vue"),
+          path: 'settings/integrations',
+          name: 'project-integrations',
+          component: () => import('@/pages/ProjectIntegrationsPage.vue'),
           meta: {
-            projectPermissionsAny: [
-              "project.notifications.read",
-              "project.integrations.read",
-            ],
+            projectPermissionsAny: ['project.notifications.read', 'project.integrations.read'],
           },
         },
         {
-          path: "platform/cms-users/:cmsUserId?",
-          name: "platform-cms-users",
-          component: () => import("@/pages/PlatformCmsUsersPage.vue"),
-          meta: { platformPermission: "platform.cms_users.read" },
+          path: 'platform/cms-users/:cmsUserId?',
+          name: 'platform-cms-users',
+          component: () => import('@/pages/PlatformCmsUsersPage.vue'),
+          meta: { platformPermission: 'platform.cms_users.read' },
         },
         {
-          path: "platform/notification-operations",
-          name: "platform-notification-operations",
-          component: () =>
-            import("@/pages/PlatformNotificationOperationsPage.vue"),
+          path: 'platform/notification-operations',
+          name: 'platform-notification-operations',
+          component: () => import('@/pages/PlatformNotificationOperationsPage.vue'),
           meta: {
-            platformPermission: "platform.notifications.operations.read",
+            platformPermission: 'platform.notifications.operations.read',
           },
         },
         {
-          path: "platform/ai-pricing",
-          name: "platform-ai-pricing",
-          component: () => import("@/pages/PlatformAiPricingPage.vue"),
-          meta: { platformPermission: "platform.ai_pricing.read" },
+          path: 'platform/ai-pricing',
+          name: 'platform-ai-pricing',
+          component: () => import('@/pages/PlatformAiPricingPage.vue'),
+          meta: { platformPermission: 'platform.ai_pricing.read' },
         },
         {
-          path: "platform/case-intelligence/safety",
-          name: "platform-case-intelligence-safety",
-          component: () =>
-            import("@/pages/PlatformCaseIntelligenceSafetyPage.vue"),
+          path: 'platform/case-intelligence/safety',
+          name: 'platform-case-intelligence-safety',
+          component: () => import('@/pages/PlatformCaseIntelligenceSafetyPage.vue'),
           meta: {
-            platformPermission: "platform.case_intelligence.safety.manage",
+            platformPermission: 'platform.case_intelligence.safety.manage',
           },
         },
         {
-          path: "project",
-          name: "project",
-          component: () => import("@/pages/ProjectPage.vue"),
+          path: 'project',
+          name: 'project',
+          component: () => import('@/pages/ProjectPage.vue'),
           meta: {
-            projectPermissionsAny: [
-              ...PROJECT_SETTINGS_SURFACE_READ_PERMISSIONS,
-            ],
+            projectPermissionsAny: [...PROJECT_SETTINGS_SURFACE_READ_PERMISSIONS],
           },
         },
         {
-          path: "project/memberships",
-          name: "project-memberships",
-          component: () => import("@/pages/ProjectMembershipsPage.vue"),
+          path: 'project/memberships',
+          name: 'project-memberships',
+          component: () => import('@/pages/ProjectMembershipsPage.vue'),
           meta: { projectMembershipAccess: true },
         },
         {
-          path: "project/roles",
-          name: "project-roles",
-          component: () => import("@/pages/ProjectRolesPage.vue"),
+          path: 'project/roles',
+          name: 'project-roles',
+          component: () => import('@/pages/ProjectRolesPage.vue'),
           meta: { projectRoleAccess: true },
         },
         {
-          path: "profile-fields",
-          name: "project-user-attributes",
-          component: () => import("@/pages/ProjectUserAttributesPage.vue"),
-          meta: { projectPermission: "project.profile_contract.read" },
+          path: 'profile-fields',
+          name: 'project-user-attributes',
+          component: () => import('@/pages/ProjectUserAttributesPage.vue'),
+          meta: { projectPermission: 'project.profile_contract.read' },
         },
         {
-          path: "profile-fields/integration",
-          name: "profile-fields-integration",
-          component: () => import("@/pages/ProfileIntegrationPage.vue"),
-          meta: { projectPermission: "project.profile_contract.read" },
+          path: 'profile-fields/integration',
+          name: 'profile-fields-integration',
+          component: () => import('@/pages/ProfileIntegrationPage.vue'),
+          meta: { projectPermission: 'project.profile_contract.read' },
         },
         {
-          path: "profile-fields/new",
-          name: "profile-field-create",
-          component: () => import("@/pages/ProfileFieldEditorPage.vue"),
-          meta: { projectPermission: "project.profile_contract.write" },
+          path: 'profile-fields/new',
+          name: 'profile-field-create',
+          component: () => import('@/pages/ProfileFieldEditorPage.vue'),
+          meta: { projectPermission: 'project.profile_contract.write' },
         },
         {
-          path: "profile-fields/:definitionId",
-          name: "profile-field-edit",
-          component: () => import("@/pages/ProfileFieldEditorPage.vue"),
-          meta: { projectPermission: "project.profile_contract.write" },
+          path: 'profile-fields/:definitionId',
+          name: 'profile-field-edit',
+          component: () => import('@/pages/ProfileFieldEditorPage.vue'),
+          meta: { projectPermission: 'project.profile_contract.write' },
         },
         {
-          path: "project/user-attributes",
-          redirect: "/profile-fields",
+          path: 'project/user-attributes',
+          redirect: '/profile-fields',
         },
         {
-          path: "knowledge",
-          name: "knowledge",
-          component: () => import("@/pages/KnowledgePage.vue"),
-          meta: { projectPermission: "project.knowledge.read" },
+          path: 'knowledge',
+          name: 'knowledge',
+          component: () => import('@/pages/KnowledgePage.vue'),
+          meta: { projectPermission: 'project.knowledge.read' },
         },
         {
-          path: "interface/:kind?",
-          name: "interface",
-          component: () => import("@/pages/InterfacePage.vue"),
-          meta: { projectPermission: "project.ui_registry.read" },
+          path: 'interface/:kind?',
+          name: 'interface',
+          component: () => import('@/pages/InterfacePage.vue'),
+          meta: { projectPermission: 'project.ui_registry.read' },
         },
         {
-          path: "events",
-          name: "events",
-          component: () => import("@/pages/EventsPage.vue"),
-          meta: { projectPermission: "project.event_catalog.read" },
+          path: 'events',
+          name: 'events',
+          component: () => import('@/pages/EventsPage.vue'),
+          meta: { projectPermission: 'project.event_catalog.read' },
         },
         {
-          path: "events/:definitionKeyId",
-          name: "event-definition-workspace",
-          component: () => import("@/pages/EventDefinitionWorkspacePage.vue"),
-          meta: { projectPermission: "project.event_catalog.read" },
+          path: 'events/:definitionKeyId',
+          name: 'event-definition-workspace',
+          component: () => import('@/pages/EventDefinitionWorkspacePage.vue'),
+          meta: { projectPermission: 'project.event_catalog.read' },
         },
         {
-          path: "event-logs",
-          name: "event-logs",
-          component: () => import("@/pages/ProjectLogsPage.vue"),
+          path: 'event-logs',
+          name: 'event-logs',
+          component: () => import('@/pages/ProjectLogsPage.vue'),
           meta: {
-            projectPermissionsAny: [
-              "project.event_logs.read",
-              "project.integration_activity.read",
-            ],
+            projectPermissionsAny: ['project.event_logs.read', 'project.integration_activity.read'],
           },
         },
         {
-          path: "actions",
-          name: "actions",
-          component: () => import("@/pages/ActionsPage.vue"),
-          meta: { projectPermission: "project.actions.read" },
+          path: 'actions',
+          name: 'actions',
+          component: () => import('@/pages/ActionsPage.vue'),
+          meta: { projectPermission: 'project.actions.read' },
         },
         {
-          path: "cases",
-          name: "end-user-cases",
+          path: 'cases',
+          name: 'end-user-cases',
           redirect: (route) => ({
-            name: "support-inbox",
-            query: { ...route.query, mode: "cases" },
+            name: 'support-inbox',
+            query: { ...route.query, mode: 'cases' },
           }),
         },
         {
-          path: "cases/settings",
-          name: "end-user-case-settings",
-          redirect: { name: "support-case-intelligence-detection" },
+          path: 'cases/settings',
+          name: 'end-user-case-settings',
+          redirect: { name: 'support-case-intelligence-detection' },
         },
         {
-          path: "cases/:caseId",
-          name: "end-user-case-detail",
+          path: 'cases/:caseId',
+          name: 'end-user-case-detail',
           redirect: (route) => ({
-            name: "support-inbox-case",
+            name: 'support-inbox-case',
             params: { caseId: route.params.caseId },
-            query: { ...route.query, mode: "cases" },
+            query: { ...route.query, mode: 'cases' },
           }),
         },
         {
-          path: "support/inbox",
-          name: "support-inbox",
-          component: () => import("@/pages/SupportWorkspacePage.vue"),
+          path: 'support/inbox',
+          name: 'support-inbox',
+          component: () => import('@/pages/SupportWorkspacePage.vue'),
           meta: {
             supportPlatformAccess: true,
             supportWorkspaceAccess: true,
-            supportWorkspaceTarget: "CONVERSATIONS",
+            supportWorkspaceTarget: 'CONVERSATIONS',
             supportWorkspacePresentation: true,
           },
         },
         {
-          path: "support/inbox/cases/:caseId",
-          name: "support-inbox-case",
-          component: () => import("@/pages/SupportWorkspacePage.vue"),
+          path: 'support/inbox/cases/:caseId',
+          name: 'support-inbox-case',
+          component: () => import('@/pages/SupportWorkspacePage.vue'),
           meta: {
             supportPlatformAccess: true,
             supportWorkspaceAccess: true,
-            supportWorkspaceTarget: "CASES",
+            supportWorkspaceTarget: 'CASES',
             supportWorkspacePresentation: true,
           },
         },
         {
-          path: "support/inbox/conversations/:conversationId",
-          name: "support-inbox-conversation",
-          component: () => import("@/pages/SupportWorkspacePage.vue"),
+          path: 'support/inbox/conversations/:conversationId',
+          name: 'support-inbox-conversation',
+          component: () => import('@/pages/SupportWorkspacePage.vue'),
           meta: {
             supportPlatformAccess: true,
             supportWorkspaceAccess: true,
-            supportWorkspaceTarget: "CONVERSATIONS",
+            supportWorkspaceTarget: 'CONVERSATIONS',
             supportWorkspacePresentation: true,
           },
         },
         {
-          path: "support/control",
-          name: "support-control",
-          component: () => import("@/pages/SupportControlPage.vue"),
+          path: 'support/control',
+          name: 'support-control',
+          component: () => import('@/pages/SupportControlPage.vue'),
           meta: {
             supportPlatformAccess: true,
             supportLeadControlAccess: true,
           },
         },
         {
-          path: "support/quality",
-          name: "support-quality",
-          component: () => import("@/pages/SupportQualityPage.vue"),
+          path: 'support/quality',
+          name: 'support-quality',
+          component: () => import('@/pages/SupportQualityPage.vue'),
           meta: {
             supportPlatformAccess: true,
             projectPermissionsAny: [
-              "project.support.quality.read",
-              "project.support.quality.review",
-              "project.support.quality.self_read",
+              'project.support.quality.read',
+              'project.support.quality.review',
+              'project.support.quality.self_read',
             ],
           },
         },
         {
-          path: "support/quality/reviews/:reviewId",
-          name: "support-quality-review",
-          component: () => import("@/pages/SupportQualityReviewPage.vue"),
+          path: 'support/quality/reviews/:reviewId',
+          name: 'support-quality-review',
+          component: () => import('@/pages/SupportQualityReviewPage.vue'),
           meta: {
             supportPlatformAccess: true,
             projectPermissionsAny: [
-              "project.support.quality.read",
-              "project.support.quality.review",
-              "project.support.quality.self_read",
+              'project.support.quality.read',
+              'project.support.quality.review',
+              'project.support.quality.self_read',
             ],
           },
         },
         ...[
-          ["scorecards", "support-quality-scorecards"],
-          ["disputes", "support-quality-disputes"],
+          ['scorecards', 'support-quality-scorecards'],
+          ['disputes', 'support-quality-disputes'],
         ].map(([path, name]) => ({
           path: `support/quality/${path}`,
           name,
-          component: () => import("@/pages/SupportQualityRegistryPage.vue"),
+          component: () => import('@/pages/SupportQualityRegistryPage.vue'),
           meta: {
             supportPlatformAccess: true,
-            projectPermission: "project.support.quality.read",
+            projectPermission: 'project.support.quality.read',
           },
         })),
         {
-          path: "support/quality/calibrations",
-          name: "support-quality-calibrations",
-          component: () => import("@/pages/SupportQualityRegistryPage.vue"),
+          path: 'support/quality/calibrations',
+          name: 'support-quality-calibrations',
+          component: () => import('@/pages/SupportQualityRegistryPage.vue'),
           meta: {
             supportPlatformAccess: true,
             projectPermissionsAny: [
-              "project.support.quality.read",
-              "project.support.quality.review",
+              'project.support.quality.read',
+              'project.support.quality.review',
             ],
           },
         },
-        ...([
-          ["support/settings/routing", "support-routing-overview", ["project.support.routing.read", "project.support.routing.manage"]],
-          ["support/settings/teams-skills", "support-routing-teams-skills", ["project.support.teams.read", "project.support.teams.manage"]],
-          ["support/settings/workforce", "support-routing-workforce", ["project.support.teams.read", "project.support.teams.manage"]],
-          ["support/settings/queues", "support-routing-queues", ["project.support.queues.read", "project.support.queues.manage"]],
-          ["support/settings/routing/policies", "support-routing-policies", ["project.support.routing.read", "project.support.routing.manage"]],
-          ["support/settings/routing/decisions", "support-routing-decisions", ["project.support.routing.read", "project.support.routing.manage"]],
-        ] as const).map(([path, name, permissionCodes]) => ({
+        ...(
+          [
+            [
+              'support/settings/routing',
+              'support-routing-overview',
+              ['project.support.routing.read', 'project.support.routing.manage'],
+            ],
+            [
+              'support/settings/teams-skills',
+              'support-routing-teams-skills',
+              ['project.support.teams.read', 'project.support.teams.manage'],
+            ],
+            [
+              'support/settings/workforce',
+              'support-routing-workforce',
+              ['project.support.teams.read', 'project.support.teams.manage'],
+            ],
+            [
+              'support/settings/queues',
+              'support-routing-queues',
+              ['project.support.queues.read', 'project.support.queues.manage'],
+            ],
+            [
+              'support/settings/routing/policies',
+              'support-routing-policies',
+              ['project.support.routing.read', 'project.support.routing.manage'],
+            ],
+            [
+              'support/settings/routing/decisions',
+              'support-routing-decisions',
+              ['project.support.routing.read', 'project.support.routing.manage'],
+            ],
+          ] as const
+        ).map(([path, name, permissionCodes]) => ({
           path,
           name,
-          component: () => import("@/pages/SupportRoutingControlPlanePage.vue"),
+          component: () => import('@/pages/SupportRoutingControlPlanePage.vue'),
           meta: {
             supportPlatformAccess: true,
             projectPermissionsAny: permissionCodes,
           },
         })),
         ...[
-          ["support/analytics", "support-analytics-overview"],
-          ["support/analytics/flow", "support-analytics-flow"],
-          ["support/analytics/quality", "support-analytics-quality"],
-          ["support/analytics/team", "support-analytics-team"],
-          ["support/analytics/automation", "support-analytics-automation"],
+          ['support/analytics', 'support-analytics-overview'],
+          ['support/analytics/flow', 'support-analytics-flow'],
+          ['support/analytics/quality', 'support-analytics-quality'],
+          ['support/analytics/team', 'support-analytics-team'],
+          ['support/analytics/automation', 'support-analytics-automation'],
         ].map(([path, name]) => ({
           path,
           name,
-          component: () => import("@/pages/SupportAnalyticsPage.vue"),
+          component: () => import('@/pages/SupportAnalyticsPage.vue'),
           meta: {
             supportPlatformAccess: true,
             projectPermissionsAny: [
-              "project.reporting.catalog.read",
-              "project.reporting.aggregate.read",
+              'project.reporting.catalog.read',
+              'project.reporting.aggregate.read',
             ],
           },
         })),
         {
-          path: "support/analytics/reports/:reportId",
-          name: "support-analytics-report",
-          component: () => import("@/pages/SupportAnalyticsArtifactPage.vue"),
+          path: 'support/analytics/reports/:reportId',
+          name: 'support-analytics-report',
+          component: () => import('@/pages/SupportAnalyticsArtifactPage.vue'),
           meta: {
             supportPlatformAccess: true,
-            projectPermission: "project.reporting.aggregate.read",
+            projectPermission: 'project.reporting.aggregate.read',
           },
         },
         {
-          path: "support/analytics/dashboards/:dashboardId",
-          name: "support-analytics-dashboard",
-          component: () => import("@/pages/SupportAnalyticsArtifactPage.vue"),
+          path: 'support/analytics/dashboards/:dashboardId',
+          name: 'support-analytics-dashboard',
+          component: () => import('@/pages/SupportAnalyticsArtifactPage.vue'),
           meta: {
             supportPlatformAccess: true,
-            projectPermissionsAll: [
-              "project.reporting.aggregate.read",
-              "project.dashboards.read",
-            ],
+            projectPermissionsAll: ['project.reporting.aggregate.read', 'project.dashboards.read'],
           },
         },
         {
-          path: "support/settings/case-intelligence",
-          name: "support-case-intelligence",
-          component: () =>
-            import("@/pages/SupportCaseIntelligenceSettingsPage.vue"),
+          path: 'support/settings/case-intelligence',
+          name: 'support-case-intelligence',
+          component: () => import('@/pages/SupportCaseIntelligenceSettingsPage.vue'),
           meta: {
             supportPlatformAccess: true,
-            projectPermission: "project.case_intelligence.read",
+            projectPermission: 'project.case_intelligence.read',
           },
         },
         {
-          path: "support/settings/case-intelligence/detection",
-          name: "support-case-intelligence-detection",
-          component: () =>
-            import("@/pages/SupportCaseIntelligenceSettingsPage.vue"),
+          path: 'support/settings/case-intelligence/detection',
+          name: 'support-case-intelligence-detection',
+          component: () => import('@/pages/SupportCaseIntelligenceSettingsPage.vue'),
           meta: {
             supportPlatformAccess: true,
-            projectPermission: "project.case_intelligence.read",
+            projectPermission: 'project.case_intelligence.read',
           },
         },
         {
-          path: "support/settings/case-intelligence/escalation",
-          name: "support-case-intelligence-escalation",
-          component: () =>
-            import("@/pages/SupportCaseEscalationSettingsPage.vue"),
+          path: 'support/settings/case-intelligence/escalation',
+          name: 'support-case-intelligence-escalation',
+          component: () => import('@/pages/SupportCaseEscalationSettingsPage.vue'),
           meta: {
             supportPlatformAccess: true,
-            projectPermission: "project.case_intelligence.read",
+            projectPermission: 'project.case_intelligence.read',
           },
         },
         {
-          path: "support/settings/case-intelligence/models-budget",
-          name: "support-case-intelligence-budget",
-          component: () =>
-            import("@/pages/SupportCaseIntelligenceSettingsPage.vue"),
+          path: 'support/settings/case-intelligence/models-budget',
+          name: 'support-case-intelligence-budget',
+          component: () => import('@/pages/SupportCaseIntelligenceSettingsPage.vue'),
           meta: {
             supportPlatformAccess: true,
-            projectPermission: "project.case_intelligence.read",
+            projectPermission: 'project.case_intelligence.read',
           },
         },
         {
-          path: "support/settings/case-intelligence/evaluation",
-          name: "support-case-intelligence-evaluation",
-          component: () =>
-            import("@/pages/SupportCaseIntelligenceOperationsPage.vue"),
+          path: 'support/settings/case-intelligence/evaluation',
+          name: 'support-case-intelligence-evaluation',
+          component: () => import('@/pages/SupportCaseIntelligenceOperationsPage.vue'),
           meta: {
             supportPlatformAccess: true,
             projectPermissionsAll: [
-              "project.case_intelligence.read",
-              "project.case_intelligence.release.manage",
+              'project.case_intelligence.read',
+              'project.case_intelligence.release.manage',
             ],
           },
         },
         {
-          path: "support/settings/case-intelligence/observability",
-          name: "support-case-intelligence-observability",
-          component: () =>
-            import("@/pages/SupportCaseIntelligenceOperationsPage.vue"),
+          path: 'support/settings/case-intelligence/observability',
+          name: 'support-case-intelligence-observability',
+          component: () => import('@/pages/SupportCaseIntelligenceOperationsPage.vue'),
           meta: {
             supportPlatformAccess: true,
             projectPermissionsAll: [
-              "project.case_intelligence.read",
-              "project.case_intelligence.cost.read",
+              'project.case_intelligence.read',
+              'project.case_intelligence.cost.read',
             ],
           },
         },
         {
-          path: "support/settings/case-intelligence/decision-log",
-          name: "support-case-intelligence-decisions",
-          component: () =>
-            import("@/pages/SupportCaseIntelligenceOperationsPage.vue"),
+          path: 'support/settings/case-intelligence/decision-log',
+          name: 'support-case-intelligence-decisions',
+          component: () => import('@/pages/SupportCaseIntelligenceOperationsPage.vue'),
           meta: {
             supportPlatformAccess: true,
             projectPermissionsAll: [
-              "project.case_intelligence.read",
-              "project.case_intelligence.decisions.read",
+              'project.case_intelligence.read',
+              'project.case_intelligence.decisions.read',
             ],
           },
         },
         {
-          path: "support/settings/case-intelligence/versions-audit",
-          name: "support-case-intelligence-versions",
-          component: () =>
-            import("@/pages/SupportCaseIntelligenceOperationsPage.vue"),
+          path: 'support/settings/case-intelligence/versions-audit',
+          name: 'support-case-intelligence-versions',
+          component: () => import('@/pages/SupportCaseIntelligenceOperationsPage.vue'),
           meta: {
             supportPlatformAccess: true,
-            projectPermission: "project.case_intelligence.read",
+            projectPermission: 'project.case_intelligence.read',
           },
         },
         {
-          path: "support/settings/macros",
-          name: "support-macro-settings",
-          component: () => import("@/pages/SupportMacroSettingsPage.vue"),
+          path: 'support/settings/macros',
+          name: 'support-macro-settings',
+          component: () => import('@/pages/SupportMacroSettingsPage.vue'),
           meta: {
             supportPlatformAccess: true,
-            projectPermission: "project.support.macros.manage",
+            projectPermission: 'project.support.macros.manage',
           },
         },
         {
-          path: "support/settings/sla-calendars",
-          name: "support-sla-settings",
-          component: () => import("@/pages/SupportSlaSettingsPage.vue"),
+          path: 'support/settings/sla-calendars',
+          name: 'support-sla-settings',
+          component: () => import('@/pages/SupportSlaSettingsPage.vue'),
           meta: {
             supportPlatformAccess: true,
-            projectPermissionsAny: [
-              "project.support.sla.read",
-              "project.support.sla.manage",
-            ],
+            projectPermissionsAny: ['project.support.sla.read', 'project.support.sla.manage'],
           },
         },
         {
-          path: "support/settings/notifications",
-          name: "support-notification-settings",
-          component: () =>
-            import("@/pages/SupportNotificationSettingsPage.vue"),
+          path: 'support/settings/notifications',
+          name: 'support-notification-settings',
+          component: () => import('@/pages/SupportNotificationSettingsPage.vue'),
           meta: {
             supportPlatformAccess: true,
             supportNotificationSettingsAccess: true,
           },
         },
         {
-          path: "support/settings/notifications/new-cases",
-          name: "support-case-notification-policy",
-          component: () =>
-            import("@/pages/SupportCaseNotificationPolicyPage.vue"),
+          path: 'support/settings/notifications/new-cases',
+          name: 'support-case-notification-policy',
+          component: () => import('@/pages/SupportCaseNotificationPolicyPage.vue'),
           meta: {
             supportPlatformAccess: true,
-            projectPermission: "project.support.notification_policy.manage",
+            projectPermission: 'project.support.notification_policy.manage',
           },
         },
         {
-          path: "support/settings/integrations",
-          name: "support-external-settings",
-          component: () => import("@/pages/SupportExternalSettingsPage.vue"),
+          path: 'support/settings/integrations',
+          name: 'support-external-settings',
+          component: () => import('@/pages/SupportExternalSettingsPage.vue'),
           meta: {
             supportPlatformAccess: true,
-            projectPermission: "project.support.external_work.manage",
+            projectPermission: 'project.support.external_work.manage',
           },
         },
         {
-          path: "support/external-work",
-          name: "support-external-work",
-          component: () => import("@/pages/SupportExternalWorkPage.vue"),
+          path: 'support/external-work',
+          name: 'support-external-work',
+          component: () => import('@/pages/SupportExternalWorkPage.vue'),
           meta: {
             supportPlatformAccess: true,
             projectPermissionsAny: [
-              "project.support.external_work.inbox_read",
-              "project.support.external_work.read_linked",
+              'project.support.external_work.inbox_read',
+              'project.support.external_work.read_linked',
             ],
           },
         },
         {
-          path: "support/notifications/open",
-          name: "support-notification-open",
-          component: () => import("@/pages/SupportNotificationOpenPage.vue"),
+          path: 'support/notifications/open',
+          name: 'support-notification-open',
+          component: () => import('@/pages/SupportNotificationOpenPage.vue'),
           meta: { supportPlatformAccess: true },
         },
         {
-          path: "ai-analyses",
-          name: "ai-analyses",
-          component: () => import("@/pages/AIAnalysesPage.vue"),
-          meta: { projectPermission: "project.ai_analyses.read" },
+          path: 'ai-analyses',
+          name: 'ai-analyses',
+          component: () => import('@/pages/AIAnalysesPage.vue'),
+          meta: { projectPermission: 'project.ai_analyses.read' },
         },
         {
-          path: "ai-analyses/:analysisId",
-          name: "ai-analysis-detail",
-          component: () => import("@/pages/AIAnalysesPage.vue"),
-          meta: { projectPermission: "project.ai_analyses.read" },
+          path: 'ai-analyses/:analysisId',
+          name: 'ai-analysis-detail',
+          component: () => import('@/pages/AIAnalysesPage.vue'),
+          meta: { projectPermission: 'project.ai_analyses.read' },
         },
         {
-          path: "ai-operations",
-          name: "ai-operations",
-          component: () => import("@/pages/AIOperationsPage.vue"),
-          meta: { projectPermission: "project.ai_operations.read" },
+          path: 'ai-operations',
+          name: 'ai-operations',
+          component: () => import('@/pages/AIOperationsPage.vue'),
+          meta: { projectPermission: 'project.ai_operations.read' },
         },
         {
-          path: "ai-operations/:operationId",
-          name: "ai-operation-detail",
-          component: () => import("@/pages/AIOperationsPage.vue"),
-          meta: { projectPermission: "project.ai_operations.read" },
+          path: 'ai-operations/:operationId',
+          name: 'ai-operation-detail',
+          component: () => import('@/pages/AIOperationsPage.vue'),
+          meta: { projectPermission: 'project.ai_operations.read' },
         },
         {
-          path: "ai-costs",
-          name: "ai-costs",
-          component: () => import("@/pages/AICostsPage.vue"),
+          path: 'ai-costs',
+          name: 'ai-costs',
+          component: () => import('@/pages/AICostsPage.vue'),
           meta: {
             projectPermissionsAny: [
-              "project.ai_costs.read",
-              "project.ai_allowance.read",
-              "project.ai_allowance.manage",
-              "project.ai_allowance.grant",
-              "project.ai_allowance.reconcile",
-              "project.ai_allowance.accrual_rules.read",
-              "project.ai_allowance.accrual_rules.manage",
-              "project.ai_allowance.accrual_receipts.read",
+              'project.ai_costs.read',
+              'project.ai_allowance.read',
+              'project.ai_allowance.manage',
+              'project.ai_allowance.grant',
+              'project.ai_allowance.reconcile',
+              'project.ai_allowance.accrual_rules.read',
+              'project.ai_allowance.accrual_rules.manage',
+              'project.ai_allowance.accrual_receipts.read',
             ],
           },
         },
         {
-          path: "telegram/broadcasts",
-          name: "telegram-broadcasts",
-          component: () => import("@/pages/TelegramBroadcastsPage.vue"),
+          path: 'telegram/broadcasts',
+          name: 'telegram-broadcasts',
+          component: () => import('@/pages/TelegramBroadcastsPage.vue'),
           meta: {
-            projectPermission: "project.telegram.broadcasts.read",
+            projectPermission: 'project.telegram.broadcasts.read',
           },
         },
         {
-          path: "telegram/broadcasts/:broadcastId",
-          name: "telegram-broadcast-detail",
-          component: () => import("@/pages/TelegramBroadcastDetailPage.vue"),
+          path: 'telegram/broadcasts/:broadcastId',
+          name: 'telegram-broadcast-detail',
+          component: () => import('@/pages/TelegramBroadcastDetailPage.vue'),
           meta: {
-            projectPermission: "project.telegram.broadcasts.read",
+            projectPermission: 'project.telegram.broadcasts.read',
           },
         },
         {
-          path: "docs",
-          name: "documentation",
-          component: () => import("@/pages/DocumentationPage.vue"),
+          path: 'docs',
+          name: 'documentation',
+          component: () => import('@/pages/DocumentationPage.vue'),
         },
         {
-          path: "docs/scenarios",
-          name: "scenario-guide",
-          component: () => import("@/pages/ScenarioGuidePage.vue"),
+          path: 'docs/scenarios',
+          name: 'scenario-guide',
+          component: () => import('@/pages/ScenarioGuidePage.vue'),
         },
         {
-          path: "docs/support-operator",
-          name: "support-operator-guide",
-          component: () => import("@/pages/SupportOperatorGuidePage.vue"),
+          path: 'docs/support-operator',
+          name: 'support-operator-guide',
+          component: () => import('@/pages/SupportOperatorGuidePage.vue'),
         },
         {
-          path: "docs/support-lead",
-          name: "support-lead-guide",
-          component: () => import("@/pages/SupportLeadGuidePage.vue"),
+          path: 'docs/support-lead',
+          name: 'support-lead-guide',
+          component: () => import('@/pages/SupportLeadGuidePage.vue'),
         },
         {
-          path: "docs/profile-fields",
-          name: "profile-fields-guide",
-          component: () => import("@/pages/ProfileFieldsGuidePage.vue"),
+          path: 'docs/profile-fields',
+          name: 'profile-fields-guide',
+          component: () => import('@/pages/ProfileFieldsGuidePage.vue'),
         },
         {
-          path: "docs/segments",
-          name: "segments-guide",
-          component: () => import("@/pages/SegmentsGuidePage.vue"),
+          path: 'docs/segments',
+          name: 'segments-guide',
+          component: () => import('@/pages/SegmentsGuidePage.vue'),
         },
         {
-          path: "scenarios",
-          name: "scenarios",
-          component: () => import("@/pages/ScenariosPage.vue"),
-          meta: { projectPermission: "project.scenarios.read" },
+          path: 'scenarios',
+          name: 'scenarios',
+          component: () => import('@/pages/ScenariosPage.vue'),
+          meta: { projectPermission: 'project.scenarios.read' },
         },
         {
-          path: "scenarios/new",
-          name: "scenario-create",
-          component: () => import("@/pages/ScenarioEditorPage.vue"),
-          meta: { projectPermission: "project.scenarios.write" },
+          path: 'scenarios/new',
+          name: 'scenario-create',
+          component: () => import('@/pages/ScenarioEditorPage.vue'),
+          meta: { projectPermission: 'project.scenarios.write' },
         },
         {
-          path: "scenarios/:scenarioId",
-          name: "scenario-edit",
-          component: () => import("@/pages/ScenarioEditorPage.vue"),
-          meta: { projectPermission: "project.scenarios.read" },
+          path: 'scenarios/:scenarioId',
+          name: 'scenario-edit',
+          component: () => import('@/pages/ScenarioEditorPage.vue'),
+          meta: { projectPermission: 'project.scenarios.read' },
         },
         {
-          path: "segments",
-          name: "segments",
-          component: () => import("@/pages/SegmentsPage.vue"),
-          meta: { projectPermission: "project.segments.read" },
+          path: 'segments',
+          name: 'segments',
+          component: () => import('@/pages/SegmentsPage.vue'),
+          meta: { projectPermission: 'project.segments.read' },
         },
         {
-          path: "segments/new",
-          name: "segment-create",
-          component: () => import("@/pages/SegmentsPage.vue"),
-          meta: { projectPermission: "project.segments.write" },
+          path: 'segments/new',
+          name: 'segment-create',
+          component: () => import('@/pages/SegmentsPage.vue'),
+          meta: { projectPermission: 'project.segments.write' },
         },
         {
-          path: "segments/:segmentId",
-          name: "segment-detail",
-          component: () => import("@/pages/SegmentsPage.vue"),
-          meta: { projectPermission: "project.segments.read" },
+          path: 'segments/:segmentId',
+          name: 'segment-detail',
+          component: () => import('@/pages/SegmentsPage.vue'),
+          meta: { projectPermission: 'project.segments.read' },
         },
         {
-          path: "segments/:segmentId/revisions/new",
-          name: "segment-revision-create",
-          component: () => import("@/pages/SegmentsPage.vue"),
-          meta: { projectPermission: "project.segments.write" },
+          path: 'segments/:segmentId/revisions/new',
+          name: 'segment-revision-create',
+          component: () => import('@/pages/SegmentsPage.vue'),
+          meta: { projectPermission: 'project.segments.write' },
         },
         {
-          path: "segments/:segmentId/revisions/:segmentRevisionId",
-          name: "segment-revision-detail",
-          component: () => import("@/pages/SegmentsPage.vue"),
-          meta: { projectPermission: "project.segments.read" },
+          path: 'segments/:segmentId/revisions/:segmentRevisionId',
+          name: 'segment-revision-detail',
+          component: () => import('@/pages/SegmentsPage.vue'),
+          meta: { projectPermission: 'project.segments.read' },
         },
         {
-          path: "users/:endUserId?",
-          name: "users",
-          component: () => import("@/pages/UsersPage.vue"),
-          meta: { projectPermission: "project.profiles.read" },
+          path: 'users/:endUserId?',
+          name: 'users',
+          component: () => import('@/pages/UsersPage.vue'),
+          meta: { projectPermission: 'project.profiles.read' },
         },
         {
-          path: "live",
-          name: "live",
-          component: () => import("@/pages/LivePage.vue"),
-          meta: { projectPermission: "project.end_users.read" },
+          path: 'live',
+          name: 'live',
+          component: () => import('@/pages/LivePage.vue'),
+          meta: { projectPermission: 'project.end_users.read' },
         },
         {
-          path: "operations",
-          name: "operations",
-          component: () => import("@/pages/OperationsPage.vue"),
+          path: 'operations',
+          name: 'operations',
+          component: () => import('@/pages/OperationsPage.vue'),
           meta: {
             projectPermissionsAny: [
-              "project.scenario_runs.read",
-              "project.audit.read",
-              "project.integration_api_requests.read",
+              'project.scenario_runs.read',
+              'project.audit.read',
+              'project.integration_api_requests.read',
             ],
           },
         },
       ],
     },
-    { path: "/:pathMatch(.*)*", redirect: "/" },
+    { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 });
 
@@ -800,9 +789,9 @@ registerMfaRequirementHandler((code) => {
   const redirect = router.currentRoute.value.fullPath;
   auth.requireMfaReauthentication();
   void router.replace({
-    name: "login",
+    name: 'login',
     query: {
-      ...(redirect && redirect !== "/login" ? { redirect } : {}),
+      ...(redirect && redirect !== '/login' ? { redirect } : {}),
       mfa: code,
     },
   });
@@ -811,79 +800,66 @@ registerMfaRequirementHandler((code) => {
 installAuthSessionNavigation(router);
 
 router.beforeEach(async (to) => {
-  if (to.name === "support-notification-open" && to.hash) {
+  if (to.name === 'support-notification-open' && to.hash) {
     captureSupportNotificationCapability(to.hash);
-    return { path: to.path, query: to.query, hash: "", replace: true };
+    return { path: to.path, query: to.query, hash: '', replace: true };
   }
   const emailAction = to.meta.emailAction;
   if (isEmailAction(emailAction)) {
     if (to.hash) {
       captureEmailActionCapability(emailAction, to.hash);
-      return { path: to.path, query: to.query, hash: "", replace: true };
+      return { path: to.path, query: to.query, hash: '', replace: true };
     }
     return true;
   }
   if (to.meta.skipAuthRestore) return true;
   const auth = useAuthStore();
   await auth.restore();
-  if (to.name === "password-setup" && !auth.requiresPasswordSetup)
-    return { name: "login" };
-  if (
-    to.name === "mfa" &&
-    !auth.mfaChallenge &&
-    auth.phase !== "MFA_RECOVERY_CODES"
-  ) {
+  if (to.name === 'password-setup' && !auth.requiresPasswordSetup) return { name: 'login' };
+  if (to.name === 'mfa' && !auth.mfaChallenge && auth.phase !== 'MFA_RECOVERY_CODES') {
     const redirect = safeInternalRedirect(to.query.redirect);
     return {
-      name: "login",
+      name: 'login',
       ...(redirect ? { query: { redirect } } : {}),
     };
   }
-  if (auth.mfaChallenge && to.name !== "mfa") {
+  if (auth.mfaChallenge && to.name !== 'mfa') {
     const redirect = safeInternalRedirect(to.query.redirect);
     return {
-      name: "mfa",
+      name: 'mfa',
       ...(redirect ? { query: { redirect } } : {}),
     };
   }
   if (!to.meta.public && !auth.isAuthenticated)
-    return { name: "login", query: { redirect: to.fullPath } };
+    return { name: 'login', query: { redirect: to.fullPath } };
   if (
     (to.meta.supportPlatformAccess ||
-      to.name === "ai-analysis-detail" ||
-      to.name === "ai-operation-detail" ||
-      to.name === "ai-costs" ||
-      to.name === "users") &&
-    typeof to.query.projectId === "string"
+      to.name === 'ai-analysis-detail' ||
+      to.name === 'ai-operation-detail' ||
+      to.name === 'ai-costs' ||
+      to.name === 'users') &&
+    typeof to.query.projectId === 'string'
   ) {
-    const target = auth.projects.find(
-      (project) => project.id === to.query.projectId,
-    );
+    const target = auth.projects.find((project) => project.id === to.query.projectId);
     if (!target) return auth.authenticatedLandingPath;
     if (auth.project?.id !== target.id) auth.selectProject(target.id);
   }
-  if (to.name === "overview" && auth.isAuthenticated && !auth.project)
+  if (to.name === 'overview' && auth.isAuthenticated && !auth.project)
     return auth.authenticatedLandingPath;
   if (to.meta.supportPlatformAccess && auth.supportEnabled !== true)
     return auth.authenticatedLandingPath;
   const projectPermissions = auth.project?.effectivePermissionCodes ?? [];
   const reportingAccess = to.meta.reportingAccess;
-  if (typeof reportingAccess === "string") {
+  if (typeof reportingAccess === 'string') {
     const canRead =
-      reportingMvpEnabled &&
-      Boolean(auth.project) &&
-      canReadReporting(projectPermissions);
+      reportingMvpEnabled && Boolean(auth.project) && canReadReporting(projectPermissions);
     const canEnter =
       canRead &&
-      (reportingAccess === "READ" ||
-        (reportingAccess === "SAVED_REPORT_CREATE" &&
-          canCreateSavedReport(projectPermissions)) ||
-        (reportingAccess === "SAVED_REPORT_EDIT" &&
-          canEditSavedReport(projectPermissions)) ||
-        (reportingAccess === "DASHBOARD_CREATE" &&
-          canCreateDashboard(projectPermissions)) ||
-        (reportingAccess === "DASHBOARD_EDIT" &&
-          canEditDashboard(projectPermissions)));
+      (reportingAccess === 'READ' ||
+        (reportingAccess === 'SAVED_REPORT_CREATE' && canCreateSavedReport(projectPermissions)) ||
+        (reportingAccess === 'SAVED_REPORT_EDIT' && canEditSavedReport(projectPermissions)) ||
+        (reportingAccess === 'DASHBOARD_CREATE' && canCreateDashboard(projectPermissions)) ||
+        (reportingAccess === 'DASHBOARD_EDIT' && canEditDashboard(projectPermissions)));
     if (!canEnter) return auth.authenticatedLandingPath;
   }
   if (
@@ -895,35 +871,29 @@ router.beforeEach(async (to) => {
   if (to.meta.supportWorkspaceAccess && auth.project) {
     const target = supportWorkspaceTarget(to);
     const hasTargetPermission =
-      target === "CASES"
-        ? hasProjectPermission(projectPermissions, "project.cases.read")
-        : hasProjectPermission(
-            projectPermissions,
-            "project.conversations.read",
-          );
+      target === 'CASES'
+        ? hasProjectPermission(projectPermissions, 'project.cases.read')
+        : hasProjectPermission(projectPermissions, 'project.conversations.read');
     if (!hasTargetPermission) return auth.authenticatedLandingPath;
   }
   if (
     to.meta.supportLeadControlAccess &&
-    (!auth.project ||
-      !canReadSupportControl(auth.project.effectivePermissionCodes ?? []))
+    (!auth.project || !canReadSupportControl(auth.project.effectivePermissionCodes ?? []))
   )
     return auth.authenticatedLandingPath;
   if (
     to.meta.supportNotificationSettingsAccess &&
     (!auth.project ||
-      !canAccessSupportNotificationSettings(
-        auth.project.effectivePermissionCodes ?? [],
-      ))
+      !canAccessSupportNotificationSettings(auth.project.effectivePermissionCodes ?? []))
   )
     return auth.authenticatedLandingPath;
   if (
-    typeof to.meta.platformPermission === "string" &&
+    typeof to.meta.platformPermission === 'string' &&
     !auth.user?.platformPermissionCodes?.includes(to.meta.platformPermission)
   )
     return auth.authenticatedLandingPath;
   if (
-    typeof to.meta.projectPermission === "string" &&
+    typeof to.meta.projectPermission === 'string' &&
     (!auth.project ||
       !hasProjectPermission(
         auth.project.effectivePermissionCodes ?? [],
@@ -969,11 +939,7 @@ router.beforeEach(async (to) => {
       ))
   )
     return auth.authenticatedLandingPath;
-  if (
-    to.name === "login" &&
-    auth.isAuthenticated &&
-    !auth.requiresProjectSelection
-  )
+  if (to.name === 'login' && auth.isAuthenticated && !auth.requiresProjectSelection)
     return auth.authenticatedLandingPath;
 });
 
@@ -986,27 +952,26 @@ router.afterEach((to, from) => {
 
 function isEmailAction(value: unknown): value is EmailActionKind {
   return (
-    value === "initial-access" ||
-    value === "verification" ||
-    value === "email-change" ||
-    value === "password-reset"
+    value === 'initial-access' ||
+    value === 'verification' ||
+    value === 'email-change' ||
+    value === 'password-reset'
   );
 }
 
 function routeValue(value: unknown): string | undefined {
-  return typeof value === "string" && value ? value : undefined;
+  return typeof value === 'string' && value ? value : undefined;
 }
 
-type SupportWorkspaceTarget = "CASES" | "CONVERSATIONS";
+type SupportWorkspaceTarget = 'CASES' | 'CONVERSATIONS';
 
 function supportWorkspaceTarget(to: {
   name?: unknown;
   meta: Record<string, unknown>;
   query: Record<string, unknown>;
 }): SupportWorkspaceTarget {
-  if (to.name === "support-inbox" && routeValue(to.query.mode) === "cases") {
-    return "CASES";
+  if (to.name === 'support-inbox' && routeValue(to.query.mode) === 'cases') {
+    return 'CASES';
   }
-  return (to.meta.supportWorkspaceTarget ??
-    "CONVERSATIONS") as SupportWorkspaceTarget;
+  return (to.meta.supportWorkspaceTarget ?? 'CONVERSATIONS') as SupportWorkspaceTarget;
 }

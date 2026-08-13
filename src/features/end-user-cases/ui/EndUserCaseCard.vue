@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { formatDate, relativeTime } from "@/shared/lib/format";
-import type { EndUserCase } from "../model/end-user-case";
+import { formatDate, relativeTime } from '@/shared/lib/format';
+import type { EndUserCase } from '../model/end-user-case';
 import {
   endUserCaseGroupLabel,
   endUserCasePriorityLabel,
   endUserCaseStatusLabel,
-} from "../model/end-user-case-presentation";
+} from '../model/end-user-case-presentation';
 
 defineProps<{ item: EndUserCase; selected?: boolean }>();
 defineEmits<{ select: [] }>();
@@ -25,8 +25,7 @@ defineEmits<{ select: [] }>();
   >
     <span class="card-topline">
       <span class="sequence"
-        >№ {{ item.projectSequence }} ·
-        {{ endUserCaseGroupLabel(item.groupCode) }}</span
+        >№ {{ item.projectSequence }} · {{ endUserCaseGroupLabel(item.groupCode) }}</span
       >
       <span class="priority" :class="item.priority.toLowerCase()">
         {{ endUserCasePriorityLabel(item.priority) }}
@@ -40,17 +39,13 @@ defineEmits<{ select: [] }>();
       <span v-if="item.endUserRecontactCount">
         <i class="pi pi-replay" /> Возвратов: {{ item.endUserRecontactCount }}
       </span>
-      <time
-        :datetime="item.lastActivityAt"
-        :title="formatDate(item.lastActivityAt)"
-      >
+      <time :datetime="item.lastActivityAt" :title="formatDate(item.lastActivityAt)">
         {{ relativeTime(item.lastActivityAt) }}
       </time>
     </span>
     <span class="status-row">
       <span class="status"
-        ><i class="pi pi-circle-fill" />
-        {{ endUserCaseStatusLabel(item.status) }}</span
+        ><i class="pi pi-circle-fill" /> {{ endUserCaseStatusLabel(item.status) }}</span
       >
       <span v-if="item.toneTrend === 'WORSENING'" class="tone">
         <i class="pi pi-arrow-down-right" /> Настроение ухудшается
@@ -84,8 +79,7 @@ defineEmits<{ select: [] }>();
 }
 .case-card.selected {
   border-color: var(--action-primary);
-  box-shadow: 0 0 0 3px
-    color-mix(in srgb, var(--action-primary) 10%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--action-primary) 10%, transparent);
 }
 .case-card.priority-critical,
 .case-card.priority-urgent {

@@ -1,22 +1,18 @@
-import { io, type Socket } from "socket.io-client";
-import { isMockMode } from "@/shared/config/data-mode";
-import { getAccessToken } from "@/shared/api/http/auth-session";
-import { refreshAccessToken } from "@/shared/api/http/axios-instance";
-import type {
-  CmsRealtimeCallbacks,
-  CmsRealtimeState,
-} from "./cms-realtime-contract";
+import { io, type Socket } from 'socket.io-client';
+import { isMockMode } from '@/shared/config/data-mode';
+import { getAccessToken } from '@/shared/api/http/auth-session';
+import { refreshAccessToken } from '@/shared/api/http/axios-instance';
+import type { CmsRealtimeCallbacks, CmsRealtimeState } from './cms-realtime-contract';
 
 type RealtimeHandler = (value: unknown) => void | Promise<void>;
 type Unsubscribe = () => void;
-type TypingCommandOutcome = "ACCEPTED" | "RETRY" | "REWATCH" | "TERMINAL";
-type InternalNoteWatchOutcome =
-  "ACCEPTED" | "RETRY" | "REWATCH" | "DEGRADED" | "TERMINAL";
+type TypingCommandOutcome = 'ACCEPTED' | 'RETRY' | 'REWATCH' | 'TERMINAL';
+type InternalNoteWatchOutcome = 'ACCEPTED' | 'RETRY' | 'REWATCH' | 'DEGRADED' | 'TERMINAL';
 
 function apiOrigin(): string {
-  return (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000").replace(
+  return (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000').replace(
     /\/api\/v1\/?$/,
-    "",
+    '',
   );
 }
 
@@ -25,19 +21,17 @@ async function freshAccessToken(): Promise<string> {
   if (token) return token;
   await refreshAccessToken();
   token = getAccessToken();
-  if (!token) throw new Error("Не удалось обновить сеанс центра управления");
+  if (!token) throw new Error('Не удалось обновить сеанс центра управления');
   return token;
 }
 
 export class CmsRealtimeClient {
   private socket: Socket | null = null;
   private projectId: string | null = null;
-  private state: CmsRealtimeState = "DISCONNECTED";
+  private state: CmsRealtimeState = 'DISCONNECTED';
   private readonly subscriptions = new Map<string, Set<RealtimeHandler>>();
   private readonly stateHandlers = new Set<(state: CmsRealtimeState) => void>();
-  private readonly reconciliationHandlers = new Set<
-    () => void | Promise<void>
-  >();
+  private readonly reconciliationHandlers = new Set<() => void | Promise<void>>();
   private readonly internalNoteWatchTerminationHandlers = new Set<
     (caseId: string) => void | Promise<void>
   >();
@@ -55,15 +49,12 @@ export class CmsRealtimeClient {
   private typingCommandGeneration = 0;
   private typingCommandQueue: Promise<void> = Promise.resolve();
   private watchedInternalNoteCaseId: string | null = null;
-  private internalNoteWatchRetryTimer: ReturnType<typeof setTimeout> | null =
-    null;
-  private internalNoteWatchRenewTimer: ReturnType<typeof setTimeout> | null =
-    null;
+  private internalNoteWatchRetryTimer: ReturnType<typeof setTimeout> | null = null;
+  private internalNoteWatchRenewTimer: ReturnType<typeof setTimeout> | null = null;
 
   subscribe(eventNames: string[], handler: RealtimeHandler): Unsubscribe {
     for (const eventName of new Set(eventNames)) {
-      const handlers =
-        this.subscriptions.get(eventName) ?? new Set<RealtimeHandler>();
+      const handlers = this.subscriptions.get(eventName) ?? new Set<RealtimeHandler>();
       handlers.add(handler);
       this.subscriptions.set(eventName, handlers);
       this.bindSocketEvent(eventName);
@@ -103,22 +94,22 @@ export class CmsRealtimeClient {
     this.watchedInternalNoteCaseId = null;
     this.projectId = projectId;
     if (isMockMode) {
-      this.setState("CONNECTED");
+      this.setState('CONNECTED');
       await this.runReconciliation();
       return;
     }
 
-    this.setState("CONNECTING");
+    this.setState('CONNECTING');
     try {
       const socket = io(`${apiOrigin()}/cms`, {
-        path: "/socket.io/cms",
-        transports: ["websocket"],
+        path: '/socket.io/cms',
+        transports: ['websocket'],
         auth: async (callback) => {
           try {
             const token = await freshAccessToken();
             if (this.projectId === projectId) callback({ token, projectId });
           } catch {
-            this.setState("DEGRADED");
+            this.setState('DEGRADED');
           }
         },
         reconnection: true,
@@ -128,25 +119,24 @@ export class CmsRealtimeClient {
         randomizationFactor: 0.35,
       });
       this.socket = socket;
-      socket.on("connect", () => {
-        this.setState("CONNECTING");
+      socket.on('connect', () => {
+        this.setState('CONNECTING');
         void Promise.all([
           this.synchronizeConversationWatch(socket),
           this.synchronizeInternalNoteWatch(socket),
         ]);
       });
-      socket.on("disconnect", (reason) => {
+      socket.on('disconnect', (reason) => {
         this.typingActive = false;
         this.typingCommandGeneration += 1;
         this.clearTypingRefresh();
-        this.setState("DEGRADED");
-        if (reason === "io server disconnect") socket.connect();
+        this.setState('DEGRADED');
+        if (reason === 'io server disconnect') socket.connect();
       });
-      socket.on("connect_error", () => this.setState("DEGRADED"));
-      for (const eventName of this.subscriptions.keys())
-        this.bindSocketEvent(eventName);
+      socket.on('connect_error', () => this.setState('DEGRADED'));
+      for (const eventName of this.subscriptions.keys()) this.bindSocketEvent(eventName);
     } catch {
-      this.setState("DEGRADED");
+      this.setState('DEGRADED');
     }
   }
 
@@ -155,14 +145,11 @@ export class CmsRealtimeClient {
     this.unwatchSupportInternalNotes();
     this.disconnectSocket();
     this.projectId = null;
-    this.setState("DISCONNECTED");
+    this.setState('DISCONNECTED');
   }
 
   /** Совместимость на время перевода существующих возможностей на общий канал. */
-  async connect(
-    projectId: string,
-    callbacks: CmsRealtimeCallbacks,
-  ): Promise<void> {
+  async connect(projectId: string, callbacks: CmsRealtimeCallbacks): Promise<void> {
     this.releaseLegacyCallbacks();
     for (const [eventName, handle] of Object.entries(callbacks.subscriptions)) {
       this.legacyUnsubscribers.push(
@@ -190,13 +177,8 @@ export class CmsRealtimeClient {
   async watchConversation(conversationId: string): Promise<boolean> {
     const previous = this.watchedConversationId;
     const previousGeneration = this.watchGeneration;
-    if (
-      previous &&
-      previous !== conversationId &&
-      previousGeneration &&
-      this.socket?.connected
-    ) {
-      void this.socket.timeout(5_000).emitWithAck("conversation.unwatch.v1", {
+    if (previous && previous !== conversationId && previousGeneration && this.socket?.connected) {
+      void this.socket.timeout(5_000).emitWithAck('conversation.unwatch.v1', {
         conversationId: previous,
         generation: previousGeneration,
       });
@@ -209,25 +191,24 @@ export class CmsRealtimeClient {
     this.watchGeneration = null;
     this.watchedConversationId = conversationId;
     if (isMockMode) {
-      this.watchGeneration = "1";
+      this.watchGeneration = '1';
       return true;
     }
     return this.synchronizeConversationWatch(this.socket);
   }
 
   unwatchConversation(conversationId = this.watchedConversationId): void {
-    if (!conversationId || this.watchedConversationId !== conversationId)
-      return;
+    if (!conversationId || this.watchedConversationId !== conversationId) return;
     const generation = this.watchGeneration;
     if (this.socket?.connected && generation) {
       if (this.typingActive || this.typingRequested) {
-        void this.socket.timeout(5_000).emitWithAck("conversation.typing.v1", {
+        void this.socket.timeout(5_000).emitWithAck('conversation.typing.v1', {
           conversationId,
           generation,
           isTyping: false,
         });
       }
-      void this.socket.timeout(5_000).emitWithAck("conversation.unwatch.v1", {
+      void this.socket.timeout(5_000).emitWithAck('conversation.unwatch.v1', {
         conversationId,
         generation,
       });
@@ -240,7 +221,7 @@ export class CmsRealtimeClient {
     this.clearTypingRefresh();
     this.clearWatchRenew();
     this.clearWatchRetry();
-    if (this.socket?.connected) this.setState("CONNECTED");
+    if (this.socket?.connected) this.setState('CONNECTED');
   }
 
   async setConversationTyping(isTyping: boolean): Promise<boolean> {
@@ -264,7 +245,7 @@ export class CmsRealtimeClient {
     if (previous && previous !== caseId && this.socket?.connected) {
       void this.socket
         .timeout(5_000)
-        .emitWithAck("support.internal_note.unwatch.v1", { caseId: previous });
+        .emitWithAck('support.internal_note.unwatch.v1', { caseId: previous });
     }
     this.clearInternalNoteWatchRetry();
     this.clearInternalNoteWatchRenew();
@@ -276,9 +257,7 @@ export class CmsRealtimeClient {
   unwatchSupportInternalNotes(caseId = this.watchedInternalNoteCaseId): void {
     if (!caseId || caseId !== this.watchedInternalNoteCaseId) return;
     if (this.socket?.connected) {
-      void this.socket
-        .timeout(5_000)
-        .emitWithAck("support.internal_note.unwatch.v1", { caseId });
+      void this.socket.timeout(5_000).emitWithAck('support.internal_note.unwatch.v1', { caseId });
     }
     this.watchedInternalNoteCaseId = null;
     this.clearInternalNoteWatchRetry();
@@ -302,16 +281,10 @@ export class CmsRealtimeClient {
         return false;
       const desired = this.typingRequested;
       if (this.typingActive === desired) {
-        if (desired)
-          this.scheduleTypingRefresh(socket, conversationId, generation);
+        if (desired) this.scheduleTypingRefresh(socket, conversationId, generation);
         return true;
       }
-      const outcome = await this.emitTyping(
-        socket,
-        conversationId,
-        generation,
-        desired,
-      );
+      const outcome = await this.emitTyping(socket, conversationId, generation, desired);
       if (
         commandGeneration !== this.typingCommandGeneration ||
         socket !== this.socket ||
@@ -319,15 +292,14 @@ export class CmsRealtimeClient {
         generation !== this.watchGeneration
       )
         return false;
-      if (outcome !== "ACCEPTED") {
+      if (outcome !== 'ACCEPTED') {
         this.handleTypingFailure(outcome, socket, conversationId, generation);
         return false;
       }
       this.typingActive = desired;
       if (this.typingRequested !== desired)
         this.scheduleTypingRetry(socket, conversationId, generation, 0);
-      else if (desired)
-        this.scheduleTypingRefresh(socket, conversationId, generation);
+      else if (desired) this.scheduleTypingRefresh(socket, conversationId, generation);
       else this.clearTypingRefresh();
       return this.typingRequested === desired;
     });
@@ -343,9 +315,7 @@ export class CmsRealtimeClient {
     this.registeredSocketEvents.add(eventName);
     this.socket.on(eventName, (value: unknown) => {
       for (const handler of this.subscriptions.get(eventName) ?? []) {
-        void Promise.resolve(handler(value)).catch(() =>
-          this.runReconciliation(),
-        );
+        void Promise.resolve(handler(value)).catch(() => this.runReconciliation());
       }
     });
   }
@@ -365,9 +335,7 @@ export class CmsRealtimeClient {
     this.registeredSocketEvents.clear();
   }
 
-  private async synchronizeInternalNoteWatch(
-    socket: Socket | null,
-  ): Promise<boolean> {
+  private async synchronizeInternalNoteWatch(socket: Socket | null): Promise<boolean> {
     if (!socket?.connected) return false;
     const caseId = this.watchedInternalNoteCaseId;
     if (!caseId) return true;
@@ -375,33 +343,27 @@ export class CmsRealtimeClient {
     try {
       const response: unknown = await socket
         .timeout(5_000)
-        .emitWithAck("support.internal_note.watch.v1", { caseId });
+        .emitWithAck('support.internal_note.watch.v1', { caseId });
       const outcome = this.internalNoteWatchOutcome(response, caseId, false);
-      const accepted = outcome === "ACCEPTED";
-      if (
-        !accepted ||
-        socket !== this.socket ||
-        caseId !== this.watchedInternalNoteCaseId
-      ) {
+      const accepted = outcome === 'ACCEPTED';
+      if (!accepted || socket !== this.socket || caseId !== this.watchedInternalNoteCaseId) {
         if (accepted && socket === this.socket && socket.connected) {
-          void socket
-            .timeout(5_000)
-            .emitWithAck("support.internal_note.unwatch.v1", { caseId });
+          void socket.timeout(5_000).emitWithAck('support.internal_note.unwatch.v1', { caseId });
         }
         if (
-          outcome === "RETRY" &&
+          outcome === 'RETRY' &&
           socket === this.socket &&
           caseId === this.watchedInternalNoteCaseId
         )
           this.scheduleInternalNoteWatchRetry(socket, caseId);
         if (
-          outcome === "TERMINAL" &&
+          outcome === 'TERMINAL' &&
           socket === this.socket &&
           caseId === this.watchedInternalNoteCaseId
         )
           await this.terminateInternalNoteWatch(caseId);
         if (
-          outcome === "DEGRADED" &&
+          outcome === 'DEGRADED' &&
           socket === this.socket &&
           caseId === this.watchedInternalNoteCaseId
         )
@@ -422,18 +384,13 @@ export class CmsRealtimeClient {
     this.clearInternalNoteWatchRetry();
     this.internalNoteWatchRetryTimer = setTimeout(() => {
       this.internalNoteWatchRetryTimer = null;
-      if (
-        socket === this.socket &&
-        socket.connected &&
-        caseId === this.watchedInternalNoteCaseId
-      )
+      if (socket === this.socket && socket.connected && caseId === this.watchedInternalNoteCaseId)
         void this.synchronizeInternalNoteWatch(socket);
     }, 2_000);
   }
 
   private clearInternalNoteWatchRetry(): void {
-    if (this.internalNoteWatchRetryTimer)
-      clearTimeout(this.internalNoteWatchRetryTimer);
+    if (this.internalNoteWatchRetryTimer) clearTimeout(this.internalNoteWatchRetryTimer);
     this.internalNoteWatchRetryTimer = null;
   }
 
@@ -441,16 +398,12 @@ export class CmsRealtimeClient {
     this.clearInternalNoteWatchRenew();
     this.internalNoteWatchRenewTimer = setTimeout(async () => {
       this.internalNoteWatchRenewTimer = null;
-      if (
-        socket !== this.socket ||
-        !socket.connected ||
-        caseId !== this.watchedInternalNoteCaseId
-      )
+      if (socket !== this.socket || !socket.connected || caseId !== this.watchedInternalNoteCaseId)
         return;
       try {
         const response: unknown = await socket
           .timeout(5_000)
-          .emitWithAck("support.internal_note.renew.v1", { caseId });
+          .emitWithAck('support.internal_note.renew.v1', { caseId });
         if (
           socket !== this.socket ||
           !socket.connected ||
@@ -458,19 +411,19 @@ export class CmsRealtimeClient {
         )
           return;
         const outcome = this.internalNoteWatchOutcome(response, caseId, true);
-        if (outcome === "ACCEPTED") {
+        if (outcome === 'ACCEPTED') {
           this.scheduleInternalNoteWatchRenew(socket, caseId);
           return;
         }
-        if (outcome === "RETRY") {
+        if (outcome === 'RETRY') {
           this.scheduleInternalNoteWatchRetry(socket, caseId);
           return;
         }
-        if (outcome === "REWATCH") {
+        if (outcome === 'REWATCH') {
           void this.synchronizeInternalNoteWatch(socket);
           return;
         }
-        if (outcome === "DEGRADED") {
+        if (outcome === 'DEGRADED') {
           await this.degradeInternalNoteWatch(caseId);
           return;
         }
@@ -489,30 +442,30 @@ export class CmsRealtimeClient {
   ): InternalNoteWatchOutcome {
     if (
       response &&
-      typeof response === "object" &&
-      "ok" in response &&
+      typeof response === 'object' &&
+      'ok' in response &&
       response.ok === true &&
-      "caseId" in response &&
+      'caseId' in response &&
       response.caseId === caseId
     )
-      return "ACCEPTED";
+      return 'ACCEPTED';
     const error =
       response &&
-      typeof response === "object" &&
-      "error" in response &&
-      typeof response.error === "string"
+      typeof response === 'object' &&
+      'error' in response &&
+      typeof response.error === 'string'
         ? response.error
         : null;
-    if (error === "BUSY" || error === "RATE_LIMITED") return "RETRY";
-    if (renewing && error === "WATCH_NOT_FOUND") return "REWATCH";
+    if (error === 'BUSY' || error === 'RATE_LIMITED') return 'RETRY';
+    if (renewing && error === 'WATCH_NOT_FOUND') return 'REWATCH';
     if (
-      error === "UNAUTHORIZED" ||
-      error === "CASE_NOT_FOUND_OR_FORBIDDEN" ||
-      error === "WATCH_IDENTITY_INVALID" ||
-      error === "CASE_NOT_FOUND"
+      error === 'UNAUTHORIZED' ||
+      error === 'CASE_NOT_FOUND_OR_FORBIDDEN' ||
+      error === 'WATCH_IDENTITY_INVALID' ||
+      error === 'CASE_NOT_FOUND'
     )
-      return "TERMINAL";
-    return "DEGRADED";
+      return 'TERMINAL';
+    return 'DEGRADED';
   }
 
   private async degradeInternalNoteWatch(caseId: string): Promise<void> {
@@ -537,35 +490,22 @@ export class CmsRealtimeClient {
   }
 
   private clearInternalNoteWatchRenew(): void {
-    if (this.internalNoteWatchRenewTimer)
-      clearTimeout(this.internalNoteWatchRenewTimer);
+    if (this.internalNoteWatchRenewTimer) clearTimeout(this.internalNoteWatchRenewTimer);
     this.internalNoteWatchRenewTimer = null;
   }
 
-  private async synchronizeConversationWatch(
-    socket: Socket | null,
-  ): Promise<boolean> {
+  private async synchronizeConversationWatch(socket: Socket | null): Promise<boolean> {
     if (!socket?.connected) return false;
     this.clearWatchRetry();
-    this.setState("CONNECTING");
+    this.setState('CONNECTING');
     const watchedConversationId = this.watchedConversationId;
-    const joined = await this.emitConversationWatch(
-      socket,
-      watchedConversationId,
-    );
-    if (
-      !joined ||
-      socket !== this.socket ||
-      watchedConversationId !== this.watchedConversationId
-    )
+    const joined = await this.emitConversationWatch(socket, watchedConversationId);
+    if (!joined || socket !== this.socket || watchedConversationId !== this.watchedConversationId)
       return false;
     await this.runReconciliation();
-    if (
-      socket !== this.socket ||
-      watchedConversationId !== this.watchedConversationId
-    )
+    if (socket !== this.socket || watchedConversationId !== this.watchedConversationId)
       return false;
-    this.setState("CONNECTED");
+    this.setState('CONNECTED');
     return true;
   }
 
@@ -577,40 +517,37 @@ export class CmsRealtimeClient {
     try {
       const response: unknown = await socket
         .timeout(5_000)
-        .emitWithAck("conversation.watch.v1", { conversationId });
+        .emitWithAck('conversation.watch.v1', { conversationId });
       const acceptedGeneration =
         !response ||
-        typeof response !== "object" ||
-        !("ok" in response) ||
+        typeof response !== 'object' ||
+        !('ok' in response) ||
         response.ok !== true ||
-        !("generation" in response) ||
-        typeof response.generation !== "string" ||
+        !('generation' in response) ||
+        typeof response.generation !== 'string' ||
         !/^[1-9][0-9]{0,18}$/.test(response.generation)
           ? null
           : response.generation;
       if (!acceptedGeneration) {
         const error =
           response &&
-          typeof response === "object" &&
-          "error" in response &&
-          typeof response.error === "string"
+          typeof response === 'object' &&
+          'error' in response &&
+          typeof response.error === 'string'
             ? response.error
             : null;
-        this.setState("DEGRADED");
+        this.setState('DEGRADED');
         if (
-          (error === "RATE_LIMITED" || error === "COLLABORATION_UNAVAILABLE") &&
+          (error === 'RATE_LIMITED' || error === 'COLLABORATION_UNAVAILABLE') &&
           socket === this.socket &&
           conversationId === this.watchedConversationId
         )
           this.scheduleWatchRetry(socket, conversationId);
         return false;
       }
-      if (
-        socket !== this.socket ||
-        conversationId !== this.watchedConversationId
-      ) {
+      if (socket !== this.socket || conversationId !== this.watchedConversationId) {
         if (socket === this.socket && socket.connected) {
-          void socket.timeout(5_000).emitWithAck("conversation.unwatch.v1", {
+          void socket.timeout(5_000).emitWithAck('conversation.unwatch.v1', {
             conversationId,
             generation: acceptedGeneration,
           });
@@ -619,29 +556,18 @@ export class CmsRealtimeClient {
       }
       this.watchGeneration = acceptedGeneration;
       this.scheduleWatchRenew(socket, conversationId, acceptedGeneration);
-      await this.restoreRequestedTyping(
-        socket,
-        conversationId,
-        acceptedGeneration,
-      );
+      await this.restoreRequestedTyping(socket, conversationId, acceptedGeneration);
       return true;
     } catch {
-      if (
-        socket === this.socket &&
-        conversationId === this.watchedConversationId
-      ) {
-        this.setState("DEGRADED");
+      if (socket === this.socket && conversationId === this.watchedConversationId) {
+        this.setState('DEGRADED');
         this.scheduleWatchRetry(socket, conversationId);
       }
       return false;
     }
   }
 
-  private scheduleWatchRetry(
-    socket: Socket,
-    conversationId: string,
-    delay = 2_000,
-  ): void {
+  private scheduleWatchRetry(socket: Socket, conversationId: string, delay = 2_000): void {
     this.clearWatchRetry();
     this.watchRetryTimer = setTimeout(() => {
       this.watchRetryTimer = null;
@@ -660,11 +586,7 @@ export class CmsRealtimeClient {
     this.watchRetryTimer = null;
   }
 
-  private scheduleWatchRenew(
-    socket: Socket,
-    conversationId: string,
-    generation: string,
-  ): void {
+  private scheduleWatchRenew(socket: Socket, conversationId: string, generation: string): void {
     this.clearWatchRenew();
     this.watchRenewTimer = setTimeout(() => {
       this.watchRenewTimer = null;
@@ -687,19 +609,19 @@ export class CmsRealtimeClient {
     try {
       const response: unknown = await socket
         .timeout(5_000)
-        .emitWithAck("conversation.watch.renew.v1", {
+        .emitWithAck('conversation.watch.renew.v1', {
           conversationId,
           generation,
         });
       if (
         !response ||
-        typeof response !== "object" ||
-        !("ok" in response) ||
+        typeof response !== 'object' ||
+        !('ok' in response) ||
         response.ok !== true ||
-        !("generation" in response) ||
+        !('generation' in response) ||
         response.generation !== generation
       )
-        throw new Error("Watch renewal rejected");
+        throw new Error('Watch renewal rejected');
       this.scheduleWatchRenew(socket, conversationId, generation);
     } catch {
       if (
@@ -711,7 +633,7 @@ export class CmsRealtimeClient {
         this.typingActive = false;
         this.typingCommandGeneration += 1;
         this.clearTypingRefresh();
-        this.setState("DEGRADED");
+        this.setState('DEGRADED');
         this.scheduleWatchRetry(socket, conversationId);
       }
     }
@@ -729,68 +651,63 @@ export class CmsRealtimeClient {
     isTyping: boolean,
   ): Promise<TypingCommandOutcome> {
     try {
-      const response: unknown = await socket
-        .timeout(5_000)
-        .emitWithAck("conversation.typing.v1", {
-          conversationId,
-          generation,
-          isTyping,
-        });
+      const response: unknown = await socket.timeout(5_000).emitWithAck('conversation.typing.v1', {
+        conversationId,
+        generation,
+        isTyping,
+      });
       if (
         response &&
-        typeof response === "object" &&
-        "ok" in response &&
+        typeof response === 'object' &&
+        'ok' in response &&
         response.ok === true &&
-        "generation" in response &&
+        'generation' in response &&
         response.generation === generation
       )
-        return "ACCEPTED";
+        return 'ACCEPTED';
       const error =
         response &&
-        typeof response === "object" &&
-        "error" in response &&
-        typeof response.error === "string"
+        typeof response === 'object' &&
+        'error' in response &&
+        typeof response.error === 'string'
           ? response.error
           : null;
       if (
-        error === "RATE_LIMITED" ||
-        error === "TYPING_RATE_LIMITED" ||
-        error === "COLLABORATION_UNAVAILABLE"
+        error === 'RATE_LIMITED' ||
+        error === 'TYPING_RATE_LIMITED' ||
+        error === 'COLLABORATION_UNAVAILABLE'
       )
-        return "RETRY";
+        return 'RETRY';
       if (
-        error === "WATCH_NOT_FOUND" ||
-        error === "WATCH_GENERATION_STALE" ||
-        error === "TYPING_GENERATION_STALE" ||
-        (response &&
-          typeof response === "object" &&
-          "ok" in response &&
-          response.ok === true)
+        error === 'WATCH_NOT_FOUND' ||
+        error === 'WATCH_GENERATION_STALE' ||
+        error === 'TYPING_GENERATION_STALE' ||
+        (response && typeof response === 'object' && 'ok' in response && response.ok === true)
       )
-        return "REWATCH";
-      return "TERMINAL";
+        return 'REWATCH';
+      return 'TERMINAL';
     } catch {
-      return "RETRY";
+      return 'RETRY';
     }
   }
 
   private handleTypingFailure(
-    outcome: Exclude<TypingCommandOutcome, "ACCEPTED">,
+    outcome: Exclude<TypingCommandOutcome, 'ACCEPTED'>,
     socket: Socket,
     conversationId: string,
     generation: string,
   ): void {
-    if (outcome === "RETRY") {
+    if (outcome === 'RETRY') {
       this.scheduleTypingRetry(socket, conversationId, generation);
       return;
     }
-    if (outcome === "REWATCH") {
+    if (outcome === 'REWATCH') {
       this.watchGeneration = null;
       this.typingActive = false;
       this.typingCommandGeneration += 1;
       this.clearTypingRefresh();
       this.clearWatchRenew();
-      this.setState("DEGRADED");
+      this.setState('DEGRADED');
       this.scheduleWatchRetry(socket, conversationId, 0);
       return;
     }
@@ -798,11 +715,7 @@ export class CmsRealtimeClient {
     void this.runReconciliation();
   }
 
-  private scheduleTypingRefresh(
-    socket: Socket,
-    conversationId: string,
-    generation: string,
-  ): void {
+  private scheduleTypingRefresh(socket: Socket, conversationId: string, generation: string): void {
     this.clearTypingRefresh();
     this.typingRefreshTimer = setTimeout(async () => {
       this.typingRefreshTimer = null;
@@ -813,14 +726,8 @@ export class CmsRealtimeClient {
         generation !== this.watchGeneration
       )
         return;
-      const outcome = await this.emitTyping(
-        socket,
-        conversationId,
-        generation,
-        true,
-      );
-      if (outcome === "ACCEPTED")
-        this.scheduleTypingRefresh(socket, conversationId, generation);
+      const outcome = await this.emitTyping(socket, conversationId, generation, true);
+      if (outcome === 'ACCEPTED') this.scheduleTypingRefresh(socket, conversationId, generation);
       else {
         this.typingActive = false;
         this.handleTypingFailure(outcome, socket, conversationId, generation);
@@ -862,10 +769,7 @@ export class CmsRealtimeClient {
   }
 
   revokeConversationWatch(conversationId: string, generation: string): boolean {
-    if (
-      conversationId !== this.watchedConversationId ||
-      generation !== this.watchGeneration
-    )
+    if (conversationId !== this.watchedConversationId || generation !== this.watchGeneration)
       return false;
     this.watchedConversationId = null;
     this.watchGeneration = null;
@@ -875,7 +779,7 @@ export class CmsRealtimeClient {
     this.clearTypingRefresh();
     this.clearWatchRenew();
     this.clearWatchRetry();
-    this.setState("DEGRADED");
+    this.setState('DEGRADED');
     return true;
   }
 
@@ -885,9 +789,7 @@ export class CmsRealtimeClient {
         do {
           this.reconciliationRequested = false;
           await Promise.allSettled(
-            [...this.reconciliationHandlers].map((handler) =>
-              Promise.resolve(handler()),
-            ),
+            [...this.reconciliationHandlers].map((handler) => Promise.resolve(handler())),
           );
         } while (this.reconciliationRequested);
       })().finally(() => {
@@ -899,10 +801,7 @@ export class CmsRealtimeClient {
     return this.reconciliation;
   }
 
-  private async acknowledge(
-    eventId: string,
-    callbacks: CmsRealtimeCallbacks,
-  ): Promise<void> {
+  private async acknowledge(eventId: string, callbacks: CmsRealtimeCallbacks): Promise<void> {
     const projectId = this.projectId;
     if (!projectId) return;
     if (this.socket?.connected) {

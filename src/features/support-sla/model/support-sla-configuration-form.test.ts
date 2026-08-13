@@ -1,15 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 import {
   createEmptySupportSlaConfigurationForm,
   createSupportSlaConfigurationForm,
   serializeSupportSlaConfiguration,
-} from "./support-sla-configuration-form";
+} from './support-sla-configuration-form';
 
-describe("Support SLA configuration form", () => {
-  it("splits an overnight interval into adjacent ISO weekdays", () => {
+describe('Support SLA configuration form', () => {
+  it('splits an overnight interval into adjacent ISO weekdays', () => {
     const form = createEmptySupportSlaConfigurationForm();
-    form.timeZone = "Europe/Madrid";
-    form.weekly[0]!.intervals.push({ id: "monday-night", start: "22:00", end: "02:00" });
+    form.timeZone = 'Europe/Madrid';
+    form.weekly[0]!.intervals.push({ id: 'monday-night', start: '22:00', end: '02:00' });
     form.rules[0]!.atRiskRemainingPercent = 20;
     form.rules[0]!.targetsMinutes = {
       firstHumanResponse: 60,
@@ -31,11 +31,11 @@ describe("Support SLA configuration form", () => {
     ]);
   });
 
-  it("rejects an invalid timezone and a conditioned fallback rule", () => {
+  it('rejects an invalid timezone and a conditioned fallback rule', () => {
     const form = createEmptySupportSlaConfigurationForm();
-    form.timeZone = "Madrid local time";
-    form.weekly[0]!.intervals.push({ id: "workday", start: "09:00", end: "18:00" });
-    form.rules[0]!.priorities = ["URGENT"];
+    form.timeZone = 'Madrid local time';
+    form.weekly[0]!.intervals.push({ id: 'workday', start: '09:00', end: '18:00' });
+    form.rules[0]!.priorities = ['URGENT'];
     form.rules[0]!.atRiskRemainingPercent = 20;
     form.rules[0]!.targetsMinutes = {
       firstHumanResponse: 60,
@@ -47,21 +47,21 @@ describe("Support SLA configuration form", () => {
 
     expect(result.configuration).toBeNull();
     expect(result.issues.map((issue) => issue.code)).toEqual(
-      expect.arrayContaining(["TIME_ZONE_INVALID", "FALLBACK_CONDITIONED"]),
+      expect.arrayContaining(['TIME_ZONE_INVALID', 'FALLBACK_CONDITIONED']),
     );
   });
 
-  it("hydrates a published configuration without sharing mutable arrays", () => {
+  it('hydrates a published configuration without sharing mutable arrays', () => {
     const configuration = {
       calendar: {
-        timeZone: "Europe/Madrid",
+        timeZone: 'Europe/Madrid',
         weekly: [{ isoWeekday: 1, intervals: [{ startMinute: 540, endMinute: 1080 }] }],
-        exceptions: [{ localDate: "2026-12-25", intervals: [] }],
+        exceptions: [{ localDate: '2026-12-25', intervals: [] }],
       },
       policy: {
         rules: [
           {
-            code: "DEFAULT",
+            code: 'DEFAULT',
             order: 0,
             when: {},
             targets: {
@@ -72,8 +72,8 @@ describe("Support SLA configuration form", () => {
             atRiskRemainingPercent: 25,
             pause: {
               firstHumanResponseStatuses: [],
-              nextHumanResponseStatuses: ["WAITING_END_USER" as const],
-              resolutionStatuses: ["WAITING_SYSTEM" as const],
+              nextHumanResponseStatuses: ['WAITING_END_USER' as const],
+              resolutionStatuses: ['WAITING_SYSTEM' as const],
             },
           },
         ],
@@ -81,7 +81,7 @@ describe("Support SLA configuration form", () => {
     };
 
     const form = createSupportSlaConfigurationForm(configuration);
-    form.weekly[0]!.intervals[0]!.start = "10:00";
+    form.weekly[0]!.intervals[0]!.start = '10:00';
 
     expect(configuration.calendar.weekly[0]!.intervals[0]!.startMinute).toBe(540);
     expect(form.rules[0]!.targetsMinutes).toEqual({
@@ -89,6 +89,6 @@ describe("Support SLA configuration form", () => {
       nextHumanResponse: 120,
       resolution: 480,
     });
-    expect(form.exceptions[0]).toMatchObject({ localDate: "2026-12-25", intervals: [] });
+    expect(form.exceptions[0]).toMatchObject({ localDate: '2026-12-25', intervals: [] });
   });
 });

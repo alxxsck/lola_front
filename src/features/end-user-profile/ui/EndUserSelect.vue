@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { endUserProfileRepository } from "@/features/end-user-profile/api/end-user-profile-repository";
-import { repository } from "@/shared/api/repository";
-import { isMockMode } from "@/shared/config/data-mode";
-import { paginateByCursor } from "@/shared/lib/paged-search";
+import { ref, watch } from 'vue';
+import { endUserProfileRepository } from '@/features/end-user-profile/api/end-user-profile-repository';
+import { repository } from '@/shared/api/repository';
+import { isMockMode } from '@/shared/config/data-mode';
+import { paginateByCursor } from '@/shared/lib/paged-search';
 import PagedSearchSelect, {
   type PagedSearchOption,
   type PagedSearchPage,
   type PagedSearchRequest,
-} from "@/shared/ui/PagedSearchSelect.vue";
+} from '@/shared/ui/PagedSearchSelect.vue';
 
 const props = defineProps<{
   projectId: string;
@@ -17,7 +17,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "update:modelValue": [value: string];
+  'update:modelValue': [value: string];
 }>();
 const selectedOption = ref<PagedSearchOption>();
 
@@ -70,10 +70,9 @@ async function loadMock(input: PagedSearchRequest): Promise<PagedSearchPage> {
   const response = await repository.getUsersPage(props.projectId, {
     limit: 100,
   });
-  const query = input.query.toLocaleLowerCase("ru-RU");
+  const query = input.query.toLocaleLowerCase('ru-RU');
   const filtered = response.items.filter(
-    (user) =>
-      !query || user.externalId.toLocaleLowerCase("ru-RU").includes(query),
+    (user) => !query || user.externalId.toLocaleLowerCase('ru-RU').includes(query),
   );
   const page = paginateByCursor(filtered, input.cursor, input.limit);
   return {

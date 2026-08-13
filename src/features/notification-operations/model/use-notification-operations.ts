@@ -1,8 +1,8 @@
-import { computed, ref } from "vue";
+import { computed, ref } from 'vue';
 import type {
   NotificationOperationsApi,
   NotificationOperationsCommandOptions,
-} from "../api/notification-operations.api";
+} from '../api/notification-operations.api';
 import {
   canQuarantineNotificationIntegration,
   canReplayNotificationDelivery,
@@ -14,7 +14,7 @@ import {
   type NotificationOperationsPermissions,
   type NotificationOperationsQuarantineReason,
   type NotificationOperationsSafeError,
-} from "./notification-operations";
+} from './notification-operations';
 
 export interface NotificationOperationsContext {
   authorityKey: string;
@@ -28,15 +28,15 @@ interface MutationIntent {
 }
 
 const EMPTY_FILTERS: NotificationOperationsFilters = {
-  projectId: "",
-  channel: "",
-  status: "",
-  integrationKind: "",
-  integrationStatus: "",
+  projectId: '',
+  channel: '',
+  status: '',
+  integrationKind: '',
+  integrationStatus: '',
 };
 
 const EMPTY_CONTEXT: NotificationOperationsContext = {
-  authorityKey: "",
+  authorityKey: '',
   permissions: { read: false, operate: false },
 };
 
@@ -55,9 +55,9 @@ export function createNotificationOperationsController(options: {
   const integrationsLoading = ref(false);
   const mutating = ref(false);
   const error = ref<NotificationOperationsSafeError | null>(null);
-  const notice = ref("");
+  const notice = ref('');
   const retryAvailable = computed(() =>
-    Boolean(mutationIntent && error.value?.kind === "AMBIGUOUS"),
+    Boolean(mutationIntent && error.value?.kind === 'AMBIGUOUS'),
   );
   const controllers = new Set<AbortController>();
   let context = EMPTY_CONTEXT;
@@ -69,15 +69,10 @@ export function createNotificationOperationsController(options: {
   let integrationRequestSequence = 0;
 
   function readable(snapshot = context): boolean {
-    return (
-      !disposed && Boolean(snapshot.authorityKey) && snapshot.permissions.read
-    );
+    return !disposed && Boolean(snapshot.authorityKey) && snapshot.permissions.read;
   }
 
-  function current(
-    snapshot: NotificationOperationsContext,
-    operationGeneration: number,
-  ): boolean {
+  function current(snapshot: NotificationOperationsContext, operationGeneration: number): boolean {
     return (
       readable(snapshot) &&
       readable() &&
@@ -94,20 +89,15 @@ export function createNotificationOperationsController(options: {
     requestSequence: number,
     latestRequestSequence: number,
   ): boolean {
-    return (
-      requestSequence === latestRequestSequence &&
-      current(snapshot, operationGeneration)
-    );
+    return requestSequence === latestRequestSequence && current(snapshot, operationGeneration);
   }
 
   function requestController(): AbortController {
     const controller = new AbortController();
     controllers.add(controller);
-    controller.signal.addEventListener(
-      "abort",
-      () => controllers.delete(controller),
-      { once: true },
-    );
+    controller.signal.addEventListener('abort', () => controllers.delete(controller), {
+      once: true,
+    });
     return controller;
   }
 
@@ -132,7 +122,7 @@ export function createNotificationOperationsController(options: {
     integrationsLoading.value = false;
     mutating.value = false;
     error.value = null;
-    notice.value = "";
+    notice.value = '';
     mutationIntent = null;
   }
 
@@ -163,7 +153,7 @@ export function createNotificationOperationsController(options: {
   ): void {
     if (!current(snapshot, operationGeneration)) return;
     const safeError = safeNotificationOperationsError(cause);
-    if (safeError.kind === "FORBIDDEN") scrub(safeError);
+    if (safeError.kind === 'FORBIDDEN') scrub(safeError);
     else error.value = safeError;
   }
 
@@ -176,38 +166,17 @@ export function createNotificationOperationsController(options: {
     healthLoading.value = true;
     try {
       const value = await options.api.health({ signal: controller.signal });
-      if (
-        !currentRequest(
-          snapshot,
-          operationGeneration,
-          requestSequence,
-          healthRequestSequence,
-        )
-      )
+      if (!currentRequest(snapshot, operationGeneration, requestSequence, healthRequestSequence))
         return false;
       health.value = value;
       return true;
     } catch (cause) {
-      if (
-        currentRequest(
-          snapshot,
-          operationGeneration,
-          requestSequence,
-          healthRequestSequence,
-        )
-      )
+      if (currentRequest(snapshot, operationGeneration, requestSequence, healthRequestSequence))
         handleReadError(cause, snapshot, operationGeneration);
       return false;
     } finally {
       finishController(controller);
-      if (
-        currentRequest(
-          snapshot,
-          operationGeneration,
-          requestSequence,
-          healthRequestSequence,
-        )
-      )
+      if (currentRequest(snapshot, operationGeneration, requestSequence, healthRequestSequence))
         healthLoading.value = false;
     }
   }
@@ -215,8 +184,7 @@ export function createNotificationOperationsController(options: {
   async function loadDeliveries(append = false): Promise<boolean> {
     const snapshot = context;
     const operationGeneration = generation;
-    if (!readable(snapshot) || (append && !nextDeliveryCursor.value))
-      return false;
+    if (!readable(snapshot) || (append && !nextDeliveryCursor.value)) return false;
     const requestSequence = ++deliveryRequestSequence;
     const requestFilters = { ...filters.value };
     const requestCursor = append ? nextDeliveryCursor.value : null;
@@ -226,14 +194,7 @@ export function createNotificationOperationsController(options: {
       const page = await options.api.deliveries(requestFilters, requestCursor, {
         signal: controller.signal,
       });
-      if (
-        !currentRequest(
-          snapshot,
-          operationGeneration,
-          requestSequence,
-          deliveryRequestSequence,
-        )
-      )
+      if (!currentRequest(snapshot, operationGeneration, requestSequence, deliveryRequestSequence))
         return false;
       deliveries.value = append
         ? mergeBy(deliveries.value, page.items, (item) => item.id)
@@ -241,26 +202,12 @@ export function createNotificationOperationsController(options: {
       nextDeliveryCursor.value = page.nextCursor;
       return true;
     } catch (cause) {
-      if (
-        currentRequest(
-          snapshot,
-          operationGeneration,
-          requestSequence,
-          deliveryRequestSequence,
-        )
-      )
+      if (currentRequest(snapshot, operationGeneration, requestSequence, deliveryRequestSequence))
         handleReadError(cause, snapshot, operationGeneration);
       return false;
     } finally {
       finishController(controller);
-      if (
-        currentRequest(
-          snapshot,
-          operationGeneration,
-          requestSequence,
-          deliveryRequestSequence,
-        )
-      )
+      if (currentRequest(snapshot, operationGeneration, requestSequence, deliveryRequestSequence))
         deliveriesLoading.value = false;
     }
   }
@@ -268,57 +215,35 @@ export function createNotificationOperationsController(options: {
   async function loadIntegrations(append = false): Promise<boolean> {
     const snapshot = context;
     const operationGeneration = generation;
-    if (!readable(snapshot) || (append && !nextIntegrationCursor.value))
-      return false;
+    if (!readable(snapshot) || (append && !nextIntegrationCursor.value)) return false;
     const requestSequence = ++integrationRequestSequence;
     const requestFilters = { ...filters.value };
     const requestCursor = append ? nextIntegrationCursor.value : null;
     const controller = requestController();
     integrationsLoading.value = true;
     try {
-      const page = await options.api.integrations(
-        requestFilters,
-        requestCursor,
-        { signal: controller.signal },
-      );
+      const page = await options.api.integrations(requestFilters, requestCursor, {
+        signal: controller.signal,
+      });
       if (
-        !currentRequest(
-          snapshot,
-          operationGeneration,
-          requestSequence,
-          integrationRequestSequence,
-        )
+        !currentRequest(snapshot, operationGeneration, requestSequence, integrationRequestSequence)
       )
         return false;
       integrations.value = append
-        ? mergeBy(
-            integrations.value,
-            page.items,
-            (item) => `${item.kind}:${item.integrationId}`,
-          )
+        ? mergeBy(integrations.value, page.items, (item) => `${item.kind}:${item.integrationId}`)
         : page.items;
       nextIntegrationCursor.value = page.nextCursor;
       return true;
     } catch (cause) {
       if (
-        currentRequest(
-          snapshot,
-          operationGeneration,
-          requestSequence,
-          integrationRequestSequence,
-        )
+        currentRequest(snapshot, operationGeneration, requestSequence, integrationRequestSequence)
       )
         handleReadError(cause, snapshot, operationGeneration);
       return false;
     } finally {
       finishController(controller);
       if (
-        currentRequest(
-          snapshot,
-          operationGeneration,
-          requestSequence,
-          integrationRequestSequence,
-        )
+        currentRequest(snapshot, operationGeneration, requestSequence, integrationRequestSequence)
       )
         integrationsLoading.value = false;
     }
@@ -327,18 +252,12 @@ export function createNotificationOperationsController(options: {
   async function refresh(): Promise<boolean> {
     if (!readable()) return false;
     error.value = null;
-    notice.value = "";
-    const results = await Promise.all([
-      loadHealth(),
-      loadDeliveries(),
-      loadIntegrations(),
-    ]);
+    notice.value = '';
+    const results = await Promise.all([loadHealth(), loadDeliveries(), loadIntegrations()]);
     return results.some(Boolean);
   }
 
-  async function setFilters(
-    next: NotificationOperationsFilters,
-  ): Promise<void> {
+  async function setFilters(next: NotificationOperationsFilters): Promise<void> {
     if (mutating.value) return;
     generation += 1;
     cancelRequests();
@@ -357,7 +276,7 @@ export function createNotificationOperationsController(options: {
     deliveriesLoading.value = false;
     integrationsLoading.value = false;
     error.value = null;
-    notice.value = "";
+    notice.value = '';
     mutationIntent = null;
     await Promise.all([loadDeliveries(), loadIntegrations()]);
   }
@@ -372,7 +291,7 @@ export function createNotificationOperationsController(options: {
       return false;
     mutating.value = true;
     error.value = null;
-    notice.value = "";
+    notice.value = '';
     const controller = requestController();
     try {
       const succeeded = await intent.run({
@@ -385,18 +304,18 @@ export function createNotificationOperationsController(options: {
     } catch (cause) {
       if (intent.generation !== generation) return false;
       const safeError = safeNotificationOperationsError(cause);
-      if (safeError.kind === "FORBIDDEN") {
+      if (safeError.kind === 'FORBIDDEN') {
         scrub(safeError);
         return false;
       }
       error.value = safeError;
-      if (safeError.kind === "AMBIGUOUS") mutationIntent = intent;
+      if (safeError.kind === 'AMBIGUOUS') mutationIntent = intent;
       else {
         if (mutationIntent === intent) mutationIntent = null;
         if (
-          safeError.kind === "CONFLICT" ||
-          safeError.kind === "INVALID_STATE" ||
-          safeError.kind === "NOT_FOUND"
+          safeError.kind === 'CONFLICT' ||
+          safeError.kind === 'INVALID_STATE' ||
+          safeError.kind === 'NOT_FOUND'
         )
           await Promise.all([loadDeliveries(), loadIntegrations()]);
       }
@@ -407,7 +326,7 @@ export function createNotificationOperationsController(options: {
     }
   }
 
-  function intent(run: MutationIntent["run"]): MutationIntent {
+  function intent(run: MutationIntent['run']): MutationIntent {
     return {
       run,
       generation,
@@ -416,15 +335,8 @@ export function createNotificationOperationsController(options: {
   }
 
   async function replayDelivery(deliveryId: string): Promise<boolean> {
-    if (
-      typeof deliveryId !== "string" ||
-      !readable() ||
-      !context.permissions.operate
-    )
-      return false;
-    const currentDelivery = deliveries.value.find(
-      (item) => item.id === deliveryId,
-    );
+    if (typeof deliveryId !== 'string' || !readable() || !context.permissions.operate) return false;
+    const currentDelivery = deliveries.value.find((item) => item.id === deliveryId);
     if (
       !currentDelivery ||
       !Number.isSafeInteger(currentDelivery.operationsVersion) ||
@@ -436,11 +348,8 @@ export function createNotificationOperationsController(options: {
     const command = intent(async (commandOptions) => {
       await options.api.replay(delivery, commandOptions);
       if (command.generation !== generation) return false;
-      deliveries.value = deliveries.value.filter(
-        (item) => item.id !== delivery.id,
-      );
-      notice.value =
-        "Доставка возвращена в очередь без создания второй business delivery.";
+      deliveries.value = deliveries.value.filter((item) => item.id !== delivery.id);
+      notice.value = 'Доставка возвращена в очередь без создания второй business delivery.';
       void loadHealth();
       return true;
     });
@@ -453,25 +362,16 @@ export function createNotificationOperationsController(options: {
     reason: NotificationOperationsQuarantineReason,
     confirmation: string,
   ): Promise<boolean> {
-    if (
-      typeof integrationId !== "string" ||
-      !readable() ||
-      !context.permissions.operate
-    )
+    if (typeof integrationId !== 'string' || !readable() || !context.permissions.operate)
       return false;
-    const matches = integrations.value.filter(
-      (item) => item.integrationId === integrationId,
-    );
+    const matches = integrations.value.filter((item) => item.integrationId === integrationId);
     if (matches.length !== 1) return false;
     const currentIntegration = matches[0]!;
     if (
       !Number.isSafeInteger(currentIntegration.version) ||
       currentIntegration.version < 0 ||
       !currentIntegration.maskedIdentity ||
-      !canQuarantineNotificationIntegration(
-        currentIntegration,
-        context.permissions,
-      ) ||
+      !canQuarantineNotificationIntegration(currentIntegration, context.permissions) ||
       confirmation !== currentIntegration.maskedIdentity
     )
       return false;
@@ -484,8 +384,7 @@ export function createNotificationOperationsController(options: {
       );
       if (command.generation !== generation) return false;
       integrations.value = integrations.value.map((item) =>
-        item.integrationId === integration.integrationId &&
-        item.kind === integration.kind
+        item.integrationId === integration.integrationId && item.kind === integration.kind
           ? updated
           : item,
       );
@@ -511,7 +410,7 @@ export function createNotificationOperationsController(options: {
   }
 
   function clearNotice(): void {
-    notice.value = "";
+    notice.value = '';
   }
 
   function dispose(): void {
@@ -550,11 +449,7 @@ export function createNotificationOperationsController(options: {
   };
 }
 
-function mergeBy<T>(
-  current: T[],
-  incoming: T[],
-  key: (item: T) => string,
-): T[] {
+function mergeBy<T>(current: T[], incoming: T[], key: (item: T) => string): T[] {
   const values = new Map(current.map((item) => [key(item), item]));
   for (const item of incoming) values.set(key(item), item);
   return [...values.values()];

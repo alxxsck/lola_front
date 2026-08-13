@@ -1,51 +1,37 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { supportExternalWorkSource } from "@/features/support-external-work/api/support-external-work-source";
-import { createSupportExternalInboxController } from "@/features/support-external-work/model/use-support-external-inbox";
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { supportExternalWorkSource } from '@/features/support-external-work/api/support-external-work-source';
+import { createSupportExternalInboxController } from '@/features/support-external-work/model/use-support-external-inbox';
 
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 const accessDenied = ref(false);
-const permissions = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
+const permissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
 const canReadInbox = computed(
   () =>
     !accessDenied.value &&
-    hasProjectPermission(
-      permissions.value,
-      "project.support.external_work.inbox_read",
-    ),
+    hasProjectPermission(permissions.value, 'project.support.external_work.inbox_read'),
 );
 const canReadLinked = computed(
   () =>
     !accessDenied.value &&
-    hasProjectPermission(
-      permissions.value,
-      "project.support.external_work.read_linked",
-    ),
+    hasProjectPermission(permissions.value, 'project.support.external_work.read_linked'),
 );
 const canRetry = computed(() =>
-  hasProjectPermission(
-    permissions.value,
-    "project.support.external_work.retry",
-  ),
+  hasProjectPermission(permissions.value, 'project.support.external_work.retry'),
 );
 const canResolveUnknown = computed(() =>
-  hasProjectPermission(
-    permissions.value,
-    "project.support.external_work.resolve_unknown",
-  ),
+  hasProjectPermission(permissions.value, 'project.support.external_work.resolve_unknown'),
 );
 
 const controller = createSupportExternalInboxController(
@@ -69,23 +55,23 @@ const controller = createSupportExternalInboxController(
 );
 
 let reconciliationGeneration = 0;
-let loadedScope = "";
+let loadedScope = '';
 let openedFromQueue = false;
 let disposed = false;
 
 function ownsCurrentRoute(): boolean {
-  return !disposed && route.name === "support-external-work";
+  return !disposed && route.name === 'support-external-work';
 }
 
 function scalarQuery(value: unknown): string | null {
-  return typeof value === "string" && value.length > 0 ? value : null;
+  return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
-function requestedMode(): "ATTENTION" | "LINKED" {
+function requestedMode(): 'ATTENTION' | 'LINKED' {
   const requested = scalarQuery(route.query.mode)?.toLowerCase();
-  if (requested === "linked" && canReadLinked.value) return "LINKED";
-  if (requested === "attention" && canReadInbox.value) return "ATTENTION";
-  return canReadInbox.value ? "ATTENTION" : "LINKED";
+  if (requested === 'linked' && canReadLinked.value) return 'LINKED';
+  if (requested === 'attention' && canReadInbox.value) return 'ATTENTION';
+  return canReadInbox.value ? 'ATTENTION' : 'LINKED';
 }
 
 function canonicalQuery(itemId = scalarQuery(route.query.itemId)) {
@@ -106,16 +92,12 @@ async function reconcileRoute(forceList = false): Promise<void> {
   }
   const expected = canonicalQuery();
   if (JSON.stringify(route.query) !== JSON.stringify(expected)) {
-    await router.replace({ name: "support-external-work", query: expected });
+    await router.replace({ name: 'support-external-work', query: expected });
     if (run !== reconciliationGeneration || !ownsCurrentRoute()) return;
   }
   const nextMode = requestedMode();
-  const scope = `${auth.user?.id ?? ""}\u0000${auth.project?.id ?? ""}\u0000${nextMode}`;
-  if (
-    forceList ||
-    loadedScope !== scope ||
-    controller.mode.value !== nextMode
-  ) {
+  const scope = `${auth.user?.id ?? ''}\u0000${auth.project?.id ?? ''}\u0000${nextMode}`;
+  if (forceList || loadedScope !== scope || controller.mode.value !== nextMode) {
     controller.mode.value = nextMode;
     await controller.load();
     if (run !== reconciliationGeneration || !ownsCurrentRoute()) return;
@@ -126,10 +108,10 @@ async function reconcileRoute(forceList = false): Promise<void> {
   else controller.closeDetail();
 }
 
-async function changeMode(mode: "ATTENTION" | "LINKED"): Promise<void> {
+async function changeMode(mode: 'ATTENTION' | 'LINKED'): Promise<void> {
   openedFromQueue = false;
   await router.push({
-    name: "support-external-work",
+    name: 'support-external-work',
     query: { ...canonicalQuery(null), mode: mode.toLowerCase() },
   });
 }
@@ -137,7 +119,7 @@ async function changeMode(mode: "ATTENTION" | "LINKED"): Promise<void> {
 async function openItem(itemId: string): Promise<void> {
   openedFromQueue = true;
   await router.push({
-    name: "support-external-work",
+    name: 'support-external-work',
     query: { ...canonicalQuery(null), itemId },
   });
 }
@@ -149,7 +131,7 @@ async function closeRoutedDetail(): Promise<void> {
     return;
   }
   await router.replace({
-    name: "support-external-work",
+    name: 'support-external-work',
     query: canonicalQuery(null),
   });
 }
@@ -158,29 +140,25 @@ async function applyFilters(): Promise<void> {
   openedFromQueue = false;
   if (route.query.itemId)
     await router.replace({
-      name: "support-external-work",
+      name: 'support-external-work',
       query: canonicalQuery(null),
     });
   await reconcileRoute(true);
 }
 
-async function changePage(direction: "previous" | "next"): Promise<void> {
+async function changePage(direction: 'previous' | 'next'): Promise<void> {
   openedFromQueue = false;
   if (route.query.itemId)
     await router.replace({
-      name: "support-external-work",
+      name: 'support-external-work',
       query: canonicalQuery(null),
     });
-  if (direction === "previous") await controller.loadPrevious();
+  if (direction === 'previous') await controller.loadPrevious();
   else await controller.loadMore();
 }
 
 watch(
-  () => [
-    auth.user?.id ?? "",
-    auth.project?.id ?? "",
-    [...permissions.value].sort().join(","),
-  ],
+  () => [auth.user?.id ?? '', auth.project?.id ?? '', [...permissions.value].sort().join(',')],
   () => {
     accessDenied.value = false;
     if (!canReadInbox.value && !canReadLinked.value) {
@@ -189,7 +167,7 @@ watch(
     }
     void reconcileRoute(true);
   },
-  { immediate: true, flush: "sync" },
+  { immediate: true, flush: 'sync' },
 );
 
 watch(
@@ -197,7 +175,7 @@ watch(
   () => {
     if (ownsCurrentRoute()) void reconcileRoute(false);
   },
-  { flush: "sync" },
+  { flush: 'sync' },
 );
 
 onBeforeUnmount(() => {
@@ -207,81 +185,81 @@ onBeforeUnmount(() => {
 });
 
 const providerOptions = [
-  { label: "Все внешние системы", value: "ALL" },
-  { label: "JSM", value: "JSM" },
-  { label: "HelpDesk", value: "HELPDESK" },
+  { label: 'Все внешние системы', value: 'ALL' },
+  { label: 'JSM', value: 'JSM' },
+  { label: 'HelpDesk', value: 'HELPDESK' },
 ];
 const freshnessOptions = [
-  { label: "Любая актуальность", value: "ALL" },
-  { label: "Актуальные", value: "FRESH" },
-  { label: "Устаревшие", value: "STALE" },
-  { label: "Удалены во внешней системе", value: "TOMBSTONED" },
+  { label: 'Любая актуальность', value: 'ALL' },
+  { label: 'Актуальные', value: 'FRESH' },
+  { label: 'Устаревшие', value: 'STALE' },
+  { label: 'Удалены во внешней системе', value: 'TOMBSTONED' },
 ];
 const ageOptions = [
-  { label: "Любой возраст", value: "ALL" },
-  { label: "Последние 24 часа", value: "24H" },
-  { label: "Последние 7 дней", value: "7D" },
+  { label: 'Любой возраст', value: 'ALL' },
+  { label: 'Последние 24 часа', value: '24H' },
+  { label: 'Последние 7 дней', value: '7D' },
 ];
 
 function providerLabel(value: string): string {
-  if (value === "JSM") return "JSM";
-  if (value === "HELPDESK") return "HelpDesk";
-  return "Внешняя система";
+  if (value === 'JSM') return 'JSM';
+  if (value === 'HELPDESK') return 'HelpDesk';
+  return 'Внешняя система';
 }
 
 function freshnessLabel(value: string): string {
   return (
     {
-      FRESH: "Актуально",
-      STALE: "Требует сверки",
-      TOMBSTONED: "Удалено во внешней системе",
-    }[value] ?? "Состояние не распознано"
+      FRESH: 'Актуально',
+      STALE: 'Требует сверки',
+      TOMBSTONED: 'Удалено во внешней системе',
+    }[value] ?? 'Состояние не распознано'
   );
 }
 
 function freshnessSeverity(value: string) {
-  if (value === "FRESH") return "success";
-  if (value === "STALE") return "warn";
-  return "danger";
+  if (value === 'FRESH') return 'success';
+  if (value === 'STALE') return 'warn';
+  return 'danger';
 }
 
 function commandStatus(value: string): string {
   return (
     {
-      QUEUED: "В очереди",
-      CLAIMED: "Отправляется",
-      RETRYING: "Повтор",
-      SUCCEEDED: "Создано",
-      FAILED: "Требует внимания",
-      UNKNOWN: "Результат неизвестен",
-      CANCELLED: "Отменено",
-    }[value] ?? "Состояние команды не распознано"
+      QUEUED: 'В очереди',
+      CLAIMED: 'Отправляется',
+      RETRYING: 'Повтор',
+      SUCCEEDED: 'Создано',
+      FAILED: 'Требует внимания',
+      UNKNOWN: 'Результат неизвестен',
+      CANCELLED: 'Отменено',
+    }[value] ?? 'Состояние команды не распознано'
   );
 }
 
 function commandSeverity(value: string) {
-  if (value === "SUCCEEDED") return "success";
-  if (value === "UNKNOWN" || value === "FAILED") return "warn";
-  if (value === "CANCELLED") return "danger";
-  return "info";
+  if (value === 'SUCCEEDED') return 'success';
+  if (value === 'UNKNOWN' || value === 'FAILED') return 'warn';
+  if (value === 'CANCELLED') return 'danger';
+  return 'info';
 }
 
 function commandIntent(value: string): string {
   return (
     {
-      CREATE: "Создание",
-      COMMENT: "Комментарий",
-      REFRESH: "Сверка данных",
-      UNLINK: "Удаление связи",
-    }[value] ?? "Команда"
+      CREATE: 'Создание',
+      COMMENT: 'Комментарий',
+      REFRESH: 'Сверка данных',
+      UNLINK: 'Удаление связи',
+    }[value] ?? 'Команда'
   );
 }
 
 function formatTime(value: string | null | undefined): string {
-  if (!value) return "Не подтверждено";
-  return new Intl.DateTimeFormat("ru", {
-    dateStyle: "medium",
-    timeStyle: "short",
+  if (!value) return 'Не подтверждено';
+  return new Intl.DateTimeFormat('ru', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
   }).format(new Date(value));
 }
 
@@ -289,7 +267,7 @@ function safeRemoteUrl(value: string | null): string | null {
   if (!value) return null;
   try {
     const url = new URL(value);
-    return url.protocol === "https:" ? url.toString() : null;
+    return url.protocol === 'https:' ? url.toString() : null;
   } catch {
     return null;
   }
@@ -306,8 +284,8 @@ function safeRemoteUrl(value: string | null): string | null {
         <span class="kicker">Поддержка · Восстановление</span>
         <h1>Внешние задачи</h1>
         <p>
-          Очередь JSM и HelpDesk. Данные внешней системы помогают восстановить
-          работу, но не изменяют само обращение в Lola.
+          Очередь JSM и HelpDesk. Данные внешней системы помогают восстановить работу, но не
+          изменяют само обращение в Lola.
         </p>
       </div>
       <Button
@@ -320,11 +298,7 @@ function safeRemoteUrl(value: string | null): string | null {
       />
     </header>
 
-    <Message
-      v-if="!canReadInbox && !canReadLinked"
-      severity="warn"
-      :closable="false"
-    >
+    <Message v-if="!canReadInbox && !canReadLinked" severity="warn" :closable="false">
       В этом проекте у вас нет доступа к внешним задачам.
     </Message>
     <template v-else>
@@ -359,8 +333,7 @@ function safeRemoteUrl(value: string | null): string | null {
           :aria-pressed="controller.mode.value === 'ATTENTION'"
           @click="changeMode('ATTENTION')"
         >
-          <i class="pi pi-inbox" aria-hidden="true"></i
-          ><span>Требует внимания</span>
+          <i class="pi pi-inbox" aria-hidden="true"></i><span>Требует внимания</span>
         </button>
         <button
           v-if="canReadLinked"
@@ -369,8 +342,7 @@ function safeRemoteUrl(value: string | null): string | null {
           :aria-pressed="controller.mode.value === 'LINKED'"
           @click="changeMode('LINKED')"
         >
-          <i class="pi pi-link" aria-hidden="true"></i
-          ><span>Связанные объекты</span>
+          <i class="pi pi-link" aria-hidden="true"></i><span>Связанные объекты</span>
         </button>
       </div>
 
@@ -404,36 +376,23 @@ function safeRemoteUrl(value: string | null): string | null {
           option-value="value"
           aria-label="Возраст объекта"
         />
-        <Button
-          label="Применить"
-          severity="secondary"
-          outlined
-          @click="applyFilters"
-        />
+        <Button label="Применить" severity="secondary" outlined @click="applyFilters" />
       </section>
 
       <section class="recovery-workbench">
         <div class="master-pane" aria-label="Очередь внешних задач">
           <div class="pane-heading">
             <span>{{
-              controller.mode.value === "ATTENTION"
-                ? "Очередь на проверку"
-                : "Связанные задачи"
+              controller.mode.value === 'ATTENTION' ? 'Очередь на проверку' : 'Связанные задачи'
             }}</span
-            ><strong class="tabular">{{
-              controller.items.value.length
-            }}</strong>
+            ><strong class="tabular">{{ controller.items.value.length }}</strong>
           </div>
           <div
             v-if="controller.loading.value"
             class="item-list item-list--loading"
             aria-label="Загрузка внешних задач"
           >
-            <article
-              v-for="index in 4"
-              :key="index"
-              class="work-item work-item--skeleton"
-            >
+            <article v-for="index in 4" :key="index" class="work-item work-item--skeleton">
               <Skeleton width="4.5rem" height=".75rem" /><Skeleton
                 width="88%"
                 height="1rem"
@@ -448,8 +407,7 @@ function safeRemoteUrl(value: string | null): string | null {
               type="button"
               class="work-item"
               :class="{
-                'work-item--selected':
-                  controller.selectedItemId.value === item.itemId,
+                'work-item--selected': controller.selectedItemId.value === item.itemId,
               }"
               :aria-pressed="controller.selectedItemId.value === item.itemId"
               @click="openItem(item.itemId)"
@@ -461,18 +419,14 @@ function safeRemoteUrl(value: string | null): string | null {
                   :value="freshnessLabel(item.freshness)"
                   :severity="freshnessSeverity(item.freshness)"
               /></span>
-              <span class="item-summary">{{
-                item.summary ?? "Без описания"
-              }}</span>
+              <span class="item-summary">{{ item.summary ?? 'Без описания' }}</span>
               <span class="item-foot"
-                ><small>{{ item.status ?? "Статус не указан" }}</small
+                ><small>{{ item.status ?? 'Статус не указан' }}</small
                 ><small>{{ formatTime(item.lastRefreshedAt) }}</small></span
               >
             </button>
             <div
-              v-if="
-                controller.pageIndex.value > 0 || controller.nextCursor.value
-              "
+              v-if="controller.pageIndex.value > 0 || controller.nextCursor.value"
               class="pagination-row"
               aria-label="Страницы внешних задач"
             >
@@ -480,9 +434,7 @@ function safeRemoteUrl(value: string | null): string | null {
                 label="Назад"
                 severity="secondary"
                 outlined
-                :disabled="
-                  controller.loading.value || controller.pageIndex.value === 0
-                "
+                :disabled="controller.loading.value || controller.pageIndex.value === 0"
                 @click="changePage('previous')"
               />
               <span>Страница {{ controller.pageIndex.value + 1 }}</span>
@@ -490,16 +442,13 @@ function safeRemoteUrl(value: string | null): string | null {
                 label="Дальше"
                 severity="secondary"
                 outlined
-                :disabled="
-                  controller.loading.value || !controller.nextCursor.value
-                "
+                :disabled="controller.loading.value || !controller.nextCursor.value"
                 @click="changePage('next')"
               />
             </div>
           </div>
           <div v-else class="empty-state">
-            <i class="pi pi-check-circle" aria-hidden="true"></i
-            ><strong>Очередь пуста</strong>
+            <i class="pi pi-check-circle" aria-hidden="true"></i><strong>Очередь пуста</strong>
             <p>Нет задач, подходящих под выбранные фильтры.</p>
           </div>
         </div>
@@ -514,21 +463,14 @@ function safeRemoteUrl(value: string | null): string | null {
             <Skeleton width="7rem" height=".8rem" /><Skeleton
               width="80%"
               height="1.4rem"
-            /><Skeleton width="100%" height="7rem" /><Skeleton
-              width="100%"
-              height="10rem"
-            />
+            /><Skeleton width="100%" height="7rem" /><Skeleton width="100%" height="10rem" />
           </div>
           <article
             v-else-if="controller.detail.value"
             :key="controller.detail.value.itemId"
             class="detail-pane"
           >
-            <button
-              class="mobile-back"
-              type="button"
-              @click="closeRoutedDetail"
-            >
+            <button class="mobile-back" type="button" @click="closeRoutedDetail">
               ← К очереди
             </button>
             <header class="detail-heading">
@@ -536,12 +478,11 @@ function safeRemoteUrl(value: string | null): string | null {
                 <span class="kicker"
                   >{{ providerLabel(controller.detail.value.provider) }} ·
                   {{
-                    controller.detail.value.remoteKey ??
-                    controller.detail.value.remoteItemId
+                    controller.detail.value.remoteKey ?? controller.detail.value.remoteItemId
                   }}</span
                 >
                 <h2>
-                  {{ controller.detail.value.summary ?? "Внешняя задача" }}
+                  {{ controller.detail.value.summary ?? 'Внешняя задача' }}
                 </h2>
               </div>
               <Tag
@@ -556,26 +497,20 @@ function safeRemoteUrl(value: string | null): string | null {
               </div>
               <div>
                 <span>Статус во внешней системе</span
-                ><strong>{{
-                  controller.detail.value.status ?? "Не указан"
-                }}</strong>
+                ><strong>{{ controller.detail.value.status ?? 'Не указан' }}</strong>
               </div>
               <div>
                 <span>Последняя сверка</span
-                ><strong>{{
-                  formatTime(controller.detail.value.lastRefreshedAt)
-                }}</strong>
+                ><strong>{{ formatTime(controller.detail.value.lastRefreshedAt) }}</strong>
               </div>
               <div>
                 <span>Следующее действие</span
                 ><strong>{{
-                  controller.detail.value.allowedActions.includes("REFRESH")
-                    ? "Сверить с внешней системой"
-                    : controller.commands.value.some(
-                          (command) => command.status === "UNKNOWN",
-                        )
-                      ? "Проверить результат"
-                      : "Наблюдать"
+                  controller.detail.value.allowedActions.includes('REFRESH')
+                    ? 'Сверить с внешней системой'
+                    : controller.commands.value.some((command) => command.status === 'UNKNOWN')
+                      ? 'Проверить результат'
+                      : 'Наблюдать'
                 }}</strong>
               </div>
             </div>
@@ -586,12 +521,10 @@ function safeRemoteUrl(value: string | null): string | null {
                 target="_blank"
                 rel="noopener noreferrer"
                 class="remote-link"
-                ><i class="pi pi-external-link" aria-hidden="true"></i>Открыть
-                во внешней системе</a
+                ><i class="pi pi-external-link" aria-hidden="true"></i>Открыть во внешней системе</a
               >
               <span v-if="controller.detail.value.link" class="case-link"
-                ><i class="pi pi-link" aria-hidden="true"></i>Связано с
-                обращением</span
+                ><i class="pi pi-link" aria-hidden="true"></i>Связано с обращением</span
               >
             </div>
 
@@ -622,7 +555,7 @@ function safeRemoteUrl(value: string | null): string | null {
                 <dl>
                   <div>
                     <dt>Причина сбоя</dt>
-                    <dd>{{ command.errorCategory ?? "Нет ошибки" }}</dd>
+                    <dd>{{ command.errorCategory ?? 'Нет ошибки' }}</dd>
                   </div>
                   <div>
                     <dt>Следующая попытка</dt>
@@ -638,24 +571,19 @@ function safeRemoteUrl(value: string | null): string | null {
                     @click="controller.retryCommand(command.commandId)"
                   />
                   <Button
-                    v-if="
-                      command.allowedActions.includes('REFRESH_EVIDENCE') &&
-                      canResolveUnknown
-                    "
+                    v-if="command.allowedActions.includes('REFRESH_EVIDENCE') && canResolveUnknown"
                     label="Проверить результат"
                     size="small"
                     severity="secondary"
                     outlined
                     :loading="controller.mutating.value"
-                    @click="
-                      controller.refreshCommandEvidence(command.commandId)
-                    "
+                    @click="controller.refreshCommandEvidence(command.commandId)"
                   />
                   <span
                     v-if="command.allowedActions.includes('RESOLVE_UNKNOWN')"
                     class="manual-note"
-                    >Ручное решение требует отдельного подтверждения во вкладке
-                    «Интеграции» обращения.</span
+                    >Ручное решение требует отдельного подтверждения во вкладке «Интеграции»
+                    обращения.</span
                   >
                 </div>
               </article>
@@ -678,30 +606,19 @@ function safeRemoteUrl(value: string | null): string | null {
                 <small>{{ controller.timeline.value.length }} событий</small>
               </div>
               <ol class="timeline-list">
-                <li
-                  v-for="message in controller.timeline.value"
-                  :key="message.messageId"
-                >
+                <li v-for="message in controller.timeline.value" :key="message.messageId">
                   <span class="timeline-marker" aria-hidden="true"></span>
                   <div>
                     <span class="timeline-meta"
                       ><Tag
-                        :value="
-                          message.audience === 'INTERNAL'
-                            ? 'Для команды'
-                            : 'Для клиента'
-                        "
-                        :severity="
-                          message.audience === 'INTERNAL' ? 'warn' : 'info'
-                        "
-                      /><time>{{
-                        formatTime(message.remoteCreatedAt)
-                      }}</time></span
+                        :value="message.audience === 'INTERNAL' ? 'Для команды' : 'Для клиента'"
+                        :severity="message.audience === 'INTERNAL' ? 'warn' : 'info'"
+                      /><time>{{ formatTime(message.remoteCreatedAt) }}</time></span
                     >
                     <p v-if="message.body">{{ message.body }}</p>
                     <p v-else class="unavailable">
-                      Содержимое недоступно. Сохранены только безопасные
-                      технические сведения о событии.
+                      Содержимое недоступно. Сохранены только безопасные технические сведения о
+                      событии.
                     </p>
                   </div>
                 </li>
@@ -720,9 +637,7 @@ function safeRemoteUrl(value: string | null): string | null {
             <span class="detail-symbol" aria-hidden="true"
               ><i class="pi pi-directions-alt"></i></span
             ><strong>Выберите внешнюю задачу</strong>
-            <p>
-              Здесь появятся её статус, история событий и доступные действия.
-            </p>
+            <p>Здесь появятся её статус, история событий и доступные действия.</p>
           </div>
         </Transition>
       </section>
@@ -795,7 +710,7 @@ function safeRemoteUrl(value: string | null): string | null {
   font-weight: 700;
   cursor: pointer;
 }
-.mode-switch button[aria-pressed="true"] {
+.mode-switch button[aria-pressed='true'] {
   background: var(--surface);
   color: var(--text);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--line) 70%, transparent);
@@ -1082,7 +997,7 @@ function safeRemoteUrl(value: string | null): string | null {
   position: relative;
 }
 .timeline-marker:after {
-  content: "";
+  content: '';
   position: absolute;
   top: 12px;
   left: 3px;

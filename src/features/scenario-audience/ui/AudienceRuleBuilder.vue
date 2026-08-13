@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from "vue";
-import Message from "primevue/message";
-import type { SegmentSummaryResponseDto } from "@/shared/api/repository/scenario-authoring";
+import { computed, nextTick, ref } from 'vue';
+import Message from 'primevue/message';
+import type { SegmentSummaryResponseDto } from '@/shared/api/repository/scenario-authoring';
 import {
   applyAudienceCommand,
   AUDIENCE_LIMITS,
@@ -14,9 +14,9 @@ import {
   type AudienceLeafDraftNode,
   type AudienceLeafInput,
   type AudienceLeafKind,
-} from "../model";
-import AudienceLeafEditor from "./AudienceLeafEditor.vue";
-import AudienceNodeCard from "./AudienceNodeCard.vue";
+} from '../model';
+import AudienceLeafEditor from './AudienceLeafEditor.vue';
+import AudienceNodeCard from './AudienceNodeCard.vue';
 
 const props = defineProps<{
   modelValue: AudienceDraft;
@@ -24,8 +24,8 @@ const props = defineProps<{
   segmentSearch?: (query: string) => Promise<SegmentSummaryResponseDto[]>;
 }>();
 const emit = defineEmits<{
-  "update:modelValue": [draft: AudienceDraft];
-  "editing-dirty": [dirty: boolean];
+  'update:modelValue': [draft: AudienceDraft];
+  'editing-dirty': [dirty: boolean];
 }>();
 const sourceSession = ref<{
   parentNodeId: string;
@@ -38,49 +38,38 @@ const editorSession = ref<{
   parentNodeId?: string;
   opener: HTMLElement;
 } | null>(null);
-const commandError = ref("");
+const commandError = ref('');
 const activeIssue = ref<{ fieldPath?: string; message: string } | null>(null);
 const sourceDialog = ref<HTMLElement | null>(null);
 const searchedSegments = ref<SegmentSummaryResponseDto[]>([]);
 const effectiveContext = computed<AudienceDomainContext>(() => {
-  const segments = new Map(
-    props.context.segments.map((segment) => [segment.segmentId, segment]),
-  );
-  searchedSegments.value.forEach((segment) =>
-    segments.set(segment.segmentId, segment),
-  );
+  const segments = new Map(props.context.segments.map((segment) => [segment.segmentId, segment]));
+  searchedSegments.value.forEach((segment) => segments.set(segment.segmentId, segment));
   return { ...props.context, segments: [...segments.values()] };
 });
-const summary = computed(() =>
-  summarizeAudience(props.modelValue, effectiveContext.value),
-);
+const summary = computed(() => summarizeAudience(props.modelValue, effectiveContext.value));
 const serialization = computed(() =>
   serializeAudienceDraft(props.modelValue, effectiveContext.value),
 );
 const isV2 = computed(() => props.context.catalog.version === 2);
-const freshnessMode = computed(
-  () => props.modelValue.freshness?.mode ?? "USE_LAST_KNOWN",
-);
+const freshnessMode = computed(() => props.modelValue.freshness?.mode ?? 'USE_LAST_KNOWN');
 const freshnessSeconds = computed(() =>
-  props.modelValue.freshness?.mode === "REQUIRE_FRESH"
+  props.modelValue.freshness?.mode === 'REQUIRE_FRESH'
     ? props.modelValue.freshness.maxAgeSeconds
     : 86_400,
 );
 
 function updateFreshness(mode: string, seconds = freshnessSeconds.value) {
-  emit("update:modelValue", {
+  emit('update:modelValue', {
     ...props.modelValue,
     version: 2,
     freshness:
-      mode === "REQUIRE_FRESH"
+      mode === 'REQUIRE_FRESH'
         ? {
-            mode: "REQUIRE_FRESH",
-            maxAgeSeconds: Math.max(
-              1,
-              Math.min(31_536_000, Math.trunc(seconds || 86_400)),
-            ),
+            mode: 'REQUIRE_FRESH',
+            maxAgeSeconds: Math.max(1, Math.min(31_536_000, Math.trunc(seconds || 86_400))),
           }
-        : { mode: "USE_LAST_KNOWN" },
+        : { mode: 'USE_LAST_KNOWN' },
   });
 }
 
@@ -89,59 +78,50 @@ function conditionCount(count: number) {
   const last = count % 10;
   const word =
     lastTwo >= 11 && lastTwo <= 14
-      ? "условий"
+      ? 'условий'
       : last === 1
-        ? "условие"
+        ? 'условие'
         : last >= 2 && last <= 4
-          ? "условия"
-          : "условий";
+          ? 'условия'
+          : 'условий';
   return `${count} ${word}`;
 }
 
-function findNode(
-  node: AudienceDraftNode,
-  nodeId: string,
-): AudienceDraftNode | undefined {
+function findNode(node: AudienceDraftNode, nodeId: string): AudienceDraftNode | undefined {
   if (node.nodeId === nodeId) return node;
-  if (node.kind === "all" || node.kind === "any") {
+  if (node.kind === 'all' || node.kind === 'any') {
     for (const child of node.children) {
       const found = findNode(child, nodeId);
       if (found) return found;
     }
   }
-  return node.kind === "not" ? findNode(node.child, nodeId) : undefined;
+  return node.kind === 'not' ? findNode(node.child, nodeId) : undefined;
 }
 
 const editedNode = computed(() => {
   const node = editorSession.value?.nodeId
     ? findNode(props.modelValue.root, editorSession.value.nodeId)
     : undefined;
-  return node && !["all", "any", "not", "opaque"].includes(node.kind)
+  return node && !['all', 'any', 'not', 'opaque'].includes(node.kind)
     ? (node as AudienceLeafDraftNode)
     : undefined;
 });
 
 function runCommand(command: AudienceCommand) {
-  const result = applyAudienceCommand(
-    props.modelValue,
-    command,
-    effectiveContext.value,
-  );
+  const result = applyAudienceCommand(props.modelValue, command, effectiveContext.value);
   if (!result.ok) {
     commandError.value = result.error.message;
     return false;
   }
-  commandError.value = "";
-  emit("update:modelValue", result.draft);
+  commandError.value = '';
+  emit('update:modelValue', result.draft);
   return true;
 }
 
 function openSources(parentNodeId: string, label: string, opener: HTMLElement) {
   sourceSession.value = { parentNodeId, label, opener };
   void nextTick(() =>
-    document
-      .querySelector<HTMLElement>(".source-picker [data-audience-source]")
-      ?.focus(),
+    document.querySelector<HTMLElement>('.source-picker [data-audience-source]')?.focus(),
   );
 }
 
@@ -184,13 +164,7 @@ function edit(nodeId: string, opener: HTMLElement) {
   const node = findNode(props.modelValue.root, nodeId);
   if (
     !node ||
-    ![
-      "locale",
-      "language",
-      "country",
-      "userAttribute",
-      "segmentMembership",
-    ].includes(node.kind)
+    !['locale', 'language', 'country', 'userAttribute', 'segmentMembership'].includes(node.kind)
   )
     return;
   editorSession.value = { kind: node.kind as AudienceLeafKind, nodeId, opener };
@@ -200,13 +174,13 @@ function applyLeaf(leaf: AudienceLeafInput) {
   const session = editorSession.value;
   if (!session) return;
   const command: AudienceCommand = session.nodeId
-    ? { type: "replaceLeaf", nodeId: session.nodeId, leaf }
-    : { type: "add", parentNodeId: session.parentNodeId!, leaf };
+    ? { type: 'replaceLeaf', nodeId: session.nodeId, leaf }
+    : { type: 'add', parentNodeId: session.parentNodeId!, leaf };
   if (!runCommand(command)) return;
   const opener = session.opener;
   editorSession.value = null;
   activeIssue.value = null;
-  emit("editing-dirty", false);
+  emit('editing-dirty', false);
   void nextTick(() => opener.focus());
 }
 
@@ -214,26 +188,20 @@ function closeEditor() {
   const opener = editorSession.value?.opener;
   editorSession.value = null;
   activeIssue.value = null;
-  emit("editing-dirty", false);
+  emit('editing-dirty', false);
   void nextTick(() => opener?.focus());
 }
 
 async function searchSegments(query: string) {
   if (!props.segmentSearch) return [];
   const items = await props.segmentSearch(query);
-  const segments = new Map(
-    searchedSegments.value.map((segment) => [segment.segmentId, segment]),
-  );
+  const segments = new Map(searchedSegments.value.map((segment) => [segment.segmentId, segment]));
   items.forEach((segment) => segments.set(segment.segmentId, segment));
   searchedSegments.value = [...segments.values()];
   return items;
 }
 
-function focusIssue(issue: {
-  nodeId?: string;
-  fieldPath?: string;
-  message?: string;
-}) {
+function focusIssue(issue: { nodeId?: string; fieldPath?: string; message?: string }) {
   if (!issue.nodeId) return;
   const node = findNode(props.modelValue.root, issue.nodeId);
   const opener = document.querySelector<HTMLElement>(
@@ -242,18 +210,10 @@ function focusIssue(issue: {
   if (
     !node ||
     !opener ||
-    ![
-      "locale",
-      "language",
-      "country",
-      "userAttribute",
-      "segmentMembership",
-    ].includes(node.kind)
+    !['locale', 'language', 'country', 'userAttribute', 'segmentMembership'].includes(node.kind)
   )
     return;
-  activeIssue.value = issue.message
-    ? { fieldPath: issue.fieldPath, message: issue.message }
-    : null;
+  activeIssue.value = issue.message ? { fieldPath: issue.fieldPath, message: issue.message } : null;
   editorSession.value = {
     kind: node.kind as AudienceLeafKind,
     nodeId: node.nodeId,
@@ -261,11 +221,11 @@ function focusIssue(issue: {
   };
   void nextTick(() => {
     const selector =
-      issue.fieldPath === "definitionId"
+      issue.fieldPath === 'definitionId'
         ? '[aria-label="Поле профиля пользователя"]'
-        : issue.fieldPath === "segmentId"
+        : issue.fieldPath === 'segmentId'
           ? '[aria-label="Сегмент аудитории"]'
-          : issue.fieldPath === "operator"
+          : issue.fieldPath === 'operator'
             ? '.leaf-editor select[aria-label^="Оператор"], .leaf-editor select[aria-label^="Проверка"]'
             : '.leaf-editor [aria-label^="Значение"], .leaf-editor [aria-label="Код страны"]';
     document.querySelector<HTMLElement>(selector)?.focus();
@@ -284,33 +244,28 @@ defineExpose({ focusIssue });
         <p>
           {{
             isV2
-              ? "Выберите, какие данные профиля пользователя подходят для запуска сценария."
-              : "Выберите подходящий язык, страну, данные профиля или готовый сегмент."
+              ? 'Выберите, какие данные профиля пользователя подходят для запуска сценария.'
+              : 'Выберите подходящий язык, страну, данные профиля или готовый сегмент.'
           }}
         </p>
       </div>
       <div class="health" :class="summary.status">
         <strong>{{ conditionCount(summary.leaves) }}</strong
         ><span>{{
-          summary.status === "empty"
-            ? "Без ограничений"
+          summary.status === 'empty'
+            ? 'Без ограничений'
             : serialization.ok
-              ? "Готово к проверке"
-              : "Нужно исправить"
+              ? 'Готово к проверке'
+              : 'Нужно исправить'
         }}</span>
       </div>
     </header>
-    <Message v-if="commandError" severity="error" :closable="false">{{
-      commandError
-    }}</Message>
+    <Message v-if="commandError" severity="error" :closable="false">{{ commandError }}</Message>
     <div class="semantics-note">
       <i class="pi pi-shield" />
       <div>
         <strong>Здесь проверяются данные пользователя</strong
-        ><span
-          >События и действия пользователя настраиваются отдельно, в разделе
-          «Условия».</span
-        >
+        ><span>События и действия пользователя настраиваются отдельно, в разделе «Условия».</span>
       </div>
     </div>
     <fieldset v-if="isV2" class="freshness">
@@ -325,8 +280,7 @@ defineExpose({ focusIssue });
         /><span
           ><strong>Использовать текущие данные</strong
           ><small
-            >Подойдут последние сохранённые данные независимо от времени
-            обновления.</small
+            >Подойдут последние сохранённые данные независимо от времени обновления.</small
           ></span
         ></label
       ><label
@@ -339,8 +293,7 @@ defineExpose({ focusIssue });
         /><span
           ><strong>Учитывать только недавние данные</strong
           ><small
-            >Использовать данные, только если они обновлены не раньше
-            указанного срока.</small
+            >Использовать данные, только если они обновлены не раньше указанного срока.</small
           ></span
         ></label
       ><label v-if="freshnessMode === 'REQUIRE_FRESH'" class="age"
@@ -352,28 +305,21 @@ defineExpose({ focusIssue });
           :value="freshnessSeconds"
           aria-label="Максимальный возраст профиля в секундах"
           @change="
-            updateFreshness(
-              'REQUIRE_FRESH',
-              Number(($event.target as HTMLInputElement).value),
-            )
+            updateFreshness('REQUIRE_FRESH', Number(($event.target as HTMLInputElement).value))
           "
       /></label>
     </fieldset>
     <details class="policy">
       <summary>Когда проверяется пользователь?</summary>
       <p>
-        Первый раз — при запуске сценария. Если включена повторная проверка
-        перед отправкой, Retenive проверит новые данные по тем же правилам и
-        сохранит результат отдельно.
+        Первый раз — при запуске сценария. Если включена повторная проверка перед отправкой,
+        Retenive проверит новые данные по тем же правилам и сохранит результат отдельно.
       </p>
       <p v-if="isV2">
-        Если нужного значения нет или данные слишком старые, пользователь не
-        считается подходящим. Это правило действует и для исключений.
+        Если нужного значения нет или данные слишком старые, пользователь не считается подходящим.
+        Это правило действует и для исключений.
       </p>
-      <p v-else>
-        Отсутствующее или null-значение совпадает только с проверкой «не
-        заполнено».
-      </p>
+      <p v-else>Отсутствующее или null-значение совпадает только с проверкой «не заполнено».</p>
     </details>
     <ol class="audience-tree">
       <AudienceNodeCard
@@ -404,8 +350,10 @@ defineExpose({ focusIssue });
         </div>
       </dl>
       <small
-        >Версия правил <code>{{ effectiveContext.catalog.revision }}</code> ·
-        {{ summary.nodes }}/{{ AUDIENCE_LIMITS.maxNodes }} элементов</small
+        >Версия правил <code>{{ effectiveContext.catalog.revision }}</code> · {{ summary.nodes }}/{{
+          AUDIENCE_LIMITS.maxNodes
+        }}
+        элементов</small
       >
     </aside>
     <div
@@ -446,8 +394,7 @@ defineExpose({ focusIssue });
             @click="chooseSource('locale')"
           >
             <i class="pi pi-globe" /><span
-              ><strong>Регион и язык</strong
-              ><small>Например, русский язык для России.</small></span
+              ><strong>Регион и язык</strong><small>Например, русский язык для России.</small></span
             ></button
           ><button
             v-if="!isV2"
@@ -456,8 +403,7 @@ defineExpose({ focusIssue });
             @click="chooseSource('language')"
           >
             <i class="pi pi-language" /><span
-              ><strong>Язык</strong
-              ><small>Основной язык пользователя.</small></span
+              ><strong>Язык</strong><small>Основной язык пользователя.</small></span
             ></button
           ><button
             v-if="!isV2"
@@ -466,8 +412,7 @@ defineExpose({ focusIssue });
             @click="chooseSource('country')"
           >
             <i class="pi pi-map-marker" /><span
-              ><strong>Страна</strong
-              ><small>Страна из профиля пользователя.</small></span
+              ><strong>Страна</strong><small>Страна из профиля пользователя.</small></span
             ></button
           ><button
             type="button"
@@ -476,9 +421,7 @@ defineExpose({ focusIssue });
           >
             <i class="pi pi-id-card" /><span
               ><strong>Поле профиля пользователя</strong
-              ><small
-                >Данные пользователя, доступные для выбора в проекте.</small
-              ></span
+              ><small>Данные пользователя, доступные для выбора в проекте.</small></span
             ></button
           ><button
             v-if="context.allowSegments !== false"

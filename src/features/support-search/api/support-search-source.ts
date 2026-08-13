@@ -3,7 +3,7 @@ import {
   supportSearchConversations,
   supportSearchMessages,
   supportSearchUsers,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   SupportCaseSearchQueryDto,
   SupportCaseSearchQueryDtoAssignmentStatesItem,
@@ -25,13 +25,9 @@ import type {
   SupportMessageSearchQueryDto,
   SupportSearchFreshnessResponseDto,
   SupportSearchTimeRangeDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
-export type SupportSearchScope =
-  | "CASES"
-  | "CONVERSATIONS"
-  | "MESSAGES"
-  | "END_USERS";
+export type SupportSearchScope = 'CASES' | 'CONVERSATIONS' | 'MESSAGES' | 'END_USERS';
 
 export interface SupportCaseSearchFilters {
   caseIds?: string[];
@@ -63,9 +59,7 @@ export interface SupportSearchRequest {
   filters: SupportCaseSearchFilters;
   sort: {
     field: SupportCaseSearchSortDtoField | SupportContentSearchSortDtoField;
-    direction:
-      | SupportCaseSearchSortDtoDirection
-      | SupportContentSearchSortDtoDirection;
+    direction: SupportCaseSearchSortDtoDirection | SupportContentSearchSortDtoDirection;
   };
   cursor?: string;
   limit?: number;
@@ -73,20 +67,20 @@ export interface SupportSearchRequest {
 
 export interface SupportSearchResult {
   id: string;
-  kind: "CASE" | "CONVERSATION" | "MESSAGE" | "END_USER";
+  kind: 'CASE' | 'CONVERSATION' | 'MESSAGE' | 'END_USER';
   selection: {
-    kind: "CASE" | "CONVERSATION" | "END_USER";
+    kind: 'CASE' | 'CONVERSATION' | 'END_USER';
     id: string;
   };
   snippet: string;
   activityAt: string;
-  matchProvenance?: "ORIGINAL" | "TRANSLATION" | "NONE";
+  matchProvenance?: 'ORIGINAL' | 'TRANSLATION' | 'NONE';
   locale?: string | null;
   role?: string;
 }
 
 export interface SupportSearchFreshness {
-  state: "READY" | "BUILDING" | "DEGRADED";
+  state: 'READY' | 'BUILDING' | 'DEGRADED';
   lagSeconds: number;
   indexedThrough: string;
   generationId?: string | null;
@@ -99,10 +93,7 @@ export interface SupportSearchPage {
 }
 
 export interface SupportSearchSource {
-  search(
-    projectId: string,
-    request: SupportSearchRequest,
-  ): Promise<SupportSearchPage>;
+  search(projectId: string, request: SupportSearchRequest): Promise<SupportSearchPage>;
 }
 
 export function mapSupportSearchFreshness(
@@ -112,9 +103,7 @@ export function mapSupportSearchFreshness(
     state: value.state,
     lagSeconds: value.lagSeconds,
     indexedThrough: value.indexedThrough,
-    ...(value.generationId !== undefined
-      ? { generationId: value.generationId }
-      : {}),
+    ...(value.generationId !== undefined ? { generationId: value.generationId } : {}),
   };
 }
 
@@ -125,22 +114,23 @@ export function mapSupportSearchResult(value: {
   target: { kind: string; id: string };
   snippet: string;
   activityAt: string;
-  matchProvenance?: "ORIGINAL" | "TRANSLATION" | "NONE";
+  matchProvenance?: 'ORIGINAL' | 'TRANSLATION' | 'NONE';
   matchLocale?: string | null;
   language?: string | null;
   role?: string;
 }): SupportSearchResult | null {
-  let selection: SupportSearchResult["selection"] | null = null;
-  if (value.caseId) selection = { kind: "CASE", id: value.caseId };
-  else if (value.conversationId)
-    selection = { kind: "CONVERSATION", id: value.conversationId };
-  else if (value.endUserId) selection = { kind: "END_USER", id: value.endUserId };
-  else if (value.target.kind === "CASE") selection = { kind: "CASE", id: value.target.id };
-  else if (value.target.kind === "CONVERSATION") selection = { kind: "CONVERSATION", id: value.target.id };
-  else if (value.target.kind === "END_USER") selection = { kind: "END_USER", id: value.target.id };
+  let selection: SupportSearchResult['selection'] | null = null;
+  if (value.caseId) selection = { kind: 'CASE', id: value.caseId };
+  else if (value.conversationId) selection = { kind: 'CONVERSATION', id: value.conversationId };
+  else if (value.endUserId) selection = { kind: 'END_USER', id: value.endUserId };
+  else if (value.target.kind === 'CASE') selection = { kind: 'CASE', id: value.target.id };
+  else if (value.target.kind === 'CONVERSATION')
+    selection = { kind: 'CONVERSATION', id: value.target.id };
+  else if (value.target.kind === 'END_USER') selection = { kind: 'END_USER', id: value.target.id };
   if (!selection) return null;
   const kind = value.target.kind;
-  if (kind !== "CASE" && kind !== "CONVERSATION" && kind !== "MESSAGE" && kind !== "END_USER") return null;
+  if (kind !== 'CASE' && kind !== 'CONVERSATION' && kind !== 'MESSAGE' && kind !== 'END_USER')
+    return null;
   return {
     id: value.target.id,
     kind,
@@ -166,9 +156,7 @@ function baseQuery(request: SupportSearchRequest) {
 function commonFilters(filters: SupportCaseSearchFilters) {
   return {
     ...(filters.endUserIds ? { endUserIds: filters.endUserIds } : {}),
-    ...(filters.externalEndUserIds
-      ? { externalEndUserIds: filters.externalEndUserIds }
-      : {}),
+    ...(filters.externalEndUserIds ? { externalEndUserIds: filters.externalEndUserIds } : {}),
     ...(filters.timeRange ? { timeRange: filters.timeRange } : {}),
   };
 }
@@ -215,33 +203,32 @@ function caseFilters(filters: SupportCaseSearchFilters) {
 
 function caseSort(request: SupportSearchRequest) {
   const fields = new Set<SupportCaseSearchSortDtoField>([
-    "RELEVANCE",
-    "ACTIVITY_AT",
-    "PRIORITY",
-    "SLA_DUE_AT",
-    "WAITING_SINCE",
-    "UNREAD_COUNT",
-    "CREATED_AT",
+    'RELEVANCE',
+    'ACTIVITY_AT',
+    'PRIORITY',
+    'SLA_DUE_AT',
+    'WAITING_SINCE',
+    'UNREAD_COUNT',
+    'CREATED_AT',
   ]);
   return {
     field: fields.has(request.sort.field as SupportCaseSearchSortDtoField)
       ? (request.sort.field as SupportCaseSearchSortDtoField)
-      : "RELEVANCE",
+      : 'RELEVANCE',
     direction: request.sort.direction,
   };
 }
 
 function contentSort(request: SupportSearchRequest) {
   return {
-    field:
-      request.sort.field === "ACTIVITY_AT" ? "ACTIVITY_AT" : "RELEVANCE",
+    field: request.sort.field === 'ACTIVITY_AT' ? 'ACTIVITY_AT' : 'RELEVANCE',
     direction: request.sort.direction,
   } as const;
 }
 
 export const supportSearchSource: SupportSearchSource = {
   async search(projectId, request) {
-    if (request.scope === "CASES") {
+    if (request.scope === 'CASES') {
       const response = await supportSearchCases(projectId, {
         ...baseQuery(request),
         ...caseFilters(request.filters),
@@ -253,7 +240,7 @@ export const supportSearchSource: SupportSearchSource = {
         freshness: mapSupportSearchFreshness(response.freshness),
       };
     }
-    if (request.scope === "CONVERSATIONS") {
+    if (request.scope === 'CONVERSATIONS') {
       const response = await supportSearchConversations(projectId, {
         ...baseQuery(request),
         ...commonFilters(request.filters),
@@ -268,7 +255,7 @@ export const supportSearchSource: SupportSearchSource = {
         freshness: mapSupportSearchFreshness(response.freshness),
       };
     }
-    if (request.scope === "MESSAGES") {
+    if (request.scope === 'MESSAGES') {
       const response = await supportSearchMessages(projectId, {
         ...baseQuery(request),
         ...commonFilters(request.filters),
@@ -276,12 +263,8 @@ export const supportSearchSource: SupportSearchSource = {
         ...(request.filters.conversationIds
           ? { conversationIds: request.filters.conversationIds }
           : {}),
-        ...(request.filters.messageIds
-          ? { messageIds: request.filters.messageIds }
-          : {}),
-        ...(request.filters.languages
-          ? { languages: request.filters.languages }
-          : {}),
+        ...(request.filters.messageIds ? { messageIds: request.filters.messageIds } : {}),
+        ...(request.filters.languages ? { languages: request.filters.languages } : {}),
         sort: contentSort(request),
       } satisfies SupportMessageSearchQueryDto);
       return {
@@ -290,23 +273,18 @@ export const supportSearchSource: SupportSearchSource = {
         freshness: mapSupportSearchFreshness(response.freshness),
       };
     }
-    const response = await supportSearchUsers(
-      projectId,
-      {
-        ...baseQuery(request),
-        ...(request.filters.endUserIds
-          ? { endUserIds: request.filters.endUserIds }
-          : {}),
-        ...(request.filters.externalEndUserIds
-          ? { externalEndUserIds: request.filters.externalEndUserIds }
-          : {}),
-      } satisfies SupportEndUserSearchQueryDto,
-    );
+    const response = await supportSearchUsers(projectId, {
+      ...baseQuery(request),
+      ...(request.filters.endUserIds ? { endUserIds: request.filters.endUserIds } : {}),
+      ...(request.filters.externalEndUserIds
+        ? { externalEndUserIds: request.filters.externalEndUserIds }
+        : {}),
+    } satisfies SupportEndUserSearchQueryDto);
     return {
       items: response.items.map((item) => ({
         id: item.target.id,
-        kind: "END_USER" as const,
-        selection: { kind: "END_USER" as const, id: item.endUserId },
+        kind: 'END_USER' as const,
+        selection: { kind: 'END_USER' as const, id: item.endUserId },
         snippet: item.externalEndUserId,
         activityAt: item.lastSeenAt,
       })),

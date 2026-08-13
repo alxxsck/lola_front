@@ -1,13 +1,9 @@
-import type { ConversationMessage } from "@/shared/types/domain";
+import type { ConversationMessage } from '@/shared/types/domain';
 
-type DeliveryReceipt = NonNullable<ConversationMessage["delivery"]>;
+type DeliveryReceipt = NonNullable<ConversationMessage['delivery']>;
 
-function compareDeliveryReceipt(
-  left: DeliveryReceipt,
-  right: DeliveryReceipt,
-): number {
-  if (left.generation !== right.generation)
-    return left.generation - right.generation;
+function compareDeliveryReceipt(left: DeliveryReceipt, right: DeliveryReceipt): number {
+  if (left.generation !== right.generation) return left.generation - right.generation;
   return left.version - right.version;
 }
 

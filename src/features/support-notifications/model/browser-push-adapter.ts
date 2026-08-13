@@ -1,8 +1,7 @@
-import { dataMode } from "@/shared/config/data-mode";
-import type { BrowserSubscriptionMaterial } from "@/features/support-notifications/api/support-notifications-source";
+import { dataMode } from '@/shared/config/data-mode';
+import type { BrowserSubscriptionMaterial } from '@/features/support-notifications/api/support-notifications-source';
 
-export type BrowserNotificationPermission =
-  "UNSUPPORTED" | "DEFAULT" | "DENIED" | "GRANTED";
+export type BrowserNotificationPermission = 'UNSUPPORTED' | 'DEFAULT' | 'DENIED' | 'GRANTED';
 
 export interface BrowserPushState {
   permission: BrowserNotificationPermission;
@@ -21,7 +20,7 @@ export interface BrowserPushAdapter {
   onSubscriptionChange?(handler: () => void): () => void;
 }
 
-const registrationPath = "/support-push-sw.js";
+const registrationPath = '/support-push-sw.js';
 
 function isIos(): boolean {
   return (
@@ -32,55 +31,48 @@ function isIos(): boolean {
 
 function isStandalone(): boolean {
   return (
-    window.matchMedia?.("(display-mode: standalone)").matches === true ||
+    window.matchMedia?.('(display-mode: standalone)').matches === true ||
     (navigator as Navigator & { standalone?: boolean }).standalone === true
   );
 }
 
 function permission(): BrowserNotificationPermission {
-  if (
-    !("Notification" in window) ||
-    !("serviceWorker" in navigator) ||
-    !("PushManager" in window)
-  )
-    return "UNSUPPORTED";
-  return Notification.permission === "granted"
-    ? "GRANTED"
-    : Notification.permission === "denied"
-      ? "DENIED"
-      : "DEFAULT";
+  if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window))
+    return 'UNSUPPORTED';
+  return Notification.permission === 'granted'
+    ? 'GRANTED'
+    : Notification.permission === 'denied'
+      ? 'DENIED'
+      : 'DEFAULT';
 }
 
 function permissionRecoveryPath(): string {
   if (isIos())
-    return "iOS/iPadOS: «Настройки» → «Уведомления» → Retenive CMS → «Разрешить уведомления».";
+    return 'iOS/iPadOS: «Настройки» → «Уведомления» → Retenive CMS → «Разрешить уведомления».';
   if (/Firefox/u.test(navigator.userAgent))
-    return "Firefox: значок разрешений слева от адреса → «Уведомления» → «Разрешить».";
+    return 'Firefox: значок разрешений слева от адреса → «Уведомления» → «Разрешить».';
   if (
     /Safari/u.test(navigator.userAgent) &&
     !/Chrome|Chromium|CriOS|Edg/u.test(navigator.userAgent)
   )
-    return "Safari: «Настройки» → «Веб-сайты» → «Уведомления» → Retenive CMS → «Разрешить».";
-  return "Chrome/Edge: значок настроек сайта слева от адреса → «Уведомления» → «Разрешить».";
+    return 'Safari: «Настройки» → «Веб-сайты» → «Уведомления» → Retenive CMS → «Разрешить».';
+  return 'Chrome/Edge: значок настроек сайта слева от адреса → «Уведомления» → «Разрешить».';
 }
 
 function unsupportedMessage(): string {
   if (isIos())
-    return "На iOS/iPadOS обновите систему до версии с веб-уведомлениями и откройте установленный Retenive CMS с экрана «Домой».";
-  return "Этот браузер или режим не поддерживает веб-уведомления. Обновите браузер или откройте Retenive CMS в актуальном Chrome, Edge, Firefox или Safari.";
+    return 'На iOS/iPadOS обновите систему до версии с веб-уведомлениями и откройте установленный Retenive CMS с экрана «Домой».';
+  return 'Этот браузер или режим не поддерживает веб-уведомления. Обновите браузер или откройте Retenive CMS в актуальном Chrome, Edge, Firefox или Safari.';
 }
 
 function base64Url(bytes: ArrayBuffer): string {
   const value = String.fromCharCode(...new Uint8Array(bytes));
-  return btoa(value)
-    .replace(/\+/gu, "-")
-    .replace(/\//gu, "_")
-    .replace(/=+$/gu, "");
+  return btoa(value).replace(/\+/gu, '-').replace(/\//gu, '_').replace(/=+$/gu, '');
 }
 
 function applicationServerKey(value: string): Uint8Array<ArrayBuffer> {
-  const normalized = value.replace(/-/gu, "+").replace(/_/gu, "/");
-  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+  const normalized = value.replace(/-/gu, '+').replace(/_/gu, '/');
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
   const binary = atob(padded);
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
@@ -88,7 +80,7 @@ function applicationServerKey(value: string): Uint8Array<ArrayBuffer> {
 export const webBrowserPushAdapter: BrowserPushAdapter = {
   async state() {
     const current = permission();
-    if (current === "UNSUPPORTED") {
+    if (current === 'UNSUPPORTED') {
       return {
         permission: current,
         locallySubscribed: false,
@@ -99,7 +91,7 @@ export const webBrowserPushAdapter: BrowserPushAdapter = {
         unsupportedMessage: unsupportedMessage(),
       };
     }
-    const registration = await navigator.serviceWorker.getRegistration("/");
+    const registration = await navigator.serviceWorker.getRegistration('/');
     const subscription = await registration?.pushManager.getSubscription();
     return {
       permission: current,
@@ -109,26 +101,19 @@ export const webBrowserPushAdapter: BrowserPushAdapter = {
       applicationServerKey: subscription?.options.applicationServerKey
         ? base64Url(subscription.options.applicationServerKey)
         : null,
-      permissionRecoveryPath:
-        current === "DENIED" ? permissionRecoveryPath() : null,
+      permissionRecoveryPath: current === 'DENIED' ? permissionRecoveryPath() : null,
       unsupportedMessage: null,
     };
   },
   async subscribe(publicKey) {
-    if (permission() === "UNSUPPORTED")
-      throw new Error("BROWSER_PUSH_UNSUPPORTED");
-    if (isIos() && !isStandalone())
-      throw new Error("BROWSER_PUSH_INSTALL_REQUIRED");
+    if (permission() === 'UNSUPPORTED') throw new Error('BROWSER_PUSH_UNSUPPORTED');
+    if (isIos() && !isStandalone()) throw new Error('BROWSER_PUSH_INSTALL_REQUIRED');
     const nextPermission =
-      Notification.permission === "default"
+      Notification.permission === 'default'
         ? await Notification.requestPermission()
         : Notification.permission;
-    if (nextPermission !== "granted")
-      throw new Error("BROWSER_PUSH_PERMISSION_DENIED");
-    const registration = await navigator.serviceWorker.register(
-      registrationPath,
-      { scope: "/" },
-    );
+    if (nextPermission !== 'granted') throw new Error('BROWSER_PUSH_PERMISSION_DENIED');
+    const registration = await navigator.serviceWorker.register(registrationPath, { scope: '/' });
     await navigator.serviceWorker.ready;
     let existing = await registration.pushManager.getSubscription();
     if (
@@ -144,9 +129,9 @@ export const webBrowserPushAdapter: BrowserPushAdapter = {
         userVisibleOnly: true,
         applicationServerKey: applicationServerKey(publicKey),
       }));
-    const key = subscription.getKey("p256dh");
-    const auth = subscription.getKey("auth");
-    if (!key || !auth) throw new Error("BROWSER_PUSH_KEYS_UNAVAILABLE");
+    const key = subscription.getKey('p256dh');
+    const auth = subscription.getKey('auth');
+    if (!key || !auth) throw new Error('BROWSER_PUSH_KEYS_UNAVAILABLE');
     return {
       endpoint: subscription.endpoint,
       p256dh: base64Url(key),
@@ -154,18 +139,16 @@ export const webBrowserPushAdapter: BrowserPushAdapter = {
     };
   },
   async unsubscribe() {
-    const registration = await navigator.serviceWorker.getRegistration("/");
+    const registration = await navigator.serviceWorker.getRegistration('/');
     const subscription = await registration?.pushManager.getSubscription();
     await subscription?.unsubscribe();
   },
   onSubscriptionChange(handler) {
     const listener = (event: MessageEvent) => {
-      if (event.data?.type === "RETENIVE_SUPPORT_PUSH_SUBSCRIPTION_CHANGED")
-        handler();
+      if (event.data?.type === 'RETENIVE_SUPPORT_PUSH_SUBSCRIPTION_CHANGED') handler();
     };
-    navigator.serviceWorker.addEventListener("message", listener);
-    return () =>
-      navigator.serviceWorker.removeEventListener("message", listener);
+    navigator.serviceWorker.addEventListener('message', listener);
+    return () => navigator.serviceWorker.removeEventListener('message', listener);
   },
 };
 
@@ -177,7 +160,7 @@ interface MockBrowserPushState {
   applicationServerKey: string | null;
 }
 
-const mockStateKey = "support-browser-push-mock:v1";
+const mockStateKey = 'support-browser-push-mock:v1';
 let mockState: MockBrowserPushState = {
   granted: false,
   denied: false,
@@ -192,12 +175,11 @@ function readMockState(): MockBrowserPushState {
     if (!raw) return mockState;
     const value = JSON.parse(raw) as Partial<MockBrowserPushState>;
     if (
-      typeof value.granted === "boolean" &&
-      typeof value.denied === "boolean" &&
-      typeof value.subscribed === "boolean" &&
-      (typeof value.endpoint === "string" || value.endpoint === null) &&
-      (typeof value.applicationServerKey === "string" ||
-        value.applicationServerKey === null)
+      typeof value.granted === 'boolean' &&
+      typeof value.denied === 'boolean' &&
+      typeof value.subscribed === 'boolean' &&
+      (typeof value.endpoint === 'string' || value.endpoint === null) &&
+      (typeof value.applicationServerKey === 'string' || value.applicationServerKey === null)
     )
       mockState = value as MockBrowserPushState;
   } catch {
@@ -219,17 +201,11 @@ const mockAdapter: BrowserPushAdapter = {
   async state() {
     const current = readMockState();
     return {
-      permission: current.denied
-        ? "DENIED"
-        : current.granted
-          ? "GRANTED"
-          : "DEFAULT",
+      permission: current.denied ? 'DENIED' : current.granted ? 'GRANTED' : 'DEFAULT',
       locallySubscribed: current.subscribed,
       requiresInstalledApp: false,
       endpoint: current.subscribed ? current.endpoint : null,
-      applicationServerKey: current.subscribed
-        ? current.applicationServerKey
-        : null,
+      applicationServerKey: current.subscribed ? current.applicationServerKey : null,
     };
   },
   async subscribe(publicKey) {
@@ -243,8 +219,8 @@ const mockAdapter: BrowserPushAdapter = {
     });
     return {
       endpoint,
-      p256dh: "mock-p256dh-key-material",
-      auth: "mock-auth-material",
+      p256dh: 'mock-p256dh-key-material',
+      auth: 'mock-auth-material',
     };
   },
   async unsubscribe() {
@@ -262,5 +238,5 @@ const mockAdapter: BrowserPushAdapter = {
 };
 
 export function createBrowserPushAdapter(): BrowserPushAdapter {
-  return dataMode === "mock" ? mockAdapter : webBrowserPushAdapter;
+  return dataMode === 'mock' ? mockAdapter : webBrowserPushAdapter;
 }

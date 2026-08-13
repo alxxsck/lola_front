@@ -1,8 +1,8 @@
-import { flushPromises, shallowMount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import UiElementPicker from "@/features/interface/UiElementPicker.vue";
-import ActionPicker from "@/features/actions/ActionPicker.vue";
-import SendActionDialog from "./SendActionDialog.vue";
+import { flushPromises, shallowMount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import UiElementPicker from '@/features/interface/UiElementPicker.vue';
+import ActionPicker from '@/features/actions/ActionPicker.vue';
+import SendActionDialog from './SendActionDialog.vue';
 
 const mocks = vi.hoisted(() => ({
   getElements: vi.fn(),
@@ -10,63 +10,62 @@ const mocks = vi.hoisted(() => ({
   toast: vi.fn(),
 }));
 
-vi.mock("@/shared/api/repository", () => ({
+vi.mock('@/shared/api/repository', () => ({
   repository: {
-    mode: "api",
+    mode: 'api',
     getElements: mocks.getElements,
     sendAdminMessage: mocks.sendAdminMessage,
   },
 }));
-vi.mock("primevue/usetoast", () => ({
+vi.mock('primevue/usetoast', () => ({
   useToast: () => ({ add: mocks.toast }),
 }));
 
-describe("SendActionDialog", () => {
+describe('SendActionDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getElements.mockResolvedValue([
       {
-        id: "page-home",
-        projectId: "project-1",
-        code: "home",
-        name: "Главная",
-        kind: "PAGE",
-        route: "/home",
+        id: 'page-home',
+        projectId: 'project-1',
+        code: 'home',
+        name: 'Главная',
+        kind: 'PAGE',
+        route: '/home',
         config: {},
         enabled: true,
         aiEnabled: true,
-        aiDescription: "Главная страница",
+        aiDescription: 'Главная страница',
         aiAliases: [],
       },
     ]);
     mocks.sendAdminMessage.mockResolvedValue({ duplicate: false });
   });
 
-  it("sends the code committed by the interface catalog picker", async () => {
+  it('sends the code committed by the interface catalog picker', async () => {
     const wrapper = shallowMount(SendActionDialog, {
       props: {
         visible: false,
-        projectId: "project-1",
-        userId: "user-1",
-        recipientName: "Анна",
+        projectId: 'project-1',
+        userId: 'user-1',
+        recipientName: 'Анна',
         session: {
-          id: "session-1",
-          userId: "user-1",
-          externalId: "external-1",
-          userName: "Анна",
-          device: "Desktop",
+          id: 'session-1',
+          userId: 'user-1',
+          externalId: 'external-1',
+          userName: 'Анна',
+          device: 'Desktop',
           startedAt: new Date().toISOString(),
           lastSeenAt: new Date().toISOString(),
-          status: "ONLINE",
+          status: 'ONLINE',
         },
         canReadTargets: true,
       },
       global: {
         stubs: {
           Dialog: {
-            props: ["visible"],
-            template:
-              '<section v-if="visible"><slot /><slot name="footer" /></section>',
+            props: ['visible'],
+            template: '<section v-if="visible"><slot /><slot name="footer" /></section>',
           },
         },
       },
@@ -74,27 +73,21 @@ describe("SendActionDialog", () => {
 
     await wrapper.setProps({ visible: true });
     await flushPromises();
-    await wrapper.getComponent(ActionPicker).vm.$emit(
-      "update:modelValue",
-      "COMMAND",
-    );
+    await wrapper.getComponent(ActionPicker).vm.$emit('update:modelValue', 'COMMAND');
     await flushPromises();
-    await wrapper.getComponent(UiElementPicker).vm.$emit(
-      "update:modelValue",
-      "home",
-    );
-    await wrapper.get('button-stub[label="Отправить"]').trigger("click");
+    await wrapper.getComponent(UiElementPicker).vm.$emit('update:modelValue', 'home');
+    await wrapper.get('button-stub[label="Отправить"]').trigger('click');
     await flushPromises();
 
     expect(mocks.sendAdminMessage).toHaveBeenCalledWith(
-      "project-1",
-      "user-1",
+      'project-1',
+      'user-1',
       expect.objectContaining({
-        interactionSessionId: "session-1",
+        interactionSessionId: 'session-1',
         actions: [
           expect.objectContaining({
-            type: "OPEN_PAGE",
-            config: { pageId: "home" },
+            type: 'OPEN_PAGE',
+            config: { pageId: 'home' },
           }),
         ],
       }),

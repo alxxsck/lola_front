@@ -10,7 +10,7 @@ import {
   integrationConnectionTest,
   integrationConnectionUpdateAmplitude,
   integrationConnectionUpdateCustomerIo,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   CreateAmplitudeConnectionDto,
   CreateCustomerIoConnectionDto,
@@ -19,7 +19,7 @@ import type {
   RotateCustomerIoCredentialDto,
   UpdateAmplitudeConnectionDto,
   UpdateCustomerIoConnectionDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 export type {
   CreateCustomerIoConnectionDto,
@@ -28,7 +28,7 @@ export type {
 };
 
 const commandOptions = (idempotencyKey: string) => ({
-  headers: { "Idempotency-Key": idempotencyKey },
+  headers: { 'Idempotency-Key': idempotencyKey },
 });
 
 export const integrationConnectionsApi = {
@@ -36,16 +36,8 @@ export const integrationConnectionsApi = {
     return integrationConnectionList(projectId);
   },
 
-  createAmplitude(
-    projectId: string,
-    input: CreateAmplitudeConnectionDto,
-    idempotencyKey: string,
-  ) {
-    return integrationConnectionCreateAmplitude(
-      projectId,
-      input,
-      commandOptions(idempotencyKey),
-    );
+  createAmplitude(projectId: string, input: CreateAmplitudeConnectionDto, idempotencyKey: string) {
+    return integrationConnectionCreateAmplitude(projectId, input, commandOptions(idempotencyKey));
   },
 
   updateAmplitude(
@@ -67,11 +59,7 @@ export const integrationConnectionsApi = {
     input: CreateCustomerIoConnectionDto,
     idempotencyKey: string,
   ) {
-    return integrationConnectionCreateCustomerIo(
-      projectId,
-      input,
-      commandOptions(idempotencyKey),
-    );
+    return integrationConnectionCreateCustomerIo(projectId, input, commandOptions(idempotencyKey));
   },
 
   updateCustomerIo(

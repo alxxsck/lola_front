@@ -1,42 +1,39 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import Textarea from "primevue/textarea";
-import { cmsAgentRepository } from "../api/cms-agent-repository";
-import type { ProjectAIAnalysisEstimateResponseDto } from "@/shared/api/generated/models";
-import type { CmsAgentExecution } from "../model/cms-agent-execution";
-import { aiErrorMessage } from "@/features/ai-errors/model/ai-error-message";
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import Textarea from 'primevue/textarea';
+import { cmsAgentRepository } from '../api/cms-agent-repository';
+import type { ProjectAIAnalysisEstimateResponseDto } from '@/shared/api/generated/models';
+import type { CmsAgentExecution } from '../model/cms-agent-execution';
+import { aiErrorMessage } from '@/features/ai-errors/model/ai-error-message';
 
 const props = defineProps<{ projectId: string }>();
-const emit = defineEmits<{ "analysis-created": [analysisId: string] }>();
+const emit = defineEmits<{ 'analysis-created': [analysisId: string] }>();
 
 type ComposerPhase =
-  | "IDLE"
-  | "ESTIMATING"
-  | "CONFIRMATION"
-  | "SUBMITTING"
-  | "EXECUTING"
-  | "SUCCEEDED"
-  | "CLARIFICATION"
-  | "UNSUPPORTED"
-  | "FAILED"
-  | "OUTCOME_UNKNOWN";
+  | 'IDLE'
+  | 'ESTIMATING'
+  | 'CONFIRMATION'
+  | 'SUBMITTING'
+  | 'EXECUTING'
+  | 'SUCCEEDED'
+  | 'CLARIFICATION'
+  | 'UNSUPPORTED'
+  | 'FAILED'
+  | 'OUTCOME_UNKNOWN';
 
 const phaseByExecutionKind = {
-  CLARIFICATION_REQUIRED: "CLARIFICATION",
-  UNSUPPORTED: "UNSUPPORTED",
-  OUTCOME_UNKNOWN: "OUTCOME_UNKNOWN",
-  FAILED: "FAILED",
-  PROTOCOL_ERROR: "FAILED",
-} satisfies Record<
-  Exclude<CmsAgentExecution["kind"], "ANALYSIS_QUEUED">,
-  ComposerPhase
->;
+  CLARIFICATION_REQUIRED: 'CLARIFICATION',
+  UNSUPPORTED: 'UNSUPPORTED',
+  OUTCOME_UNKNOWN: 'OUTCOME_UNKNOWN',
+  FAILED: 'FAILED',
+  PROTOCOL_ERROR: 'FAILED',
+} satisfies Record<Exclude<CmsAgentExecution['kind'], 'ANALYSIS_QUEUED'>, ComposerPhase>;
 
-const text = ref("");
-const phase = ref<ComposerPhase>("IDLE");
-const error = ref("");
+const text = ref('');
+const phase = ref<ComposerPhase>('IDLE');
+const error = ref('');
 const pendingRequestId = ref<string | null>(null);
 const pendingProjectId = ref<string | null>(null);
 const idempotencyKey = ref<string | null>(null);
@@ -48,43 +45,31 @@ const freshRequestRequired = ref(false);
 
 const trimmedText = computed(() => text.value.trim());
 const busy = computed(
-  () =>
-    phase.value === "ESTIMATING" ||
-    phase.value === "SUBMITTING" ||
-    phase.value === "EXECUTING",
+  () => phase.value === 'ESTIMATING' || phase.value === 'SUBMITTING' || phase.value === 'EXECUTING',
 );
 const terminal = computed(() =>
-  [
-    "CONFIRMATION",
-    "SUCCEEDED",
-    "CLARIFICATION",
-    "UNSUPPORTED",
-    "OUTCOME_UNKNOWN",
-  ].includes(phase.value),
+  ['CONFIRMATION', 'SUCCEEDED', 'CLARIFICATION', 'UNSUPPORTED', 'OUTCOME_UNKNOWN'].includes(
+    phase.value,
+  ),
 );
 const submitRetryLocked = computed(
   () =>
-    phase.value === "FAILED" &&
-    idempotencyKey.value !== null &&
-    pendingRequestId.value === null,
+    phase.value === 'FAILED' && idempotencyKey.value !== null && pendingRequestId.value === null,
 );
 const canSubmit = computed(
-  () =>
-    !terminal.value &&
-    trimmedText.value.length > 0 &&
-    trimmedText.value.length <= 10_000,
+  () => !terminal.value && trimmedText.value.length > 0 && trimmedText.value.length <= 10_000,
 );
 const buttonLabel = computed(() =>
-  phase.value === "ESTIMATING"
-    ? "Оцениваем запрос"
-    : phase.value === "SUBMITTING"
-      ? "Сохраняем запрос"
-      : phase.value === "EXECUTING"
-        ? "Retenive анализирует"
-        : "Спросить Retenive",
+  phase.value === 'ESTIMATING'
+    ? 'Оцениваем запрос'
+    : phase.value === 'SUBMITTING'
+      ? 'Сохраняем запрос'
+      : phase.value === 'EXECUTING'
+        ? 'Retenive анализирует'
+        : 'Спросить Retenive',
 );
 const estimateCost = computed(() =>
-  estimate.value ? formatUsdTicks(estimate.value.reservedCostUsdTicks) : "—",
+  estimate.value ? formatUsdTicks(estimate.value.reservedCostUsdTicks) : '—',
 );
 
 function createIdempotencyKey(): string {
@@ -98,60 +83,46 @@ function formatUsdTicks(value: string): string {
   const ticks = BigInt(value);
   const scale = 10_000_000_000n;
   const whole = ticks / scale;
-  const fraction = (ticks % scale)
-    .toString()
-    .padStart(10, "0")
-    .replace(/0+$/, "");
-  return `$${whole.toString()}${fraction ? `.${fraction}` : ""}`;
+  const fraction = (ticks % scale).toString().padStart(10, '0').replace(/0+$/, '');
+  return `$${whole.toString()}${fraction ? `.${fraction}` : ''}`;
 }
 
 function applyExecution(result: CmsAgentExecution): void {
-  freshRequestRequired.value = result.kind === "FAILED";
-  if (result.kind === "ANALYSIS_QUEUED") {
-    phase.value = "SUCCEEDED";
+  freshRequestRequired.value = result.kind === 'FAILED';
+  if (result.kind === 'ANALYSIS_QUEUED') {
+    phase.value = 'SUCCEEDED';
     createdAnalysisId.value = result.analysisId;
-    emit("analysis-created", result.analysisId);
+    emit('analysis-created', result.analysisId);
     return;
   }
   phase.value = phaseByExecutionKind[result.kind];
-  if (result.kind === "FAILED") {
+  if (result.kind === 'FAILED') {
     error.value = aiErrorMessage(
       result.code,
-      "Запрос не удалось выполнить. Откройте журнал операции для технических данных.",
+      'Запрос не удалось выполнить. Откройте журнал операции для технических данных.',
     );
   }
-  if (result.kind === "PROTOCOL_ERROR") {
+  if (result.kind === 'PROTOCOL_ERROR') {
     error.value =
-      "Сервер запустил запрос, но вернул неполный результат. Проверьте журнал анализов перед повтором.";
+      'Сервер запустил запрос, но вернул неполный результат. Проверьте журнал анализов перед повтором.';
   }
 }
 
-async function executePending(
-  expectedGeneration = requestGeneration.value,
-): Promise<void> {
+async function executePending(expectedGeneration = requestGeneration.value): Promise<void> {
   const requestId = pendingRequestId.value;
   const projectId = pendingProjectId.value;
   if (!requestId || !projectId || busy.value) return;
-  phase.value = "EXECUTING";
-  error.value = "";
+  phase.value = 'EXECUTING';
+  error.value = '';
   try {
     const result = await cmsAgentRepository.execute(projectId, requestId);
-    if (
-      requestGeneration.value !== expectedGeneration ||
-      props.projectId !== projectId
-    )
-      return;
+    if (requestGeneration.value !== expectedGeneration || props.projectId !== projectId) return;
     applyExecution(result);
   } catch (cause) {
-    if (
-      requestGeneration.value !== expectedGeneration ||
-      props.projectId !== projectId
-    )
-      return;
+    if (requestGeneration.value !== expectedGeneration || props.projectId !== projectId) return;
     freshRequestRequired.value = false;
-    phase.value = "FAILED";
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось запустить запрос";
+    phase.value = 'FAILED';
+    error.value = cause instanceof Error ? cause.message : 'Не удалось запустить запрос';
   }
 }
 
@@ -165,43 +136,34 @@ async function submit(): Promise<void> {
   const generation = requestGeneration.value;
   if (!estimate.value) {
     const question = trimmedText.value;
-    phase.value = "ESTIMATING";
-    error.value = "";
+    phase.value = 'ESTIMATING';
+    error.value = '';
     try {
       const quoted = await cmsAgentRepository.estimate(projectId, {
-        executionPath: "CMS_AGENT",
+        executionPath: 'CMS_AGENT',
         question,
       });
-      if (
-        requestGeneration.value !== generation ||
-        props.projectId !== projectId
-      )
-        return;
+      if (requestGeneration.value !== generation || props.projectId !== projectId) return;
       estimate.value = quoted;
       submittedText.value = question;
       if (quoted.confirmationRequired) {
         if (!quoted.confirmationToken || !quoted.confirmationExpiresAt) {
-          throw new Error("Сервер не выдал подтверждение высокой стоимости");
+          throw new Error('Сервер не выдал подтверждение высокой стоимости');
         }
-        phase.value = "CONFIRMATION";
+        phase.value = 'CONFIRMATION';
         return;
       }
     } catch (cause) {
-      if (
-        requestGeneration.value !== generation ||
-        props.projectId !== projectId
-      )
-        return;
+      if (requestGeneration.value !== generation || props.projectId !== projectId) return;
       estimate.value = null;
       submittedText.value = null;
-      phase.value = "FAILED";
-      error.value =
-        cause instanceof Error ? cause.message : "Не удалось оценить запрос";
+      phase.value = 'FAILED';
+      error.value = cause instanceof Error ? cause.message : 'Не удалось оценить запрос';
       return;
     }
   }
-  phase.value = "SUBMITTING";
-  error.value = "";
+  phase.value = 'SUBMITTING';
+  error.value = '';
   idempotencyKey.value ??= createIdempotencyKey();
   try {
     const request = await cmsAgentRepository.submit(projectId, {
@@ -211,35 +173,32 @@ async function submit(): Promise<void> {
         ? { highCostConfirmationToken: estimate.value.confirmationToken! }
         : {}),
     });
-    if (requestGeneration.value !== generation || props.projectId !== projectId)
-      return;
+    if (requestGeneration.value !== generation || props.projectId !== projectId) return;
     pendingRequestId.value = request.requestId;
     pendingProjectId.value = projectId;
-    phase.value = "IDLE";
+    phase.value = 'IDLE';
     await executePending(generation);
   } catch (cause) {
-    if (requestGeneration.value !== generation || props.projectId !== projectId)
-      return;
-    phase.value = "FAILED";
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось отправить запрос";
+    if (requestGeneration.value !== generation || props.projectId !== projectId) return;
+    phase.value = 'FAILED';
+    error.value = cause instanceof Error ? cause.message : 'Не удалось отправить запрос';
   }
 }
 
 function confirmHighCost(): void {
-  if (phase.value !== "CONFIRMATION") return;
-  phase.value = "IDLE";
+  if (phase.value !== 'CONFIRMATION') return;
+  phase.value = 'IDLE';
   void submit();
 }
 
 async function retryFailed(): Promise<void> {
-  if (phase.value !== "FAILED" || busy.value) return;
+  if (phase.value !== 'FAILED' || busy.value) return;
   if (freshRequestRequired.value) resetRequest();
   await submit();
 }
 
 function startAnother(): void {
-  text.value = "";
+  text.value = '';
   resetRequest();
 }
 
@@ -248,8 +207,8 @@ function reviseRequest(): void {
 }
 
 function resetRequest(): void {
-  phase.value = "IDLE";
-  error.value = "";
+  phase.value = 'IDLE';
+  error.value = '';
   pendingRequestId.value = null;
   pendingProjectId.value = null;
   idempotencyKey.value = null;
@@ -272,7 +231,7 @@ onBeforeUnmount(() => {
 });
 
 function handleShortcut(event: KeyboardEvent): void {
-  if (event.key !== "Enter" || (!event.ctrlKey && !event.metaKey)) return;
+  if (event.key !== 'Enter' || (!event.ctrlKey && !event.metaKey)) return;
   event.preventDefault();
   void submit();
 }
@@ -293,8 +252,8 @@ function handleShortcut(event: KeyboardEvent): void {
         <div class="ai-label"><i class="pi pi-circle-fill" /> AI workspace</div>
         <h2 id="ai-command-title">Что нужно узнать о проекте?</h2>
         <p>
-          Retenive выберет только разрешённые источники, выполнит ограниченные
-          read-only запросы и сохранит результат в журнале.
+          Retenive выберет только разрешённые источники, выполнит ограниченные read-only запросы и
+          сохранит результат в журнале.
         </p>
       </div>
     </div>
@@ -321,17 +280,13 @@ function handleShortcut(event: KeyboardEvent): void {
           id="ai-command-character-count"
           class="character-count"
           :class="{ 'is-visible': text.length > 0 }"
-          >{{ text.length.toLocaleString("ru-RU") }} / 10 000</span
+          >{{ text.length.toLocaleString('ru-RU') }} / 10 000</span
         >
         <span v-if="busy" class="composer-progress" aria-live="polite">
           <i class="pi pi-sparkles" aria-hidden="true" />
           {{ buttonLabel }}
         </span>
-        <span
-          v-else
-          class="shortcut"
-          aria-label="Command или Control плюс Enter"
-        >
+        <span v-else class="shortcut" aria-label="Command или Control плюс Enter">
           <kbd>⌘/Ctrl</kbd><span aria-hidden="true">+</span><kbd>Enter</kbd>
         </span>
         <Button
@@ -347,12 +302,7 @@ function handleShortcut(event: KeyboardEvent): void {
       </div>
     </form>
 
-    <div
-      class="ai-command-status"
-      role="status"
-      aria-live="polite"
-      aria-atomic="true"
-    >
+    <div class="ai-command-status" role="status" aria-live="polite" aria-atomic="true">
       <Message
         v-if="phase === 'CONFIRMATION'"
         severity="warn"
@@ -363,14 +313,11 @@ function handleShortcut(event: KeyboardEvent): void {
           <span>
             <strong>Нужно подтвердить высокий расход.</strong>
             Резерв до {{ estimateCost }}, модель {{ estimate?.model }}, максимум
-            {{ estimate?.maxProviderCalls }} обращения к провайдеру.
-            Подтверждение действует до
+            {{ estimate?.maxProviderCalls }} обращения к провайдеру. Подтверждение действует до
             {{
               estimate?.confirmationExpiresAt
-                ? new Date(estimate.confirmationExpiresAt).toLocaleString(
-                    "ru-RU",
-                  )
-                : "—"
+                ? new Date(estimate.confirmationExpiresAt).toLocaleString('ru-RU')
+                : '—'
             }}.
           </span>
           <span class="message-buttons">
@@ -452,9 +399,7 @@ function handleShortcut(event: KeyboardEvent): void {
         class="ai-command-message"
       >
         <div class="message-content">
-          <span>
-            Этот запрос пока не поддерживается доступными инструментами проекта.
-          </span>
+          <span> Этот запрос пока не поддерживается доступными инструментами проекта. </span>
           <Button
             label="Изменить запрос"
             size="small"
@@ -472,8 +417,8 @@ function handleShortcut(event: KeyboardEvent): void {
       >
         <div class="message-content">
           <span>
-            Результат запуска пока неизвестен. Запрос сохранён; проверьте журнал
-            операций перед повтором.
+            Результат запуска пока неизвестен. Запрос сохранён; проверьте журнал операций перед
+            повтором.
           </span>
           <Button
             label="Новый запрос"
@@ -491,7 +436,7 @@ function handleShortcut(event: KeyboardEvent): void {
         class="ai-command-message"
       >
         <div class="message-content">
-          <span>{{ error || "Запрос не удалось выполнить." }}</span>
+          <span>{{ error || 'Запрос не удалось выполнить.' }}</span>
           <Button
             data-testid="ai-command-retry"
             :label="freshRequestRequired ? 'Повторить новым запросом' : 'Повторить'"
@@ -541,8 +486,7 @@ function handleShortcut(event: KeyboardEvent): void {
       color-mix(in srgb, var(--surface-card) 91%, var(--status-accent-soft)),
       color-mix(in srgb, var(--surface-card) 92%, var(--brand-soft))
     );
-  border: 1px solid
-    color-mix(in srgb, var(--status-accent) 24%, var(--border-default));
+  border: 1px solid color-mix(in srgb, var(--status-accent) 24%, var(--border-default));
   border-radius: 30px;
   box-shadow:
     0 28px 72px color-mix(in srgb, var(--status-accent) 10%, transparent),
@@ -550,7 +494,7 @@ function handleShortcut(event: KeyboardEvent): void {
     inset 0 1px color-mix(in srgb, var(--surface-card) 88%, transparent);
 }
 .ai-command-composer::before {
-  content: "";
+  content: '';
   position: absolute;
   z-index: 0;
   inset: -20%;
@@ -578,7 +522,7 @@ function handleShortcut(event: KeyboardEvent): void {
   height: 250px;
   border: 1px solid color-mix(in srgb, var(--status-accent) 22%, transparent);
   border-radius: 50%;
-  content: "";
+  content: '';
   box-shadow:
     0 0 0 38px color-mix(in srgb, var(--brand) 5%, transparent),
     0 0 0 76px color-mix(in srgb, var(--status-accent) 4%, transparent);
@@ -619,7 +563,7 @@ function handleShortcut(event: KeyboardEvent): void {
   box-shadow:
     0 0 18px color-mix(in srgb, var(--ai-aura-blue) 14%, transparent),
     inset 0 0 12px color-mix(in srgb, var(--ai-aura-lime) 8%, transparent);
-  content: "";
+  content: '';
   animation: ai-orb-halo 4.8s ease-in-out infinite;
 }
 .ai-orb i {
@@ -660,13 +604,8 @@ function handleShortcut(event: KeyboardEvent): void {
   padding: 7px;
   overflow: hidden;
   color: var(--text-primary);
-  background: color-mix(
-    in srgb,
-    var(--surface-raised) 94%,
-    var(--surface-card)
-  );
-  border: 1px solid
-    color-mix(in srgb, var(--status-accent) 18%, var(--border-default));
+  background: color-mix(in srgb, var(--surface-raised) 94%, var(--surface-card));
+  border: 1px solid color-mix(in srgb, var(--status-accent) 18%, var(--border-default));
   border-radius: 24px;
   box-shadow:
     0 22px 52px color-mix(in srgb, var(--status-accent) 10%, transparent),
@@ -691,7 +630,7 @@ function handleShortcut(event: KeyboardEvent): void {
     color-mix(in srgb, var(--ai-aura-lime) 18%, transparent),
     transparent
   );
-  content: "";
+  content: '';
   opacity: 0;
   transform: rotate(10deg);
   animation: ai-composer-sheen 9s ease-in-out infinite;
@@ -929,11 +868,7 @@ function handleShortcut(event: KeyboardEvent): void {
 @keyframes ai-working-pulse {
   0%,
   100% {
-    border-color: color-mix(
-      in srgb,
-      var(--status-accent) 28%,
-      var(--border-default)
-    );
+    border-color: color-mix(in srgb, var(--status-accent) 28%, var(--border-default));
   }
   50% {
     border-color: color-mix(in srgb, var(--brand) 54%, var(--status-accent));

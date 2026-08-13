@@ -5,20 +5,20 @@ import {
   initialAccessLogin,
   initialAccessRefresh,
   initialAccessSetupPassword,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   CmsAuthenticatedResponseDto,
   CmsAuthenticatedUserResponseDto,
   CmsSessionContextResponseDto,
   CmsSessionProjectContextDto,
-} from "@/shared/api/generated/models";
-import { demoProject } from "@/shared/api/mock-data";
+} from '@/shared/api/generated/models';
+import { demoProject } from '@/shared/api/mock-data';
 import {
   authTeardownRequestOptions,
   beginAuthTeardown,
   endAuthTeardown,
   registerRefreshHandler,
-} from "@/shared/api/http/axios-instance";
+} from '@/shared/api/http/axios-instance';
 import {
   clearAuthSession,
   clearLocalAuthSession,
@@ -27,39 +27,37 @@ import {
   getAccessToken,
   getSelectedProjectId,
   storeAccessToken,
-} from "@/shared/api/http/auth-session";
-import { isMockMode } from "@/shared/config/data-mode";
-import { isInteractiveLoginRequired } from "./interactive-login-requirement";
-import type { AuthProject, CmsUser } from "@/shared/types/domain";
-import { PROJECT_PERMISSION_CODES } from "./permission-access";
+} from '@/shared/api/http/auth-session';
+import { isMockMode } from '@/shared/config/data-mode';
+import { isInteractiveLoginRequired } from './interactive-login-requirement';
+import type { AuthProject, CmsUser } from '@/shared/types/domain';
+import { PROJECT_PERMISSION_CODES } from './permission-access';
 import {
   startAuthentication,
   startRegistration,
   type PublicKeyCredentialCreationOptionsJSON,
-} from "@simplewebauthn/browser";
+} from '@simplewebauthn/browser';
 import {
   mfaApi,
   type MfaAuthenticationOptions,
   type MfaEnrolledResponse,
   type MfaEnrollmentOptions,
-} from "./mfa.api";
+} from './mfa.api';
 
-const DEMO_SESSION_KEY = "retenive-cms-demo-auth-v1";
-const DEMO_KNOWLEDGE_PREFIX = "retenive-cms-demo-knowledge-v1:";
-const TRANSLATION_JOB_PREFIX = "retenive:translation-jobs:";
+const DEMO_SESSION_KEY = 'retenive-cms-demo-auth-v1';
+const DEMO_KNOWLEDGE_PREFIX = 'retenive-cms-demo-knowledge-v1:';
+const TRANSLATION_JOB_PREFIX = 'retenive:translation-jobs:';
 const pendingEnrollmentOptions = new Map<string, MfaEnrollmentOptions>();
 type AuthenticationOperationGuard = () => boolean;
 
 export class AuthenticationOperationCancelledError extends Error {
   constructor() {
-    super("Вход был отменён. Начните авторизацию заново.");
-    this.name = "AuthenticationOperationCancelledError";
+    super('Вход был отменён. Начните авторизацию заново.');
+    this.name = 'AuthenticationOperationCancelledError';
   }
 }
 
-function assertAuthenticationOperationCurrent(
-  isCurrent: AuthenticationOperationGuard,
-): void {
+function assertAuthenticationOperationCurrent(isCurrent: AuthenticationOperationGuard): void {
   if (!isCurrent()) throw new AuthenticationOperationCancelledError();
 }
 
@@ -81,10 +79,7 @@ function clearDemoSession() {
   sessionStorage.removeItem(DEMO_SESSION_KEY);
   for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
     const key = sessionStorage.key(index);
-    if (
-      key?.startsWith(DEMO_KNOWLEDGE_PREFIX) ||
-      key?.startsWith(TRANSLATION_JOB_PREFIX)
-    )
+    if (key?.startsWith(DEMO_KNOWLEDGE_PREFIX) || key?.startsWith(TRANSLATION_JOB_PREFIX))
       sessionStorage.removeItem(key);
   }
 }
@@ -99,18 +94,18 @@ export interface AuthContext {
 }
 
 export type AuthLoginResult =
-  | { kind: "AUTHENTICATED"; context: AuthContext }
-  | { kind: "PASSWORD_SETUP_REQUIRED"; setupToken: string; expiresAt: string }
+  | { kind: 'AUTHENTICATED'; context: AuthContext }
+  | { kind: 'PASSWORD_SETUP_REQUIRED'; setupToken: string; expiresAt: string }
   | MfaChallenge;
 
 export type MfaChallenge =
   | {
-      kind: "MFA_ENROLLMENT_REQUIRED";
+      kind: 'MFA_ENROLLMENT_REQUIRED';
       ceremonyToken: string;
       expiresAt: string;
     }
   | {
-      kind: "MFA_REQUIRED";
+      kind: 'MFA_REQUIRED';
       ceremonyToken: string;
       expiresAt: string;
       publicKey: MfaAuthenticationOptions;
@@ -118,12 +113,12 @@ export type MfaChallenge =
     };
 
 export type MfaCompletionResult =
-  { kind: "AUTHENTICATED"; context: AuthContext } | MfaEnrolledResponse;
+  { kind: 'AUTHENTICATED'; context: AuthContext } | MfaEnrolledResponse;
 
 export interface PasswordSetupResult {
-  kind: "PASSWORD_ESTABLISHED";
-  status: "ACTIVE";
-  nextAction: "LOGIN";
+  kind: 'PASSWORD_ESTABLISHED';
+  status: 'ACTIVE';
+  nextAction: 'LOGIN';
 }
 
 function mapUser(
@@ -139,12 +134,11 @@ function mapUser(
     id: user.id,
     email: user.email,
     name: user.displayName,
-    ...("emailVerifiedAt" in emailIdentity
+    ...('emailVerifiedAt' in emailIdentity
       ? {
           emailVerifiedAt: emailIdentity.emailVerifiedAt ?? null,
           pendingEmail: emailIdentity.pendingEmail ?? null,
-          emailVerificationRetryAfterSeconds:
-            emailIdentity.emailVerificationRetryAfterSeconds ?? 0,
+          emailVerificationRetryAfterSeconds: emailIdentity.emailVerificationRetryAfterSeconds ?? 0,
         }
       : {}),
     platformPermissionCodes,
@@ -182,14 +176,11 @@ function rememberAccess(response: CmsAuthenticatedResponseDto): void {
 }
 
 registerRefreshHandler(async () => {
-  if (isInteractiveLoginRequired())
-    throw new AuthenticationOperationCancelledError();
+  if (isInteractiveLoginRequired()) throw new AuthenticationOperationCancelledError();
   await coordinateAccessTokenRefresh(async () => {
-    if (isInteractiveLoginRequired())
-      throw new AuthenticationOperationCancelledError();
+    if (isInteractiveLoginRequired()) throw new AuthenticationOperationCancelledError();
     const response = await initialAccessRefresh();
-    if (isInteractiveLoginRequired())
-      throw new AuthenticationOperationCancelledError();
+    if (isInteractiveLoginRequired()) throw new AuthenticationOperationCancelledError();
     rememberAccess(response);
   });
 });
@@ -213,32 +204,32 @@ async function loadContext(): Promise<AuthContext> {
 function readSessionCapabilities(response: CmsSessionContextResponseDto): {
   supportEnabled: boolean;
 } {
-  const capabilities = (response as CmsSessionContextResponseDto & {
-    capabilities?: { supportEnabled?: unknown };
-  }).capabilities;
-  if (typeof capabilities?.supportEnabled !== "boolean") {
-    throw new Error("Session context does not declare Support availability");
+  const capabilities = (
+    response as CmsSessionContextResponseDto & {
+      capabilities?: { supportEnabled?: unknown };
+    }
+  ).capabilities;
+  if (typeof capabilities?.supportEnabled !== 'boolean') {
+    throw new Error('Session context does not declare Support availability');
   }
   return { supportEnabled: capabilities.supportEnabled };
 }
 
 function demoContext(login: string): AuthContext {
-  const platformPermissionCodes = login.startsWith("platform@")
-    ? ["platform.case_intelligence.safety.manage"]
+  const platformPermissionCodes = login.startsWith('platform@')
+    ? ['platform.case_intelligence.safety.manage']
     : [];
   return {
     user: {
-      id: "cms_1",
+      id: 'cms_1',
       email: login,
-      name: login.startsWith("admin@")
-        ? "Алексей"
-        : login.split("@")[0] || "Администратор",
+      name: login.startsWith('admin@') ? 'Алексей' : login.split('@')[0] || 'Администратор',
       platformPermissionCodes,
     },
     projects: [
       {
         ...structuredClone(demoProject),
-        roleKeys: ["PROJECT_OWNER"],
+        roleKeys: ['PROJECT_OWNER'],
         effectivePermissionCodes: [...PROJECT_PERMISSION_CODES],
       },
     ],
@@ -248,7 +239,7 @@ function demoContext(login: string): AuthContext {
 }
 
 export const authApi = {
-  mode: isMockMode ? "mock" : "api",
+  mode: isMockMode ? 'mock' : 'api',
 
   async login(
     login: string,
@@ -258,7 +249,7 @@ export const authApi = {
     if (isMockMode) {
       const context = demoContext(login);
       sessionStorage.setItem(DEMO_SESSION_KEY, JSON.stringify(context));
-      return { kind: "AUTHENTICATED", context };
+      return { kind: 'AUTHENTICATED', context };
     }
     assertAuthenticationOperationCurrent(isCurrent);
     clearPendingMfaCeremonies();
@@ -285,23 +276,18 @@ export const authApi = {
     isCurrent: AuthenticationOperationGuard = () => true,
   ): Promise<MfaCompletionResult> {
     assertAuthenticationOperationCurrent(isCurrent);
-    if (challenge.kind === "MFA_ENROLLMENT_REQUIRED") {
+    if (challenge.kind === 'MFA_ENROLLMENT_REQUIRED') {
       const options =
         validPendingEnrollment(challenge.ceremonyToken) ??
         (await mfaApi.enrollmentOptions(challenge.ceremonyToken));
       pendingEnrollmentOptions.set(challenge.ceremonyToken, options);
       const credential = await startRegistration({
-        optionsJSON:
-          options.publicKey as unknown as PublicKeyCredentialCreationOptionsJSON,
+        optionsJSON: options.publicKey as unknown as PublicKeyCredentialCreationOptionsJSON,
       });
       assertAuthenticationOperationCurrent(isCurrent);
       const response = await coordinateAuthSessionMutation(() => {
         assertAuthenticationOperationCurrent(isCurrent);
-        return mfaApi.completeEnrollment(
-          options.ceremonyToken,
-          credential,
-          label,
-        );
+        return mfaApi.completeEnrollment(options.ceremonyToken, credential, label);
       });
       assertAuthenticationOperationCurrent(isCurrent);
       pendingEnrollmentOptions.delete(challenge.ceremonyToken);
@@ -323,11 +309,11 @@ export const authApi = {
     });
     const context = await loadContext();
     assertAuthenticationOperationCurrent(isCurrent);
-    return { kind: "AUTHENTICATED", context };
+    return { kind: 'AUTHENTICATED', context };
   },
 
   async completeMfaRecovery(
-    challenge: Extract<MfaChallenge, { kind: "MFA_REQUIRED" }>,
+    challenge: Extract<MfaChallenge, { kind: 'MFA_REQUIRED' }>,
     recoveryCode: string,
     label?: string,
     isCurrent: AuthenticationOperationGuard = () => true,
@@ -338,8 +324,7 @@ export const authApi = {
       (await mfaApi.completeRecovery(challenge.ceremonyToken, recoveryCode));
     pendingEnrollmentOptions.set(challenge.ceremonyToken, options);
     const credential = await startRegistration({
-      optionsJSON:
-        options.publicKey as unknown as PublicKeyCredentialCreationOptionsJSON,
+      optionsJSON: options.publicKey as unknown as PublicKeyCredentialCreationOptionsJSON,
     });
     assertAuthenticationOperationCurrent(isCurrent);
     const response = await coordinateAuthSessionMutation(() => {
@@ -355,16 +340,14 @@ export const authApi = {
     clearPendingMfaCeremonies();
   },
 
-  async restore(
-    isCurrent: AuthenticationOperationGuard = () => true,
-  ): Promise<AuthContext | null> {
+  async restore(isCurrent: AuthenticationOperationGuard = () => true): Promise<AuthContext | null> {
     clearPendingMfaCeremonies();
     if (isMockMode) {
       const raw = sessionStorage.getItem(DEMO_SESSION_KEY);
       if (!raw) return null;
       try {
         const context = JSON.parse(raw) as AuthContext;
-        if (typeof context.capabilities?.supportEnabled !== "boolean") {
+        if (typeof context.capabilities?.supportEnabled !== 'boolean') {
           sessionStorage.removeItem(DEMO_SESSION_KEY);
           return null;
         }

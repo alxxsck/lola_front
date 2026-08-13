@@ -1,16 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest';
 
 import type {
   ScenarioAuthoringContract,
   ScenarioAuthoringEvent,
-} from '@/shared/api/repository/scenario-authoring'
+} from '@/shared/api/repository/scenario-authoring';
 
-import { createRuleDraft } from './rule-draft'
-import {
-  applyRuleQuickStartRecipe,
-  createRuleQuickStartRecipes,
-} from './rule-recipes'
-import type { RuleDomainContext } from './rule-types'
+import { createRuleDraft } from './rule-draft';
+import { applyRuleQuickStartRecipe, createRuleQuickStartRecipes } from './rule-recipes';
+import type { RuleDomainContext } from './rule-types';
 
 function event(code: string, name: string): ScenarioAuthoringEvent {
   return {
@@ -19,15 +16,17 @@ function event(code: string, name: string): ScenarioAuthoringEvent {
     definitionKeyId: `key-${code}`,
     name,
     schemaVersion: 1,
-    aggregateMeasures: [{
-      measure: 'count',
-      field: 'none',
-      resultType: 'integer',
-      compareValueType: 'integer',
-      compareOperators: ['eq', 'gte'],
-    }],
+    aggregateMeasures: [
+      {
+        measure: 'count',
+        field: 'none',
+        resultType: 'integer',
+        compareValueType: 'integer',
+        compareOperators: ['eq', 'gte'],
+      },
+    ],
     fields: [],
-  }
+  };
 }
 
 function context(events: ScenarioAuthoringEvent[]): RuleDomainContext {
@@ -36,13 +35,13 @@ function context(events: ScenarioAuthoringEvent[]): RuleDomainContext {
     revision: 'catalog-1',
     version: 1,
     events,
-  }
+  };
   return {
     triggerEventDefinitionId: events[0]?.definitionId ?? 'trigger',
     triggerEventCode: events[0]?.code ?? 'trigger',
     mode: 'initialEligibility',
     contract,
-  }
+  };
 }
 
 describe('rule quick-start recipes', () => {
@@ -51,43 +50,41 @@ describe('rule quick-start recipes', () => {
       event('registration.completed', 'Регистрация завершена'),
       event('deposit.failed', 'Ошибка депозита'),
       event('deposit.succeeded', 'Успешный депозит'),
-    ])
-    const recipe = createRuleQuickStartRecipes(ruleContext)
-      .find(({ id }) => id === 'registration-no-deposit-5m')!
-    const draft = createRuleDraft()
-    const result = applyRuleQuickStartRecipe(
-      draft,
-      draft.root.nodeId,
-      recipe,
-      ruleContext,
-    )
+    ]);
+    const recipe = createRuleQuickStartRecipes(ruleContext).find(
+      ({ id }) => id === 'registration-no-deposit-5m',
+    )!;
+    const draft = createRuleDraft();
+    const result = applyRuleQuickStartRecipe(draft, draft.root.nodeId, recipe, ruleContext);
 
     expect(result).toMatchObject({
       ok: true,
       draft: {
         root: {
           kind: 'all',
-          children: [{
-            kind: 'all',
-            children: [
-              { kind: 'eventAggregate', eventCode: 'registration.completed' },
-              { kind: 'eventAggregate', eventCode: 'deposit.succeeded' },
-            ],
-          }],
+          children: [
+            {
+              kind: 'all',
+              children: [
+                { kind: 'eventAggregate', eventCode: 'registration.completed' },
+                { kind: 'eventAggregate', eventCode: 'deposit.succeeded' },
+              ],
+            },
+          ],
         },
       },
-    })
-  })
+    });
+  });
 
   it('disables the compound recipe when the catalog has no registration event', () => {
-    const ruleContext = context([
-      event('deposit.succeeded', 'Успешный депозит'),
-    ])
+    const ruleContext = context([event('deposit.succeeded', 'Успешный депозит')]);
 
-    expect(createRuleQuickStartRecipes(ruleContext)
-      .find(({ id }) => id === 'registration-no-deposit-5m'))
-      .toMatchObject({ nodes: undefined })
-  })
+    expect(
+      createRuleQuickStartRecipes(ruleContext).find(
+        ({ id }) => id === 'registration-no-deposit-5m',
+      ),
+    ).toMatchObject({ nodes: undefined });
+  });
 
   it('does not mistake a failed deposit for the positive deposit outcome', () => {
     const ruleContext = context([
@@ -95,10 +92,11 @@ describe('rule quick-start recipes', () => {
       event('deposit.failed', 'Ошибка депозита'),
       event('deposit.created', 'Депозит создан'),
       event('deposit.succeeded', 'Успешный депозит'),
-    ])
+    ]);
 
-    expect(createRuleQuickStartRecipes(ruleContext)
-      .find(({ id }) => id === 'registration-no-deposit-5m')?.nodes?.[1])
-      .toMatchObject({ kind: 'eventAggregate', eventCode: 'deposit.succeeded' })
-  })
-})
+    expect(
+      createRuleQuickStartRecipes(ruleContext).find(({ id }) => id === 'registration-no-deposit-5m')
+        ?.nodes?.[1],
+    ).toMatchObject({ kind: 'eventAggregate', eventCode: 'deposit.succeeded' });
+  });
+});

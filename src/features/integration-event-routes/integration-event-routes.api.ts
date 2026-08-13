@@ -8,19 +8,19 @@ import {
   integrationEventRouteEnable,
   integrationEventRouteList,
   integrationEventRoutePublish,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   CreateAmplitudeOutboundRouteDto,
   CreateCustomerIoOutboundRouteDto,
   EditIntegrationEventRouteDraftDto,
   IntegrationEventRouteVersionDto,
   PublishIntegrationEventRouteDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 export type { CreateCustomerIoOutboundRouteDto };
 
 const commandOptions = (idempotencyKey: string) => ({
-  headers: { "Idempotency-Key": idempotencyKey },
+  headers: { 'Idempotency-Key': idempotencyKey },
 });
 
 export const integrationEventRoutesApi = {
@@ -29,10 +29,10 @@ export const integrationEventRoutesApi = {
   },
 
   listEventDefinitions(projectId: string) {
-    return eventCatalogList(projectId, { lifecycle: "ACTIVE" });
+    return eventCatalogList(projectId, { lifecycle: 'ACTIVE' });
   },
 
-  listActivity(projectId: string, provider: "AMPLITUDE" | "CUSTOMER_IO") {
+  listActivity(projectId: string, provider: 'AMPLITUDE' | 'CUSTOMER_IO') {
     return integrationEventRouteActivityList(projectId, { provider });
   },
 
@@ -41,11 +41,7 @@ export const integrationEventRoutesApi = {
     input: CreateAmplitudeOutboundRouteDto,
     idempotencyKey: string,
   ) {
-    return integrationEventRouteCreateAmplitude(
-      projectId,
-      input,
-      commandOptions(idempotencyKey),
-    );
+    return integrationEventRouteCreateAmplitude(projectId, input, commandOptions(idempotencyKey));
   },
 
   createCustomerIo(
@@ -53,11 +49,7 @@ export const integrationEventRoutesApi = {
     input: CreateCustomerIoOutboundRouteDto,
     idempotencyKey: string,
   ) {
-    return integrationEventRouteCreateCustomerIo(
-      projectId,
-      input,
-      commandOptions(idempotencyKey),
-    );
+    return integrationEventRouteCreateCustomerIo(projectId, input, commandOptions(idempotencyKey));
   },
 
   editDraft(
@@ -80,12 +72,7 @@ export const integrationEventRoutesApi = {
     input: PublishIntegrationEventRouteDto,
     idempotencyKey: string,
   ) {
-    return integrationEventRoutePublish(
-      projectId,
-      routeId,
-      input,
-      commandOptions(idempotencyKey),
-    );
+    return integrationEventRoutePublish(projectId, routeId, input, commandOptions(idempotencyKey));
   },
 
   enable(
@@ -94,12 +81,7 @@ export const integrationEventRoutesApi = {
     input: IntegrationEventRouteVersionDto,
     idempotencyKey: string,
   ) {
-    return integrationEventRouteEnable(
-      projectId,
-      routeId,
-      input,
-      commandOptions(idempotencyKey),
-    );
+    return integrationEventRouteEnable(projectId, routeId, input, commandOptions(idempotencyKey));
   },
 
   disable(
@@ -108,11 +90,6 @@ export const integrationEventRoutesApi = {
     input: IntegrationEventRouteVersionDto,
     idempotencyKey: string,
   ) {
-    return integrationEventRouteDisable(
-      projectId,
-      routeId,
-      input,
-      commandOptions(idempotencyKey),
-    );
+    return integrationEventRouteDisable(projectId, routeId, input, commandOptions(idempotencyKey));
   },
 };

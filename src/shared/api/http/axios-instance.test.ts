@@ -3,14 +3,14 @@ import {
   AxiosHeaders,
   type AxiosResponse,
   type InternalAxiosRequestConfig,
-} from "axios";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+} from 'axios';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearAuthSession,
   getAccessToken,
   storeAccessToken,
   storeSelectedProjectId,
-} from "./auth-session";
+} from './auth-session';
 import {
   authTeardownRequestOptions,
   beginAuthTeardown,
@@ -20,16 +20,13 @@ import {
   registerUnauthorizedHandler,
   registerMfaRequirementHandler,
   registerRefreshHandler,
-} from "./axios-instance";
+} from './axios-instance';
 
-function response(
-  config: InternalAxiosRequestConfig,
-  status: number,
-): AxiosResponse {
+function response(config: InternalAxiosRequestConfig, status: number): AxiosResponse {
   return {
-    data: status === 200 ? { ok: true } : { message: "Unauthorized" },
+    data: status === 200 ? { ok: true } : { message: 'Unauthorized' },
     status,
-    statusText: "",
+    statusText: '',
     headers: {},
     config,
   };
@@ -37,87 +34,82 @@ function response(
 
 function reject(config: InternalAxiosRequestConfig, status: number): never {
   throw new AxiosError(
-    "Request failed",
-    "ERR_BAD_REQUEST",
+    'Request failed',
+    'ERR_BAD_REQUEST',
     config,
     undefined,
     response(config, status),
   );
 }
 
-describe("axios auth lifecycle", () => {
+describe('axios auth lifecycle', () => {
   beforeEach(() => {
     endAuthTeardown();
     sessionStorage.clear();
     clearAuthSession();
   });
 
-  it("sends browser cookies on generated API requests", () => {
+  it('sends browser cookies on generated API requests', () => {
     expect(axiosInstance.defaults.withCredentials).toBe(true);
   });
 
-  it("preserves a logout token snapshot after local authority is cleared", async () => {
-    storeAccessToken({ accessToken: "snapshot-access", expiresIn: 60 });
+  it('preserves a logout token snapshot after local authority is cleared', async () => {
+    storeAccessToken({ accessToken: 'snapshot-access', expiresIn: 60 });
     clearAuthSession();
-    let authorization = "";
+    let authorization = '';
     let leakedInternalOption = false;
     axiosInstance.defaults.adapter = async (config) => {
-      authorization = String(
-        AxiosHeaders.from(config.headers).get("Authorization") ?? "",
-      );
-      leakedInternalOption = "_authTeardownAccessToken" in config;
+      authorization = String(AxiosHeaders.from(config.headers).get('Authorization') ?? '');
+      leakedInternalOption = '_authTeardownAccessToken' in config;
       return response(config, 200);
     };
 
     beginAuthTeardown();
     try {
       await axiosInstance.post(
-        "/api/v1/auth/logout",
+        '/api/v1/auth/logout',
         undefined,
-        authTeardownRequestOptions("snapshot-access"),
+        authTeardownRequestOptions('snapshot-access'),
       );
     } finally {
       endAuthTeardown();
     }
 
-    expect(authorization).toBe("Bearer snapshot-access");
+    expect(authorization).toBe('Bearer snapshot-access');
     expect(leakedInternalOption).toBe(false);
     expect(getAccessToken()).toBeNull();
   });
 
-  it("uses one refresh for parallel 401 responses and retries with the new token", async () => {
-    storeAccessToken({ accessToken: "stale", expiresIn: 60 });
+  it('uses one refresh for parallel 401 responses and retries with the new token', async () => {
+    storeAccessToken({ accessToken: 'stale', expiresIn: 60 });
     let refreshCount = 0;
     registerRefreshHandler(async () => {
       refreshCount += 1;
       await Promise.resolve();
-      storeAccessToken({ accessToken: "fresh", expiresIn: 60 });
+      storeAccessToken({ accessToken: 'fresh', expiresIn: 60 });
     });
     const attempts = new Map<string, number>();
     const retryAuthorizations: string[] = [];
     axiosInstance.defaults.adapter = async (config) => {
-      const key = config.url ?? "";
+      const key = config.url ?? '';
       const attempt = (attempts.get(key) ?? 0) + 1;
       attempts.set(key, attempt);
       if (attempt === 1) reject(config, 401);
       retryAuthorizations.push(
-        String(AxiosHeaders.from(config.headers).get("Authorization") ?? ""),
+        String(AxiosHeaders.from(config.headers).get('Authorization') ?? ''),
       );
       return response(config, 200);
     };
 
-    await Promise.all([
-      axiosInstance.get("/first"),
-      axiosInstance.get("/second"),
-    ]);
+    await Promise.all([axiosInstance.get('/first'), axiosInstance.get('/second')]);
 
     expect(refreshCount).toBe(1);
-    expect(retryAuthorizations).toEqual(["Bearer fresh", "Bearer fresh"]);
+    expect(retryAuthorizations).toEqual(['Bearer fresh', 'Bearer fresh']);
   });
 
-  it("does not clear the active session when a late 401 belongs to the previous Project", async () => {
-    storeAccessToken({ accessToken: "valid", expiresIn: 60 });
-    storeSelectedProjectId("project-1");
+  it('does not clear the active session when a late 401 belongs to the previous Project', async () => {
+    storeAccessToken({ accessToken: 'valid', expiresIn: 60 });
+    storeSelectedProjectId('project-1');
     const refresh = vi.fn(async () => undefined);
     const unauthorized = vi.fn();
     registerRefreshHandler(refresh);
@@ -129,8 +121,8 @@ describe("axios auth lifecycle", () => {
       if (attempts > 1)
         return Promise.reject(
           new AxiosError(
-            "Request failed",
-            "ERR_BAD_REQUEST",
+            'Request failed',
+            'ERR_BAD_REQUEST',
             config,
             undefined,
             response(config, 401),
@@ -147,24 +139,20 @@ describe("axios auth lifecycle", () => {
       });
     };
 
-    const oldProjectRequest = axiosInstance.get(
-      "/api/v1/admin/projects/project-1/support/inbox",
-    );
-    await vi.waitFor(() => expect(rejectRequest).toBeTypeOf("function"));
-    storeSelectedProjectId("project-2");
+    const oldProjectRequest = axiosInstance.get('/api/v1/admin/projects/project-1/support/inbox');
+    await vi.waitFor(() => expect(rejectRequest).toBeTypeOf('function'));
+    storeSelectedProjectId('project-2');
     rejectRequest();
 
     await expect(oldProjectRequest).rejects.toMatchObject({ status: 401 });
     expect(refresh).not.toHaveBeenCalled();
     expect(unauthorized).not.toHaveBeenCalled();
-    expect(getAccessToken()).toBe("valid");
-    expect(sessionStorage.getItem("retenive-cms-selected-project-v1")).toBe(
-      "project-2",
-    );
+    expect(getAccessToken()).toBe('valid');
+    expect(sessionStorage.getItem('retenive-cms-selected-project-v1')).toBe('project-2');
   });
 
-  it("never refreshes or replays an audited Support mutation", async () => {
-    storeAccessToken({ accessToken: "confirmed-authority", expiresIn: 60 });
+  it('never refreshes or replays an audited Support mutation', async () => {
+    storeAccessToken({ accessToken: 'confirmed-authority', expiresIn: 60 });
     const refresh = vi.fn();
     registerRefreshHandler(refresh);
     let attempts = 0;
@@ -175,8 +163,8 @@ describe("axios auth lifecycle", () => {
 
     await expect(
       axiosInstance.put(
-        "/api/v1/admin/projects/project-1/support/external-work/connections/connection-1",
-        { expectedVersion: 4, displayName: "Help desk" },
+        '/api/v1/admin/projects/project-1/support/external-work/connections/connection-1',
+        { expectedVersion: 4, displayName: 'Help desk' },
         noAuthRetryRequestOptions(),
       ),
     ).rejects.toMatchObject({ status: 401 });
@@ -185,66 +173,64 @@ describe("axios auth lifecycle", () => {
     expect(attempts).toBe(1);
   });
 
-  it("does not replay a protected request when logout invalidates its pending refresh", async () => {
-    storeAccessToken({ accessToken: "stale", expiresIn: 60 });
+  it('does not replay a protected request when logout invalidates its pending refresh', async () => {
+    storeAccessToken({ accessToken: 'stale', expiresIn: 60 });
     let releaseRefresh!: () => void;
     let loggedOut = false;
     registerRefreshHandler(async () => {
       await new Promise<void>((resolve) => {
         releaseRefresh = resolve;
       });
-      if (loggedOut) throw new Error("authentication cancelled");
-      storeAccessToken({ accessToken: "late", expiresIn: 60 });
+      if (loggedOut) throw new Error('authentication cancelled');
+      storeAccessToken({ accessToken: 'late', expiresIn: 60 });
     });
     let attempts = 0;
     axiosInstance.defaults.adapter = async (config) => {
       attempts += 1;
       return reject(config, 401);
     };
-    const request = axiosInstance.get("/protected-mutation");
-    await vi.waitFor(() => expect(releaseRefresh).toBeTypeOf("function"));
+    const request = axiosInstance.get('/protected-mutation');
+    await vi.waitFor(() => expect(releaseRefresh).toBeTypeOf('function'));
 
     loggedOut = true;
     clearAuthSession();
     releaseRefresh();
 
     await expect(request).rejects.toMatchObject({
-      message: "authentication cancelled",
+      message: 'authentication cancelled',
     });
     expect(attempts).toBe(1);
     expect(getAccessToken()).toBeNull();
   });
 
-  it("retries with a token synchronized by another tab without refreshing again", async () => {
-    storeAccessToken({ accessToken: "stale", expiresIn: 60 });
+  it('retries with a token synchronized by another tab without refreshing again', async () => {
+    storeAccessToken({ accessToken: 'stale', expiresIn: 60 });
     const refresh = vi.fn(async () => {
-      storeAccessToken({ accessToken: "unnecessary-refresh", expiresIn: 60 });
+      storeAccessToken({ accessToken: 'unnecessary-refresh', expiresIn: 60 });
     });
     registerRefreshHandler(refresh);
     let attempts = 0;
-    let retryAuthorization = "";
+    let retryAuthorization = '';
     axiosInstance.defaults.adapter = async (config) => {
       attempts += 1;
       if (attempts === 1) {
-        storeAccessToken({ accessToken: "shared-fresh", expiresIn: 60 });
+        storeAccessToken({ accessToken: 'shared-fresh', expiresIn: 60 });
         return reject(config, 401);
       }
-      retryAuthorization = String(
-        AxiosHeaders.from(config.headers).get("Authorization") ?? "",
-      );
+      retryAuthorization = String(AxiosHeaders.from(config.headers).get('Authorization') ?? '');
       return response(config, 200);
     };
 
-    await axiosInstance.get("/protected");
+    await axiosInstance.get('/protected');
 
     expect(refresh).not.toHaveBeenCalled();
-    expect(retryAuthorization).toBe("Bearer shared-fresh");
+    expect(retryAuthorization).toBe('Bearer shared-fresh');
   });
 
-  it("retries a request at most once", async () => {
-    storeAccessToken({ accessToken: "stale", expiresIn: 60 });
+  it('retries a request at most once', async () => {
+    storeAccessToken({ accessToken: 'stale', expiresIn: 60 });
     const refresh = vi.fn(async () => {
-      storeAccessToken({ accessToken: "fresh", expiresIn: 60 });
+      storeAccessToken({ accessToken: 'fresh', expiresIn: 60 });
     });
     registerRefreshHandler(refresh);
     let attempts = 0;
@@ -253,20 +239,20 @@ describe("axios auth lifecycle", () => {
       return reject(config, 401);
     };
 
-    await expect(axiosInstance.get("/protected")).rejects.toMatchObject({
+    await expect(axiosInstance.get('/protected')).rejects.toMatchObject({
       status: 401,
     });
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(attempts).toBe(2);
   });
 
-  it("keeps the CMS session when scenario creation is still rejected after a successful refresh", async () => {
-    storeAccessToken({ accessToken: "stale", expiresIn: 60 });
-    storeSelectedProjectId("project-1");
+  it('keeps the CMS session when scenario creation is still rejected after a successful refresh', async () => {
+    storeAccessToken({ accessToken: 'stale', expiresIn: 60 });
+    storeSelectedProjectId('project-1');
     const unauthorized = vi.fn();
     registerUnauthorizedHandler(unauthorized);
     registerRefreshHandler(async () => {
-      storeAccessToken({ accessToken: "fresh", expiresIn: 60 });
+      storeAccessToken({ accessToken: 'fresh', expiresIn: 60 });
     });
     let attempts = 0;
     axiosInstance.defaults.adapter = async (config) => {
@@ -275,34 +261,30 @@ describe("axios auth lifecycle", () => {
     };
 
     await expect(
-      axiosInstance.post(
-        "/api/v1/admin/projects/project-1/scenario-authoring/scenarios",
-        { scenario: {}, draft: {} },
-      ),
+      axiosInstance.post('/api/v1/admin/projects/project-1/scenario-authoring/scenarios', {
+        scenario: {},
+        draft: {},
+      }),
     ).rejects.toMatchObject({ status: 401 });
 
     expect(attempts).toBe(2);
     expect(unauthorized).not.toHaveBeenCalled();
-    expect(getAccessToken()).toBe("fresh");
-    expect(sessionStorage.getItem("retenive-cms-selected-project-v1")).toBe(
-      "project-1",
-    );
+    expect(getAccessToken()).toBe('fresh');
+    expect(sessionStorage.getItem('retenive-cms-selected-project-v1')).toBe('project-1');
   });
 
-  it("does not enter a refresh loop for the refresh endpoint", async () => {
-    storeAccessToken({ accessToken: "stale", expiresIn: 60 });
+  it('does not enter a refresh loop for the refresh endpoint', async () => {
+    storeAccessToken({ accessToken: 'stale', expiresIn: 60 });
     const refresh = vi.fn();
     registerRefreshHandler(refresh);
     axiosInstance.defaults.adapter = async (config) => reject(config, 401);
 
-    await expect(
-      axiosInstance.post("/api/v1/auth/refresh"),
-    ).rejects.toMatchObject({ status: 401 });
+    await expect(axiosInstance.post('/api/v1/auth/refresh')).rejects.toMatchObject({ status: 401 });
     expect(refresh).not.toHaveBeenCalled();
   });
 
-  it("does not refresh or retry requests while logout teardown is active", async () => {
-    storeAccessToken({ accessToken: "stale", expiresIn: 60 });
+  it('does not refresh or retry requests while logout teardown is active', async () => {
+    storeAccessToken({ accessToken: 'stale', expiresIn: 60 });
     const refresh = vi.fn();
     registerRefreshHandler(refresh);
     let attempts = 0;
@@ -312,30 +294,28 @@ describe("axios auth lifecycle", () => {
     };
     beginAuthTeardown();
 
-    await expect(
-      axiosInstance.post("/api/v1/auth/logout"),
-    ).rejects.toMatchObject({ status: 401 });
+    await expect(axiosInstance.post('/api/v1/auth/logout')).rejects.toMatchObject({ status: 401 });
 
     expect(refresh).not.toHaveBeenCalled();
     expect(attempts).toBe(1);
   });
 
-  it("does not refresh or clear a valid session for a wrong current password", async () => {
-    storeAccessToken({ accessToken: "valid", expiresIn: 60 });
+  it('does not refresh or clear a valid session for a wrong current password', async () => {
+    storeAccessToken({ accessToken: 'valid', expiresIn: 60 });
     const refresh = vi.fn();
     registerRefreshHandler(refresh);
     axiosInstance.defaults.adapter = async (config) => reject(config, 401);
 
-    await expect(
-      axiosInstance.post("/api/v1/auth/password/change"),
-    ).rejects.toMatchObject({ status: 401 });
+    await expect(axiosInstance.post('/api/v1/auth/password/change')).rejects.toMatchObject({
+      status: 401,
+    });
 
     expect(refresh).not.toHaveBeenCalled();
-    expect(getAccessToken()).toBe("valid");
+    expect(getAccessToken()).toBe('valid');
   });
 
-  it("does not refresh, replay or clear the session for an email-change password rejection", async () => {
-    storeAccessToken({ accessToken: "valid", expiresIn: 60 });
+  it('does not refresh, replay or clear the session for an email-change password rejection', async () => {
+    storeAccessToken({ accessToken: 'valid', expiresIn: 60 });
     const refresh = vi.fn(async () => {});
     registerRefreshHandler(refresh);
     let attempts = 0;
@@ -345,24 +325,24 @@ describe("axios auth lifecycle", () => {
     };
 
     await expect(
-      axiosInstance.post("/api/v1/auth/me/email-change", {
-        newEmail: "new@example.com",
-        currentPassword: "wrong password",
+      axiosInstance.post('/api/v1/auth/me/email-change', {
+        newEmail: 'new@example.com',
+        currentPassword: 'wrong password',
       }),
     ).rejects.toMatchObject({ status: 401 });
 
     expect(refresh).not.toHaveBeenCalled();
     expect(attempts).toBe(1);
-    expect(getAccessToken()).toBe("valid");
+    expect(getAccessToken()).toBe('valid');
   });
 
   it.each([
-    "/api/v1/auth/mfa/passkeys/authentication/complete",
-    "/api/v1/auth/mfa/recovery/complete",
+    '/api/v1/auth/mfa/passkeys/authentication/complete',
+    '/api/v1/auth/mfa/recovery/complete',
   ])(
-    "does not refresh, replay or clear auth state for a rejected MFA credential proof at %s",
+    'does not refresh, replay or clear auth state for a rejected MFA credential proof at %s',
     async (url) => {
-      storeAccessToken({ accessToken: "valid", expiresIn: 60 });
+      storeAccessToken({ accessToken: 'valid', expiresIn: 60 });
       const refresh = vi.fn(async () => {});
       registerRefreshHandler(refresh);
       let attempts = 0;
@@ -373,32 +353,32 @@ describe("axios auth lifecycle", () => {
 
       await expect(
         axiosInstance.post(url, {
-          ceremonyToken: "lmf_memory-only",
-          credential: { id: "wrong-proof" },
+          ceremonyToken: 'lmf_memory-only',
+          credential: { id: 'wrong-proof' },
         }),
       ).rejects.toMatchObject({ status: 401 });
 
       expect(refresh).not.toHaveBeenCalled();
       expect(attempts).toBe(1);
-      expect(getAccessToken()).toBe("valid");
+      expect(getAccessToken()).toBe('valid');
     },
   );
 
   it.each([
-    [{ code: "MFA_REQUIRED", message: "MFA required" }, "MFA_REQUIRED"],
+    [{ code: 'MFA_REQUIRED', message: 'MFA required' }, 'MFA_REQUIRED'],
     [
       {
         error: {
-          code: "MFA_ENROLLMENT_REQUIRED",
-          message: "MFA enrollment required",
+          code: 'MFA_ENROLLMENT_REQUIRED',
+          message: 'MFA enrollment required',
         },
       },
-      "MFA_ENROLLMENT_REQUIRED",
+      'MFA_ENROLLMENT_REQUIRED',
     ],
   ] as const)(
-    "hands a protected 428 %s response to the MFA boundary without refresh or replay",
+    'hands a protected 428 %s response to the MFA boundary without refresh or replay',
     async (data, expectedCode) => {
-      storeAccessToken({ accessToken: "valid", expiresIn: 60 });
+      storeAccessToken({ accessToken: 'valid', expiresIn: 60 });
       const refresh = vi.fn(async () => {});
       const requireMfa = vi.fn();
       registerRefreshHandler(refresh);
@@ -409,8 +389,8 @@ describe("axios auth lifecycle", () => {
         const rejectedResponse = response(config, 428);
         rejectedResponse.data = data;
         throw new AxiosError(
-          "Request failed",
-          "ERR_BAD_REQUEST",
+          'Request failed',
+          'ERR_BAD_REQUEST',
           config,
           undefined,
           rejectedResponse,
@@ -418,9 +398,7 @@ describe("axios auth lifecycle", () => {
       };
 
       try {
-        await expect(
-          axiosInstance.get("/api/v1/admin/protected"),
-        ).rejects.toMatchObject({
+        await expect(axiosInstance.get('/api/v1/admin/protected')).rejects.toMatchObject({
           status: 428,
           code: expectedCode,
         });
@@ -432,14 +410,14 @@ describe("axios auth lifecycle", () => {
       expect(requireMfa).toHaveBeenCalledWith(expectedCode);
       expect(refresh).not.toHaveBeenCalled();
       expect(attempts).toBe(1);
-      expect(getAccessToken()).toBe("valid");
+      expect(getAccessToken()).toBe('valid');
     },
   );
 
-  it("keeps ordinary refresh behavior for DELETE email-change cancellation", async () => {
-    storeAccessToken({ accessToken: "stale", expiresIn: 60 });
+  it('keeps ordinary refresh behavior for DELETE email-change cancellation', async () => {
+    storeAccessToken({ accessToken: 'stale', expiresIn: 60 });
     const refresh = vi.fn(async () => {
-      storeAccessToken({ accessToken: "fresh", expiresIn: 60 });
+      storeAccessToken({ accessToken: 'fresh', expiresIn: 60 });
     });
     registerRefreshHandler(refresh);
     let attempts = 0;
@@ -449,12 +427,12 @@ describe("axios auth lifecycle", () => {
       return response(config, 200);
     };
 
-    await expect(
-      axiosInstance.delete("/api/v1/auth/me/email-change"),
-    ).resolves.toMatchObject({ status: 200 });
+    await expect(axiosInstance.delete('/api/v1/auth/me/email-change')).resolves.toMatchObject({
+      status: 200,
+    });
 
     expect(refresh).toHaveBeenCalledOnce();
     expect(attempts).toBe(2);
-    expect(getAccessToken()).toBe("fresh");
+    expect(getAccessToken()).toBe('fresh');
   });
 });

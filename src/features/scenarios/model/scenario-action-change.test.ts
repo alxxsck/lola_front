@@ -1,11 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest';
 
-import type { ScenarioAction, ScenarioActionCatalogItem } from '@/shared/types/domain'
+import type { ScenarioAction, ScenarioActionCatalogItem } from '@/shared/types/domain';
 
 import {
   planScenarioActionTypeReplacement,
   planScenarioEntryPointChange,
-} from './scenario-action-change'
+} from './scenario-action-change';
 
 function definition(
   type: string,
@@ -23,33 +23,53 @@ function definition(
       required: [],
       additionalProperties: false,
     },
-    uiSchema: { fields: Object.keys(properties).map((key) => ({ key, label: key, control: 'text' })) },
+    uiSchema: {
+      fields: Object.keys(properties).map((key) => ({ key, label: key, control: 'text' })),
+    },
     enabled: true,
-  }
+  };
 }
 
 describe('scenario first-action changes', () => {
   it('changes a linear entry point without connecting the old prefix after the selected branch', () => {
     const actions: ScenarioAction[] = [
-      { position: 0, nodeKey: 'open_form', nextNodeKey: 'open_chat', type: 'OPEN_MODAL', config: {} },
-      { position: 1, nodeKey: 'open_chat', nextNodeKey: 'say_hello', type: 'OPEN_CHAT', config: {} },
-      { position: 2, nodeKey: 'say_hello', nextNodeKey: null, type: 'SAY', config: { text: 'Привет' } },
-    ]
+      {
+        position: 0,
+        nodeKey: 'open_form',
+        nextNodeKey: 'open_chat',
+        type: 'OPEN_MODAL',
+        config: {},
+      },
+      {
+        position: 1,
+        nodeKey: 'open_chat',
+        nextNodeKey: 'say_hello',
+        type: 'OPEN_CHAT',
+        config: {},
+      },
+      {
+        position: 2,
+        nodeKey: 'say_hello',
+        nextNodeKey: null,
+        type: 'SAY',
+        config: { text: 'Привет' },
+      },
+    ];
 
-    const plan = planScenarioEntryPointChange(actions, 'open_chat')
+    const plan = planScenarioEntryPointChange(actions, 'open_chat');
 
-    expect(plan.status).toBe('ready')
-    if (plan.status !== 'ready') return
+    expect(plan.status).toBe('ready');
+    if (plan.status !== 'ready') return;
     expect(plan.actions).toEqual([
       expect.objectContaining({ position: 0, nodeKey: 'open_chat', nextNodeKey: 'say_hello' }),
       expect.objectContaining({ position: 1, nodeKey: 'say_hello', nextNodeKey: null }),
-    ])
-    expect(plan.unreachableNodeKeys).toEqual(['open_form'])
+    ]);
+    expect(plan.unreachableNodeKeys).toEqual(['open_form']);
     expect(plan.removedIncomingTransitions).toEqual([
       expect.objectContaining({ source: 'open_form', target: 'open_chat' }),
-    ])
-    expect(actions[0]).toMatchObject({ nextNodeKey: 'open_chat' })
-  })
+    ]);
+    expect(actions[0]).toMatchObject({ nextNodeKey: 'open_chat' });
+  });
 
   it('explains why a branch target cannot become the entry point without invalidating its source', () => {
     const actions: ScenarioAction[] = [
@@ -66,13 +86,14 @@ describe('scenario first-action changes', () => {
       },
       { position: 1, nodeKey: 'answer', nextNodeKey: 'finish', type: 'SAY', config: {} },
       { position: 2, nodeKey: 'finish', nextNodeKey: null, type: 'COMPLETE_SCENARIO', config: {} },
-    ]
+    ];
 
     expect(planScenarioEntryPointChange(actions, 'answer')).toEqual({
       status: 'blocked',
-      reason: 'На «answer» ведёт обязательная ветка «Да» из «question». Сначала переназначьте эту ветку.',
-    })
-  })
+      reason:
+        'На «answer» ведёт обязательная ветка «Да» из «question». Сначала переназначьте эту ветку.',
+    });
+  });
 
   it('preserves compatible configuration and a linear transition when replacing a linear action', () => {
     const action: ScenarioAction = {
@@ -81,7 +102,7 @@ describe('scenario first-action changes', () => {
       nextNodeKey: 'finish',
       type: 'SAY',
       config: { text: 'Привет', tone: 'warm' },
-    }
+    };
 
     const plan = planScenarioActionTypeReplacement(
       action,
@@ -90,7 +111,7 @@ describe('scenario first-action changes', () => {
         channel: { type: 'string', default: 'chat' },
       }),
       { channel: 'chat' },
-    )
+    );
 
     expect(plan.replacement).toEqual({
       position: 0,
@@ -98,11 +119,11 @@ describe('scenario first-action changes', () => {
       nextNodeKey: 'finish',
       type: 'SEND_MESSAGE',
       config: { channel: 'chat', text: 'Привет' },
-    })
-    expect(plan.preservedConfigKeys).toEqual(['text'])
-    expect(plan.removedConfigKeys).toEqual(['tone'])
-    expect(plan.transitionImpact).toBe('preserved')
-  })
+    });
+    expect(plan.preservedConfigKeys).toEqual(['text']);
+    expect(plan.removedConfigKeys).toEqual(['tone']);
+    expect(plan.transitionImpact).toBe('preserved');
+  });
 
   it('requires an explicit transition reset when the replacement contract is incompatible', () => {
     const action: ScenarioAction = {
@@ -115,30 +136,30 @@ describe('scenario first-action changes', () => {
         options: [{ id: 'yes', label: 'Да', nextNodeKey: 'finish' }],
         onTimeout: 'finish',
       },
-    }
+    };
 
     const plan = planScenarioActionTypeReplacement(
       action,
       definition('SAY', { text: { type: 'string', default: '' } }),
       { text: '' },
-    )
+    );
 
-    expect(plan.transitionImpact).toBe('reset-required')
-    expect(plan.removedTransitionCount).toBe(2)
+    expect(plan.transitionImpact).toBe('reset-required');
+    expect(plan.removedTransitionCount).toBe(2);
     expect(plan.replacement).toMatchObject({
       nodeKey: 'question',
       type: 'SAY',
       nextNodeKey: null,
       config: { text: '' },
-    })
-    expect(action.config).toHaveProperty('options')
-  })
+    });
+    expect(action.config).toHaveProperty('options');
+  });
 
   it('does not preserve a same-typed field when the target schema rejects its value', () => {
     const target = definition('SEND_MESSAGE', {
       tone: { type: 'string', enum: ['neutral', 'formal'] },
-    })
-    target.configSchema.required = ['tone']
+    });
+    target.configSchema.required = ['tone'];
     const plan = planScenarioActionTypeReplacement(
       {
         position: 0,
@@ -149,13 +170,13 @@ describe('scenario first-action changes', () => {
       },
       target,
       {},
-    )
+    );
 
-    expect(plan.preservedConfigKeys).toEqual([])
-    expect(plan.removedConfigKeys).toEqual(['tone'])
-    expect(plan.requiredConfigKeys).toEqual(['tone'])
-    expect(plan.replacement.config).toEqual({})
-  })
+    expect(plan.preservedConfigKeys).toEqual([]);
+    expect(plan.removedConfigKeys).toEqual(['tone']);
+    expect(plan.requiredConfigKeys).toEqual(['tone']);
+    expect(plan.replacement.config).toEqual({});
+  });
 
   it('checks nested array items and required object properties before preserving config', () => {
     const target = definition('SEND_MESSAGE', {
@@ -174,7 +195,7 @@ describe('scenario first-action changes', () => {
         required: ['campaign'],
         additionalProperties: false,
       },
-    })
+    });
     const plan = planScenarioActionTypeReplacement(
       {
         position: 0,
@@ -188,19 +209,19 @@ describe('scenario first-action changes', () => {
       },
       target,
       {},
-    )
+    );
 
-    expect(plan.preservedConfigKeys).toEqual([])
-    expect(plan.removedConfigKeys).toEqual(['buttons', 'metadata'])
-  })
+    expect(plan.preservedConfigKeys).toEqual([]);
+    expect(plan.removedConfigKeys).toEqual(['buttons', 'metadata']);
+  });
 
   it('shares object, empty-array and localized enum semantics with catalog validation', () => {
     const target = definition('SEND_MESSAGE', {
       metadata: { type: 'object' },
       tags: { type: 'array', minItems: 0 },
       tone: { type: 'string', enum: ['neutral', 'formal'] },
-    })
-    target.configSchema.required = ['tags', 'tone']
+    });
+    target.configSchema.required = ['tags', 'tone'];
     const plan = planScenarioActionTypeReplacement(
       {
         position: 0,
@@ -216,38 +237,40 @@ describe('scenario first-action changes', () => {
       target,
       {},
       new Set(['tone']),
-    )
+    );
 
-    expect(plan.preservedConfigKeys).toEqual(['metadata', 'tags'])
-    expect(plan.removedConfigKeys).toEqual(['tone'])
-    expect(plan.requiredConfigKeys).toEqual(['tone'])
-  })
+    expect(plan.preservedConfigKeys).toEqual(['metadata', 'tags']);
+    expect(plan.removedConfigKeys).toEqual(['tone']);
+    expect(plan.requiredConfigKeys).toEqual(['tone']);
+  });
 
   it('preserves locale maps only when the target action declares the field localizable', () => {
     const target = definition('SEND_MESSAGE', {
       text: { type: 'string', minLength: 1 },
-    })
+    });
     const action = {
       position: 0,
       nodeKey: 'message',
       nextNodeKey: null,
       type: 'SAY',
       config: { text: { ru: 'Привет', en: 'Hello' } },
-    }
+    };
 
-    expect(planScenarioActionTypeReplacement(action, target, {}).removedConfigKeys)
-      .toEqual(['text'])
-    expect(planScenarioActionTypeReplacement(action, target, {}, new Set(['text'])).preservedConfigKeys)
-      .toEqual(['text'])
-  })
+    expect(planScenarioActionTypeReplacement(action, target, {}).removedConfigKeys).toEqual([
+      'text',
+    ]);
+    expect(
+      planScenarioActionTypeReplacement(action, target, {}, new Set(['text'])).preservedConfigKeys,
+    ).toEqual(['text']);
+  });
 
   it('uses visible target controls as the effective required-field policy', () => {
     const target = definition('OPEN_MODAL', {
       mode: { type: 'string', default: 'standard' },
       modalId: { type: 'string' },
       advancedCode: { type: 'string' },
-    })
-    target.configSchema.required = ['advancedCode']
+    });
+    target.configSchema.required = ['advancedCode'];
     target.uiSchema.fields = [
       { key: 'mode', label: 'Режим', control: 'select' },
       { key: 'modalId', label: 'Окно', control: 'target', targetKinds: ['MODAL'] },
@@ -257,7 +280,7 @@ describe('scenario first-action changes', () => {
         control: 'text',
         visibleWhen: { mode: 'advanced' },
       },
-    ]
+    ];
     const plan = planScenarioActionTypeReplacement(
       {
         position: 0,
@@ -268,8 +291,8 @@ describe('scenario first-action changes', () => {
       },
       target,
       { mode: 'standard' },
-    )
+    );
 
-    expect(plan.requiredConfigKeys).toEqual(['modalId'])
-  })
-})
+    expect(plan.requiredConfigKeys).toEqual(['modalId']);
+  });
+});

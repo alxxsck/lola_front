@@ -1,5 +1,5 @@
-import { axiosInstance } from "@/shared/api/http/axios-instance";
-import { compareDecimalStrings } from "@/shared/lib/decimal-money";
+import { axiosInstance } from '@/shared/api/http/axios-instance';
+import { compareDecimalStrings } from '@/shared/lib/decimal-money';
 import type {
   AiAllowanceAccount,
   AiAllowanceAssignment,
@@ -26,12 +26,12 @@ import type {
   CorrectAiAllowanceInput,
   AiAllowanceReconciliationPage,
   AiAllowanceConfigurationMutationResult,
-} from "../model/ai-allowance";
+} from '../model/ai-allowance';
 import {
   AI_ALLOWANCE_CATEGORIES,
   parseAllowanceUsd,
   parseSignedDecimal,
-} from "../model/ai-allowance";
+} from '../model/ai-allowance';
 
 export interface AiAllowanceRepository {
   projectPolicy(
@@ -66,7 +66,7 @@ export interface AiAllowanceRepository {
   ): Promise<AiAllowanceConfigurationMutationResult>;
   putCohortAssignment(
     projectId: string,
-    scope: "SEGMENT" | "LEVEL",
+    scope: 'SEGMENT' | 'LEVEL',
     cohortId: string,
     input: PutCohortAllowanceAssignmentInput,
     idempotencyKey: string,
@@ -93,7 +93,7 @@ export interface AiAllowanceRepository {
     query: {
       limit: number;
       cursor?: string;
-      status?: "RESERVED" | "UNKNOWN_HELD";
+      status?: 'RESERVED' | 'UNKNOWN_HELD';
     },
   ): Promise<AiAllowanceReconciliationPage>;
   resolveAttempt(
@@ -110,12 +110,11 @@ export interface AiAllowanceRepository {
   ): Promise<unknown>;
 }
 
-const root = (projectId: string) =>
-  `/api/v1/admin/projects/${encodeURIComponent(projectId)}`;
+const root = (projectId: string) => `/api/v1/admin/projects/${encodeURIComponent(projectId)}`;
 const userRoot = (projectId: string, endUserId: string) =>
   `${root(projectId)}/end-users/${encodeURIComponent(endUserId)}/ai-allowance`;
 const headers = (idempotencyKey: string) => ({
-  headers: { "Idempotency-Key": idempotencyKey },
+  headers: { 'Idempotency-Key': idempotencyKey },
 });
 
 export const aiAllowanceRepository: AiAllowanceRepository = {
@@ -141,10 +140,9 @@ export const aiAllowanceRepository: AiAllowanceRepository = {
     return balanceView(response.data);
   },
   async journal(projectId, endUserId, query) {
-    const response = await axiosInstance.get<unknown>(
-      `${userRoot(projectId, endUserId)}/journal`,
-      { params: query },
-    );
+    const response = await axiosInstance.get<unknown>(`${userRoot(projectId, endUserId)}/journal`, {
+      params: query,
+    });
     return journalPage(response.data);
   },
   async putDefaultPlan(projectId, input, idempotencyKey) {
@@ -227,37 +225,24 @@ export const aiAllowanceRepository: AiAllowanceRepository = {
 function reconciliationPage(value: unknown): AiAllowanceReconciliationPage {
   const source = object(value);
   const pageInfo = parsePageInfo(source?.pageInfo);
-  if (
-    !source ||
-    !pageInfo ||
-    !Array.isArray(source.items) ||
-    source.items.length > 100
-  )
-    invalid();
+  if (!source || !pageInfo || !Array.isArray(source.items) || source.items.length > 100) invalid();
   const qualities = [
-    "EXACT_PROVIDER_COST",
-    "EXACT_PROVIDER_UNITS",
-    "MEASURED_ESTIMATE",
-    "RESERVED_ESTIMATE",
-    "UNKNOWN",
+    'EXACT_PROVIDER_COST',
+    'EXACT_PROVIDER_UNITS',
+    'MEASURED_ESTIMATE',
+    'RESERVED_ESTIMATE',
+    'UNKNOWN',
   ] as const;
   const items = source.items.map((value) => {
     const item = object(value);
     const category = enumValue(item?.category, AI_ALLOWANCE_CATEGORIES);
-    const status = enumValue(item?.status, [
-      "RESERVED",
-      "UNKNOWN_HELD",
-    ] as const);
+    const status = enumValue(item?.status, ['RESERVED', 'UNKNOWN_HELD'] as const);
     const quality = enumValue(item?.costQuality, qualities);
     const amounts =
       item &&
-      [
-        "quotedUpperBoundUsd",
-        "reservedUsd",
-        "settledUsd",
-        "unknownHeldUsd",
-        "overageUsd",
-      ].map((key) => parseAllowanceUsd(item[key]));
+      ['quotedUpperBoundUsd', 'reservedUsd', 'settledUsd', 'unknownHeldUsd', 'overageUsd'].map(
+        (key) => parseAllowanceUsd(item[key]),
+      );
     return item &&
       text(item.id) &&
       text(item.endUserId) &&
@@ -295,19 +280,16 @@ function reconciliationPage(value: unknown): AiAllowanceReconciliationPage {
       : null;
   });
   if (items.some((item) => !item)) invalid();
-  return { items: items as AiAllowanceReconciliationPage["items"], pageInfo };
+  return { items: items as AiAllowanceReconciliationPage['items'], pageInfo };
 }
 
 function policyView(value: unknown): AiAllowanceProjectPolicyView {
   const source = object(value);
   const projectPolicyVersion = policyVersion(source?.projectPolicyVersion);
   const localization = parseLocalizationCatalog(source?.localization);
-  const policy =
-    source?.policy === null ? null : parsePolicy(source?.policy, localization);
+  const policy = source?.policy === null ? null : parsePolicy(source?.policy, localization);
   const assignment =
-    source?.defaultAssignment === null
-      ? null
-      : parseAssignment(source?.defaultAssignment);
+    source?.defaultAssignment === null ? null : parseAssignment(source?.defaultAssignment);
   const gates = object(source?.runtimeGates);
   const plansPageInfo = parsePageInfo(source?.plansPageInfo);
   if (
@@ -320,8 +302,8 @@ function policyView(value: unknown): AiAllowanceProjectPolicyView {
     source.plans.length > 100 ||
     !gates ||
     !plansPageInfo ||
-    typeof gates.hardEnforcementApproved !== "boolean" ||
-    typeof gates.emergencyDisabled !== "boolean"
+    typeof gates.hardEnforcementApproved !== 'boolean' ||
+    typeof gates.emergencyDisabled !== 'boolean'
   )
     invalid();
   const plans = source.plans.map(parsePlan);
@@ -344,15 +326,10 @@ function balanceView(value: unknown): AiAllowanceUserBalance {
   const source = object(value);
   const projectPolicyVersion = policyVersion(source?.projectPolicyVersion);
   const account = parseAccount(source?.account);
-  const period =
-    source?.currentPeriod === null ? null : parsePeriod(source?.currentPeriod);
+  const period = source?.currentPeriod === null ? null : parsePeriod(source?.currentPeriod);
   const assignment =
-    source?.endUserAssignment === null
-      ? null
-      : parseAssignment(source?.endUserAssignment);
-  const pendingBaseAllocationUsd = parseAllowanceUsd(
-    source?.pendingBaseAllocationUsd,
-  );
+    source?.endUserAssignment === null ? null : parseAssignment(source?.endUserAssignment);
+  const pendingBaseAllocationUsd = parseAllowanceUsd(source?.pendingBaseAllocationUsd);
   const currentPeriodSpend =
     source?.currentPeriodSpend === null
       ? null
@@ -399,9 +376,7 @@ function planRevisionPage(value: unknown): AiAllowancePlanRevisionPage {
     source.revisions.length > 100
   )
     invalid();
-  const revisions = source.revisions.map((revision) =>
-    parseRevision(revision, true),
-  );
+  const revisions = source.revisions.map((revision) => parseRevision(revision, true));
   if (revisions.some((revision) => !revision)) invalid();
   return {
     projectPolicyVersion,
@@ -417,28 +392,22 @@ async function configurationMutationResult(
 ): Promise<AiAllowanceConfigurationMutationResult> {
   const source = object(value);
   const projectPolicyVersion = policyVersion(source?.projectPolicyVersion);
-  if (!source || typeof source.replayed !== "boolean") invalid();
-  if (projectPolicyVersion)
-    return { projectPolicyVersion, replayed: source.replayed };
-  if (source.replayed !== true || source.projectPolicyVersion !== undefined)
-    invalid();
+  if (!source || typeof source.replayed !== 'boolean') invalid();
+  if (projectPolicyVersion) return { projectPolicyVersion, replayed: source.replayed };
+  if (source.replayed !== true || source.projectPolicyVersion !== undefined) invalid();
 
-  const response = await axiosInstance.get<unknown>(
-    `${root(projectId)}/ai-allowance`,
-  );
+  const response = await axiosInstance.get<unknown>(`${root(projectId)}/ai-allowance`);
   return {
     projectPolicyVersion: policyView(response.data).projectPolicyVersion,
     replayed: true,
   };
 }
 
-function parseCurrentPeriodSpend(
-  value: unknown,
-): AiAllowanceUserBalance["currentPeriodSpend"] {
+function parseCurrentPeriodSpend(value: unknown): AiAllowanceUserBalance['currentPeriodSpend'] {
   const s = object(value);
   const values =
     s &&
-    ["reservedUsd", "settledUsd", "unknownHeldUsd", "overageUsd"].map((key) =>
+    ['reservedUsd', 'settledUsd', 'unknownHeldUsd', 'overageUsd'].map((key) =>
       parseAllowanceUsd(s[key]),
     );
   return s && values && values.every(Boolean)
@@ -459,16 +428,12 @@ function journalPage(value: unknown): AiAllowanceJournalPage {
     !Array.isArray(source.items) ||
     source.items.length > 100 ||
     !pageInfo ||
-    typeof pageInfo.hasMore !== "boolean" ||
+    typeof pageInfo.hasMore !== 'boolean' ||
     !(pageInfo.nextCursor === null || text(pageInfo.nextCursor, 1, 160))
   )
     invalid();
   const items = source.items.map(parseJournalEntry);
-  if (
-    items.some((item) => !item) ||
-    pageInfo.hasMore !== (pageInfo.nextCursor !== null)
-  )
-    invalid();
+  if (items.some((item) => !item) || pageInfo.hasMore !== (pageInfo.nextCursor !== null)) invalid();
   return {
     items: items as AiAllowanceJournalEntry[],
     pageInfo: {
@@ -483,24 +448,15 @@ function parsePolicy(
   localization: AiAllowanceLocalizationCatalog | undefined,
 ): AiAllowancePolicy | null {
   const s = object(value);
-  const mode = enumValue(s?.enforcementMode, [
-    "DISABLED",
-    "SHADOW",
-    "SOFT",
-    "HARD",
-  ] as const);
+  const mode = enumValue(s?.enforcementMode, ['DISABLED', 'SHADOW', 'SOFT', 'HARD'] as const);
   const warningContent = localizedContent(s?.warningContent, localization);
-  const lowThresholdMode = enumValue(s?.lowThresholdMode, [
-    "PERCENT",
-    "ABSOLUTE_USD",
-  ] as const);
+  const lowThresholdMode = enumValue(s?.lowThresholdMode, ['PERCENT', 'ABSOLUTE_USD'] as const);
   const lowThresholdValue = parseAllowanceUsd(s?.lowThresholdValue);
   const validLowThreshold =
     lowThresholdMode &&
     lowThresholdValue &&
-    compareDecimalStrings(lowThresholdValue, "0") > 0 &&
-    (lowThresholdMode === "ABSOLUTE_USD" ||
-      compareDecimalStrings(lowThresholdValue, "100") <= 0);
+    compareDecimalStrings(lowThresholdValue, '0') > 0 &&
+    (lowThresholdMode === 'ABSOLUTE_USD' || compareDecimalStrings(lowThresholdValue, '100') <= 0);
   const exhaustedContent = localizedContent(s?.exhaustedContent, localization);
   return s &&
     text(s.projectId) &&
@@ -509,7 +465,7 @@ function parsePolicy(
     warningContent &&
     validLowThreshold &&
     exhaustedContent &&
-    typeof s.showEndUserExactUsd === "boolean" &&
+    typeof s.showEndUserExactUsd === 'boolean' &&
     bigintString(s.version) &&
     iso(s.createdAt) &&
     iso(s.updatedAt)
@@ -531,7 +487,7 @@ function parsePolicy(
 
 function parsePlan(value: unknown): AiAllowancePlan | null {
   const s = object(value);
-  const status = enumValue(s?.status, ["ACTIVE", "ARCHIVED"] as const);
+  const status = enumValue(s?.status, ['ACTIVE', 'ARCHIVED'] as const);
   const revisionsPageInfo = parsePageInfo(s?.revisionsPageInfo);
   if (
     !s ||
@@ -546,9 +502,7 @@ function parsePlan(value: unknown): AiAllowancePlan | null {
     s.revisions.length > 100
   )
     return null;
-  const revisions = s.revisions.map((revision) =>
-    parseRevision(revision, true),
-  );
+  const revisions = s.revisions.map((revision) => parseRevision(revision, true));
   if (revisions.some((item) => !item)) return null;
   return {
     id: s.id,
@@ -562,23 +516,16 @@ function parsePlan(value: unknown): AiAllowancePlan | null {
   };
 }
 
-function parseRevision(
-  value: unknown,
-  requireRules: true,
-): AiAllowancePlanRevision | null;
-function parseRevision(
-  value: unknown,
-  requireRules?: false,
-): AiAllowancePlanRevisionSummary | null;
+function parseRevision(value: unknown, requireRules: true): AiAllowancePlanRevision | null;
+function parseRevision(value: unknown, requireRules?: false): AiAllowancePlanRevisionSummary | null;
 function parseRevision(
   value: unknown,
   requireRules = false,
 ): AiAllowancePlanRevision | AiAllowancePlanRevisionSummary | null {
   const s = object(value);
-  const period = enumValue(s?.periodKind, ["DAY", "MONTH"] as const);
+  const period = enumValue(s?.periodKind, ['DAY', 'MONTH'] as const);
   const amount = parseAllowanceUsd(s?.recurringAmountUsd);
-  const cap =
-    s?.dailyCapUsd === null ? null : parseAllowanceUsd(s?.dailyCapUsd);
+  const cap = s?.dailyCapUsd === null ? null : parseAllowanceUsd(s?.dailyCapUsd);
   if (
     !s ||
     !text(s.id) ||
@@ -604,14 +551,13 @@ function parseRevision(
     createdAt: s.createdAt,
   };
   if (!requireRules) return base;
-  if (!Array.isArray(s.categoryRules) || s.categoryRules.length > 100)
-    return null;
+  if (!Array.isArray(s.categoryRules) || s.categoryRules.length > 100) return null;
   const rules = s.categoryRules.map((value) => {
     const r = object(value);
     const category = enumValue(r?.category, AI_ALLOWANCE_CATEGORIES);
     const responsibility = enumValue(r?.responsibility, [
-      "END_USER_ALLOWANCE",
-      "PROJECT_SPONSORED",
+      'END_USER_ALLOWANCE',
+      'PROJECT_SPONSORED',
     ] as const);
     const ruleCap = r?.capUsd === null ? null : parseAllowanceUsd(r?.capUsd);
     return r && category && responsibility && ruleCap !== undefined
@@ -621,18 +567,13 @@ function parseRevision(
   if (rules.some((item) => !item)) return null;
   return {
     ...base,
-    categoryRules: rules as AiAllowancePlanRevision["categoryRules"],
+    categoryRules: rules as AiAllowancePlanRevision['categoryRules'],
   };
 }
 
 function parseAssignment(value: unknown): AiAllowanceAssignment | null {
   const s = object(value);
-  const scope = enumValue(s?.scope, [
-    "PROJECT_DEFAULT",
-    "SEGMENT",
-    "LEVEL",
-    "END_USER",
-  ] as const);
+  const scope = enumValue(s?.scope, ['PROJECT_DEFAULT', 'SEGMENT', 'LEVEL', 'END_USER'] as const);
   const plan = s?.plan === undefined ? undefined : parsePlanSummary(s.plan);
   return s &&
     text(s.id) &&
@@ -660,7 +601,7 @@ function parseAssignment(value: unknown): AiAllowanceAssignment | null {
 
 function parsePlanSummary(value: unknown): AiAllowancePlanSummary | null {
   const s = object(value);
-  const status = enumValue(s?.status, ["ACTIVE", "ARCHIVED"] as const);
+  const status = enumValue(s?.status, ['ACTIVE', 'ARCHIVED'] as const);
   return s &&
     text(s.id) &&
     text(s.key, 1, 100) &&
@@ -683,21 +624,15 @@ function parseAccount(value: unknown): AiAllowanceAccount | null {
   const s = object(value);
   const money =
     s &&
-    [
-      "availableUsd",
-      "reservedUsd",
-      "settledUsd",
-      "unknownHeldUsd",
-      "overageUsd",
-    ].map((key) => parseAllowanceUsd(s[key]));
+    ['availableUsd', 'reservedUsd', 'settledUsd', 'unknownHeldUsd', 'overageUsd'].map((key) =>
+      parseAllowanceUsd(s[key]),
+    );
   const hasLedger = s?.ledgerAvailableUsd !== undefined;
-  const ledger = hasLedger
-    ? parseAllowanceUsd(s?.ledgerAvailableUsd)
-    : undefined;
+  const ledger = hasLedger ? parseAllowanceUsd(s?.ledgerAvailableUsd) : undefined;
   return s &&
     text(s.projectId) &&
     text(s.endUserId) &&
-    s.currency === "USD" &&
+    s.currency === 'USD' &&
     money &&
     money.every(Boolean) &&
     (!hasLedger || ledger !== undefined) &&
@@ -705,7 +640,7 @@ function parseAccount(value: unknown): AiAllowanceAccount | null {
     ? {
         projectId: s.projectId,
         endUserId: s.endUserId,
-        currency: "USD",
+        currency: 'USD',
         availableUsd: money[0]!,
         ...(ledger ? { ledgerAvailableUsd: ledger } : {}),
         reservedUsd: money[1]!,
@@ -719,11 +654,10 @@ function parseAccount(value: unknown): AiAllowanceAccount | null {
 
 function parsePeriod(value: unknown): AiAllowancePeriod | null {
   const s = object(value);
-  const kind = enumValue(s?.kind, ["DAY", "MONTH"] as const);
-  const status = enumValue(s?.status, ["OPEN", "CLOSED"] as const);
+  const kind = enumValue(s?.kind, ['DAY', 'MONTH'] as const);
+  const status = enumValue(s?.status, ['OPEN', 'CLOSED'] as const);
   const amount = parseAllowanceUsd(s?.baseAllocatedUsd);
-  const revision =
-    s?.planRevision === null ? null : parseRevision(s?.planRevision, true);
+  const revision = s?.planRevision === null ? null : parseRevision(s?.planRevision, true);
   return s &&
     text(s.id) &&
     kind &&
@@ -749,7 +683,7 @@ function parsePeriod(value: unknown): AiAllowancePeriod | null {
 function parseGrant(value: unknown): AiAllowanceGrant | null {
   const s = object(value);
   const amount = parseAllowanceUsd(s?.amountUsd);
-  const status = enumValue(s?.status, ["ACTIVE", "REVERSED"] as const);
+  const status = enumValue(s?.status, ['ACTIVE', 'REVERSED'] as const);
   return s &&
     text(s.id) &&
     amount &&
@@ -781,40 +715,40 @@ function parseGrant(value: unknown): AiAllowanceGrant | null {
 function parseJournalEntry(value: unknown): AiAllowanceJournalEntry | null {
   const s = object(value);
   const entryType = enumValue(s?.entryType, [
-    "PLAN_ALLOCATED",
-    "GRANT_ALLOCATED",
-    "RESERVED",
-    "RELEASED",
-    "SETTLED",
-    "UNKNOWN_HELD",
-    "EXPIRED",
-    "CORRECTION",
+    'PLAN_ALLOCATED',
+    'GRANT_ALLOCATED',
+    'RESERVED',
+    'RELEASED',
+    'SETTLED',
+    'UNKNOWN_HELD',
+    'EXPIRED',
+    'CORRECTION',
   ] as const);
   const quality =
     s?.costQuality === null
       ? null
       : enumValue(s?.costQuality, [
-          "EXACT_PROVIDER_COST",
-          "EXACT_PROVIDER_UNITS",
-          "MEASURED_ESTIMATE",
-          "RESERVED_ESTIMATE",
-          "UNKNOWN",
+          'EXACT_PROVIDER_COST',
+          'EXACT_PROVIDER_UNITS',
+          'MEASURED_ESTIMATE',
+          'RESERVED_ESTIMATE',
+          'UNKNOWN',
         ] as const);
   const deltas =
     s &&
     [
-      "deltaAvailableUsd",
-      "deltaReservedUsd",
-      "deltaSettledUsd",
-      "deltaUnknownUsd",
-      "deltaOverageUsd",
+      'deltaAvailableUsd',
+      'deltaReservedUsd',
+      'deltaSettledUsd',
+      'deltaUnknownUsd',
+      'deltaOverageUsd',
     ].map((key) => parseSignedDecimal(s[key]));
   const nullableIds = [
-    "periodId",
-    "reservationId",
-    "grantId",
-    "usageRecordId",
-    "correctsEntryId",
+    'periodId',
+    'reservationId',
+    'grantId',
+    'usageRecordId',
+    'correctsEntryId',
   ] as const;
   return s &&
     text(s.id) &&
@@ -852,7 +786,7 @@ function parseJournalEntry(value: unknown): AiAllowanceJournalEntry | null {
 }
 
 function object(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : undefined;
 }
@@ -861,7 +795,7 @@ function parsePageInfo(
 ): { hasMore: boolean; nextCursor: string | null } | undefined {
   const source = object(value);
   return source &&
-    typeof source.hasMore === "boolean" &&
+    typeof source.hasMore === 'boolean' &&
     (source.nextCursor === null || text(source.nextCursor, 1, 160)) &&
     source.hasMore === (source.nextCursor !== null)
     ? {
@@ -873,20 +807,17 @@ function parsePageInfo(
 function localizedContent(
   value: unknown,
   localization: AiAllowanceLocalizationCatalog | undefined,
-): AiAllowancePolicy["warningContent"] | undefined {
+): AiAllowancePolicy['warningContent'] | undefined {
   const s = object(value);
   if (!s || !localization) return undefined;
-  if (s.mode === "SYSTEM" && Object.keys(s).length === 1)
-    return { mode: "SYSTEM" };
+  if (s.mode === 'SYSTEM' && Object.keys(s).length === 1) return { mode: 'SYSTEM' };
   const translations = object(s.translations);
   if (
-    s.mode !== "CUSTOM" ||
+    s.mode !== 'CUSTOM' ||
     !localeCode(s.defaultLocale) ||
     !localization.supportedLocales.includes(s.defaultLocale) ||
     !translations ||
-    Object.keys(s).some(
-      (key) => !["mode", "defaultLocale", "translations"].includes(key),
-    ) ||
+    Object.keys(s).some((key) => !['mode', 'defaultLocale', 'translations'].includes(key)) ||
     Object.keys(translations).length < 1 ||
     Object.keys(translations).length > 50 ||
     !text(translations[s.defaultLocale], 1, 2000) ||
@@ -899,15 +830,13 @@ function localizedContent(
   )
     return undefined;
   return {
-    mode: "CUSTOM",
+    mode: 'CUSTOM',
     defaultLocale: s.defaultLocale,
     translations: translations as Record<string, string>,
   };
 }
 
-function parseLocalizationCatalog(
-  value: unknown,
-): AiAllowanceLocalizationCatalog | undefined {
+function parseLocalizationCatalog(value: unknown): AiAllowanceLocalizationCatalog | undefined {
   const source = object(value);
   const supportedLocales = source?.supportedLocales;
   const translationSupportedLocales = source?.translationSupportedLocales;
@@ -917,9 +846,7 @@ function parseLocalizationCatalog(
     !localeList(supportedLocales) ||
     !localeList(translationSupportedLocales) ||
     !supportedLocales.includes(source.defaultLocale) ||
-    translationSupportedLocales.some(
-      (locale) => !supportedLocales.includes(locale),
-    )
+    translationSupportedLocales.some((locale) => !supportedLocales.includes(locale))
   )
     return undefined;
   return {
@@ -940,8 +867,7 @@ function localeList(value: unknown): value is string[] {
 }
 
 function localeCode(value: unknown): value is string {
-  if (typeof value !== "string" || value.length < 1 || value.length > 64)
-    return false;
+  if (typeof value !== 'string' || value.length < 1 || value.length > 64) return false;
   try {
     return Intl.getCanonicalLocales(value)[0] === value;
   } catch {
@@ -949,32 +875,23 @@ function localeCode(value: unknown): value is string {
   }
 }
 function text(value: unknown, min = 1, max = 500): value is string {
-  return (
-    typeof value === "string" && value.length >= min && value.length <= max
-  );
+  return typeof value === 'string' && value.length >= min && value.length <= max;
 }
 function iso(value: unknown): value is string {
   return text(value) && Number.isFinite(Date.parse(value));
 }
 function bigintString(value: unknown): value is string {
-  return typeof value === "string" && /^\d+$/.test(value);
+  return typeof value === 'string' && /^\d+$/.test(value);
 }
 function policyVersion(value: unknown): string | undefined {
-  return typeof value === "string" && /^(?:0|[1-9]\d{0,19})$/.test(value)
-    ? value
-    : undefined;
+  return typeof value === 'string' && /^(?:0|[1-9]\d{0,19})$/.test(value) ? value : undefined;
 }
 function integer(value: unknown): value is number {
   return Number.isSafeInteger(value) && (value as number) >= 1;
 }
-function enumValue<T extends string>(
-  value: unknown,
-  allowed: readonly T[],
-): T | undefined {
-  return typeof value === "string" && allowed.includes(value as T)
-    ? (value as T)
-    : undefined;
+function enumValue<T extends string>(value: unknown, allowed: readonly T[]): T | undefined {
+  return typeof value === 'string' && allowed.includes(value as T) ? (value as T) : undefined;
 }
 function invalid(): never {
-  throw new Error("Сервер вернул некорректные данные лимитов AI");
+  throw new Error('Сервер вернул некорректные данные лимитов AI');
 }

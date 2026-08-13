@@ -4,7 +4,7 @@ import {
   supportInternalNoteList,
   supportInternalNoteRevisions,
   supportInternalNoteTombstone,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   CorrectSupportInternalNoteDtoReasonCode,
   SupportInternalNoteResponseDto,
@@ -12,9 +12,9 @@ import type {
   SupportInternalNoteRevisionResponseDto,
   SupportInternalNoteRevisionPageResponseDto,
   TombstoneSupportInternalNoteDtoReasonCode,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
-import { isMockMode } from "@/shared/config/data-mode";
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
+import { isMockMode } from '@/shared/config/data-mode';
 
 export interface SupportInternalNote {
   id: string;
@@ -22,7 +22,7 @@ export interface SupportInternalNote {
   /** Opaque version authority used only for the next Case-scoped mutation. */
   actionEtag: string;
   body: string | null;
-  lifecycle: "ACTIVE" | "TOMBSTONED" | "PURGED";
+  lifecycle: 'ACTIVE' | 'TOMBSTONED' | 'PURGED';
   currentRevisionNumber: number;
   creatorName: string;
   createdAt: string;
@@ -43,25 +43,16 @@ export interface SupportInternalNoteRevision {
   revisionNumber: number;
   body: string;
   reasonCode:
-    | "INITIAL"
-    | "FACTUAL_CORRECTION"
-    | "CLARIFICATION"
-    | "REMOVE_SENSITIVE_DATA"
-    | "LEGACY_OTHER";
+    'INITIAL' | 'FACTUAL_CORRECTION' | 'CLARIFICATION' | 'REMOVE_SENSITIVE_DATA' | 'LEGACY_OTHER';
   authorName: string;
   createdAt: string;
 }
 
 export type SupportInternalNoteCorrectionReason =
-  | "FACTUAL_CORRECTION"
-  | "CLARIFICATION"
-  | "REMOVE_SENSITIVE_DATA";
+  'FACTUAL_CORRECTION' | 'CLARIFICATION' | 'REMOVE_SENSITIVE_DATA';
 
 export type SupportInternalNoteTombstoneReason =
-  | "CREATED_IN_ERROR"
-  | "DUPLICATE"
-  | "POLICY_VIOLATION"
-  | "PRIVACY_REQUEST";
+  'CREATED_IN_ERROR' | 'DUPLICATE' | 'POLICY_VIOLATION' | 'PRIVACY_REQUEST';
 
 export interface SupportInternalNotesPage<T> {
   items: T[];
@@ -129,9 +120,9 @@ export class SupportInternalNotesContractError extends Error {
 function actorName(value: unknown, field: string): string {
   if (
     !value ||
-    typeof value !== "object" ||
-    !("displayName" in value) ||
-    typeof value.displayName !== "string" ||
+    typeof value !== 'object' ||
+    !('displayName' in value) ||
+    typeof value.displayName !== 'string' ||
     !value.displayName.trim()
   )
     throw new SupportInternalNotesContractError(
@@ -142,9 +133,7 @@ function actorName(value: unknown, field: string): string {
 
 function date(value: string, field: string): string {
   if (!Number.isFinite(Date.parse(value)))
-    throw new SupportInternalNotesContractError(
-      `Internal note returned an invalid ${field}`,
-    );
+    throw new SupportInternalNotesContractError(`Internal note returned an invalid ${field}`);
   return value;
 }
 
@@ -153,17 +142,13 @@ function mapNote(
   expectedCaseId: string,
 ): SupportInternalNote {
   if (value.endUserCaseId !== expectedCaseId)
-    throw new SupportInternalNotesContractError(
-      "Internal note returned a different Case",
-    );
+    throw new SupportInternalNotesContractError('Internal note returned a different Case');
   if (
-    value.lifecycle !== "ACTIVE" &&
-    value.lifecycle !== "TOMBSTONED" &&
-    value.lifecycle !== "PURGED"
+    value.lifecycle !== 'ACTIVE' &&
+    value.lifecycle !== 'TOMBSTONED' &&
+    value.lifecycle !== 'PURGED'
   )
-    throw new SupportInternalNotesContractError(
-      "Internal note returned an unknown lifecycle",
-    );
+    throw new SupportInternalNotesContractError('Internal note returned an unknown lifecycle');
   return {
     id: value.id,
     caseId: value.endUserCaseId,
@@ -171,12 +156,10 @@ function mapNote(
     body: value.body,
     lifecycle: value.lifecycle,
     currentRevisionNumber: value.currentRevisionNumber,
-    creatorName: actorName(value.creator, "creator"),
-    createdAt: date(value.createdAt, "createdAt"),
-    updatedAt: date(value.updatedAt, "updatedAt"),
-    tombstonedAt: value.tombstonedAt
-      ? date(value.tombstonedAt, "tombstonedAt")
-      : null,
+    creatorName: actorName(value.creator, 'creator'),
+    createdAt: date(value.createdAt, 'createdAt'),
+    updatedAt: date(value.updatedAt, 'updatedAt'),
+    tombstonedAt: value.tombstonedAt ? date(value.tombstonedAt, 'tombstonedAt') : null,
     hasUnavailableReferences: value.hasUnavailableReferences,
     attachments: value.attachments.map((attachment) => ({
       id: attachment.id,
@@ -192,17 +175,15 @@ function mapRevision(
   expectedNoteId: string,
 ): SupportInternalNoteRevision {
   if (value.noteId !== expectedNoteId)
-    throw new SupportInternalNotesContractError(
-      "Internal note history returned a different note",
-    );
+    throw new SupportInternalNotesContractError('Internal note history returned a different note');
   return {
     id: value.id,
     noteId: value.noteId,
     revisionNumber: value.revisionNumber,
     body: value.body,
     reasonCode: value.reasonCode,
-    authorName: actorName(value.author, "author"),
-    createdAt: date(value.createdAt, "createdAt"),
+    authorName: actorName(value.author, 'author'),
+    createdAt: date(value.createdAt, 'createdAt'),
   };
 }
 
@@ -265,11 +246,9 @@ const apiSource: SupportInternalNotesSource = {
           ...(input.messageId ? { messageId: input.messageId } : {}),
           ...(input.macroRevisionId ? { macroRevisionId: input.macroRevisionId } : {}),
           ...(input.macroDraftId ? { macroDraftId: input.macroDraftId } : {}),
-          ...(input.knowledgeDocumentId
-            ? { knowledgeDocumentId: input.knowledgeDocumentId }
-            : {}),
+          ...(input.knowledgeDocumentId ? { knowledgeDocumentId: input.knowledgeDocumentId } : {}),
         },
-        { headers: { "Idempotency-Key": input.idempotencyKey } },
+        { headers: { 'Idempotency-Key': input.idempotencyKey } },
       );
       return mapNote(response, caseId);
     } catch (cause) {
@@ -288,8 +267,8 @@ const apiSource: SupportInternalNotesSource = {
         },
         {
           headers: {
-            "Idempotency-Key": input.idempotencyKey,
-            "If-Match": input.actionEtag,
+            'Idempotency-Key': input.idempotencyKey,
+            'If-Match': input.actionEtag,
           },
         },
       );
@@ -309,8 +288,8 @@ const apiSource: SupportInternalNotesSource = {
         },
         {
           headers: {
-            "Idempotency-Key": input.idempotencyKey,
-            "If-Match": input.actionEtag,
+            'Idempotency-Key': input.idempotencyKey,
+            'If-Match': input.actionEtag,
           },
         },
       );
@@ -331,10 +310,10 @@ function mockCaseNotes(caseId: string): SupportInternalNote[] {
       id: globalThis.crypto.randomUUID(),
       caseId,
       actionEtag: '"sin1.mock-note"',
-      body: "Проверить историю платежа перед публичным ответом.",
-      lifecycle: "ACTIVE",
+      body: 'Проверить историю платежа перед публичным ответом.',
+      lifecycle: 'ACTIVE',
       currentRevisionNumber: 1,
-      creatorName: "Алина · Support",
+      creatorName: 'Алина · Support',
       createdAt: new Date(Date.now() - 12 * 60_000).toISOString(),
       updatedAt: new Date(Date.now() - 12 * 60_000).toISOString(),
       tombstonedAt: null,
@@ -362,7 +341,7 @@ const mockSource: SupportInternalNotesSource = {
               noteId: note.id,
               revisionNumber: note.currentRevisionNumber,
               body: note.body,
-              reasonCode: "INITIAL",
+              reasonCode: 'INITIAL',
               authorName: note.creatorName,
               createdAt: note.updatedAt,
             },
@@ -378,9 +357,9 @@ const mockSource: SupportInternalNotesSource = {
       caseId,
       actionEtag: '"sin1.mock-created"',
       body: input.body ?? null,
-      lifecycle: "ACTIVE",
+      lifecycle: 'ACTIVE',
       currentRevisionNumber: 1,
-      creatorName: "Вы",
+      creatorName: 'Вы',
       createdAt: now,
       updatedAt: now,
       tombstonedAt: null,
@@ -392,7 +371,7 @@ const mockSource: SupportInternalNotesSource = {
   },
   async correct(_projectId, caseId, noteId, input) {
     const current = mockCaseNotes(caseId).find((item) => item.id === noteId);
-    if (!current) throw new Error("Mock internal note is unavailable");
+    if (!current) throw new Error('Mock internal note is unavailable');
     const updated = {
       ...current,
       body: input.body,
@@ -408,12 +387,12 @@ const mockSource: SupportInternalNotesSource = {
   },
   async tombstone(_projectId, caseId, noteId) {
     const current = mockCaseNotes(caseId).find((item) => item.id === noteId);
-    if (!current) throw new Error("Mock internal note is unavailable");
+    if (!current) throw new Error('Mock internal note is unavailable');
     const now = new Date().toISOString();
     const updated: SupportInternalNote = {
       ...current,
       body: null,
-      lifecycle: "TOMBSTONED",
+      lifecycle: 'TOMBSTONED',
       updatedAt: now,
       tombstonedAt: now,
       actionEtag: '"sin1.mock-tombstoned"',

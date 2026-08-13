@@ -4,11 +4,11 @@ import {
   aiModelSettingsUpdateSettings,
   projectTranslationSettingsGet,
   projectTranslationSettingsPut,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   UpdateAiModelSettingsDto,
   UpdateProjectTranslationSettingsDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 export const translationSettingsApi = {
   aiModels: {

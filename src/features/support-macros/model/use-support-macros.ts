@@ -1,23 +1,26 @@
-import { computed, ref } from "vue";
-import { ApiError } from "@/shared/api/http/api-error";
+import { computed, ref } from 'vue';
+import { ApiError } from '@/shared/api/http/api-error';
 import type {
   SupportMacroCatalogRequest,
   SupportMacroDraftTarget,
   SupportMacroSource,
-} from "@/features/support-macros/api/support-macros-source";
+} from '@/features/support-macros/api/support-macros-source';
 import type {
   SupportMacroReplyDraftResponseDto,
   SupportMacroResponseDto,
   SupportMacroCatalogFreshnessDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 export interface SupportMacroContext {
   projectId(): string | undefined;
   actorId(): string | undefined;
   canRead(): boolean;
   canUse(): boolean;
-  target(): Omit<SupportMacroDraftTarget, "projectId" | "macroId" | "expectedMacroRevisionId"> | null;
-  catalogContext?(): Partial<Pick<SupportMacroCatalogRequest, "locale" | "teamId" | "topicCode">>;
+  target(): Omit<
+    SupportMacroDraftTarget,
+    'projectId' | 'macroId' | 'expectedMacroRevisionId'
+  > | null;
+  catalogContext?(): Partial<Pick<SupportMacroCatalogRequest, 'locale' | 'teamId' | 'topicCode'>>;
   onForbidden?(): void | Promise<void>;
 }
 
@@ -32,10 +35,10 @@ function targetScope(target: SupportMacroDraftTarget): string {
   return [
     target.projectId,
     target.kind,
-    target.endUserId ?? "",
-    target.conversationId ?? "",
-    target.caseId ?? "",
-  ].join("\u001f");
+    target.endUserId ?? '',
+    target.conversationId ?? '',
+    target.caseId ?? '',
+  ].join('\u001f');
 }
 
 function receiptMatchesTarget(
@@ -43,24 +46,22 @@ function receiptMatchesTarget(
   target: SupportMacroDraftTarget,
 ): boolean {
   return Boolean(
-    receipt.state === "READY" &&
-      receipt.targetKind === target.kind &&
-      receipt.macroId === target.macroId &&
-      receipt.macroRevisionId === target.expectedMacroRevisionId &&
-      (target.kind !== "PUBLIC_REPLY" ||
-        receipt.conversationId === target.conversationId) &&
-      (!target.caseId || receipt.endUserCaseId === target.caseId) &&
-      receipt.text,
+    receipt.state === 'READY' &&
+    receipt.targetKind === target.kind &&
+    receipt.macroId === target.macroId &&
+    receipt.macroRevisionId === target.expectedMacroRevisionId &&
+    (target.kind !== 'PUBLIC_REPLY' || receipt.conversationId === target.conversationId) &&
+    (!target.caseId || receipt.endUserCaseId === target.caseId) &&
+    receipt.text,
   );
 }
 
 function errorCopy(cause: unknown): string {
-  if (!(cause instanceof ApiError)) return "Не удалось загрузить шаблоны. Повторите попытку.";
+  if (!(cause instanceof ApiError)) return 'Не удалось загрузить шаблоны. Повторите попытку.';
   if (cause.status === 409)
-    return "Каталог или шаблон изменился. Список обновлён — выберите актуальную версию.";
-  if (cause.status === 503)
-    return "Шаблоны временно недоступны для этого проекта.";
-  return "Не удалось загрузить шаблоны. Повторите попытку.";
+    return 'Каталог или шаблон изменился. Список обновлён — выберите актуальную версию.';
+  if (cause.status === 503) return 'Шаблоны временно недоступны для этого проекта.';
+  return 'Не удалось загрузить шаблоны. Повторите попытку.';
 }
 
 /** Owns the operator Macro catalog and exactly one editable draft for the selected Surface. */
@@ -71,12 +72,12 @@ export function createSupportMacroController(
   const items = ref<SupportMacroResponseDto[]>([]);
   const nextCursor = ref<string | null>(null);
   const freshness = ref<SupportMacroCatalogFreshnessDto | null>(null);
-  const query = ref("");
+  const query = ref('');
   const loading = ref(false);
   const loadingMore = ref(false);
   const applyingId = ref<string | null>(null);
   const savingDraft = ref(false);
-  const error = ref("");
+  const error = ref('');
   const recoveryRequired = ref(false);
   const activeDraft = ref<ActiveMacroDraft | null>(null);
   let generation = 0;
@@ -85,9 +86,7 @@ export function createSupportMacroController(
   const draftCommandKeys = new Map<string, string>();
 
   const canOpen = computed(() =>
-    Boolean(
-      context.projectId() && context.actorId() && context.canRead() && context.canUse(),
-    ),
+    Boolean(context.projectId() && context.actorId() && context.canRead() && context.canUse()),
   );
 
   function reset(options: { keepQuery?: boolean } = {}): void {
@@ -101,12 +100,12 @@ export function createSupportMacroController(
     loadingMore.value = false;
     applyingId.value = null;
     savingDraft.value = false;
-    error.value = "";
+    error.value = '';
     recoveryRequired.value = false;
     activeDraft.value = null;
     applyToken = null;
     draftCommandKeys.clear();
-    if (!options.keepQuery) query.value = "";
+    if (!options.keepQuery) query.value = '';
   }
 
   async function forbidden(): Promise<void> {
@@ -114,7 +113,9 @@ export function createSupportMacroController(
     await context.onForbidden?.();
   }
 
-  function requireRecovery(message = "Шаблон изменился или больше недоступен. Выберите актуальный шаблон перед отправкой."): void {
+  function requireRecovery(
+    message = 'Шаблон изменился или больше недоступен. Выберите актуальный шаблон перед отправкой.',
+  ): void {
     activeDraft.value = null;
     recoveryRequired.value = true;
     error.value = message;
@@ -122,12 +123,7 @@ export function createSupportMacroController(
 
   async function load(cursor?: string): Promise<void> {
     const projectId = context.projectId();
-    if (
-      !projectId ||
-      !context.actorId() ||
-      !context.canRead() ||
-      !context.canUse()
-    ) {
+    if (!projectId || !context.actorId() || !context.canRead() || !context.canUse()) {
       reset({ keepQuery: true });
       return;
     }
@@ -138,7 +134,7 @@ export function createSupportMacroController(
     if (cursor) loadingMore.value = true;
     else {
       loading.value = true;
-      if (!recoveryRequired.value) error.value = "";
+      if (!recoveryRequired.value) error.value = '';
     }
     try {
       const page = await source.catalog(
@@ -151,8 +147,7 @@ export function createSupportMacroController(
         },
         requestAbort.signal,
       );
-      if (requestGeneration !== generation || context.projectId() !== projectId)
-        return;
+      if (requestGeneration !== generation || context.projectId() !== projectId) return;
       items.value = cursor ? [...items.value, ...page.items] : page.items;
       nextCursor.value = page.nextCursor;
       freshness.value = page.freshness;
@@ -181,7 +176,7 @@ export function createSupportMacroController(
     const projectId = context.projectId();
     const target = context.target();
     const revisionId = macro.publishedRevision?.id;
-    if (!projectId || !target || !revisionId || macro.lifecycle !== "ACTIVE") return null;
+    if (!projectId || !target || !revisionId || macro.lifecycle !== 'ACTIVE') return null;
     return {
       ...target,
       projectId,
@@ -194,18 +189,17 @@ export function createSupportMacroController(
     if (!canOpen.value || applyingId.value) return null;
     const target = currentTarget(macro);
     if (!target) {
-      error.value = "Шаблон больше не опубликован. Обновите каталог.";
+      error.value = 'Шаблон больше не опубликован. Обновите каталог.';
       return null;
     }
     const requestGeneration = generation;
-    const token = Symbol("macro-apply");
+    const token = Symbol('macro-apply');
     applyToken = token;
     applyingId.value = macro.id;
-    error.value = "";
+    error.value = '';
     try {
       const identity = `${targetScope(target)}\u001f${target.macroId}\u001f${target.expectedMacroRevisionId}`;
-      const idempotencyKey =
-        draftCommandKeys.get(identity) ?? globalThis.crypto.randomUUID();
+      const idempotencyKey = draftCommandKeys.get(identity) ?? globalThis.crypto.randomUUID();
       draftCommandKeys.set(identity, idempotencyKey);
       const receipt = await source.createDraft(target, idempotencyKey);
       if (
@@ -214,7 +208,7 @@ export function createSupportMacroController(
       )
         return null;
       if (!receiptMatchesTarget(receipt, target))
-        throw new Error("Support Macro draft receipt failed integrity validation");
+        throw new Error('Support Macro draft receipt failed integrity validation');
       activeDraft.value = {
         scopeKey: targetScope(target),
         target,
@@ -247,20 +241,21 @@ export function createSupportMacroController(
     if (!active) return null;
     const current = context.target();
     const projectId = context.projectId();
-    const currentScope = current && projectId
-      ? targetScope({
-          ...current,
-          projectId,
-          macroId: active.target.macroId,
-          expectedMacroRevisionId: active.target.expectedMacroRevisionId,
-        })
-      : null;
+    const currentScope =
+      current && projectId
+        ? targetScope({
+            ...current,
+            projectId,
+            macroId: active.target.macroId,
+            expectedMacroRevisionId: active.target.expectedMacroRevisionId,
+          })
+        : null;
     if (!normalized || !currentScope || active.scopeKey !== currentScope) {
       activeDraft.value = null;
       return null;
     }
     savingDraft.value = true;
-    error.value = "";
+    error.value = '';
     try {
       const receipt = await source.editDraft({
         ...active.target,
@@ -274,7 +269,7 @@ export function createSupportMacroController(
         receipt.id !== active.receipt.id ||
         receipt.version <= active.receipt.version
       )
-        throw new Error("Support Macro edit receipt failed integrity validation");
+        throw new Error('Support Macro edit receipt failed integrity validation');
       activeDraft.value = { ...active, receipt };
       return receipt.id;
     } catch (cause) {
@@ -285,8 +280,8 @@ export function createSupportMacroController(
       }
       const message =
         cause instanceof ApiError && cause.status === 409
-          ? "Черновик шаблона изменился или истёк. Ваш текст сохранён — примените шаблон заново."
-          : "Не удалось сохранить изменения шаблона. Ваш текст не потерян.";
+          ? 'Черновик шаблона изменился или истёк. Ваш текст сохранён — примените шаблон заново.'
+          : 'Не удалось сохранить изменения шаблона. Ваш текст не потерян.';
       requireRecovery(message);
       return null;
     } finally {

@@ -1,54 +1,44 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { DocumentationCallout } from "@/features/documentation/ui";
-import SegmentManager from "@/features/scenario-audience/ui/SegmentManager.vue";
-import { repository } from "@/shared/api/repository";
+import { computed, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { DocumentationCallout } from '@/features/documentation/ui';
+import SegmentManager from '@/features/scenario-audience/ui/SegmentManager.vue';
+import { repository } from '@/shared/api/repository';
 import {
   segmentCatalogRepository,
   type ConditionCatalogResponseDtoAudience,
-} from "@/shared/api/repository/scenario-authoring";
+} from '@/shared/api/repository/scenario-authoring';
 
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 const loading = ref(true);
-const error = ref("");
+const error = ref('');
 const catalog = ref<ConditionCatalogResponseDtoAudience | null>(null);
-const canManage = computed(
-  () =>
-    hasProjectPermission(
-      auth.project?.effectivePermissionCodes ?? [],
-      "project.segments.write",
-    ),
+const canManage = computed(() =>
+  hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.segments.write'),
 );
-const initialAction = computed<
-  "create" | "detail" | "revision" | "exact" | undefined
->(() =>
-  route.name === "segment-create"
-    ? "create"
-    : route.name === "segment-revision-create"
-      ? "revision"
-      : route.name === "segment-revision-detail"
-        ? "exact"
+const initialAction = computed<'create' | 'detail' | 'revision' | 'exact' | undefined>(() =>
+  route.name === 'segment-create'
+    ? 'create'
+    : route.name === 'segment-revision-create'
+      ? 'revision'
+      : route.name === 'segment-revision-detail'
+        ? 'exact'
         : route.params.segmentId
-          ? "detail"
+          ? 'detail'
           : undefined,
 );
 const initialSegmentId = computed(() =>
-  typeof route.params.segmentId === "string"
-    ? route.params.segmentId
-    : undefined,
+  typeof route.params.segmentId === 'string' ? route.params.segmentId : undefined,
 );
 const initialSegmentRevisionId = computed(() =>
-  typeof route.params.segmentRevisionId === "string"
-    ? route.params.segmentRevisionId
-    : undefined,
+  typeof route.params.segmentRevisionId === 'string' ? route.params.segmentRevisionId : undefined,
 );
 
 onMounted(load);
@@ -56,51 +46,43 @@ onMounted(load);
 function demoCatalog(): ConditionCatalogResponseDtoAudience {
   return {
     version: 2,
-    source: "CURRENT_PROFILE",
-    revision: "demo-audience-v2",
+    source: 'CURRENT_PROFILE',
+    revision: 'demo-audience-v2',
     attributes: [
       {
-        definitionId: "attr-tier",
-        definitionRevisionId: "attr-tier-r1",
+        definitionId: 'attr-tier',
+        definitionRevisionId: 'attr-tier-r1',
         revision: 1,
-        key: "loyaltyTier",
-        label: "Уровень лояльности",
-        description: "Текущий уровень программы лояльности.",
-        valueType: "STRING",
-        lifecycle: "ACTIVE",
-        classification: "INTERNAL",
+        key: 'loyaltyTier',
+        label: 'Уровень лояльности',
+        description: 'Текущий уровень программы лояльности.',
+        valueType: 'STRING',
+        lifecycle: 'ACTIVE',
+        classification: 'INTERNAL',
         audienceRead: true,
-        authoringAvailability: "AVAILABLE",
-        operators: [
-          "eq",
-          "neq",
-          "in",
-          "not_in",
-          "exists",
-          "is_missing",
-          "is_stale",
-        ],
-        control: "SELECT",
-        allowedValues: ["basic", "silver", "gold"],
+        authoringAvailability: 'AVAILABLE',
+        operators: ['eq', 'neq', 'in', 'not_in', 'exists', 'is_missing', 'is_stale'],
+        control: 'SELECT',
+        allowedValues: ['basic', 'silver', 'gold'],
         constraints: {},
-        defaultFreshnessHint: { mode: "USE_LAST_KNOWN" },
+        defaultFreshnessHint: { mode: 'USE_LAST_KNOWN' },
       },
     ],
     freshnessPolicies: [],
     segmentSource: {
-      authoringAvailability: "AVAILABLE",
-      control: "SEARCH",
-      operators: ["is_member", "is_not_member"],
-      searchEndpoint: "/segments",
+      authoringAvailability: 'AVAILABLE',
+      control: 'SEARCH',
+      operators: ['is_member', 'is_not_member'],
+      searchEndpoint: '/segments',
     },
     snapshotPolicy: {
-      initialEvaluation: "RUN_START",
-      missing: "NO_MATCH",
-      stale: "TRI_STATE",
-      truth: "KLEENE",
-      persistence: "SNAPSHOT_WITH_SEPARATE_LAST_RECHECK",
-      recheckTrigger: "DELIVERY_RECHECK_ELIGIBILITY",
-      revision: "PINNED",
+      initialEvaluation: 'RUN_START',
+      missing: 'NO_MATCH',
+      stale: 'TRI_STATE',
+      truth: 'KLEENE',
+      persistence: 'SNAPSHOT_WITH_SEPARATE_LAST_RECHECK',
+      recheckTrigger: 'DELIVERY_RECHECK_ELIGIBILITY',
+      revision: 'PINNED',
     },
   } as unknown as ConditionCatalogResponseDtoAudience;
 }
@@ -109,22 +91,15 @@ async function load() {
   const projectId = auth.project?.id;
   if (!projectId) return;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const nextCatalog =
-      repository.mode === "mock"
-        ? demoCatalog()
-        : await segmentCatalogRepository.get(projectId);
-    if (!nextCatalog)
-      throw new Error(
-        "Для проекта ещё не опубликованы поля для сегментов.",
-      );
+      repository.mode === 'mock' ? demoCatalog() : await segmentCatalogRepository.get(projectId);
+    if (!nextCatalog) throw new Error('Для проекта ещё не опубликованы поля для сегментов.');
     catalog.value = nextCatalog;
   } catch (cause) {
     error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить условия сегментации";
+      cause instanceof Error ? cause.message : 'Не удалось загрузить условия сегментации';
   } finally {
     loading.value = false;
   }
@@ -132,23 +107,21 @@ async function load() {
 
 async function refreshCatalog() {
   const projectId = auth.project?.id;
-  if (!projectId) throw new Error("Проект не выбран");
+  if (!projectId) throw new Error('Проект не выбран');
   const next = await segmentCatalogRepository.get(projectId);
-  if (!next) throw new Error("Поля для сегментов ещё не опубликованы");
+  if (!next) throw new Error('Поля для сегментов ещё не опубликованы');
   catalog.value = next;
   return next;
 }
 
 async function afterPublished(segmentId: string) {
   const returnTo =
-    typeof route.query.returnTo === "string" &&
-    route.query.returnTo.startsWith("/") &&
-    !route.query.returnTo.startsWith("//")
+    typeof route.query.returnTo === 'string' &&
+    route.query.returnTo.startsWith('/') &&
+    !route.query.returnTo.startsWith('//')
       ? route.query.returnTo
-      : "";
-  await router.push(
-    returnTo || { name: "segment-detail", params: { segmentId } },
-  );
+      : '';
+  await router.push(returnTo || { name: 'segment-detail', params: { segmentId } });
 }
 </script>
 
@@ -159,8 +132,8 @@ async function afterPublished(segmentId: string) {
         <div class="eyebrow">Аудитории пользователей</div>
         <h1>Библиотека сегментов</h1>
         <p class="subtitle">
-          Создавайте переиспользуемые группы пользователей и закрепляйте нужную
-          версию сегмента в сценарии.
+          Создавайте переиспользуемые группы пользователей и закрепляйте нужную версию сегмента в
+          сценарии.
         </p>
       </div>
       <div class="header-actions">
@@ -178,9 +151,7 @@ async function afterPublished(segmentId: string) {
           as="router-link"
           :to="{
             name: 'segment-create',
-            query: route.query.returnTo
-              ? { returnTo: route.query.returnTo }
-              : {},
+            query: route.query.returnTo ? { returnTo: route.query.returnTo } : {},
           }"
         />
       </div>
@@ -192,8 +163,8 @@ async function afterPublished(segmentId: string) {
       route-name="segments-guide"
     />
     <Message severity="info" :closable="false"
-      >Чтобы проверить условие, укажите одного пользователя. Retenive покажет,
-      подходит ли он сегменту и насколько свежие данные использовались.</Message
+      >Чтобы проверить условие, укажите одного пользователя. Retenive покажет, подходит ли он
+      сегменту и насколько свежие данные использовались.</Message
     >
     <Message v-if="error" severity="error" :closable="false"
       ><div class="error-row">

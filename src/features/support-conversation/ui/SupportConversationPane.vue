@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import type { RequestedMessageTranslation } from "@/features/conversation-translation/model/translation-presentation";
+import { computed } from 'vue';
+import type { RequestedMessageTranslation } from '@/features/conversation-translation/model/translation-presentation';
 import type {
   ConversationSurfaceAttachmentDownloadRequest,
   ConversationSurfaceComposer,
@@ -12,11 +12,11 @@ import type {
   ConversationSurfaceReconcileIssue,
   ConversationSurfaceSendRequest,
   ConversationSurfaceTranslation,
-} from "@/features/conversation-surface/model/conversation-surface-contract";
-import ConversationSurface from "@/features/conversation-surface/ui/ConversationSurface.vue";
-import type { ConversationMessage } from "@/shared/types/domain";
-import type { SupportMessageDeliveryAction } from "@/features/conversation-delivery/model/use-support-message-delivery";
-import { adaptSupportConversationMessages } from "../model/support-conversation-surface-adapter";
+} from '@/features/conversation-surface/model/conversation-surface-contract';
+import ConversationSurface from '@/features/conversation-surface/ui/ConversationSurface.vue';
+import type { ConversationMessage } from '@/shared/types/domain';
+import type { SupportMessageDeliveryAction } from '@/features/conversation-delivery/model/use-support-message-delivery';
+import { adaptSupportConversationMessages } from '../model/support-conversation-surface-adapter';
 
 const props = defineProps<{
   title: string;
@@ -34,32 +34,32 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "load-older": [];
-  "load-newer": [];
-  "visible-high-water": [ordinal: number];
-  "cancel-translation": [];
-  "change-translation-mode": [mode: "ORIGINAL" | "TRANSLATED"];
-  "reconcile-required": [issues: ConversationSurfaceReconcileIssue[]];
-  "draft-change": [request: ConversationSurfaceSendRequest];
+  'load-older': [];
+  'load-newer': [];
+  'visible-high-water': [ordinal: number];
+  'cancel-translation': [];
+  'change-translation-mode': [mode: 'ORIGINAL' | 'TRANSLATED'];
+  'reconcile-required': [issues: ConversationSurfaceReconcileIssue[]];
+  'draft-change': [request: ConversationSurfaceSendRequest];
   send: [request: ConversationSurfaceSendRequest];
-  "request-reply-translation": [];
-  "reconcile-reply-translation": [];
-  "retry-reply-translation": [];
-  "save-reply-translation": [text: string];
-  "send-reply-translation": [request: ConversationSurfaceSendRequest];
-  "check-send-outcome": [];
-  "discard-send-attempt": [];
-  "change-composer-mode": [mode: "PUBLIC_REPLY" | "INTERNAL_NOTE"];
-  "composer-action": [action: ConversationSurfaceComposerAction];
-  "start-ai-suspension": [];
-  "show-ai-suspension-history": [];
-  "retry-ai-suspension": [];
-  "retry-delivery": [messageId: string];
-  "open-internal-notes": [];
-  "add-attachments": [files: File[]];
-  "remove-attachment": [localId: string];
-  "retry-attachment": [localId: string];
-  "download-attachment": [request: ConversationSurfaceAttachmentDownloadRequest];
+  'request-reply-translation': [];
+  'reconcile-reply-translation': [];
+  'retry-reply-translation': [];
+  'save-reply-translation': [text: string];
+  'send-reply-translation': [request: ConversationSurfaceSendRequest];
+  'check-send-outcome': [];
+  'discard-send-attempt': [];
+  'change-composer-mode': [mode: 'PUBLIC_REPLY' | 'INTERNAL_NOTE'];
+  'composer-action': [action: ConversationSurfaceComposerAction];
+  'start-ai-suspension': [];
+  'show-ai-suspension-history': [];
+  'retry-ai-suspension': [];
+  'retry-delivery': [messageId: string];
+  'open-internal-notes': [];
+  'add-attachments': [files: File[]];
+  'remove-attachment': [localId: string];
+  'retry-attachment': [localId: string];
+  'download-attachment': [request: ConversationSurfaceAttachmentDownloadRequest];
 }>();
 
 const surfaceMessages = computed(() =>

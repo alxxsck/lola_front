@@ -1,61 +1,60 @@
-import { computed, nextTick, ref } from "vue";
-import { mount } from "@vue/test-utils";
-import { describe, expect, it, vi } from "vitest";
-import type { EndUserCaseDetailBundle } from "@/features/end-user-cases/api/end-user-cases-repository";
-import SupportCaseDesk from "./SupportCaseDesk.vue";
+import { computed, nextTick, ref } from 'vue';
+import { mount } from '@vue/test-utils';
+import { describe, expect, it, vi } from 'vitest';
+import type { EndUserCaseDetailBundle } from '@/features/end-user-cases/api/end-user-cases-repository';
+import SupportCaseDesk from './SupportCaseDesk.vue';
 
 function controller() {
   const exactCase = ref({
-    id: "case-1",
-    projectSequence: "42",
-    title: "Не поступил депозит",
-    summary:
-      "Платёж найден, но провайдер ещё не вернул окончательный результат.",
-    goal: "Подтвердить статус депозита и сообщить следующий шаг",
-    status: "IN_PROGRESS",
-    priority: "HIGH",
-    groupCode: "PAYMENTS",
-    type: "PROBLEM_RESOLUTION",
-    impact: "HIGH",
-    urgency: "HIGH",
+    id: 'case-1',
+    projectSequence: '42',
+    title: 'Не поступил депозит',
+    summary: 'Платёж найден, но провайдер ещё не вернул окончательный результат.',
+    goal: 'Подтвердить статус депозита и сообщить следующий шаг',
+    status: 'IN_PROGRESS',
+    priority: 'HIGH',
+    groupCode: 'PAYMENTS',
+    type: 'PROBLEM_RESOLUTION',
+    impact: 'HIGH',
+    urgency: 'HIGH',
     version: 4,
-    updatedAt: "2026-08-08T09:00:00.000Z",
-    availableStatuses: ["WAITING_END_USER", "RESOLVED"],
+    updatedAt: '2026-08-08T09:00:00.000Z',
+    availableStatuses: ['WAITING_END_USER', 'RESOLVED'],
     allowedActions: [
-      "SET_STATUS_WAITING_END_USER",
-      "SET_STATUS_RESOLVED",
-      "CHANGE_CLASSIFICATION",
-      "RAISE_PRIORITY",
-      "LOWER_PRIORITY_TO_FLOOR",
-      "REQUEST_ESCALATION",
+      'SET_STATUS_WAITING_END_USER',
+      'SET_STATUS_RESOLVED',
+      'CHANGE_CLASSIFICATION',
+      'RAISE_PRIORITY',
+      'LOWER_PRIORITY_TO_FLOOR',
+      'REQUEST_ESCALATION',
     ],
     classification: {
-      source: "AI",
+      source: 'AI',
       confidence: 0.91,
       evidence: [
-        { id: "message-1", kind: "MESSAGE" },
-        { id: "case-evidence-1", kind: "CASE_EVIDENCE" },
-        { id: "cms-action-1", kind: "CMS_ACTION" },
+        { id: 'message-1', kind: 'MESSAGE' },
+        { id: 'case-evidence-1', kind: 'CASE_EVIDENCE' },
+        { id: 'cms-action-1', kind: 'CMS_ACTION' },
       ],
     },
     priorityPolicy: {
-      effectiveFloor: "NORMAL",
+      effectiveFloor: 'NORMAL',
       overrideActive: false,
-      policyRevisionId: "policy-7",
+      policyRevisionId: 'policy-7',
       policyVersion: 7,
-      reasons: ["Финансовая операция"],
-      source: "PLATFORM_RULE",
+      reasons: ['Финансовая операция'],
+      source: 'PLATFORM_RULE',
     },
-    priorityReasons: ["Средства не зачислены"],
+    priorityReasons: ['Средства не зачислены'],
     workSummary: {
       aiCapabilities: [],
       cmsParticipation: {
         messageCount: 1,
         actionCount: 0,
-        firstParticipatedAt: "2026-08-08T08:30:00.000Z",
+        firstParticipatedAt: '2026-08-08T08:30:00.000Z',
       },
-      blockers: ["Ожидается ответ платёжного провайдера"],
-      limitations: ["Нельзя обещать срок зачисления"],
+      blockers: ['Ожидается ответ платёжного провайдера'],
+      limitations: ['Нельзя обещать срок зачисления'],
     },
   });
   return {
@@ -81,172 +80,160 @@ function controller() {
 
 const stubs = {
   Button: {
-    props: ["label", "disabled", "loading"],
-    emits: ["click"],
+    props: ['label', 'disabled', 'loading'],
+    emits: ['click'],
     template:
       '<button type="button" :disabled="disabled || loading" @click="$emit(\'click\')">{{ label }}<slot /></button>',
   },
   Dialog: {
-    props: ["visible", "header"],
-    emits: ["update:visible"],
+    props: ['visible', 'header'],
+    emits: ['update:visible'],
     template:
       '<section v-if="visible" role="dialog"><h2>{{ header }}</h2><slot/><footer><slot name="footer"/></footer></section>',
   },
   Message: { template: '<div role="alert"><slot /></div>' },
   Select: {
-    props: ["modelValue", "options", "optionLabel", "optionValue", "disabled"],
-    emits: ["update:modelValue"],
+    props: ['modelValue', 'options', 'optionLabel', 'optionValue', 'disabled'],
+    emits: ['update:modelValue'],
     template:
       '<select :value="modelValue" :disabled="disabled" @change="$emit(\'update:modelValue\', $event.target.value)"><option v-for="item in options" :key="item[optionValue]" :value="item[optionValue]">{{ item[optionLabel] }}</option></select>',
   },
   Textarea: {
-    props: ["modelValue"],
-    emits: ["update:modelValue"],
+    props: ['modelValue'],
+    emits: ['update:modelValue'],
     template:
       '<textarea :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
   },
   InputText: {
-    props: ["modelValue"],
-    emits: ["update:modelValue"],
+    props: ['modelValue'],
+    emits: ['update:modelValue'],
     template:
       '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
   },
 };
 
-describe("SupportCaseDesk", () => {
-  it("shows the exact Case brief and its operational blockers", () => {
+describe('SupportCaseDesk', () => {
+  it('shows the exact Case brief and its operational blockers', () => {
     const wrapper = mount(SupportCaseDesk, {
       props: {
         controller: controller() as never,
-        classificationOptions: [{ code: "PAYMENTS", label: "Платежи" }],
+        classificationOptions: [{ code: 'PAYMENTS', label: 'Платежи' }],
       },
       global: { stubs },
     });
 
-    const brief = wrapper.get(".case-brief");
-    expect(brief.text()).toContain("Платёж найден");
-    expect(brief.text()).toContain("Подтвердить статус депозита");
-    expect(brief.text()).toContain("Блокеры · 1");
-    expect(brief.text()).toContain("Ожидается ответ платёжного провайдера");
+    const brief = wrapper.get('.case-brief');
+    expect(brief.text()).toContain('Платёж найден');
+    expect(brief.text()).toContain('Подтвердить статус депозита');
+    expect(brief.text()).toContain('Блокеры · 1');
+    expect(brief.text()).toContain('Ожидается ответ платёжного провайдера');
   });
 
-  it("renders canonical classification, evidence and the pinned priority floor", () => {
+  it('renders canonical classification, evidence and the pinned priority floor', () => {
     const wrapper = mount(SupportCaseDesk, {
       props: {
         controller: controller() as never,
-        classificationOptions: [{ code: "PAYMENTS", label: "Платежи" }],
+        classificationOptions: [{ code: 'PAYMENTS', label: 'Платежи' }],
       },
       global: { stubs },
     });
 
-    expect(wrapper.get(".case-desk-classification").text()).toContain(
-      "Платежи",
-    );
-    expect(wrapper.get(".case-desk-classification").text()).toContain("91%");
-    expect(wrapper.get(".case-desk-evidence").text()).toContain("message-1");
-    expect(wrapper.get(".case-desk-evidence").text()).toContain(
-      "данные обращения",
-    );
-    expect(wrapper.get(".case-desk-evidence").text()).toContain(
-      "действие оператора",
-    );
-    expect(wrapper.get(".case-desk-policy").text()).toContain("Обычный");
-    expect(wrapper.get(".case-desk-policy").text()).toContain("версия 7");
+    expect(wrapper.get('.case-desk-classification').text()).toContain('Платежи');
+    expect(wrapper.get('.case-desk-classification').text()).toContain('91%');
+    expect(wrapper.get('.case-desk-evidence').text()).toContain('message-1');
+    expect(wrapper.get('.case-desk-evidence').text()).toContain('данные обращения');
+    expect(wrapper.get('.case-desk-evidence').text()).toContain('действие оператора');
+    expect(wrapper.get('.case-desk-policy').text()).toContain('Обычный');
+    expect(wrapper.get('.case-desk-policy').text()).toContain('версия 7');
   });
 
-  it("shows only server-authorized actions and requires an operator reason", async () => {
+  it('shows only server-authorized actions and requires an operator reason', async () => {
     const value = controller();
     const wrapper = mount(SupportCaseDesk, {
       props: {
         controller: value as never,
-        classificationOptions: [{ code: "PAYMENTS", label: "Платежи" }],
+        classificationOptions: [{ code: 'PAYMENTS', label: 'Платежи' }],
       },
       global: { stubs },
     });
 
-    expect(wrapper.text()).toContain("Изменить классификацию");
-    expect(wrapper.text()).toContain("Изменить статус");
-    expect(wrapper.text()).toContain("Эскалировать");
+    expect(wrapper.text()).toContain('Изменить классификацию');
+    expect(wrapper.text()).toContain('Изменить статус');
+    expect(wrapper.text()).toContain('Эскалировать');
     wrapper.vm.requestClassification();
     await nextTick();
-    expect(wrapper.get('[role="dialog"]').text()).toContain(
-      "Причина изменения",
-    );
-    expect(
-      wrapper.get(".classification-submit").attributes("disabled"),
-    ).toBeDefined();
+    expect(wrapper.get('[role="dialog"]').text()).toContain('Причина изменения');
+    expect(wrapper.get('.classification-submit').attributes('disabled')).toBeDefined();
   });
 
-  it("submits only fields touched against the dialog baseline after a concurrent refresh", async () => {
+  it('submits only fields touched against the dialog baseline after a concurrent refresh', async () => {
     const value = controller();
     const wrapper = mount(SupportCaseDesk, {
       props: {
         controller: value as never,
         classificationOptions: [
-          { code: "PAYMENTS", label: "Платежи" },
-          { code: "GENERAL", label: "Общие вопросы" },
+          { code: 'PAYMENTS', label: 'Платежи' },
+          { code: 'GENERAL', label: 'Общие вопросы' },
         ],
       },
       global: { stubs },
     });
     wrapper.vm.requestClassification();
     await nextTick();
-    const selects = wrapper.findAll("select");
-    await selects[0]!.setValue("GENERAL");
-    await wrapper.find("textarea").setValue("Уточнено оператором");
+    const selects = wrapper.findAll('select');
+    await selects[0]!.setValue('GENERAL');
+    await wrapper.find('textarea').setValue('Уточнено оператором');
 
     value.exactCase.value = {
       ...value.exactCase.value,
       version: 5,
-      priority: "URGENT",
+      priority: 'URGENT',
     };
-    await wrapper.get(".classification-submit").trigger("click");
+    await wrapper.get('.classification-submit').trigger('click');
 
     expect(value.classify).toHaveBeenCalledWith({
-      groupCode: "GENERAL",
-      reason: "Уточнено оператором",
+      groupCode: 'GENERAL',
+      reason: 'Уточнено оператором',
     });
   });
 
-  it("offers an explicit recovery action while commands are fail-closed", async () => {
+  it('offers an explicit recovery action while commands are fail-closed', async () => {
     const value = controller();
     value.reconciling.value = true;
     const wrapper = mount(SupportCaseDesk, {
       props: {
         controller: value as never,
-        classificationOptions: [{ code: "PAYMENTS", label: "Платежи" }],
+        classificationOptions: [{ code: 'PAYMENTS', label: 'Платежи' }],
       },
       global: { stubs },
     });
 
-    expect(wrapper.text()).toContain("Новые действия временно недоступны");
-    await wrapper.get(".case-desk-reconcile button").trigger("click");
+    expect(wrapper.text()).toContain('Новые действия временно недоступны');
+    await wrapper.get('.case-desk-reconcile button').trigger('click');
     expect(value.retryReconcile).toHaveBeenCalledOnce();
   });
 
-  it("separates classification authority from priority authority", async () => {
+  it('separates classification authority from priority authority', async () => {
     const value = controller();
     value.exactCase.value = {
       ...value.exactCase.value,
-      allowedActions: ["RAISE_PRIORITY"],
+      allowedActions: ['RAISE_PRIORITY'],
     };
     const wrapper = mount(SupportCaseDesk, {
       props: {
         controller: value as never,
-        classificationOptions: [{ code: "PAYMENTS", label: "Платежи" }],
+        classificationOptions: [{ code: 'PAYMENTS', label: 'Платежи' }],
       },
       global: { stubs },
     });
 
-    expect(wrapper.text()).toContain("Изменить приоритет");
+    expect(wrapper.text()).toContain('Изменить приоритет');
     wrapper.vm.requestClassification();
     await nextTick();
-    const selects = wrapper.findAll("select");
-    expect(
-      selects
-        .slice(0, 4)
-        .every((item) => item.attributes("disabled") !== undefined),
-    ).toBe(true);
-    expect(selects[4]!.attributes("disabled")).toBeUndefined();
+    const selects = wrapper.findAll('select');
+    expect(selects.slice(0, 4).every((item) => item.attributes('disabled') !== undefined)).toBe(
+      true,
+    );
+    expect(selects[4]!.attributes('disabled')).toBeUndefined();
   });
 });

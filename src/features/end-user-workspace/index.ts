@@ -1,1 +1,1 @@
-export { default as UserWorkspaceDialog } from './UserWorkspaceDialog.vue'
+export { default as UserWorkspaceDialog } from './UserWorkspaceDialog.vue';

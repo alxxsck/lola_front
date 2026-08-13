@@ -1,58 +1,33 @@
-import { hasProjectPermission } from "@/features/auth/permission-access";
-const supportWorkspaceConversationReadPermission =
-  "project.conversations.read" as const;
-const supportWorkspaceCaseReadPermission = "project.cases.read" as const;
-const supportLeadControlReadPermission =
-  "project.support.lead_control.read" as const;
-const supportAvailabilityReadPermission =
-  "project.support.availability.read" as const;
-const supportAvailabilitySelfManagePermission =
-  "project.support.availability.self_manage" as const;
-const supportAssignmentSelfManagePermission =
-  "project.support.assignments.self_manage" as const;
-const supportAssignmentOverridePermission =
-  "project.support.assignments.override" as const;
-const supportAssignmentForcePermission =
-  "project.support.assignments.force_assign" as const;
-const supportRoutingReceivePermission =
-  "project.support.routing.receive" as const;
-const supportConversationAiSuspendPermission =
-  "project.conversations.ai_suspend" as const;
-const supportInternalNotesReadPermission =
-  "project.support.internal_notes.read" as const;
+import { hasProjectPermission } from '@/features/auth/permission-access';
+const supportWorkspaceConversationReadPermission = 'project.conversations.read' as const;
+const supportWorkspaceCaseReadPermission = 'project.cases.read' as const;
+const supportLeadControlReadPermission = 'project.support.lead_control.read' as const;
+const supportAvailabilityReadPermission = 'project.support.availability.read' as const;
+const supportAvailabilitySelfManagePermission = 'project.support.availability.self_manage' as const;
+const supportAssignmentSelfManagePermission = 'project.support.assignments.self_manage' as const;
+const supportAssignmentOverridePermission = 'project.support.assignments.override' as const;
+const supportAssignmentForcePermission = 'project.support.assignments.force_assign' as const;
+const supportRoutingReceivePermission = 'project.support.routing.receive' as const;
+const supportConversationAiSuspendPermission = 'project.conversations.ai_suspend' as const;
+const supportInternalNotesReadPermission = 'project.support.internal_notes.read' as const;
 const supportInternalNotesHistoryReadPermission =
-  "project.support.internal_notes.history_read" as const;
-const supportInternalNotesWritePermission =
-  "project.support.internal_notes.write" as const;
-const supportInternalNotesRedactPermission =
-  "project.support.internal_notes.redact" as const;
+  'project.support.internal_notes.history_read' as const;
+const supportInternalNotesWritePermission = 'project.support.internal_notes.write' as const;
+const supportInternalNotesRedactPermission = 'project.support.internal_notes.redact' as const;
 
 /**
  * Route/navigation guard only. Target-specific actions still require the
  * server projection's allowed actions once those contracts are available.
  */
-export function canReadSupportWorkspace(
-  effectivePermissionCodes: readonly string[],
-): boolean {
+export function canReadSupportWorkspace(effectivePermissionCodes: readonly string[]): boolean {
   return (
-    hasProjectPermission(
-      effectivePermissionCodes,
-      supportWorkspaceConversationReadPermission,
-    ) ||
-    hasProjectPermission(
-      effectivePermissionCodes,
-      supportWorkspaceCaseReadPermission,
-    )
+    hasProjectPermission(effectivePermissionCodes, supportWorkspaceConversationReadPermission) ||
+    hasProjectPermission(effectivePermissionCodes, supportWorkspaceCaseReadPermission)
   );
 }
 
-export function canReadSupportControl(
-  effectivePermissionCodes: readonly string[],
-): boolean {
-  return hasProjectPermission(
-    effectivePermissionCodes,
-    supportLeadControlReadPermission,
-  );
+export function canReadSupportControl(effectivePermissionCodes: readonly string[]): boolean {
+  return hasProjectPermission(effectivePermissionCodes, supportLeadControlReadPermission);
 }
 
 export function canManagePersonalSupportNotifications(
@@ -62,9 +37,7 @@ export function canManagePersonalSupportNotifications(
     supportAssignmentSelfManagePermission,
     supportAssignmentOverridePermission,
     supportLeadControlReadPermission,
-  ].some((permission) =>
-    hasProjectPermission(effectivePermissionCodes, permission),
-  );
+  ].some((permission) => hasProjectPermission(effectivePermissionCodes, permission));
 }
 
 export function canAccessSupportNotificationSettings(
@@ -72,20 +45,12 @@ export function canAccessSupportNotificationSettings(
 ): boolean {
   return (
     canManagePersonalSupportNotifications(effectivePermissionCodes) ||
-    hasProjectPermission(
-      effectivePermissionCodes,
-      "project.support.notification_policy.manage",
-    )
+    hasProjectPermission(effectivePermissionCodes, 'project.support.notification_policy.manage')
   );
 }
 
-export function canReadSupportAvailability(
-  effectivePermissionCodes: readonly string[],
-): boolean {
-  return hasProjectPermission(
-    effectivePermissionCodes,
-    supportAvailabilityReadPermission,
-  );
+export function canReadSupportAvailability(effectivePermissionCodes: readonly string[]): boolean {
+  return hasProjectPermission(effectivePermissionCodes, supportAvailabilityReadPermission);
 }
 
 export function canManageOwnSupportAvailability(
@@ -93,40 +58,26 @@ export function canManageOwnSupportAvailability(
 ): boolean {
   return (
     canReadSupportAvailability(effectivePermissionCodes) &&
-    hasProjectPermission(
-      effectivePermissionCodes,
-      supportAvailabilitySelfManagePermission,
-    )
+    hasProjectPermission(effectivePermissionCodes, supportAvailabilitySelfManagePermission)
   );
 }
 
 export function canManageOwnSupportAssignments(
   effectivePermissionCodes: readonly string[],
 ): boolean {
-  return hasProjectPermission(
-    effectivePermissionCodes,
-    supportAssignmentSelfManagePermission,
-  );
+  return hasProjectPermission(effectivePermissionCodes, supportAssignmentSelfManagePermission);
 }
 
 export function canOverrideSupportAssignments(
   effectivePermissionCodes: readonly string[],
 ): boolean {
-  return hasProjectPermission(
-    effectivePermissionCodes,
-    supportAssignmentOverridePermission,
-  );
+  return hasProjectPermission(effectivePermissionCodes, supportAssignmentOverridePermission);
 }
 
-export function canForceSupportAssignments(
-  effectivePermissionCodes: readonly string[],
-): boolean {
+export function canForceSupportAssignments(effectivePermissionCodes: readonly string[]): boolean {
   return (
     canOverrideSupportAssignments(effectivePermissionCodes) &&
-    hasProjectPermission(
-      effectivePermissionCodes,
-      supportAssignmentForcePermission,
-    )
+    hasProjectPermission(effectivePermissionCodes, supportAssignmentForcePermission)
   );
 }
 
@@ -135,10 +86,7 @@ export function canReceiveSupportRoutingOffers(
 ): boolean {
   return (
     canManageOwnSupportAssignments(effectivePermissionCodes) &&
-    hasProjectPermission(
-      effectivePermissionCodes,
-      supportRoutingReceivePermission,
-    )
+    hasProjectPermission(effectivePermissionCodes, supportRoutingReceivePermission)
   );
 }
 
@@ -153,12 +101,7 @@ export function canReleaseSupportCaseAssignment(
   actorId: string | undefined,
   assignmentOperatorId: string | undefined,
 ): boolean {
-  if (
-    hasProjectPermission(
-      effectivePermissionCodes,
-      supportAssignmentOverridePermission,
-    )
-  )
+  if (hasProjectPermission(effectivePermissionCodes, supportAssignmentOverridePermission))
     return true;
   return (
     canManageOwnSupportAssignments(effectivePermissionCodes) &&
@@ -175,10 +118,7 @@ export function canReleaseSupportCaseAssignment(
 export function canReadSupportConversationAiSuspension(
   effectivePermissionCodes: readonly string[],
 ): boolean {
-  return hasProjectPermission(
-    effectivePermissionCodes,
-    supportWorkspaceConversationReadPermission,
-  );
+  return hasProjectPermission(effectivePermissionCodes, supportWorkspaceConversationReadPermission);
 }
 
 export function canManageSupportConversationAiSuspension(
@@ -187,20 +127,12 @@ export function canManageSupportConversationAiSuspension(
 ): boolean {
   return (
     serverAllowsAction &&
-    hasProjectPermission(
-      effectivePermissionCodes,
-      supportConversationAiSuspendPermission,
-    )
+    hasProjectPermission(effectivePermissionCodes, supportConversationAiSuspendPermission)
   );
 }
 
-export function canReadSupportInternalNotes(
-  effectivePermissionCodes: readonly string[],
-): boolean {
-  return hasProjectPermission(
-    effectivePermissionCodes,
-    supportInternalNotesReadPermission,
-  );
+export function canReadSupportInternalNotes(effectivePermissionCodes: readonly string[]): boolean {
+  return hasProjectPermission(effectivePermissionCodes, supportInternalNotesReadPermission);
 }
 
 export function canReadSupportInternalNoteHistory(
@@ -208,27 +140,16 @@ export function canReadSupportInternalNoteHistory(
 ): boolean {
   return (
     canReadSupportInternalNotes(effectivePermissionCodes) &&
-    hasProjectPermission(
-      effectivePermissionCodes,
-      supportInternalNotesHistoryReadPermission,
-    )
+    hasProjectPermission(effectivePermissionCodes, supportInternalNotesHistoryReadPermission)
   );
 }
 
-export function canWriteSupportInternalNotes(
-  effectivePermissionCodes: readonly string[],
-): boolean {
-  return hasProjectPermission(
-    effectivePermissionCodes,
-    supportInternalNotesWritePermission,
-  );
+export function canWriteSupportInternalNotes(effectivePermissionCodes: readonly string[]): boolean {
+  return hasProjectPermission(effectivePermissionCodes, supportInternalNotesWritePermission);
 }
 
 export function canRedactSupportInternalNotes(
   effectivePermissionCodes: readonly string[],
 ): boolean {
-  return hasProjectPermission(
-    effectivePermissionCodes,
-    supportInternalNotesRedactPermission,
-  );
+  return hasProjectPermission(effectivePermissionCodes, supportInternalNotesRedactPermission);
 }

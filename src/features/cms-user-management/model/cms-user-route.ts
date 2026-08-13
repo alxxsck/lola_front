@@ -1,4 +1,4 @@
-import type { RouteLocationRaw } from "vue-router";
+import type { RouteLocationRaw } from 'vue-router';
 
 export function cmsUserDetailRoute(
   cmsUserId: string,
@@ -6,7 +6,7 @@ export function cmsUserDetailRoute(
 ): RouteLocationRaw | undefined {
   if (!canReadCmsUsers) return undefined;
   return {
-    name: "platform-cms-users",
+    name: 'platform-cms-users',
     params: { cmsUserId },
   };
 }

@@ -2,11 +2,8 @@
 import type {
   AttributePublicationResponseDto,
   AttributePublicationSummaryResponseDto,
-} from "@/shared/api/generated/models";
-import {
-  actorLabel,
-  publicationChangeLabels,
-} from "../model/publication-domain";
+} from '@/shared/api/generated/models';
+import { actorLabel, publicationChangeLabels } from '../model/publication-domain';
 
 defineProps<{
   items: AttributePublicationSummaryResponseDto[];
@@ -18,7 +15,7 @@ defineEmits<{
 }>();
 
 function date(value: string) {
-  return new Date(value).toLocaleString("ru-RU");
+  return new Date(value).toLocaleString('ru-RU');
 }
 </script>
 
@@ -28,8 +25,8 @@ function date(value: string) {
       <div>
         <h3 id="publication-history-title">Публикации настроек</h3>
         <p>
-          Каждая запись фиксирует применённые настройки Retenive. Версия контракта
-          может остаться прежней.
+          Каждая запись фиксирует применённые настройки Retenive. Версия контракта может остаться
+          прежней.
         </p>
       </div>
     </header>
@@ -48,32 +45,21 @@ function date(value: string) {
           </span>
           <span>{{ date(publication.publishedAt) }}</span>
           <span>{{
-            actorLabel(
-              publication.publishedActorType,
-              publication.publishedActorId,
-            )
+            actorLabel(publication.publishedActorType, publication.publishedActorId)
           }}</span>
           <span>{{ publication.publishReason }}</span>
           <span class="change-list">
-            <span
-              v-for="change in publicationChangeLabels(publication.changes)"
-              :key="change"
-              >{{ change }}</span
-            >
+            <span v-for="change in publicationChangeLabels(publication.changes)" :key="change">{{
+              change
+            }}</span>
           </span>
         </button>
       </li>
     </ol>
     <p v-else class="empty">Публикаций пока нет.</p>
 
-    <article
-      v-if="selected"
-      class="history-detail"
-      aria-labelledby="publication-detail-title"
-    >
-      <h4 id="publication-detail-title">
-        Публикация #{{ selected.sequence }}
-      </h4>
+    <article v-if="selected" class="history-detail" aria-labelledby="publication-detail-title">
+      <h4 id="publication-detail-title">Публикация #{{ selected.sequence }}</h4>
       <dl>
         <div>
           <dt>Эффективный контракт</dt>
@@ -85,7 +71,9 @@ function date(value: string) {
         </div>
         <div>
           <dt>Canonical hash</dt>
-          <dd><code>{{ selected.canonicalHash }}</code></dd>
+          <dd>
+            <code>{{ selected.canonicalHash }}</code>
+          </dd>
         </div>
       </dl>
     </article>
@@ -124,7 +112,7 @@ function date(value: string) {
   cursor: pointer;
 }
 
-.history-list button[aria-current="true"] {
+.history-list button[aria-current='true'] {
   border-color: var(--p-primary-color);
 }
 

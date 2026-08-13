@@ -3,17 +3,17 @@ import {
   cmsSecuritySettingsList,
   cmsSecuritySettingsRevoke,
   cmsSecuritySettingsRevokeOthers,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   CmsPasswordChangeRequestDto,
   CmsSessionSummaryDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 import {
   coordinateAuthSessionMutation,
   getAuthSessionGeneration,
   storeAccessToken,
-} from "@/shared/api/http/auth-session";
-import { isInteractiveLoginRequired } from "@/features/auth/interactive-login-requirement";
+} from '@/shared/api/http/auth-session';
+import { isInteractiveLoginRequired } from '@/features/auth/interactive-login-requirement';
 
 export const securitySettingsApi = {
   async listSessions(): Promise<CmsSessionSummaryDto[]> {
@@ -32,11 +32,7 @@ export const securitySettingsApi = {
     await coordinateAuthSessionMutation(async () => {
       const startingGeneration = getAuthSessionGeneration();
       const response = await cmsSecuritySettingsChangePassword(input);
-      if (
-        isInteractiveLoginRequired() ||
-        getAuthSessionGeneration() !== startingGeneration
-      )
-        return;
+      if (isInteractiveLoginRequired() || getAuthSessionGeneration() !== startingGeneration) return;
       storeAccessToken(response);
     });
   },

@@ -1,19 +1,12 @@
 <script setup lang="ts">
-import {
-  computed,
-  onBeforeUnmount,
-  onMounted,
-  reactive,
-  ref,
-  watch,
-} from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
-import Select from "primevue/select";
-import Textarea from "primevue/textarea";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { reportingRepository } from "@/features/reporting/api/reporting-repository";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
+import Textarea from 'primevue/textarea';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { reportingRepository } from '@/features/reporting/api/reporting-repository';
 import {
   canCreateSavedReport,
   canCreateDashboard,
@@ -21,12 +14,12 @@ import {
   canPublishSavedReport,
   canReadReporting,
   canRunReportingQuery,
-} from "@/features/reporting/model/reporting-permissions";
-import { ReportingRunCoordinator } from "@/features/reporting/model/reporting-run-coordinator";
+} from '@/features/reporting/model/reporting-permissions';
+import { ReportingRunCoordinator } from '@/features/reporting/model/reporting-run-coordinator';
 import {
   reportingDateRangeOptions,
   reportingSpaceOptions,
-} from "@/features/reporting/model/reporting-options";
+} from '@/features/reporting/model/reporting-options';
 import type {
   ReportingArtifactSpace,
   ReportingDataset,
@@ -35,9 +28,9 @@ import type {
   ReportingTimeGrain,
   ReportingVisualization,
   SavedReport,
-} from "@/features/reporting/model/reporting-types";
-import { ReportingVersionConflictError } from "@/features/reporting/model/reporting-types";
-import ReportingChartRenderer from "@/features/reporting/ui/ReportingChartRenderer.vue";
+} from '@/features/reporting/model/reporting-types';
+import { ReportingVersionConflictError } from '@/features/reporting/model/reporting-types';
+import ReportingChartRenderer from '@/features/reporting/ui/ReportingChartRenderer.vue';
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -50,42 +43,36 @@ const loading = ref(true);
 const previewing = ref(false);
 const saving = ref(false);
 const publishing = ref(false);
-const error = ref("");
+const error = ref('');
 const versionConflict = ref(false);
 let autosaveReady = false;
 let autosaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 const form = reactive({
-  title: "Новый отчёт",
-  description: "",
-  collection: "Без коллекции",
-  space: "PERSONAL" as ReportingArtifactSpace,
-  datasetId: "events-product",
-  metric: "unique_users",
-  dateRange: "LAST_2_DAYS" as ReportingDateRange,
-  grain: "DAY" as ReportingTimeGrain,
-  breakdown: "" as string,
-  visualization: "LINE" as ReportingVisualization,
+  title: 'Новый отчёт',
+  description: '',
+  collection: 'Без коллекции',
+  space: 'PERSONAL' as ReportingArtifactSpace,
+  datasetId: 'events-product',
+  metric: 'unique_users',
+  dateRange: 'LAST_2_DAYS' as ReportingDateRange,
+  grain: 'DAY' as ReportingTimeGrain,
+  breakdown: '' as string,
+  visualization: 'LINE' as ReportingVisualization,
 });
 
-const isCreate = computed(() => route.name === "saved-report-create");
-const isEditing = computed(
-  () => isCreate.value || route.name === "saved-report-edit",
-);
-const permissions = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
+const isCreate = computed(() => route.name === 'saved-report-create');
+const isEditing = computed(() => isCreate.value || route.name === 'saved-report-edit');
+const permissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
 const canExecute = computed(() => canRunReportingQuery(permissions.value));
 const canEdit = computed(() =>
-  isCreate.value
-    ? canCreateSavedReport(permissions.value)
-    : canEditSavedReport(permissions.value),
+  isCreate.value ? canCreateSavedReport(permissions.value) : canEditSavedReport(permissions.value),
 );
 const canPublish = computed(() => canPublishSavedReport(permissions.value));
 const canAddToDashboard = computed(
   () =>
     canCreateDashboard(permissions.value) &&
-    Boolean(report.value?.allowedActions.includes("ADD_TO_DASHBOARD")),
+    Boolean(report.value?.allowedActions.includes('ADD_TO_DASHBOARD')),
 );
 const selectedDataset = computed(
   () => datasets.value.find((dataset) => dataset.id === form.datasetId) ?? null,
@@ -95,36 +82,36 @@ const metricOptions = computed(
     selectedDataset.value?.metrics.filter(
       (metric) =>
         metric.analyticsReady &&
-        metric.classification !== "RESTRICTED" &&
-        metric.allowedOperations.includes("AGGREGATE"),
+        metric.classification !== 'RESTRICTED' &&
+        metric.allowedOperations.includes('AGGREGATE'),
     ) ?? [],
 );
 const dimensionOptions = computed(() => [
-  { key: "", label: "Без разбивки" },
+  { key: '', label: 'Без разбивки' },
   ...(selectedDataset.value?.dimensions.filter(
     (dimension) =>
       dimension.analyticsReady &&
-      dimension.classification !== "RESTRICTED" &&
-      dimension.cardinality === "LOW" &&
-      dimension.allowedOperations.includes("BREAKDOWN"),
+      dimension.classification !== 'RESTRICTED' &&
+      dimension.cardinality === 'LOW' &&
+      dimension.allowedOperations.includes('BREAKDOWN'),
   ) ?? []),
 ]);
 const dateRangeOptions = reportingDateRangeOptions;
 const spaceOptions = reportingSpaceOptions;
 const grainOptions: Array<{ value: ReportingTimeGrain; label: string }> = [
-  { value: "DAY", label: "По дням" },
-  { value: "WEEK", label: "По неделям" },
-  { value: "MONTH", label: "По месяцам" },
+  { value: 'DAY', label: 'По дням' },
+  { value: 'WEEK', label: 'По неделям' },
+  { value: 'MONTH', label: 'По месяцам' },
 ];
 const visualizationOptions: Array<{
   value: ReportingVisualization;
   label: string;
   icon: string;
 }> = [
-  { value: "KPI", label: "Число", icon: "pi pi-hashtag" },
-  { value: "LINE", label: "Линия", icon: "pi pi-chart-line" },
-  { value: "BAR", label: "Столбцы", icon: "pi pi-chart-bar" },
-  { value: "TABLE", label: "Таблица", icon: "pi pi-table" },
+  { value: 'KPI', label: 'Число', icon: 'pi pi-hashtag' },
+  { value: 'LINE', label: 'Линия', icon: 'pi pi-chart-line' },
+  { value: 'BAR', label: 'Столбцы', icon: 'pi pi-chart-bar' },
+  { value: 'TABLE', label: 'Таблица', icon: 'pi pi-table' },
 ];
 
 function applyReport(next: SavedReport): void {
@@ -135,33 +122,33 @@ function applyReport(next: SavedReport): void {
   form.collection = next.collection;
   form.datasetId = next.query.datasetId;
   form.metric = next.query.metric;
-  form.dateRange = next.query.dateRange ?? "LAST_2_DAYS";
-  form.grain = next.query.grain ?? "DAY";
-  form.breakdown = next.query.breakdown ?? "";
+  form.dateRange = next.query.dateRange ?? 'LAST_2_DAYS';
+  form.grain = next.query.grain ?? 'DAY';
+  form.breakdown = next.query.breakdown ?? '';
   form.visualization = next.visualization;
 }
 
 function queryDefinition() {
   const dataset = selectedDataset.value;
   const population =
-    dataset?.owner === "PROFILE"
-      ? ({ mode: "CURRENT_PROFILE" } as const)
-      : dataset?.owner === "SEGMENT"
+    dataset?.owner === 'PROFILE'
+      ? ({ mode: 'CURRENT_PROFILE' } as const)
+      : dataset?.owner === 'SEGMENT'
         ? ({
-            mode: "CURRENT_SEGMENT",
-            segmentRevisionId: dataset.segmentRevisionId ?? "",
+            mode: 'CURRENT_SEGMENT',
+            segmentRevisionId: dataset.segmentRevisionId ?? '',
           } as const)
-        : ({ mode: "EVENT_TIME" } as const);
+        : ({ mode: 'EVENT_TIME' } as const);
   return {
     definitionRevisionId:
       !isEditing.value && report.value
         ? report.value.query.definitionRevisionId
-        : `query-draft-${report.value?.id ?? "new"}-${form.datasetId}-${form.metric}-v${(report.value?.version ?? 0) + 1}`,
+        : `query-draft-${report.value?.id ?? 'new'}-${form.datasetId}-${form.metric}-v${(report.value?.version ?? 0) + 1}`,
     datasetId: form.datasetId,
     metric: form.metric,
     population,
-    dateRange: population.mode === "EVENT_TIME" ? form.dateRange : null,
-    grain: population.mode === "EVENT_TIME" ? form.grain : null,
+    dateRange: population.mode === 'EVENT_TIME' ? form.dateRange : null,
+    grain: population.mode === 'EVENT_TIME' ? form.grain : null,
     ...(form.breakdown ? { breakdown: form.breakdown } : {}),
     filters: [],
   };
@@ -175,34 +162,29 @@ async function loadPage(): Promise<void> {
     result.value = null;
     datasets.value = [];
     loading.value = false;
-    await router.replace({ name: "overview" });
+    await router.replace({ name: 'overview' });
     return;
   }
   coordinator.purge();
   autosaveReady = false;
   result.value = null;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     datasets.value = await reportingRepository.listDatasets(projectId);
-    const reportId =
-      typeof route.params.reportId === "string" ? route.params.reportId : "";
-    if (reportId)
-      applyReport(
-        await reportingRepository.getSavedReport(projectId, reportId),
-      );
+    const reportId = typeof route.params.reportId === 'string' ? route.params.reportId : '';
+    if (reportId) applyReport(await reportingRepository.getSavedReport(projectId, reportId));
     if (
       isEditing.value &&
       reportId &&
-      (!canEdit.value || !report.value?.allowedActions.includes("EDIT"))
+      (!canEdit.value || !report.value?.allowedActions.includes('EDIT'))
     ) {
       await router.replace(`/reports/${reportId}`);
       return;
     }
     if (!isEditing.value && reportId) await runPreview();
   } catch (cause) {
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось открыть отчёт";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось открыть отчёт';
   } finally {
     loading.value = false;
     autosaveReady = true;
@@ -212,24 +194,21 @@ async function loadPage(): Promise<void> {
 async function runPreview(): Promise<void> {
   const projectId = auth.project?.id;
   if (!projectId || !canExecute.value) {
-    error.value = "Недостаточно прав для выполнения аналитического запроса";
+    error.value = 'Недостаточно прав для выполнения аналитического запроса';
     return;
   }
-  error.value = "";
+  error.value = '';
   previewing.value = true;
   const query = queryDefinition();
-  coordinator.beginScope(
-    `${projectId}:${report.value?.id ?? "new"}:${JSON.stringify(query)}`,
-  );
+  coordinator.beginScope(`${projectId}:${report.value?.id ?? 'new'}:${JSON.stringify(query)}`);
   try {
     const outcome = await coordinator.schedule((signal) =>
       reportingRepository.runQuery(projectId, query, signal),
     );
-    if (outcome.status === "committed") result.value = outcome.value;
+    if (outcome.status === 'committed') result.value = outcome.value;
   } catch (cause) {
-    if (!(cause instanceof DOMException && cause.name === "AbortError")) {
-      error.value =
-        cause instanceof Error ? cause.message : "Расчёт не выполнен";
+    if (!(cause instanceof DOMException && cause.name === 'AbortError')) {
+      error.value = cause instanceof Error ? cause.message : 'Расчёт не выполнен';
     }
   } finally {
     previewing.value = false;
@@ -242,24 +221,22 @@ async function persistDraft(asCopy: boolean): Promise<SavedReport | null> {
     !projectId ||
     !canEdit.value ||
     !form.title.trim() ||
-    (report.value && !report.value.allowedActions.includes("EDIT"))
+    (report.value && !report.value.allowedActions.includes('EDIT'))
   )
     return null;
   if (autosaveTimer) clearTimeout(autosaveTimer);
   autosaveTimer = null;
   saving.value = true;
-  error.value = "";
+  error.value = '';
   versionConflict.value = false;
   try {
     const saved = await reportingRepository.saveSavedReportDraft(projectId, {
       ...(report.value && !asCopy ? { id: report.value.id } : {}),
-      ...(report.value && !asCopy
-        ? { expectedVersion: report.value.version }
-        : {}),
+      ...(report.value && !asCopy ? { expectedVersion: report.value.version } : {}),
       title: form.title.trim(),
       description: form.description.trim(),
       space: form.space,
-      collection: form.collection.trim() || "Без коллекции",
+      collection: form.collection.trim() || 'Без коллекции',
       visualization: form.visualization,
       query: queryDefinition(),
     });
@@ -270,8 +247,7 @@ async function persistDraft(asCopy: boolean): Promise<SavedReport | null> {
     return saved;
   } catch (cause) {
     versionConflict.value = cause instanceof ReportingVersionConflictError;
-    error.value =
-      cause instanceof Error ? cause.message : "Черновик не сохранён";
+    error.value = cause instanceof Error ? cause.message : 'Черновик не сохранён';
     return null;
   } finally {
     saving.value = false;
@@ -302,8 +278,7 @@ async function publish(): Promise<void> {
     await router.replace(`/reports/${published.id}`);
     await runPreview();
   } catch (cause) {
-    error.value =
-      cause instanceof Error ? cause.message : "Отчёт не опубликован";
+    error.value = cause instanceof Error ? cause.message : 'Отчёт не опубликован';
   } finally {
     publishing.value = false;
   }
@@ -313,37 +288,24 @@ watch(
   () => form.datasetId,
   () => {
     const firstMetric = selectedDataset.value?.metrics[0];
-    if (
-      firstMetric &&
-      !selectedDataset.value?.metrics.some((item) => item.key === form.metric)
-    ) {
+    if (firstMetric && !selectedDataset.value?.metrics.some((item) => item.key === form.metric)) {
       form.metric = firstMetric.key;
     }
-    form.breakdown = "";
+    form.breakdown = '';
     result.value = null;
   },
 );
 watch(
   form,
   () => {
-    if (
-      !autosaveReady ||
-      !isEditing.value ||
-      !canEdit.value ||
-      publishing.value
-    )
-      return;
+    if (!autosaveReady || !isEditing.value || !canEdit.value || publishing.value) return;
     if (autosaveTimer) clearTimeout(autosaveTimer);
     autosaveTimer = setTimeout(() => void saveDraft(), 800);
   },
   { deep: true },
 );
 watch(
-  () => [
-    route.fullPath,
-    auth.project?.id ?? "",
-    [...permissions.value].sort().join(","),
-  ],
+  () => [route.fullPath, auth.project?.id ?? '', [...permissions.value].sort().join(',')],
   () => void loadPage(),
 );
 onMounted(() => void loadPage());
@@ -357,15 +319,11 @@ onBeforeUnmount(() => {
   <main class="saved-report-page" :class="{ 'is-viewer': !isEditing }">
     <header class="report-header">
       <div class="report-heading">
-        <button
-          type="button"
-          class="back-link"
-          @click="router.push('/reports')"
-        >
+        <button type="button" class="back-link" @click="router.push('/reports')">
           <i class="pi pi-arrow-left" aria-hidden="true" /> Библиотека
         </button>
         <span class="report-eyebrow">Сохранённый отчёт</span>
-        <h1>{{ isCreate ? "Новый сохранённый отчёт" : form.title }}</h1>
+        <h1>{{ isCreate ? 'Новый сохранённый отчёт' : form.title }}</h1>
         <p v-if="!isEditing">{{ form.description }}</p>
       </div>
       <div class="report-actions">
@@ -410,33 +368,21 @@ onBeforeUnmount(() => {
       <span>{{ error }}</span>
       <div v-if="versionConflict" class="conflict-actions">
         <Button label="Перезагрузить" size="small" text @click="loadPage" />
-        <Button
-          label="Сохранить как копию"
-          size="small"
-          text
-          @click="duplicateDraft"
-        />
+        <Button label="Сохранить как копию" size="small" text @click="duplicateDraft" />
       </div>
       <button type="button" @click="error = ''" aria-label="Закрыть сообщение">
         <i class="pi pi-times" aria-hidden="true" />
       </button>
     </div>
 
-    <section
-      v-if="isEditing"
-      class="builder-layout"
-      aria-label="Конструктор отчёта"
-    >
+    <section v-if="isEditing" class="builder-layout" aria-label="Конструктор отчёта">
       <aside class="configuration-rail">
         <section class="config-section identity-section">
           <div class="section-number">01</div>
           <div class="config-fields">
             <label>
               <span>Название</span>
-              <InputText
-                v-model="form.title"
-                placeholder="Например, Активные пользователи"
-              />
+              <InputText v-model="form.title" placeholder="Например, Активные пользователи" />
             </label>
             <label>
               <span>Описание</span>
@@ -474,14 +420,10 @@ onBeforeUnmount(() => {
                 option-value="id"
               />
               <small v-if="selectedDataset"
-                >{{ selectedDataset.title }} ·
-                {{ selectedDataset.description }}</small
+                >{{ selectedDataset.title }} · {{ selectedDataset.description }}</small
               >
             </label>
-            <p
-              v-if="selectedDataset?.currentStateDisclosure"
-              class="data-disclosure"
-            >
+            <p v-if="selectedDataset?.currentStateDisclosure" class="data-disclosure">
               <i class="pi pi-info-circle" aria-hidden="true" />
               {{ selectedDataset.currentStateDisclosure }}
             </p>
@@ -543,11 +485,7 @@ onBeforeUnmount(() => {
               <h2>Визуализация</h2>
               <p>Вид можно менять без пересборки запроса.</p>
             </div>
-            <div
-              class="visualization-grid"
-              role="radiogroup"
-              aria-label="Вид визуализации"
-            >
+            <div class="visualization-grid" role="radiogroup" aria-label="Вид визуализации">
               <button
                 v-for="option in visualizationOptions"
                 :key="option.value"
@@ -569,7 +507,7 @@ onBeforeUnmount(() => {
         <header class="preview-header">
           <div>
             <span>Предпросмотр</span>
-            <h2 id="preview-title">{{ form.title || "Без названия" }}</h2>
+            <h2 id="preview-title">{{ form.title || 'Без названия' }}</h2>
           </div>
           <Button
             data-action="preview"
@@ -590,10 +528,7 @@ onBeforeUnmount(() => {
 
     <section v-else class="viewer-layout">
       <div class="viewer-toolbar">
-        <div
-          v-if="report?.query.population.mode === 'EVENT_TIME'"
-          class="viewer-filters"
-        >
+        <div v-if="report?.query.population.mode === 'EVENT_TIME'" class="viewer-filters">
           <Select
             v-model="form.dateRange"
             :options="dateRangeOptions"

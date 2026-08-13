@@ -1,10 +1,10 @@
-import { computed, ref, watchEffect } from "vue";
-import { ApiError } from "@/shared/api/http/api-error";
+import { computed, ref, watchEffect } from 'vue';
+import { ApiError } from '@/shared/api/http/api-error';
 import type {
   ReleaseSupportCaseAssignmentDtoReasonCode,
   TransferSupportCaseAssignmentDtoReasonCode,
-} from "@/shared/api/generated/models";
-import type { SupportWorkspaceSelection } from "@/features/support-workspace/api/support-workspace-source";
+} from '@/shared/api/generated/models';
+import type { SupportWorkspaceSelection } from '@/features/support-workspace/api/support-workspace-source';
 import {
   SupportAssignmentIntegrityError,
   type SupportAssignmentIntent,
@@ -12,16 +12,16 @@ import {
   type SupportAssignmentOfferIntent,
   type SupportAssignmentSnapshot,
   type SupportAssignmentSource,
-} from "@/features/support-case-assignment/api/support-assignment-source";
+} from '@/features/support-case-assignment/api/support-assignment-source';
 export type SupportAssignmentDraft =
-  | { kind: "CLAIM"; teamId: string }
+  | { kind: 'CLAIM'; teamId: string }
   | {
-      kind: "RELEASE";
+      kind: 'RELEASE';
       reasonCode: ReleaseSupportCaseAssignmentDtoReasonCode;
       reasonNote?: string;
     }
   | {
-      kind: "TRANSFER";
+      kind: 'TRANSFER';
       teamId: string;
       operatorId: string;
       reasonCode: TransferSupportCaseAssignmentDtoReasonCode;
@@ -58,7 +58,7 @@ export function createSupportAssignmentController(
   const caseSnapshot = ref<SupportAssignmentSnapshot | null>(null);
   const caseLoading = ref(false);
   const mutating = ref(false);
-  const error = ref("");
+  const error = ref('');
   const unknownOutcome = ref(false);
   const draft = ref<SupportAssignmentDraft | null>(null);
   const pendingAction = ref<SupportAssignmentAction | null>(null);
@@ -67,7 +67,7 @@ export function createSupportAssignmentController(
   const offers = ref<SupportAssignmentOffer[]>([]);
   const offerLoading = ref(false);
   const offerChangingId = ref<string | null>(null);
-  const offerError = ref("");
+  const offerError = ref('');
   const offerUnknownOutcome = ref(false);
   const pendingOfferAction = ref<SupportAssignmentOfferAction | null>(null);
   let offerReadGeneration = 0;
@@ -83,13 +83,13 @@ export function createSupportAssignmentController(
     const snapshot = caseSnapshot.value;
     return Boolean(
       context.canManageOwn() &&
-        selection?.capabilities.claimAssignment &&
-        snapshot &&
-        selection.case?.id === snapshot.caseId &&
-        snapshot.assignmentState === "UNASSIGNED" &&
-        snapshot.currentAssignment === null &&
-        snapshot.actions.claim &&
-        snapshot.teams.some((team) => team.actions.claim),
+      selection?.capabilities.claimAssignment &&
+      snapshot &&
+      selection.case?.id === snapshot.caseId &&
+      snapshot.assignmentState === 'UNASSIGNED' &&
+      snapshot.currentAssignment === null &&
+      snapshot.actions.claim &&
+      snapshot.teams.some((team) => team.actions.claim),
     );
   });
   const currentAssignmentMatches = computed(() => {
@@ -97,10 +97,10 @@ export function createSupportAssignmentController(
     const current = caseSnapshot.value?.currentAssignment;
     return Boolean(
       selected &&
-        current &&
-        selected.id === current.id &&
-        selected.version === current.version &&
-        selected.actionEtag === current.actionEtag,
+      current &&
+      selected.id === current.id &&
+      selected.version === current.version &&
+      selected.actionEtag === current.actionEtag,
     );
   });
   const canRelease = computed(() => {
@@ -108,10 +108,10 @@ export function createSupportAssignmentController(
     const snapshot = caseSnapshot.value;
     return Boolean(
       (context.canManageOwn() || context.canOverride()) &&
-        selection?.capabilities.releaseAssignment &&
-        snapshot?.assignmentState === "ASSIGNED" &&
-        snapshot.actions.release &&
-        currentAssignmentMatches.value,
+      selection?.capabilities.releaseAssignment &&
+      snapshot?.assignmentState === 'ASSIGNED' &&
+      snapshot.actions.release &&
+      currentAssignmentMatches.value,
     );
   });
   const canTransfer = computed(() => {
@@ -119,15 +119,14 @@ export function createSupportAssignmentController(
     const snapshot = caseSnapshot.value;
     return Boolean(
       context.canOverride() &&
-        selection?.capabilities.transferAssignment &&
-        snapshot?.assignmentState === "ASSIGNED" &&
-        snapshot.actions.transfer &&
-        currentAssignmentMatches.value &&
-        snapshot.teams.some(
-          (team) =>
-            team.actions.transfer &&
-            team.operators.some((operator) => operator.actions.transfer),
-        ),
+      selection?.capabilities.transferAssignment &&
+      snapshot?.assignmentState === 'ASSIGNED' &&
+      snapshot.actions.transfer &&
+      currentAssignmentMatches.value &&
+      snapshot.teams.some(
+        (team) =>
+          team.actions.transfer && team.operators.some((operator) => operator.actions.transfer),
+      ),
     );
   });
 
@@ -137,7 +136,7 @@ export function createSupportAssignmentController(
     caseAbort?.abort();
     const requestGeneration = ++caseGeneration;
     caseSnapshot.value = null;
-    error.value = "";
+    error.value = '';
     if (!projectId || !caseId || (!context.canManageOwn() && !context.canOverride())) {
       caseLoading.value = false;
       caseAbort = null;
@@ -157,18 +156,15 @@ export function createSupportAssignmentController(
     } catch (cause) {
       if (requestGeneration !== caseGeneration) return;
       caseSnapshot.value = null;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         draft.value = null;
         pendingAction.value = null;
         unknownOutcome.value = false;
-        error.value = "";
+        error.value = '';
         await context.onForbidden?.();
         return;
       }
-      error.value = "Не удалось загрузить доступные действия с назначением";
+      error.value = 'Не удалось загрузить доступные действия с назначением';
     } finally {
       if (requestGeneration === caseGeneration) {
         caseLoading.value = false;
@@ -180,7 +176,7 @@ export function createSupportAssignmentController(
   function setDraft(value: SupportAssignmentDraft | null): void {
     if (mutating.value || unknownOutcome.value) return;
     draft.value = value;
-    error.value = "";
+    error.value = '';
   }
 
   function captureAction(): SupportAssignmentAction | null {
@@ -189,59 +185,51 @@ export function createSupportAssignmentController(
     const snapshot = caseSnapshot.value;
     if (!projectId || !value || !snapshot) return null;
     let intent: SupportAssignmentIntent;
-    if (value.kind === "CLAIM") {
+    if (value.kind === 'CLAIM') {
       if (!canClaim.value) return null;
       const team = snapshot.teams.find(
-        (candidate) =>
-          candidate.id === value.teamId && candidate.actions.claim,
+        (candidate) => candidate.id === value.teamId && candidate.actions.claim,
       );
       if (!team) return null;
-      intent = { kind: "CLAIM", snapshot, teamId: team.id };
-    } else if (value.kind === "RELEASE") {
+      intent = { kind: 'CLAIM', snapshot, teamId: team.id };
+    } else if (value.kind === 'RELEASE') {
       if (!canRelease.value) return null;
       intent = {
-        kind: "RELEASE",
+        kind: 'RELEASE',
         snapshot,
         reasonCode: value.reasonCode,
-        ...(value.reasonNote?.trim()
-          ? { reasonNote: value.reasonNote.trim() }
-          : {}),
+        ...(value.reasonNote?.trim() ? { reasonNote: value.reasonNote.trim() } : {}),
       };
     } else {
       if (!canTransfer.value) return null;
       const team = snapshot.teams.find(
-        (candidate) =>
-          candidate.id === value.teamId && candidate.actions.transfer,
+        (candidate) => candidate.id === value.teamId && candidate.actions.transfer,
       );
       const operator = team?.operators.find(
-        (candidate) =>
-          candidate.id === value.operatorId && candidate.actions.transfer,
+        (candidate) => candidate.id === value.operatorId && candidate.actions.transfer,
       );
       if (!team || !operator) return null;
       intent = {
-        kind: "TRANSFER",
+        kind: 'TRANSFER',
         snapshot,
         teamId: team.id,
         operatorId: operator.id,
         reasonCode: value.reasonCode,
-        ...(value.reasonNote?.trim()
-          ? { reasonNote: value.reasonNote.trim() }
-          : {}),
+        ...(value.reasonNote?.trim() ? { reasonNote: value.reasonNote.trim() } : {}),
       };
     }
     return {
       projectId,
       intent,
-      idempotencyKey:
-        context.createIdempotencyKey?.() ?? globalThis.crypto.randomUUID(),
+      idempotencyKey: context.createIdempotencyKey?.() ?? globalThis.crypto.randomUUID(),
     };
   }
 
   function currentActionScopeStillAllowed(action: SupportAssignmentAction): boolean {
     const hasPermission =
-      action.intent.kind === "CLAIM"
+      action.intent.kind === 'CLAIM'
         ? context.canManageOwn()
-        : action.intent.kind === "TRANSFER"
+        : action.intent.kind === 'TRANSFER'
           ? context.canOverride()
           : context.canManageOwn() || context.canOverride();
     return (
@@ -265,15 +253,13 @@ export function createSupportAssignmentController(
       snapshot.caseVersion !== intent.snapshot.caseVersion
     )
       return false;
-    if (intent.kind === "CLAIM") {
-      const team = snapshot.teams.find(
-        (candidate) => candidate.id === intent.teamId,
-      );
+    if (intent.kind === 'CLAIM') {
+      const team = snapshot.teams.find((candidate) => candidate.id === intent.teamId);
       return (
         selection.capabilities.claimAssignment &&
         selectedCase.version === intent.snapshot.caseVersion &&
         selectedCase.assignment === null &&
-        snapshot.assignmentState === "UNASSIGNED" &&
+        snapshot.assignmentState === 'UNASSIGNED' &&
         snapshot.currentAssignment === null &&
         snapshot.actions.claim &&
         team?.actions.claim === true
@@ -283,108 +269,81 @@ export function createSupportAssignmentController(
     const current = selectedCase.assignment;
     const currentSnapshotAssignment = snapshot.currentAssignment;
     const capability =
-      intent.kind === "RELEASE"
+      intent.kind === 'RELEASE'
         ? selection.capabilities.releaseAssignment
         : selection.capabilities.transferAssignment;
     const assignmentStillCurrent = Boolean(
       capability &&
-        captured &&
-        current &&
-        currentSnapshotAssignment &&
-        current.id === captured.id &&
-        current.version === captured.version &&
-        current.actionEtag === captured.actionEtag &&
-        currentSnapshotAssignment.id === captured.id &&
-        currentSnapshotAssignment.version === captured.version &&
-        currentSnapshotAssignment.actionEtag === captured.actionEtag,
+      captured &&
+      current &&
+      currentSnapshotAssignment &&
+      current.id === captured.id &&
+      current.version === captured.version &&
+      current.actionEtag === captured.actionEtag &&
+      currentSnapshotAssignment.id === captured.id &&
+      currentSnapshotAssignment.version === captured.version &&
+      currentSnapshotAssignment.actionEtag === captured.actionEtag,
     );
     if (!assignmentStillCurrent) return false;
-    if (intent.kind === "RELEASE") return snapshot.actions.release;
-    const team = snapshot.teams.find(
-      (candidate) => candidate.id === intent.teamId,
-    );
-    const operator = team?.operators.find(
-      (candidate) => candidate.id === intent.operatorId,
-    );
+    if (intent.kind === 'RELEASE') return snapshot.actions.release;
+    const team = snapshot.teams.find((candidate) => candidate.id === intent.teamId);
+    const operator = team?.operators.find((candidate) => candidate.id === intent.operatorId);
     return Boolean(
-      snapshot.actions.transfer &&
-        team?.actions.transfer &&
-        operator?.actions.transfer,
+      snapshot.actions.transfer && team?.actions.transfer && operator?.actions.transfer,
     );
   }
 
   const canRetry = computed(() => {
     const action = pendingAction.value;
-    return Boolean(
-      unknownOutcome.value && action && capturedActionStillCurrent(action),
-    );
+    return Boolean(unknownOutcome.value && action && capturedActionStillCurrent(action));
   });
 
   watchEffect(() => {
     const action = pendingAction.value;
-    if (!unknownOutcome.value || !action || capturedActionStillCurrent(action))
-      return;
+    if (!unknownOutcome.value || !action || capturedActionStillCurrent(action)) return;
     pendingAction.value = null;
     unknownOutcome.value = false;
-    error.value = "Полномочия назначения изменились. Повтор запроса заблокирован.";
+    error.value = 'Полномочия назначения изменились. Повтор запроса заблокирован.';
   });
 
   function currentOfferStillCurrent(
     action: SupportAssignmentOfferAction,
     at = Date.now(),
   ): boolean {
-    if (
-      context.projectId() !== action.projectId ||
-      !context.canReceiveOffers()
-    )
-      return false;
+    if (context.projectId() !== action.projectId || !context.canReceiveOffers()) return false;
     const currentOffer = offers.value.find(
       (offer) => offer.assignmentId === action.intent.offer.assignmentId,
     );
     return Boolean(
       currentOffer &&
-        currentOffer.assignmentVersion === action.intent.offer.assignmentVersion &&
-        currentOffer.actionEtag === action.intent.offer.actionEtag &&
-        currentOffer.offerToken === action.intent.offer.offerToken &&
-        Date.parse(currentOffer.expiresAt) > at,
+      currentOffer.assignmentVersion === action.intent.offer.assignmentVersion &&
+      currentOffer.actionEtag === action.intent.offer.actionEtag &&
+      currentOffer.offerToken === action.intent.offer.offerToken &&
+      Date.parse(currentOffer.expiresAt) > at,
     );
   }
 
   const offerCanRetry = computed(() => {
     const action = pendingOfferAction.value;
-    return Boolean(
-      offerUnknownOutcome.value && action && currentOfferStillCurrent(action),
-    );
+    return Boolean(offerUnknownOutcome.value && action && currentOfferStillCurrent(action));
   });
 
   watchEffect(() => {
     const action = pendingOfferAction.value;
-    if (
-      !offerUnknownOutcome.value ||
-      !action ||
-      currentOfferStillCurrent(action)
-    )
-      return;
+    if (!offerUnknownOutcome.value || !action || currentOfferStillCurrent(action)) return;
     pendingOfferAction.value = null;
     offerUnknownOutcome.value = false;
-    offerError.value =
-      "Предложение или полномочия изменились. Повтор запроса заблокирован.";
+    offerError.value = 'Предложение или полномочия изменились. Повтор запроса заблокирован.';
   });
 
   function expireOffers(at = Date.now()): void {
-    const activeOffers = offers.value.filter(
-      (offer) => Date.parse(offer.expiresAt) > at,
-    );
+    const activeOffers = offers.value.filter((offer) => Date.parse(offer.expiresAt) > at);
     if (activeOffers.length !== offers.value.length) offers.value = activeOffers;
     const action = pendingOfferAction.value;
-    if (
-      offerUnknownOutcome.value &&
-      action &&
-      !currentOfferStillCurrent(action, at)
-    ) {
+    if (offerUnknownOutcome.value && action && !currentOfferStillCurrent(action, at)) {
       pendingOfferAction.value = null;
       offerUnknownOutcome.value = false;
-      offerError.value = "Срок предложения истёк. Повтор запроса заблокирован.";
+      offerError.value = 'Срок предложения истёк. Повтор запроса заблокирован.';
     }
   }
 
@@ -396,7 +355,7 @@ export function createSupportAssignmentController(
     const controller = new AbortController();
     mutationAbort = controller;
     mutating.value = true;
-    error.value = "";
+    error.value = '';
     let commandKnown = false;
     try {
       const receipt = await source.execute(
@@ -405,22 +364,16 @@ export function createSupportAssignmentController(
         action.idempotencyKey,
         controller.signal,
       );
-      if (
-        requestGeneration !== mutationGeneration ||
-        !currentActionScopeStillAllowed(action)
-      )
+      if (requestGeneration !== mutationGeneration || !currentActionScopeStillAllowed(action))
         return;
       const expectedIntent =
-        action.intent.kind === "CLAIM"
-          ? "CLAIM_CASE_ASSIGNMENT"
-          : action.intent.kind === "RELEASE"
-            ? "RELEASE_CASE_ASSIGNMENT"
-            : "TRANSFER_CASE_ASSIGNMENT";
-      if (
-        receipt.caseId !== action.intent.snapshot.caseId ||
-        receipt.intent !== expectedIntent
-      ) {
-        error.value = "Сервер вернул результат другого действия. Обновите обращение.";
+        action.intent.kind === 'CLAIM'
+          ? 'CLAIM_CASE_ASSIGNMENT'
+          : action.intent.kind === 'RELEASE'
+            ? 'RELEASE_CASE_ASSIGNMENT'
+            : 'TRANSFER_CASE_ASSIGNMENT';
+      if (receipt.caseId !== action.intent.snapshot.caseId || receipt.intent !== expectedIntent) {
+        error.value = 'Сервер вернул результат другого действия. Обновите обращение.';
         return;
       }
       commandKnown = true;
@@ -429,17 +382,14 @@ export function createSupportAssignmentController(
       draft.value = null;
       await context.onChanged?.();
     } catch (cause) {
-      if (
-        requestGeneration !== mutationGeneration ||
-        !currentActionScopeStillAllowed(action)
-      )
+      if (requestGeneration !== mutationGeneration || !currentActionScopeStillAllowed(action))
         return;
       if (commandKnown) {
         pendingAction.value = null;
         unknownOutcome.value = false;
         draft.value = null;
         error.value =
-          "Назначение выполнено, но обновить рабочее место не удалось. Обновите данные.";
+          'Назначение выполнено, но обновить рабочее место не удалось. Обновите данные.';
         return;
       }
       if (cause instanceof SupportAssignmentIntegrityError) {
@@ -448,8 +398,7 @@ export function createSupportAssignmentController(
         await Promise.resolve(context.onChanged?.()).catch(() => undefined);
         await loadCase().catch(() => undefined);
         if (currentActionScopeStillAllowed(action))
-          error.value =
-            "Ответ сервера не прошёл проверку. Данные обновлены; повтор заблокирован.";
+          error.value = 'Ответ сервера не прошёл проверку. Данные обновлены; повтор заблокирован.';
         return;
       }
       if (cause instanceof ApiError && cause.status === 409) {
@@ -459,32 +408,25 @@ export function createSupportAssignmentController(
         await Promise.resolve(context.onChanged?.()).catch(() => undefined);
         await loadCase().catch(() => undefined);
         const scopeStillCurrent = currentActionScopeStillAllowed(action);
-        if (scopeStillCurrent && preservedDraft)
-          draft.value = preservedDraft;
+        if (scopeStillCurrent && preservedDraft) draft.value = preservedDraft;
         if (scopeStillCurrent)
-          error.value = "Назначение уже изменилось. Данные обновлены по серверному снимку.";
+          error.value = 'Назначение уже изменилось. Данные обновлены по серверному снимку.';
         return;
       }
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         resetCase();
         await Promise.resolve(context.onForbidden?.()).catch(() => undefined);
         return;
       }
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 400 || cause.status === 422)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 400 || cause.status === 422)) {
         pendingAction.value = null;
         unknownOutcome.value = false;
-        error.value = "Сервер не принял действие с назначением.";
+        error.value = 'Сервер не принял действие с назначением.';
         return;
       }
       pendingAction.value = action;
       unknownOutcome.value = true;
-      error.value = "Результат назначения неизвестен. Повтор отправит тот же запрос.";
+      error.value = 'Результат назначения неизвестен. Повтор отправит тот же запрос.';
     } finally {
       if (requestGeneration === mutationGeneration) {
         mutating.value = false;
@@ -504,21 +446,18 @@ export function createSupportAssignmentController(
     if (!capturedActionStillCurrent(pendingAction.value)) {
       pendingAction.value = null;
       unknownOutcome.value = false;
-      error.value =
-        "Назначение изменилось. Повтор старого запроса заблокирован.";
+      error.value = 'Назначение изменилось. Повтор старого запроса заблокирован.';
       return;
     }
     await execute(pendingAction.value);
   }
 
-  async function loadOffers(
-    options: { allowDuringAction?: boolean } = {},
-  ): Promise<void> {
+  async function loadOffers(options: { allowDuringAction?: boolean } = {}): Promise<void> {
     if (offerChangingId.value && !options.allowDuringAction) return;
     const projectId = context.projectId();
     offerReadAbort?.abort();
     const requestGeneration = ++offerReadGeneration;
-    offerError.value = "";
+    offerError.value = '';
     if (!projectId || !context.canReceiveOffers()) {
       offers.value = [];
       offerLoading.value = false;
@@ -538,17 +477,14 @@ export function createSupportAssignmentController(
         offers.value = value;
     } catch (cause) {
       if (requestGeneration !== offerReadGeneration) return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         offers.value = [];
         pendingOfferAction.value = null;
         offerUnknownOutcome.value = false;
         await context.onForbidden?.();
         return;
       }
-      offerError.value = "Не удалось загрузить предложения назначений";
+      offerError.value = 'Не удалось загрузить предложения назначений';
     } finally {
       if (requestGeneration === offerReadGeneration) {
         offerLoading.value = false;
@@ -565,15 +501,10 @@ export function createSupportAssignmentController(
     const controller = new AbortController();
     offerActionAbort = controller;
     offerChangingId.value = action.intent.offer.assignmentId;
-    offerError.value = "";
+    offerError.value = '';
     let commandKnown = false;
     try {
-      await source.actOnOffer(
-        projectId,
-        action.intent,
-        action.idempotencyKey,
-        controller.signal,
-      );
+      await source.actOnOffer(projectId, action.intent, action.idempotencyKey, controller.signal);
       if (
         requestGeneration !== offerActionGeneration ||
         context.projectId() !== projectId ||
@@ -589,16 +520,12 @@ export function createSupportAssignmentController(
       await loadOffers({ allowDuringAction: true });
       await context.onChanged?.();
     } catch (cause) {
-      if (
-        requestGeneration !== offerActionGeneration ||
-        context.projectId() !== projectId
-      )
-        return;
+      if (requestGeneration !== offerActionGeneration || context.projectId() !== projectId) return;
       if (commandKnown) {
         pendingOfferAction.value = null;
         offerUnknownOutcome.value = false;
         offerError.value =
-          "Действие выполнено, но обновить рабочее место не удалось. Обновите данные.";
+          'Действие выполнено, но обновить рабочее место не удалось. Обновите данные.';
         return;
       }
       if (cause instanceof SupportAssignmentIntegrityError) {
@@ -609,8 +536,7 @@ export function createSupportAssignmentController(
         );
         await loadOffers({ allowDuringAction: true });
         await Promise.resolve(context.onChanged?.()).catch(() => undefined);
-        offerError.value =
-          "Ответ сервера не прошёл проверку. Повтор действия заблокирован.";
+        offerError.value = 'Ответ сервера не прошёл проверку. Повтор действия заблокирован.';
         return;
       }
       if (cause instanceof ApiError && cause.status === 409) {
@@ -620,31 +546,25 @@ export function createSupportAssignmentController(
           (offer) => offer.assignmentId !== action.intent.offer.assignmentId,
         );
         await loadOffers({ allowDuringAction: true });
-        offerError.value = "Предложение больше не актуально. Список обновлён.";
+        offerError.value = 'Предложение больше не актуально. Список обновлён.';
         return;
       }
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         offers.value = [];
         pendingOfferAction.value = null;
         offerUnknownOutcome.value = false;
         await context.onForbidden?.();
         return;
       }
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 400 || cause.status === 422)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 400 || cause.status === 422)) {
         pendingOfferAction.value = null;
         offerUnknownOutcome.value = false;
-        offerError.value = "Сервер не принял действие по предложению.";
+        offerError.value = 'Сервер не принял действие по предложению.';
         return;
       }
       pendingOfferAction.value = action;
       offerUnknownOutcome.value = true;
-      offerError.value = "Результат действия неизвестен. Повтор отправит тот же запрос.";
+      offerError.value = 'Результат действия неизвестен. Повтор отправит тот же запрос.';
     } finally {
       if (requestGeneration === offerActionGeneration) {
         offerChangingId.value = null;
@@ -655,7 +575,7 @@ export function createSupportAssignmentController(
 
   async function actOnOffer(
     assignmentId: string,
-    kind: SupportAssignmentOfferIntent["kind"],
+    kind: SupportAssignmentOfferIntent['kind'],
   ): Promise<void> {
     if (
       offerLoading.value ||
@@ -671,24 +591,17 @@ export function createSupportAssignmentController(
     await executeOffer({
       projectId,
       intent: { kind, offer },
-      idempotencyKey:
-        context.createIdempotencyKey?.() ?? globalThis.crypto.randomUUID(),
+      idempotencyKey: context.createIdempotencyKey?.() ?? globalThis.crypto.randomUUID(),
     });
   }
 
   async function retryUnknownOfferOutcome(): Promise<void> {
-    if (
-      !pendingOfferAction.value ||
-      offerChangingId.value ||
-      !offerUnknownOutcome.value
-    )
-      return;
+    if (!pendingOfferAction.value || offerChangingId.value || !offerUnknownOutcome.value) return;
     const action = pendingOfferAction.value;
     if (!currentOfferStillCurrent(action)) {
       pendingOfferAction.value = null;
       offerUnknownOutcome.value = false;
-      offerError.value =
-        "Предложение изменилось. Повтор старого запроса заблокирован.";
+      offerError.value = 'Предложение изменилось. Повтор старого запроса заблокирован.';
       return;
     }
     await executeOffer(action);
@@ -704,7 +617,7 @@ export function createSupportAssignmentController(
     caseSnapshot.value = null;
     caseLoading.value = false;
     mutating.value = false;
-    error.value = "";
+    error.value = '';
     unknownOutcome.value = false;
     draft.value = null;
     pendingAction.value = null;
@@ -720,7 +633,7 @@ export function createSupportAssignmentController(
     offers.value = [];
     offerLoading.value = false;
     offerChangingId.value = null;
-    offerError.value = "";
+    offerError.value = '';
     offerUnknownOutcome.value = false;
     pendingOfferAction.value = null;
   }

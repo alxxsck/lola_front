@@ -5,7 +5,7 @@ export function canReadProjectMemberships(
   return (
     platformPermissions.includes('platform.memberships.read') ||
     projectPermissions.includes('project.members.read')
-  )
+  );
 }
 
 export function canManageProjectMemberships(
@@ -15,11 +15,9 @@ export function canManageProjectMemberships(
   return (
     platformPermissions.includes('platform.memberships.manage') ||
     projectPermissions.includes('project.members.manage')
-  )
+  );
 }
 
-export function canAttachExistingCmsUser(
-  platformPermissions: readonly string[],
-): boolean {
-  return platformPermissions.includes('platform.memberships.manage')
+export function canAttachExistingCmsUser(platformPermissions: readonly string[]): boolean {
+  return platformPermissions.includes('platform.memberships.manage');
 }

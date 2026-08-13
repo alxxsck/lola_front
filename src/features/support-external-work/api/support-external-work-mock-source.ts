@@ -10,48 +10,48 @@ import type {
   SupportExternalProjectItemResponseDto,
   SupportExternalTimelineMessageResponseDto,
   SupportExternalWorkCommandReceiptDto,
-} from "@/shared/api/generated/models";
-import { ApiError } from "@/shared/api/http/api-error";
+} from '@/shared/api/generated/models';
+import { ApiError } from '@/shared/api/http/api-error';
 import type {
   SupportExternalMutation,
   SupportExternalWorkSource,
-} from "./support-external-work-source";
+} from './support-external-work-source';
 
 const ids = {
-  jsm: "10000000-0000-4000-8000-000000000001",
-  helpdesk: "10000000-0000-4000-8000-000000000002",
-  snapshotJsm: "20000000-0000-4000-8000-000000000001",
-  snapshotHelpdesk: "20000000-0000-4000-8000-000000000002",
-  mapping: "30000000-0000-4000-8000-000000000001",
-  draft: "30000000-0000-4000-8000-000000000002",
-  published: "30000000-0000-4000-8000-000000000003",
-  attentionItem: "40000000-0000-4000-8000-000000000001",
-  linkedItem: "40000000-0000-4000-8000-000000000002",
-  case: "50000000-0000-4000-8000-000000000001",
-  link: "50000000-0000-4000-8000-000000000002",
-  command: "60000000-0000-4000-8000-000000000001",
+  jsm: '10000000-0000-4000-8000-000000000001',
+  helpdesk: '10000000-0000-4000-8000-000000000002',
+  snapshotJsm: '20000000-0000-4000-8000-000000000001',
+  snapshotHelpdesk: '20000000-0000-4000-8000-000000000002',
+  mapping: '30000000-0000-4000-8000-000000000001',
+  draft: '30000000-0000-4000-8000-000000000002',
+  published: '30000000-0000-4000-8000-000000000003',
+  attentionItem: '40000000-0000-4000-8000-000000000001',
+  linkedItem: '40000000-0000-4000-8000-000000000002',
+  case: '50000000-0000-4000-8000-000000000001',
+  link: '50000000-0000-4000-8000-000000000002',
+  command: '60000000-0000-4000-8000-000000000001',
 };
 
-const now = "2026-08-09T16:00:00.000Z";
+const now = '2026-08-09T16:00:00.000Z';
 
 const baseDefinition: SupportExternalMappingDefinitionDto = {
   rules: [
     {
-      id: "urgent-support",
-      when: { caseKinds: ["SUPPORT"], priorities: ["HIGH", "URGENT"] },
+      id: 'urgent-support',
+      when: { caseKinds: ['SUPPORT'], priorities: ['HIGH', 'URGENT'] },
       destination: {
-        destinationId: "jsm-service-desk-1",
-        formId: "incident",
+        destinationId: 'jsm-service-desk-1',
+        formId: 'incident',
         fieldValues: {},
-        operatorInputFieldIds: ["description"],
+        operatorInputFieldIds: ['description'],
       },
     },
   ],
   fallback: {
-    destinationId: "jsm-service-desk-1",
-    formId: "request",
+    destinationId: 'jsm-service-desk-1',
+    formId: 'request',
     fieldValues: {},
-    operatorInputFieldIds: ["description"],
+    operatorInputFieldIds: ['description'],
   },
 };
 
@@ -68,28 +68,26 @@ const catalogs: Record<string, SupportExternalCatalogResponseDto> = {
     snapshot: {
       id: ids.snapshotJsm,
       revision: 8,
-      fetchedAt: "2026-08-09T15:48:00.000Z",
-      expiresAt: "2026-08-10T15:48:00.000Z",
+      fetchedAt: '2026-08-09T15:48:00.000Z',
+      expiresAt: '2026-08-10T15:48:00.000Z',
       stale: false,
     },
     catalog: {
-      provider: "JSM",
+      provider: 'JSM',
       destinations: [
         {
-          id: "jsm-service-desk-1",
-          key: "SUP",
-          label: "Операционная поддержка",
+          id: 'jsm-service-desk-1',
+          key: 'SUP',
+          label: 'Операционная поддержка',
           fields: [],
           forms: [
-            { id: "incident", label: "Инцидент", fields: [] },
-            { id: "request", label: "Запрос на обслуживание", fields: [] },
+            { id: 'incident', label: 'Инцидент', fields: [] },
+            { id: 'request', label: 'Запрос на обслуживание', fields: [] },
           ],
         },
       ],
-      agents: [
-        { id: "agent-1", label: "Руководитель поддержки", kind: "AGENT" },
-      ],
-      tags: [{ id: "tag-sync", label: "синхронизация", kind: "TAG" }],
+      agents: [{ id: 'agent-1', label: 'Руководитель поддержки', kind: 'AGENT' }],
+      tags: [{ id: 'tag-sync', label: 'синхронизация', kind: 'TAG' }],
     },
     nextCursor: null,
   },
@@ -97,16 +95,16 @@ const catalogs: Record<string, SupportExternalCatalogResponseDto> = {
     snapshot: {
       id: ids.snapshotHelpdesk,
       revision: 3,
-      fetchedAt: "2026-08-09T13:20:00.000Z",
-      expiresAt: "2026-08-09T14:20:00.000Z",
+      fetchedAt: '2026-08-09T13:20:00.000Z',
+      expiresAt: '2026-08-09T14:20:00.000Z',
       stale: true,
     },
     catalog: {
-      provider: "HELPDESK",
+      provider: 'HELPDESK',
       destinations: [
         {
-          id: "helpdesk-team-1",
-          label: "Вторая линия",
+          id: 'helpdesk-team-1',
+          label: 'Вторая линия',
           fields: [],
           forms: [],
         },
@@ -121,74 +119,73 @@ const catalogs: Record<string, SupportExternalCatalogResponseDto> = {
 const attentionItem: SupportExternalProjectItemResponseDto = {
   itemId: ids.attentionItem,
   connectionId: ids.helpdesk,
-  provider: "HELPDESK",
-  remoteItemId: "HD-2048",
-  remoteKey: "2048",
-  remoteUrl: "https://helpdesk.example/tickets/2048",
-  summary: "Уведомление принято, но сверка с внешней системой требует внимания",
-  status: "OPEN",
-  priority: "HIGH",
-  team: { id: "helpdesk-team-1", label: "Вторая линия" },
+  provider: 'HELPDESK',
+  remoteItemId: 'HD-2048',
+  remoteKey: '2048',
+  remoteUrl: 'https://helpdesk.example/tickets/2048',
+  summary: 'Уведомление принято, но сверка с внешней системой требует внимания',
+  status: 'OPEN',
+  priority: 'HIGH',
+  team: { id: 'helpdesk-team-1', label: 'Вторая линия' },
   assignee: null,
-  requester: { label: "Клиент" },
-  tags: ["синхронизация"],
-  latestMessageAt: "2026-08-09T14:10:00.000Z",
-  freshness: "STALE",
-  remoteUpdatedAt: "2026-08-09T14:10:00.000Z",
-  lastRefreshedAt: "2026-08-09T14:12:00.000Z",
+  requester: { label: 'Клиент' },
+  tags: ['синхронизация'],
+  latestMessageAt: '2026-08-09T14:10:00.000Z',
+  freshness: 'STALE',
+  remoteUpdatedAt: '2026-08-09T14:10:00.000Z',
+  lastRefreshedAt: '2026-08-09T14:12:00.000Z',
   version: 4,
   linked: false,
   link: null,
-  allowedActions: ["OPEN_REMOTE", "VIEW_TIMELINE", "LINK_TO_CASE"],
+  allowedActions: ['OPEN_REMOTE', 'VIEW_TIMELINE', 'LINK_TO_CASE'],
 };
 
 const linkedItem: SupportExternalProjectItemResponseDto = {
   itemId: ids.linkedItem,
   connectionId: ids.jsm,
-  provider: "JSM",
-  remoteItemId: "JSM-731",
-  remoteKey: "SUP-731",
-  remoteUrl: "https://jsm.example/browse/SUP-731",
-  summary:
-    "После превышения времени ожидания результат внешней системы неизвестен",
-  status: "IN_PROGRESS",
-  priority: "URGENT",
-  team: { id: "jsm-service-desk-1", label: "Операционная поддержка" },
-  assignee: { id: "agent-1", label: "Руководитель поддержки" },
-  requester: { label: "Клиент" },
-  tags: ["результат-неизвестен"],
-  latestMessageAt: "2026-08-09T15:41:00.000Z",
-  freshness: "FRESH",
-  remoteUpdatedAt: "2026-08-09T15:41:00.000Z",
-  lastRefreshedAt: "2026-08-09T15:42:00.000Z",
+  provider: 'JSM',
+  remoteItemId: 'JSM-731',
+  remoteKey: 'SUP-731',
+  remoteUrl: 'https://jsm.example/browse/SUP-731',
+  summary: 'После превышения времени ожидания результат внешней системы неизвестен',
+  status: 'IN_PROGRESS',
+  priority: 'URGENT',
+  team: { id: 'jsm-service-desk-1', label: 'Операционная поддержка' },
+  assignee: { id: 'agent-1', label: 'Руководитель поддержки' },
+  requester: { label: 'Клиент' },
+  tags: ['результат-неизвестен'],
+  latestMessageAt: '2026-08-09T15:41:00.000Z',
+  freshness: 'FRESH',
+  remoteUpdatedAt: '2026-08-09T15:41:00.000Z',
+  lastRefreshedAt: '2026-08-09T15:42:00.000Z',
   version: 9,
   linked: true,
   link: {
     linkId: ids.link,
     caseId: ids.case,
-    linkedAt: "2026-08-09T15:00:00.000Z",
+    linkedAt: '2026-08-09T15:00:00.000Z',
     version: 2,
   },
-  allowedActions: ["OPEN_REMOTE", "VIEW_TIMELINE", "REFRESH"],
+  allowedActions: ['OPEN_REMOTE', 'VIEW_TIMELINE', 'REFRESH'],
 };
 
 const timeline: SupportExternalTimelineMessageResponseDto[] = [
   {
-    messageId: "message-2",
-    remoteMessageId: "remote-message-2",
-    remoteCreatedAt: "2026-08-09T15:41:00.000Z",
+    messageId: 'message-2',
+    remoteMessageId: 'remote-message-2',
+    remoteCreatedAt: '2026-08-09T15:41:00.000Z',
     remoteUpdatedAt: null,
     tombstonedAt: null,
-    audience: "INTERNAL",
-    body: "После превышения времени ожидания запрошена сверка с внешней системой.",
+    audience: 'INTERNAL',
+    body: 'После превышения времени ожидания запрошена сверка с внешней системой.',
   },
   {
-    messageId: "message-1",
-    remoteMessageId: "remote-message-1",
-    remoteCreatedAt: "2026-08-09T15:02:00.000Z",
+    messageId: 'message-1',
+    remoteMessageId: 'remote-message-1',
+    remoteCreatedAt: '2026-08-09T15:02:00.000Z',
     remoteUpdatedAt: null,
     tombstonedAt: null,
-    audience: "PUBLIC",
+    audience: 'PUBLIC',
     bodyUnavailable: true,
   },
 ];
@@ -197,30 +194,30 @@ function resetState(): void {
   connections = [
     {
       id: ids.jsm,
-      provider: "JSM",
-      displayName: "JSM · Облако поддержки",
-      lifecycle: "ACTIVE",
-      tenantIdentity: "support-cloud",
+      provider: 'JSM',
+      displayName: 'JSM · Облако поддержки',
+      lifecycle: 'ACTIVE',
+      tenantIdentity: 'support-cloud',
       capabilities: {
-        provider: "JSM",
-        supported: ["CATALOG", "CREATE", "COMMENT_INTERNAL", "REFRESH"],
-        verified: ["CATALOG", "REFRESH"],
+        provider: 'JSM',
+        supported: ['CATALOG', 'CREATE', 'COMMENT_INTERNAL', 'REFRESH'],
+        verified: ['CATALOG', 'REFRESH'],
       },
       credentialVersion: 4,
       version: 8,
-      accessTokenExpiresAt: "2026-08-10T16:00:00.000Z",
+      accessTokenExpiresAt: '2026-08-10T16:00:00.000Z',
       credentialConfigured: true,
     },
     {
       id: ids.helpdesk,
-      provider: "HELPDESK",
-      displayName: "HelpDesk · Вторая линия",
-      lifecycle: "REAUTH_REQUIRED",
-      tenantIdentity: "tier-2",
+      provider: 'HELPDESK',
+      displayName: 'HelpDesk · Вторая линия',
+      lifecycle: 'REAUTH_REQUIRED',
+      tenantIdentity: 'tier-2',
       capabilities: {
-        provider: "HELPDESK",
-        supported: ["CATALOG", "CREATE", "COMMENT_INTERNAL", "REFRESH"],
-        verified: ["CATALOG"],
+        provider: 'HELPDESK',
+        supported: ['CATALOG', 'CREATE', 'COMMENT_INTERNAL', 'REFRESH'],
+        verified: ['CATALOG'],
       },
       credentialVersion: 2,
       version: 5,
@@ -231,7 +228,7 @@ function resetState(): void {
   mappingRoot = {
     id: ids.mapping,
     connectionId: ids.jsm,
-    displayName: "Маршрутизация поддержки",
+    displayName: 'Маршрутизация поддержки',
     version: 3,
     draftRevisionId: ids.draft,
     publishedRevisionId: ids.published,
@@ -243,9 +240,9 @@ function resetState(): void {
       rootId: ids.mapping,
       connectionId: ids.jsm,
       revisionNumber: 4,
-      status: "DRAFT",
+      status: 'DRAFT',
       catalogSnapshotId: ids.snapshotJsm,
-      formRevision: "form-v8",
+      formRevision: 'form-v8',
       definition: structuredClone(baseDefinition),
     },
   };
@@ -254,9 +251,9 @@ function resetState(): void {
       ...mappingDraft.draft,
       id: ids.published,
       revisionNumber: 3,
-      status: "PUBLISHED",
-      publishedAt: "2026-08-08T12:00:00.000Z",
-      publicationKind: "PUBLISH",
+      status: 'PUBLISHED',
+      publishedAt: '2026-08-08T12:00:00.000Z',
+      publicationKind: 'PUBLISH',
       sourceRevisionId: null,
       rollbackReasonCode: null,
     },
@@ -264,15 +261,15 @@ function resetState(): void {
   commands = [
     {
       commandId: ids.command,
-      intent: "CREATE",
-      status: "UNKNOWN",
-      errorCode: "SUPPORT_EXTERNAL_PROVIDER_OUTCOME_UNKNOWN",
-      errorCategory: "UNKNOWN_OUTCOME",
+      intent: 'CREATE',
+      status: 'UNKNOWN',
+      errorCode: 'SUPPORT_EXTERNAL_PROVIDER_OUTCOME_UNKNOWN',
+      errorCategory: 'UNKNOWN_OUTCOME',
       nextAttemptAt: null,
       version: 3,
-      createdAt: "2026-08-09T15:40:00.000Z",
+      createdAt: '2026-08-09T15:40:00.000Z',
       resolvedAt: null,
-      allowedActions: ["REFRESH_EVIDENCE", "RESOLVE_UNKNOWN"],
+      allowedActions: ['REFRESH_EVIDENCE', 'RESOLVE_UNKNOWN'],
     },
   ];
   settingsAttempts.clear();
@@ -290,14 +287,12 @@ function safeClone<T>(value: T): T {
 }
 
 function checkSignal(signal?: AbortSignal): void {
-  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 }
 
-function connection(
-  connectionId: string,
-): SupportExternalConnectionResponseDto {
+function connection(connectionId: string): SupportExternalConnectionResponseDto {
   const value = connections.find((item) => item.id === connectionId);
-  if (!value) throw new ApiError(404, "Not found");
+  if (!value) throw new ApiError(404, 'Not found');
   return value;
 }
 
@@ -319,13 +314,7 @@ function mutation<T>(key: string, create: () => T): SupportExternalMutation<T> {
 
 function expectVersion(value: { version: number }, version: number): void {
   if (value.version !== version)
-    throw new ApiError(
-      409,
-      "Version conflict",
-      undefined,
-      undefined,
-      "VERSION_CONFLICT",
-    );
+    throw new ApiError(409, 'Version conflict', undefined, undefined, 'VERSION_CONFLICT');
 }
 
 export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
@@ -334,21 +323,21 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
     const value: SupportExternalCreateOptionsResponseDto = {
       items: [
         {
-          optionId: "90000000-0000-4000-8000-000000000001",
+          optionId: '90000000-0000-4000-8000-000000000001',
           connectionId: ids.jsm,
           mappingRootId: ids.mapping,
           mappingRevisionId: ids.published,
-          formRevision: "form-v8",
-          destinationId: "jsm-service-desk-1",
-          destinationLabel: "Операционная поддержка",
-          formId: "incident",
-          formLabel: "Инцидент",
-          matchedBy: "RULE",
-          allowedActions: ["CREATE"],
+          formRevision: 'form-v8',
+          destinationId: 'jsm-service-desk-1',
+          destinationLabel: 'Операционная поддержка',
+          formId: 'incident',
+          formLabel: 'Инцидент',
+          matchedBy: 'RULE',
+          allowedActions: ['CREATE'],
           fields: [
             {
-              id: "environment",
-              valueType: "TEXT",
+              id: 'environment',
+              valueType: 'TEXT',
               required: false,
               options: [],
               editable: true,
@@ -356,15 +345,15 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
           ],
         },
         {
-          optionId: "90000000-0000-4000-8000-000000000002",
+          optionId: '90000000-0000-4000-8000-000000000002',
           connectionId: ids.helpdesk,
           mappingRootId: ids.mapping,
           mappingRevisionId: ids.published,
-          formRevision: "helpdesk-v3",
-          destinationId: "helpdesk-team-1",
-          destinationLabel: "Вторая линия",
-          matchedBy: "FALLBACK",
-          allowedActions: ["CREATE"],
+          formRevision: 'helpdesk-v3',
+          destinationId: 'helpdesk-team-1',
+          destinationLabel: 'Вторая линия',
+          matchedBy: 'FALLBACK',
+          allowedActions: ['CREATE'],
           fields: [],
         },
       ],
@@ -379,23 +368,23 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
           linkId: ids.link,
           connectionId: ids.jsm,
           itemId: ids.linkedItem,
-          status: "ACTIVE",
-          linkedAt: "2026-08-09T15:00:00.000Z",
+          status: 'ACTIVE',
+          linkedAt: '2026-08-09T15:00:00.000Z',
           version: 2,
           item: {
             ...safeClone(linkedItem),
             allowedActions: [
-              "OPEN_REMOTE",
-              "VIEW_TIMELINE",
-              "COMMENT_INTERNAL",
-              "COMMENT_PUBLIC",
-              "REFRESH",
-              "UNLINK",
+              'OPEN_REMOTE',
+              'VIEW_TIMELINE',
+              'COMMENT_INTERNAL',
+              'COMMENT_PUBLIC',
+              'REFRESH',
+              'UNLINK',
             ],
             link: {
               linkId: ids.link,
               caseId,
-              linkedAt: "2026-08-09T15:00:00.000Z",
+              linkedAt: '2026-08-09T15:00:00.000Z',
               version: 2,
             },
           },
@@ -406,28 +395,28 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   },
   async readCaseLink(_projectId, caseId, linkId, signal) {
     checkSignal(signal);
-    if (linkId !== ids.link) throw new ApiError(404, "Link not found");
+    if (linkId !== ids.link) throw new ApiError(404, 'Link not found');
     return {
       linkId: ids.link,
       connectionId: ids.jsm,
       itemId: ids.linkedItem,
-      status: "ACTIVE",
-      linkedAt: "2026-08-09T15:00:00.000Z",
+      status: 'ACTIVE',
+      linkedAt: '2026-08-09T15:00:00.000Z',
       version: 2,
       item: {
         ...safeClone(linkedItem),
         allowedActions: [
-          "OPEN_REMOTE",
-          "VIEW_TIMELINE",
-          "COMMENT_INTERNAL",
-          "COMMENT_PUBLIC",
-          "REFRESH",
-          "UNLINK",
+          'OPEN_REMOTE',
+          'VIEW_TIMELINE',
+          'COMMENT_INTERNAL',
+          'COMMENT_PUBLIC',
+          'REFRESH',
+          'UNLINK',
         ],
         link: {
           linkId: ids.link,
           caseId,
-          linkedAt: "2026-08-09T15:00:00.000Z",
+          linkedAt: '2026-08-09T15:00:00.000Z',
           version: 2,
         },
       },
@@ -436,7 +425,7 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   async readCommand(_projectId, _caseId, commandId, signal) {
     checkSignal(signal);
     const value = commands.find((item) => item.commandId === commandId);
-    if (!value) throw new ApiError(404, "Command not found");
+    if (!value) throw new ApiError(404, 'Command not found');
     return safeClone(value);
   },
   async submitCaseCommand(_projectId, _caseId, body, _version, key, signal) {
@@ -444,7 +433,7 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
     const existing = commandAttempts.get(key);
     if (existing) return { ...existing, replayed: true };
     const commandId = crypto.randomUUID();
-    const status = "QUEUED" as const;
+    const status = 'QUEUED' as const;
     commands.unshift({
       commandId,
       intent: body.intent,
@@ -461,40 +450,24 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
     commandAttempts.set(key, receipt);
     return receipt;
   },
-  async resolveCommand(
-    _projectId,
-    _caseId,
-    commandId,
-    _body,
-    version,
-    _key,
-    signal,
-  ) {
+  async resolveCommand(_projectId, _caseId, commandId, _body, version, _key, signal) {
     checkSignal(signal);
     const index = commands.findIndex((item) => item.commandId === commandId);
     const value = commands[index];
-    if (!value) throw new ApiError(404, "Command not found");
+    if (!value) throw new ApiError(404, 'Command not found');
     expectVersion(value, version);
     commands[index] = {
       ...value,
-      status: "SUCCEEDED",
+      status: 'SUCCEEDED',
       version: value.version + 1,
       resolvedAt: now,
       allowedActions: [],
     };
-    return { commandId, status: "SUCCEEDED", replayed: false };
+    return { commandId, status: 'SUCCEEDED', replayed: false };
   },
-  async linkInboxItemToCase(
-    _projectId,
-    remoteItemId,
-    _body,
-    version,
-    _key,
-    signal,
-  ) {
+  async linkInboxItemToCase(_projectId, remoteItemId, _body, version, _key, signal) {
     checkSignal(signal);
-    if (remoteItemId !== attentionItem.remoteItemId)
-      throw new ApiError(404, "Item not found");
+    if (remoteItemId !== attentionItem.remoteItemId) throw new ApiError(404, 'Item not found');
     expectVersion(attentionItem, version);
     return { linkId: ids.link, itemVersion: version + 1, replayed: false };
   },
@@ -506,27 +479,27 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
     checkSignal(signal);
     return mutation(key, () => ({
       sessionId:
-        provider === "JSM"
-          ? "70000000-0000-4000-8000-000000000001"
-          : "70000000-0000-4000-8000-000000000002",
+        provider === 'JSM'
+          ? '70000000-0000-4000-8000-000000000001'
+          : '70000000-0000-4000-8000-000000000002',
       launchPath: `/api/v1/support/external-work/oauth/launch/mock-${provider.toLowerCase()}`,
-      expiresAt: "2026-08-09T16:10:00.000Z",
+      expiresAt: '2026-08-09T16:10:00.000Z',
     }));
   },
   async listOAuthTenants(_projectId, _sessionId, signal) {
     checkSignal(signal);
     return {
-      provider: "JSM",
+      provider: 'JSM',
       items: [
         {
-          id: "support-cloud",
-          label: "Облако поддержки",
-          siteUrl: "https://support.example",
+          id: 'support-cloud',
+          label: 'Облако поддержки',
+          siteUrl: 'https://support.example',
         },
         {
-          id: "second-cloud",
-          label: "Резервное облако",
-          siteUrl: "https://second.example",
+          id: 'second-cloud',
+          label: 'Резервное облако',
+          siteUrl: 'https://second.example',
         },
       ],
     };
@@ -537,7 +510,7 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
       const value = connection(ids.jsm);
       value.tenantIdentity = body.tenantIdentity;
       value.version += 1;
-      value.lifecycle = "ACTIVE";
+      value.lifecycle = 'ACTIVE';
       return value;
     });
   },
@@ -545,8 +518,8 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
     checkSignal(signal);
     return mutation(key, () => {
       const value = connection(connectionId);
-      if (value.lifecycle === "REAUTH_REQUIRED")
-        throw new ApiError(409, "Reauthentication required");
+      if (value.lifecycle === 'REAUTH_REQUIRED')
+        throw new ApiError(409, 'Reauthentication required');
       return { connection: value, capabilities: value.capabilities };
     });
   },
@@ -555,9 +528,9 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
     return mutation(key, () => {
       expectVersion(connection(connectionId), version);
       return {
-        sessionId: "70000000-0000-4000-8000-000000000003",
-        launchPath: "/api/v1/support/external-work/oauth/launch/mock-reconnect",
-        expiresAt: "2026-08-09T16:10:00.000Z",
+        sessionId: '70000000-0000-4000-8000-000000000003',
+        launchPath: '/api/v1/support/external-work/oauth/launch/mock-reconnect',
+        expiresAt: '2026-08-09T16:10:00.000Z',
       };
     });
   },
@@ -566,7 +539,7 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
     return mutation(key, () => {
       const value = connection(connectionId);
       expectVersion(value, version);
-      value.lifecycle = "DISABLED";
+      value.lifecycle = 'DISABLED';
       value.version += 1;
       return value;
     });
@@ -576,7 +549,7 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
     return mutation(key, () => {
       const value = connection(connectionId);
       expectVersion(value, version);
-      value.lifecycle = "REVOKED";
+      value.lifecycle = 'REVOKED';
       value.credentialConfigured = false;
       value.version += 1;
       return value;
@@ -585,15 +558,15 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   async readCatalog(_projectId, connectionId, _params, signal) {
     checkSignal(signal);
     const value = catalogs[connectionId];
-    if (!value) throw new ApiError(404, "Catalog not found");
+    if (!value) throw new ApiError(404, 'Catalog not found');
     return safeClone(value);
   },
   async refreshCatalog(_projectId, connectionId, key, signal) {
     checkSignal(signal);
     connection(connectionId);
     return mutation(key, () => ({
-      jobId: "80000000-0000-4000-8000-000000000001",
-      status: "PENDING",
+      jobId: '80000000-0000-4000-8000-000000000001',
+      status: 'PENDING',
       replayed: false,
       coalesced: false,
     }));
@@ -601,8 +574,8 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   async readCatalogRefresh(_projectId, _jobId, signal) {
     checkSignal(signal);
     return {
-      jobId: "80000000-0000-4000-8000-000000000001",
-      status: "SUCCEEDED",
+      jobId: '80000000-0000-4000-8000-000000000001',
+      status: 'SUCCEEDED',
       attemptCount: 1,
       errorCode: null,
       snapshotId: ids.snapshotJsm,
@@ -634,7 +607,7 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
           rootId: ids.mapping,
           connectionId: body.connectionId,
           revisionNumber: 1,
-          status: "DRAFT",
+          status: 'DRAFT',
           catalogSnapshotId: body.catalogSnapshotId,
           formRevision: body.formRevision,
           definition: safeClone(body.definition),
@@ -645,15 +618,13 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   },
   async readMappingDraft(_projectId, mappingId, signal) {
     checkSignal(signal);
-    if (mappingId !== mappingRoot.id)
-      throw new ApiError(404, "Mapping not found");
+    if (mappingId !== mappingRoot.id) throw new ApiError(404, 'Mapping not found');
     return safeClone(mappingDraft);
   },
   async replaceMappingDraft(_projectId, mappingId, version, body, key, signal) {
     checkSignal(signal);
     return mutation(key, () => {
-      if (mappingId !== mappingRoot.id)
-        throw new ApiError(404, "Mapping not found");
+      if (mappingId !== mappingRoot.id) throw new ApiError(404, 'Mapping not found');
       expectVersion(mappingRoot, version);
       mappingRoot.version += 1;
       mappingDraft = {
@@ -666,26 +637,23 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   async beginMappingDraft(_projectId, mappingId, version, key, signal) {
     checkSignal(signal);
     return mutation(key, () => {
-      if (mappingId !== mappingRoot.id)
-        throw new ApiError(404, "Mapping not found");
+      if (mappingId !== mappingRoot.id) throw new ApiError(404, 'Mapping not found');
       expectVersion(mappingRoot, version);
       mappingRoot.version += 1;
       mappingRoot.draftRevisionId = ids.draft;
       mappingDraft.root = mappingRoot;
-      mappingDraft.draft.status = "DRAFT";
+      mappingDraft.draft.status = 'DRAFT';
       mappingDraft.draft.revisionNumber += 1;
       return mappingDraft;
     });
   },
   async validateMapping(_projectId, mappingId, signal) {
     checkSignal(signal);
-    if (mappingId !== mappingRoot.id)
-      throw new ApiError(404, "Mapping not found");
+    if (mappingId !== mappingRoot.id) throw new ApiError(404, 'Mapping not found');
     return {
       valid: true,
-      definitionHash: "a".repeat(64),
-      catalogSnapshotId:
-        mappingDraft.draft.catalogSnapshotId ?? ids.snapshotJsm,
+      definitionHash: 'a'.repeat(64),
+      catalogSnapshotId: mappingDraft.draft.catalogSnapshotId ?? ids.snapshotJsm,
       formRevision: mappingDraft.draft.formRevision,
       ruleCount: mappingDraft.draft.definition.rules.length,
       validatedAt: now,
@@ -693,26 +661,21 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   },
   async previewMapping(_projectId, mappingId, body, signal) {
     checkSignal(signal);
-    if (mappingId !== mappingRoot.id)
-      throw new ApiError(404, "Mapping not found");
+    if (mappingId !== mappingRoot.id) throw new ApiError(404, 'Mapping not found');
     const matched = mappingDraft.draft.definition.rules.find(
       (rule) =>
-        (!rule.when.caseKinds?.length ||
-          rule.when.caseKinds.includes(body.caseKind)) &&
-        (!rule.when.priorities?.length ||
-          rule.when.priorities.includes(body.priority)),
+        (!rule.when.caseKinds?.length || rule.when.caseKinds.includes(body.caseKind)) &&
+        (!rule.when.priorities?.length || rule.when.priorities.includes(body.priority)),
     );
-    const destination =
-      matched?.destination ?? mappingDraft.draft.definition.fallback;
+    const destination = matched?.destination ?? mappingDraft.draft.definition.fallback;
     return {
       mappingRootId: mappingRoot.id,
       draftRevisionId: mappingDraft.draft.id,
-      catalogSnapshotId:
-        mappingDraft.draft.catalogSnapshotId ?? ids.snapshotJsm,
+      catalogSnapshotId: mappingDraft.draft.catalogSnapshotId ?? ids.snapshotJsm,
       formRevision: mappingDraft.draft.formRevision,
-      definitionHash: "a".repeat(64),
+      definitionHash: 'a'.repeat(64),
       validatedAt: now,
-      matchedBy: matched ? "RULE" : "FALLBACK",
+      matchedBy: matched ? 'RULE' : 'FALLBACK',
       ruleId: matched?.id ?? null,
       destination: {
         destinationId: destination.destinationId,
@@ -725,31 +688,29 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   },
   async diffMapping(_projectId, mappingId, signal) {
     checkSignal(signal);
-    if (mappingId !== mappingRoot.id)
-      throw new ApiError(404, "Mapping not found");
+    if (mappingId !== mappingRoot.id) throw new ApiError(404, 'Mapping not found');
     return {
       fromRevisionId: mappingRoot.publishedRevisionId ?? null,
       fromRevisionNumber: publishedRevisions[0]?.revisionNumber ?? null,
       toDraftRevisionId: mappingDraft.draft.id,
       toRevisionNumber: mappingDraft.draft.revisionNumber,
       changed: true,
-      changes: [{ kind: "RULE_CHANGED", ruleId: "urgent-support" }],
+      changes: [{ kind: 'RULE_CHANGED', ruleId: 'urgent-support' }],
     };
   },
   async publishMapping(_projectId, mappingId, version, key, signal) {
     checkSignal(signal);
     return mutation(key, () => {
-      if (mappingId !== mappingRoot.id)
-        throw new ApiError(404, "Mapping not found");
+      if (mappingId !== mappingRoot.id) throw new ApiError(404, 'Mapping not found');
       expectVersion(mappingRoot, version);
       mappingRoot.version += 1;
       mappingRoot.publishedRevisionId = mappingDraft.draft.id;
       mappingRoot.draftRevisionId = null;
       publishedRevisions.unshift({
         ...safeClone(mappingDraft.draft),
-        status: "PUBLISHED",
+        status: 'PUBLISHED',
         publishedAt: now,
-        publicationKind: "PUBLISH",
+        publicationKind: 'PUBLISH',
         sourceRevisionId: null,
         rollbackReasonCode: null,
       });
@@ -759,33 +720,23 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   },
   async listMappingRevisions(_projectId, mappingId, _params, signal) {
     checkSignal(signal);
-    if (mappingId !== mappingRoot.id)
-      throw new ApiError(404, "Mapping not found");
+    if (mappingId !== mappingRoot.id) throw new ApiError(404, 'Mapping not found');
     return { items: safeClone(publishedRevisions), nextCursor: null };
   },
-  async rollbackMapping(
-    _projectId,
-    mappingId,
-    revisionId,
-    version,
-    body,
-    key,
-    signal,
-  ) {
+  async rollbackMapping(_projectId, mappingId, revisionId, version, body, key, signal) {
     checkSignal(signal);
     return mutation(key, () => {
-      if (mappingId !== mappingRoot.id)
-        throw new ApiError(404, "Mapping not found");
+      if (mappingId !== mappingRoot.id) throw new ApiError(404, 'Mapping not found');
       expectVersion(mappingRoot, version);
       const source = publishedRevisions.find((item) => item.id === revisionId);
-      if (!source) throw new ApiError(404, "Revision not found");
+      if (!source) throw new ApiError(404, 'Revision not found');
       mappingRoot.version += 1;
       const revision = {
         ...safeClone(source),
         id: crypto.randomUUID(),
         revisionNumber: (publishedRevisions[0]?.revisionNumber ?? 0) + 1,
         publishedAt: now,
-        publicationKind: "ROLLBACK" as const,
+        publicationKind: 'ROLLBACK' as const,
         sourceRevisionId: source.id,
         rollbackReasonCode: body.reasonCode,
       };
@@ -803,8 +754,8 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
     checkSignal(signal);
     return {
       receiptId,
-      operation: "TEST_CONNECTION",
-      status: "SUCCEEDED",
+      operation: 'TEST_CONNECTION',
+      status: 'SUCCEEDED',
       response: null,
       createdAt: now,
       updatedAt: now,
@@ -813,79 +764,61 @@ export const mockSupportExternalWorkSource: SupportExternalWorkSource = {
   async listInbox(_projectId, params, signal) {
     checkSignal(signal);
     const items =
-      params?.freshness && params.freshness !== attentionItem.freshness
-        ? []
-        : [attentionItem];
+      params?.freshness && params.freshness !== attentionItem.freshness ? [] : [attentionItem];
     return { items: safeClone(items), nextCursor: null };
   },
   async readInboxItem(_projectId, itemId, signal) {
     checkSignal(signal);
-    if (itemId !== attentionItem.itemId)
-      throw new ApiError(404, "Item not found");
+    if (itemId !== attentionItem.itemId) throw new ApiError(404, 'Item not found');
     return safeClone(attentionItem);
   },
   async readInboxTimeline(_projectId, itemId, _params, signal) {
     checkSignal(signal);
-    if (itemId !== attentionItem.itemId)
-      throw new ApiError(404, "Item not found");
+    if (itemId !== attentionItem.itemId) throw new ApiError(404, 'Item not found');
     return { items: safeClone(timeline), nextCursor: null };
   },
   async readLinkedTimeline(_projectId, caseId, linkId, _params, signal) {
     checkSignal(signal);
-    if (!caseId || linkId !== ids.link)
-      throw new ApiError(404, "Timeline not found");
+    if (!caseId || linkId !== ids.link) throw new ApiError(404, 'Timeline not found');
     return { items: safeClone(timeline), nextCursor: null };
   },
   async listItems(_projectId, params, signal) {
     checkSignal(signal);
     let items = [linkedItem];
-    if (params?.provider)
-      items = items.filter((item) => item.provider === params.provider);
-    if (params?.freshness)
-      items = items.filter((item) => item.freshness === params.freshness);
-    if (params?.status)
-      items = items.filter((item) => item.status === params.status);
+    if (params?.provider) items = items.filter((item) => item.provider === params.provider);
+    if (params?.freshness) items = items.filter((item) => item.freshness === params.freshness);
+    if (params?.status) items = items.filter((item) => item.status === params.status);
     return { items: safeClone(items), nextCursor: null };
   },
   async readItem(_projectId, itemId, signal) {
     checkSignal(signal);
-    if (itemId !== linkedItem.itemId) throw new ApiError(404, "Item not found");
+    if (itemId !== linkedItem.itemId) throw new ApiError(404, 'Item not found');
     return safeClone(linkedItem);
   },
   async listCaseCommands(_projectId, caseId, _params, signal) {
     checkSignal(signal);
-    if (!caseId) throw new ApiError(404, "Case not found");
+    if (!caseId) throw new ApiError(404, 'Case not found');
     return { items: safeClone(commands), nextCursor: null };
   },
   async retryCommand(_projectId, caseId, commandId, version, _key, signal) {
     checkSignal(signal);
-    if (!caseId || commandId !== ids.command)
-      throw new ApiError(404, "Command not found");
+    if (!caseId || commandId !== ids.command) throw new ApiError(404, 'Command not found');
     expectVersion(commands[0]!, version);
-    commands[0] = { ...commands[0]!, status: "RETRYING", allowedActions: [] };
-    return { commandId, status: "RETRYING", replayed: false };
+    commands[0] = { ...commands[0]!, status: 'RETRYING', allowedActions: [] };
+    return { commandId, status: 'RETRYING', replayed: false };
   },
-  async refreshCommandEvidence(
-    _projectId,
-    caseId,
-    commandId,
-    _body,
-    version,
-    _key,
-    signal,
-  ) {
+  async refreshCommandEvidence(_projectId, caseId, commandId, _body, version, _key, signal) {
     checkSignal(signal);
-    if (!caseId || commandId !== ids.command)
-      throw new ApiError(404, "Command not found");
+    if (!caseId || commandId !== ids.command) throw new ApiError(404, 'Command not found');
     expectVersion(commands[0]!, version);
     commands[0] = {
       ...commands[0]!,
-      status: "SUCCEEDED",
+      status: 'SUCCEEDED',
       errorCode: null,
       errorCategory: null,
       resolvedAt: now,
       allowedActions: [],
     };
-    return { commandId, status: "SUCCEEDED", replayed: false };
+    return { commandId, status: 'SUCCEEDED', replayed: false };
   },
 };

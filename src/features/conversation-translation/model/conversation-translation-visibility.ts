@@ -1,8 +1,8 @@
-import { canonicalLocale } from "@/shared/lib/locale";
+import { canonicalLocale } from '@/shared/lib/locale';
 
 function baseLocale(value?: string | null): string | null {
   if (!value) return null;
-  return canonicalLocale(value)?.split("-")[0]?.toLocaleLowerCase() ?? null;
+  return canonicalLocale(value)?.split('-')[0]?.toLocaleLowerCase() ?? null;
 }
 
 export function hasConversationTranslationBoundary({

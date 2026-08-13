@@ -1,67 +1,63 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
 import {
   compareDecimalStrings,
   decimalRatio,
   formatDecimalMoney,
   type DecimalString,
-} from "@/shared/lib/decimal-money";
-import { pluralizeRu, type AiUsageRangeKey } from "./ai-usage.model";
-import { fetchEndUserAiUsageReport } from "./end-user-ai-usage.api";
+} from '@/shared/lib/decimal-money';
+import { pluralizeRu, type AiUsageRangeKey } from './ai-usage.model';
+import { fetchEndUserAiUsageReport } from './end-user-ai-usage.api';
 import {
   END_USER_AI_USAGE_CATEGORY_LABELS,
   END_USER_AI_USAGE_WINDOWS,
   type EndUserAiUsageCategoryRow,
   type EndUserAiUsageReport,
-} from "./end-user-ai-usage.model";
-import AiTtsPricingContext from "./components/AiTtsPricingContext.vue";
+} from './end-user-ai-usage.model';
+import AiTtsPricingContext from './components/AiTtsPricingContext.vue';
 
 const props = defineProps<{
   projectId: string;
   endUserId: string;
 }>();
 
-const windowKey = ref<AiUsageRangeKey>("7d");
+const windowKey = ref<AiUsageRangeKey>('7d');
 const report = ref<EndUserAiUsageReport | null>(null);
 const loading = ref(true);
-const error = ref("");
+const error = ref('');
 let requestGeneration = 0;
 let controller: AbortController | undefined;
 
 const maxCategoryCost = computed(() =>
   (report.value?.categories ?? []).reduce<DecimalString>(
     (maximum, item) =>
-      compareDecimalStrings(item.effectiveCost, maximum) > 0
-        ? item.effectiveCost
-        : maximum,
-    "0",
+      compareDecimalStrings(item.effectiveCost, maximum) > 0 ? item.effectiveCost : maximum,
+    '0',
   ),
 );
 const hasSpeechUsage = computed(() =>
   report.value?.categories.some(
-    (category) => category.category === "SPEECH" && category.records > 0,
+    (category) => category.category === 'SPEECH' && category.records > 0,
   ),
 );
 
 function categoryWidth(category: EndUserAiUsageCategoryRow) {
-  if (compareDecimalStrings(category.effectiveCost, "0") <= 0) return "0%";
+  if (compareDecimalStrings(category.effectiveCost, '0') <= 0) return '0%';
   return `${Math.max(8, decimalRatio(category.effectiveCost, maxCategoryCost.value) * 100)}%`;
 }
 
 function formatCount(value: number) {
-  return new Intl.NumberFormat("ru-RU", {
-    notation: value >= 10_000 ? "compact" : "standard",
+  return new Intl.NumberFormat('ru-RU', {
+    notation: value >= 10_000 ? 'compact' : 'standard',
     maximumFractionDigits: 1,
   }).format(value);
 }
 
-function formatMoney(value: DecimalString, currency = "usd", precise = false) {
-  const tiny =
-    compareDecimalStrings(value, "0") > 0 &&
-    compareDecimalStrings(value, "0.01") < 0;
+function formatMoney(value: DecimalString, currency = 'usd', precise = false) {
+  const tiny = compareDecimalStrings(value, '0') > 0 && compareDecimalStrings(value, '0.01') < 0;
   return formatDecimalMoney(value, currency, {
     minimumFractionDigits: !precise && tiny ? 4 : 2,
     maximumFractionDigits: precise || tiny ? 6 : 2,
@@ -70,33 +66,33 @@ function formatMoney(value: DecimalString, currency = "usd", precise = false) {
 }
 
 function categoryMetric(category: EndUserAiUsageCategoryRow) {
-  if (category.category === "SPEECH") {
+  if (category.category === 'SPEECH') {
     return `${formatCount(category.inputCharacters)} ${pluralizeRu(
       category.inputCharacters,
-      "символ",
-      "символа",
-      "символов",
+      'символ',
+      'символа',
+      'символов',
     )}`;
   }
   return category.totalTokens
     ? formatCount(category.totalTokens)
     : `${formatCount(category.records)} ${pluralizeRu(
         category.records,
-        "операция",
-        "операции",
-        "операций",
+        'операция',
+        'операции',
+        'операций',
       )}`;
 }
 
 function categoryCost(category: EndUserAiUsageCategoryRow) {
-  if (category.category === "SPEECH") {
+  if (category.category === 'SPEECH') {
     const generations = `${category.records} ${pluralizeRu(
       category.records,
-      "генерация",
-      "генерации",
-      "генераций",
+      'генерация',
+      'генерации',
+      'генераций',
     )}`;
-    return compareDecimalStrings(category.estimatedFallbackCost, "0") > 0
+    return compareDecimalStrings(category.estimatedFallbackCost, '0') > 0
       ? `${formatMoney(
           category.estimatedFallbackCost,
           category.currency,
@@ -104,21 +100,19 @@ function categoryCost(category: EndUserAiUsageCategoryRow) {
         )} расчёт · ${generations}`
       : generations;
   }
-  if (compareDecimalStrings(category.providerReportedCost, "0") > 0)
+  if (compareDecimalStrings(category.providerReportedCost, '0') > 0)
     return `${formatMoney(category.providerReportedCost, category.currency)} по данным провайдера`;
-  if (compareDecimalStrings(category.estimatedFallbackCost, "0") > 0)
+  if (compareDecimalStrings(category.estimatedFallbackCost, '0') > 0)
     return `${formatMoney(category.estimatedFallbackCost, category.currency)} расчёт`;
   return `${category.records} операций`;
 }
 
-function eventQueryCost(value: EndUserAiUsageReport["eventQuery"]) {
-  const billed = value.linkedAiUsage.billedCostUsd ?? "0";
-  const estimated = value.linkedAiUsage.estimatedCostUsd ?? "0";
-  if (compareDecimalStrings(billed, "0") > 0)
-    return `${formatMoney(billed)} по данным провайдера`;
-  if (compareDecimalStrings(estimated, "0") > 0)
-    return `${formatMoney(estimated)} оценка`;
-  return "Стоимость не связана";
+function eventQueryCost(value: EndUserAiUsageReport['eventQuery']) {
+  const billed = value.linkedAiUsage.billedCostUsd ?? '0';
+  const estimated = value.linkedAiUsage.estimatedCostUsd ?? '0';
+  if (compareDecimalStrings(billed, '0') > 0) return `${formatMoney(billed)} по данным провайдера`;
+  if (compareDecimalStrings(estimated, '0') > 0) return `${formatMoney(estimated)} оценка`;
+  return 'Стоимость не связана';
 }
 
 function eventQueryCalls(value: number) {
@@ -126,19 +120,19 @@ function eventQueryCalls(value: number) {
   const remainder10 = value % 10;
   const noun =
     remainder100 >= 11 && remainder100 <= 14
-      ? "запросов"
+      ? 'запросов'
       : remainder10 === 1
-        ? "запрос"
+        ? 'запрос'
         : remainder10 >= 2 && remainder10 <= 4
-          ? "запроса"
-          : "запросов";
+          ? 'запроса'
+          : 'запросов';
   return `${formatCount(value)} ${noun}`;
 }
 
 function formatBytes(value: number) {
   return value < 1024
     ? `${value} Б`
-    : `${new Intl.NumberFormat("ru-RU", {
+    : `${new Intl.NumberFormat('ru-RU', {
         maximumFractionDigits: 1,
       }).format(value / 1024)} КБ`;
 }
@@ -150,7 +144,7 @@ async function load(nextWindow = windowKey.value) {
   const requestedEndUserId = props.endUserId;
   const generation = ++requestGeneration;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const nextReport = await fetchEndUserAiUsageReport(
       requestedProjectId,
@@ -163,9 +157,7 @@ async function load(nextWindow = windowKey.value) {
   } catch (cause) {
     if (controller.signal.aborted || generation !== requestGeneration) return;
     error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить потребление пользователя";
+      cause instanceof Error ? cause.message : 'Не удалось загрузить потребление пользователя';
   } finally {
     if (generation === requestGeneration) loading.value = false;
   }
@@ -197,9 +189,7 @@ onBeforeUnmount(() => {
     <header>
       <div>
         <span class="usage-kicker">Потребление</span>
-        <h3 id="end-user-ai-usage-title">
-          <i class="pi pi-chart-line" /> AI и речь
-        </h3>
+        <h3 id="end-user-ai-usage-title"><i class="pi pi-chart-line" /> AI и речь</h3>
       </div>
       <div class="window-switch" aria-label="Период потребления">
         <button
@@ -238,16 +228,11 @@ onBeforeUnmount(() => {
         <article>
           <small>Фактически по данным xAI</small>
           <strong>{{ formatMoney(report.totals.providerReportedCost) }}</strong>
-          <span
-            >{{ report.totals.providerReportedCostRecords }} операций с ценой
-            провайдера</span
-          >
+          <span>{{ report.totals.providerReportedCostRecords }} операций с ценой провайдера</span>
         </article>
         <article>
           <small>Расчёт по тарифу</small>
-          <strong>{{
-            formatMoney(report.totals.estimatedFallbackCost)
-          }}</strong>
+          <strong>{{ formatMoney(report.totals.estimatedFallbackCost) }}</strong>
           <span>{{ report.totals.estimatedRecords }} оценочных операций</span>
         </article>
         <article>
@@ -264,9 +249,7 @@ onBeforeUnmount(() => {
           class="category-row"
           :data-usage-category="category.category"
         >
-          <span>{{
-            END_USER_AI_USAGE_CATEGORY_LABELS[category.category]
-          }}</span>
+          <span>{{ END_USER_AI_USAGE_CATEGORY_LABELS[category.category] }}</span>
           <div class="category-track" title="Доля денежной стоимости категории">
             <i :style="{ width: categoryWidth(category) }" />
           </div>
@@ -288,8 +271,8 @@ onBeforeUnmount(() => {
           <span class="usage-kicker">Event Query</span>
           <h4>Поиск по данным событий</h4>
           <p>
-            Сводное потребление за выбранный период. Связанные токены и
-            стоимость уже входят в общие Chat/Voice расходы.
+            Сводное потребление за выбранный период. Связанные токены и стоимость уже входят в общие
+            Chat/Voice расходы.
           </p>
         </div>
         <div v-if="report.eventQuery.calls" class="event-query-metrics">
@@ -324,9 +307,7 @@ onBeforeUnmount(() => {
 
       <div v-if="report.totals.unpricedRecords" class="completeness-note">
         <i class="pi pi-info-circle" />
-        <span>
-          {{ report.totals.unpricedRecords }} операций без денежной стоимости
-        </span>
+        <span> {{ report.totals.unpricedRecords }} операций без денежной стоимости </span>
       </div>
       <footer>
         Период рассчитан по часовому поясу проекта:

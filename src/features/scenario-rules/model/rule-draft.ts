@@ -1,6 +1,6 @@
-import { uid } from '@/shared/lib/format'
+import { uid } from '@/shared/lib/format';
 
-import type { RuleDraft } from './rule-types'
+import type { RuleDraft } from './rule-types';
 
 export function createRuleDraft(): RuleDraft {
   return {
@@ -10,5 +10,5 @@ export function createRuleDraft(): RuleDraft {
       kind: 'all',
       children: [],
     },
-  }
+  };
 }

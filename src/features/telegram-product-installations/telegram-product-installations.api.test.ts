@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   telegramChannelAdminCreate,
   telegramChannelAdminDisable,
@@ -7,10 +7,10 @@ import {
   telegramChannelAdminSetBroadcastsEnabled,
   telegramChannelAdminTest,
   telegramLinkAdminGet,
-} from "@/shared/api/generated/retenive-backend";
-import { telegramProductInstallationsApi } from "./telegram-product-installations.api";
+} from '@/shared/api/generated/retenive-backend';
+import { telegramProductInstallationsApi } from './telegram-product-installations.api';
 
-vi.mock("@/shared/api/generated/retenive-backend", () => ({
+vi.mock('@/shared/api/generated/retenive-backend', () => ({
   telegramChannelAdminCreate: vi.fn(),
   telegramChannelAdminDisable: vi.fn(),
   telegramChannelAdminGet: vi.fn(),
@@ -20,68 +20,62 @@ vi.mock("@/shared/api/generated/retenive-backend", () => ({
   telegramLinkAdminGet: vi.fn(),
 }));
 
-describe("product Telegram API", () => {
+describe('product Telegram API', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("keeps product installation and end-user summary on dedicated generated routes", async () => {
-    await telegramProductInstallationsApi.get("project-1");
+  it('keeps product installation and end-user summary on dedicated generated routes', async () => {
+    await telegramProductInstallationsApi.get('project-1');
     await telegramProductInstallationsApi.create(
-      "project-1",
-      { botToken: "secret-token" },
-      "create-key",
+      'project-1',
+      { botToken: 'secret-token' },
+      'create-key',
     );
-    await telegramProductInstallationsApi.rotate("project-1", {
-      botToken: "new-secret-token",
+    await telegramProductInstallationsApi.rotate('project-1', {
+      botToken: 'new-secret-token',
       expectedVersion: 2,
     });
-    await telegramProductInstallationsApi.disable("project-1", {
+    await telegramProductInstallationsApi.disable('project-1', {
       expectedVersion: 3,
     });
     await telegramProductInstallationsApi.test(
-      "project-1",
-      "installation-1",
+      'project-1',
+      'installation-1',
       { expectedVersion: 4 },
-      "test-key",
+      'test-key',
     );
     await telegramProductInstallationsApi.setBroadcastsEnabled(
-      "project-1",
+      'project-1',
       { enabled: true, expectedVersion: 7 },
-      "broadcasts-key",
+      'broadcasts-key',
     );
-    await telegramProductInstallationsApi.getEndUserSummary(
-      "project-1",
-      "end-user-1",
-    );
+    await telegramProductInstallationsApi.getEndUserSummary('project-1', 'end-user-1');
 
-    expect(telegramChannelAdminGet).toHaveBeenCalledWith("project-1");
+    expect(telegramChannelAdminGet).toHaveBeenCalledWith('project-1');
     expect(telegramChannelAdminCreate).toHaveBeenCalledWith(
-      "project-1",
-      { botToken: "secret-token" },
-      { headers: { "Idempotency-Key": "create-key" } },
+      'project-1',
+      { botToken: 'secret-token' },
+      { headers: { 'Idempotency-Key': 'create-key' } },
     );
-    expect(telegramChannelAdminRotate).toHaveBeenCalledWith("project-1", {
-      botToken: "new-secret-token",
+    expect(telegramChannelAdminRotate).toHaveBeenCalledWith('project-1', {
+      botToken: 'new-secret-token',
       expectedVersion: 2,
     });
-    expect(telegramChannelAdminDisable).toHaveBeenCalledWith("project-1", {
+    expect(telegramChannelAdminDisable).toHaveBeenCalledWith('project-1', {
       expectedVersion: 3,
     });
     expect(telegramChannelAdminTest).toHaveBeenCalledWith(
-      "project-1",
-      "installation-1",
+      'project-1',
+      'installation-1',
       { expectedVersion: 4 },
-      { headers: { "Idempotency-Key": "test-key" } },
+      { headers: { 'Idempotency-Key': 'test-key' } },
     );
     expect(telegramChannelAdminSetBroadcastsEnabled).toHaveBeenCalledWith(
-      "project-1",
+      'project-1',
       { enabled: true, expectedVersion: 7 },
-      { headers: { "Idempotency-Key": "broadcasts-key" } },
+      { headers: { 'Idempotency-Key': 'broadcasts-key' } },
     );
-    expect(telegramLinkAdminGet).toHaveBeenCalledWith(
-      "project-1",
-      "end-user-1",
-    );
+    expect(telegramLinkAdminGet).toHaveBeenCalledWith('project-1', 'end-user-1');
   });
 });

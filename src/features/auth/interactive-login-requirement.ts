@@ -1,19 +1,18 @@
-const INTERACTIVE_LOGIN_REQUIRED_KEY = "retenive-cms-interactive-login-required-v1";
-const INTERACTIVE_LOGIN_REQUIRED_FALLBACK_KEY =
-  "retenive-cms-interactive-login-required-tab-v1";
+const INTERACTIVE_LOGIN_REQUIRED_KEY = 'retenive-cms-interactive-login-required-v1';
+const INTERACTIVE_LOGIN_REQUIRED_FALLBACK_KEY = 'retenive-cms-interactive-login-required-tab-v1';
 let currentDocumentRequirement: boolean | undefined;
 
 function setFallbackMarker(): void {
-  if (typeof sessionStorage === "undefined") return;
+  if (typeof sessionStorage === 'undefined') return;
   try {
-    sessionStorage.setItem(INTERACTIVE_LOGIN_REQUIRED_FALLBACK_KEY, "1");
+    sessionStorage.setItem(INTERACTIVE_LOGIN_REQUIRED_FALLBACK_KEY, '1');
   } catch {
     // The in-memory marker still protects the current document.
   }
 }
 
 function clearFallbackMarker(): void {
-  if (typeof sessionStorage === "undefined") return;
+  if (typeof sessionStorage === 'undefined') return;
   try {
     sessionStorage.removeItem(INTERACTIVE_LOGIN_REQUIRED_FALLBACK_KEY);
   } catch {
@@ -22,11 +21,9 @@ function clearFallbackMarker(): void {
 }
 
 function hasFallbackMarker(): boolean {
-  if (typeof sessionStorage === "undefined") return false;
+  if (typeof sessionStorage === 'undefined') return false;
   try {
-    return (
-      sessionStorage.getItem(INTERACTIVE_LOGIN_REQUIRED_FALLBACK_KEY) === "1"
-    );
+    return sessionStorage.getItem(INTERACTIVE_LOGIN_REQUIRED_FALLBACK_KEY) === '1';
   } catch {
     return false;
   }
@@ -35,9 +32,9 @@ function hasFallbackMarker(): boolean {
 export function requireInteractiveLogin(): void {
   currentDocumentRequirement = true;
   setFallbackMarker();
-  if (typeof localStorage === "undefined") return;
+  if (typeof localStorage === 'undefined') return;
   try {
-    localStorage.setItem(INTERACTIVE_LOGIN_REQUIRED_KEY, "1");
+    localStorage.setItem(INTERACTIVE_LOGIN_REQUIRED_KEY, '1');
   } catch {
     // Browser privacy policies may deny storage. The in-memory auth reset still
     // remains authoritative for the current document.
@@ -47,7 +44,7 @@ export function requireInteractiveLogin(): void {
 export function clearInteractiveLoginRequirement(): void {
   currentDocumentRequirement = false;
   clearFallbackMarker();
-  if (typeof localStorage === "undefined") return;
+  if (typeof localStorage === 'undefined') return;
   try {
     localStorage.removeItem(INTERACTIVE_LOGIN_REQUIRED_KEY);
   } catch {
@@ -56,10 +53,9 @@ export function clearInteractiveLoginRequirement(): void {
 }
 
 export function isInteractiveLoginRequired(): boolean {
-  if (typeof localStorage === "undefined")
-    return currentDocumentRequirement ?? false;
+  if (typeof localStorage === 'undefined') return currentDocumentRequirement ?? false;
   try {
-    if (localStorage.getItem(INTERACTIVE_LOGIN_REQUIRED_KEY) === "1") {
+    if (localStorage.getItem(INTERACTIVE_LOGIN_REQUIRED_KEY) === '1') {
       currentDocumentRequirement = true;
       return true;
     }

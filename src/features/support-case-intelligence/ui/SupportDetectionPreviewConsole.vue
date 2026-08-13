@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Tag from "primevue/tag";
-import Textarea from "primevue/textarea";
+import { computed, ref } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Tag from 'primevue/tag';
+import Textarea from 'primevue/textarea';
 import {
   caseIntelligenceReasonLabel,
   previewStageLabel,
-} from "../model/support-case-intelligence-policy";
+} from '../model/support-case-intelligence-policy';
 import type {
   CaseIntelligenceDryRunResponseDto,
   CaseIntelligencePreviewMessageDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 const props = defineProps<{
   result: CaseIntelligenceDryRunResponseDto | null;
@@ -27,42 +27,39 @@ const emit = defineEmits<{
 }>();
 
 const roleOptions = [
-  { label: "Пользователь", value: "USER" },
-  { label: "Lola", value: "ASSISTANT" },
+  { label: 'Пользователь', value: 'USER' },
+  { label: 'Lola', value: 'ASSISTANT' },
 ];
 
 const messages = ref<CaseIntelligencePreviewMessageDto[]>([
   {
     id: crypto.randomUUID(),
-    role: "USER",
-    text: "Списали деньги дважды, помогите вернуть оплату",
-    locale: props.locales[0] ?? "ru-RU",
+    role: 'USER',
+    text: 'Списали деньги дважды, помогите вернуть оплату',
+    locale: props.locales[0] ?? 'ru-RU',
   },
 ]);
 
 const localeOptions = computed(() =>
-  (props.locales.length ? props.locales : ["ru-RU"]).map((value) => ({
+  (props.locales.length ? props.locales : ['ru-RU']).map((value) => ({
     label: value,
     value,
   })),
 );
 const valid = computed(
   () =>
-    messages.value.some(
-      (message) => message.role === "USER" && message.text.trim(),
-    ) && messages.value.every((message) => message.text.trim()),
+    messages.value.some((message) => message.role === 'USER' && message.text.trim()) &&
+    messages.value.every((message) => message.text.trim()),
 );
-const finalMessageResult = computed(
-  () => props.result?.messageResults.at(-1) ?? null,
-);
+const finalMessageResult = computed(() => props.result?.messageResults.at(-1) ?? null);
 
-function addMessage(role: "USER" | "ASSISTANT") {
+function addMessage(role: 'USER' | 'ASSISTANT') {
   if (messages.value.length >= 8) return;
   messages.value.push({
     id: crypto.randomUUID(),
     role,
-    text: "",
-    locale: props.locales[0] ?? "ru-RU",
+    text: '',
+    locale: props.locales[0] ?? 'ru-RU',
   });
 }
 
@@ -74,40 +71,40 @@ function removeMessage(index: number) {
 function runPreview() {
   if (!valid.value || props.blocked || !props.canPreview) return;
   emit(
-    "preview",
+    'preview',
     messages.value.map((message) => ({ ...message, text: message.text.trim() })),
   );
 }
 
 function decisionLabel(value: string) {
   const labels: Record<string, string> = {
-    NO_CASE: "Не создавать обращение",
-    CREATE: "Создать обращение",
-    ATTACH: "Привязать к открытому",
-    REOPEN: "Открыть повторно",
-    DEFER: "Передать на проверку",
+    NO_CASE: 'Не создавать обращение',
+    CREATE: 'Создать обращение',
+    ATTACH: 'Привязать к открытому',
+    REOPEN: 'Открыть повторно',
+    DEFER: 'Передать на проверку',
   };
-  return labels[value] ?? "Передать на проверку";
+  return labels[value] ?? 'Передать на проверку';
 }
 
 function confidenceLabel() {
   const confidence = finalMessageResult.value?.confidence;
   if (!confidence || confidence.value === null || confidence.value === undefined)
-    return "Доверие не рассчитано";
+    return 'Доверие не рассчитано';
   return `${Math.round(confidence.value * 100)}%`;
 }
 
 function intervalLabel() {
   const interval = finalMessageResult.value?.confidence.interval;
-  if (!interval) return "Недостаточно данных";
+  if (!interval) return 'Недостаточно данных';
   return `${Math.round(interval.lower * 100)}–${Math.round(interval.upper * 100)}%`;
 }
 
 function formatMicroUsd(value: string) {
-  if (!/^\d+$/u.test(value)) return "—";
-  return new Intl.NumberFormat("ru-RU", {
-    style: "currency",
-    currency: "USD",
+  if (!/^\d+$/u.test(value)) return '—';
+  return new Intl.NumberFormat('ru-RU', {
+    style: 'currency',
+    currency: 'USD',
     maximumFractionDigits: 6,
   }).format(Number(value) / 1_000_000);
 }
@@ -120,8 +117,7 @@ function formatMicroUsd(value: string) {
         <div class="card-kicker">Безопасная проверка</div>
         <h2 id="preview-title">Диалог для проверки</h2>
         <p>
-          Сервер применит точные правила, но не вызовет модель и ничего не
-          изменит в обращениях.
+          Сервер применит точные правила, но не вызовет модель и ничего не изменит в обращениях.
         </p>
       </div>
       <Tag :value="`${messages.length}/8`" severity="secondary" />
@@ -232,22 +228,15 @@ function formatMicroUsd(value: string) {
         severity="warn"
         :closable="false"
       >
-        Автоматическое действие не подтверждено: смысловая модель в этой
-        безопасной проверке не запускается.
+        Автоматическое действие не подтверждено: смысловая модель в этой безопасной проверке не
+        запускается.
       </Message>
 
       <div class="result-section">
         <span class="result-label">Совпавшие правила</span>
         <div class="tag-row">
-          <Tag
-            v-for="code in result.matchedRuleCodes"
-            :key="code"
-            :value="code"
-            severity="info"
-          />
-          <span v-if="!result.matchedRuleCodes.length" class="muted">
-            Совпавших правил нет
-          </span>
+          <Tag v-for="code in result.matchedRuleCodes" :key="code" :value="code" severity="info" />
+          <span v-if="!result.matchedRuleCodes.length" class="muted"> Совпавших правил нет </span>
         </div>
       </div>
 
@@ -274,7 +263,7 @@ function formatMicroUsd(value: string) {
               aria-hidden="true"
             />
             <span>{{ previewStageLabel(stage.code) }}</span>
-            <small>{{ stage.state === "COMPLETED" ? "Готово" : "Пропущено" }}</small>
+            <small>{{ stage.state === 'COMPLETED' ? 'Готово' : 'Пропущено' }}</small>
           </li>
         </ol>
       </div>
@@ -331,7 +320,7 @@ function formatMicroUsd(value: string) {
   border-radius: 10px;
   background: var(--surface-subtle);
 }
-.dialog-message[data-role="USER"] {
+.dialog-message[data-role='USER'] {
   box-shadow: inset 3px 0 0 var(--action-primary);
 }
 .dialog-message__meta {

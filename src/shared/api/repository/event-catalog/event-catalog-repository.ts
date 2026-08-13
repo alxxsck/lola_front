@@ -1,5 +1,5 @@
-import axios from "axios";
-import { ApiError } from "@/shared/api/http/api-error";
+import axios from 'axios';
+import { ApiError } from '@/shared/api/http/api-error';
 import {
   eventCatalogAnalyzeSchemaDraft,
   eventCatalogArchive,
@@ -18,7 +18,7 @@ import {
   eventCatalogUpdateMetadata,
   eventCatalogUpdatePolicy,
   eventCatalogUsage,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import {
   toEventCatalogDefinition,
   type ArchiveEventDefinitionCommand,
@@ -41,7 +41,7 @@ import {
   type SaveEventSchemaDraftCommand,
   type UpdateEventMetadataCommand,
   type UpdateEventPolicyCommand,
-} from "./event-catalog-contract";
+} from './event-catalog-contract';
 
 export interface EventCatalogRepository {
   listDefinitions(
@@ -57,18 +57,9 @@ export interface EventCatalogRepository {
     definitionKeyId: string,
     command: CreateEventSchemaSuccessorCommand,
   ): Promise<EventCatalogDefinition>;
-  getDefinition(
-    projectId: string,
-    definitionKeyId: string,
-  ): Promise<EventCatalogDefinition>;
-  getUsage(
-    projectId: string,
-    definitionKeyId: string,
-  ): Promise<EventDefinitionUsage>;
-  getSchemaDraft(
-    projectId: string,
-    definitionKeyId: string,
-  ): Promise<EventSchemaDraft | null>;
+  getDefinition(projectId: string, definitionKeyId: string): Promise<EventCatalogDefinition>;
+  getUsage(projectId: string, definitionKeyId: string): Promise<EventDefinitionUsage>;
+  getSchemaDraft(projectId: string, definitionKeyId: string): Promise<EventSchemaDraft | null>;
   saveSchemaDraft(
     projectId: string,
     definitionKeyId: string,
@@ -149,36 +140,24 @@ function isDraftNotFound(error: unknown) {
   return (
     error instanceof ApiError &&
     error.status === 404 &&
-    error.code === "EVENT_SCHEMA_DRAFT_NOT_FOUND"
+    error.code === 'EVENT_SCHEMA_DRAFT_NOT_FOUND'
   );
 }
 
 export const apiEventCatalogRepository: EventCatalogRepository = {
-  async listDefinitions(projectId, lifecycle = "ACTIVE") {
-    return (await eventCatalogList(projectId, { lifecycle })).map(
-      toEventCatalogDefinition,
-    );
+  async listDefinitions(projectId, lifecycle = 'ACTIVE') {
+    return (await eventCatalogList(projectId, { lifecycle })).map(toEventCatalogDefinition);
   },
   async createDefinition(projectId, command) {
     const created = await eventCatalogCreate(projectId, command);
-    return toEventCatalogDefinition(
-      await eventCatalogDetail(projectId, created.definitionKeyId),
-    );
+    return toEventCatalogDefinition(await eventCatalogDetail(projectId, created.definitionKeyId));
   },
   async createSchemaSuccessor(projectId, definitionKeyId, command) {
-    const created = await eventCatalogCreateSchemaSuccessor(
-      projectId,
-      definitionKeyId,
-      command,
-    );
-    return toEventCatalogDefinition(
-      await eventCatalogDetail(projectId, created.definitionKeyId),
-    );
+    const created = await eventCatalogCreateSchemaSuccessor(projectId, definitionKeyId, command);
+    return toEventCatalogDefinition(await eventCatalogDetail(projectId, created.definitionKeyId));
   },
   async getDefinition(projectId, definitionKeyId) {
-    return toEventCatalogDefinition(
-      await eventCatalogDetail(projectId, definitionKeyId),
-    );
+    return toEventCatalogDefinition(await eventCatalogDetail(projectId, definitionKeyId));
   },
   getUsage: eventCatalogUsage,
   async getSchemaDraft(projectId, definitionKeyId) {
@@ -194,15 +173,9 @@ export const apiEventCatalogRepository: EventCatalogRepository = {
   publishSchemaDraft: eventCatalogPublishSchemaDraft,
   discardSchemaDraft: eventCatalogDiscardSchemaDraft,
   async updateMetadata(projectId, definitionKeyId, command) {
-    const dto = await eventCatalogUpdateMetadata(
-      projectId,
-      definitionKeyId,
-      command,
-    );
+    const dto = await eventCatalogUpdateMetadata(projectId, definitionKeyId, command);
     if (!dto.schemaRevisionUnchanged) {
-      throw new Error(
-        "Invalid backend response: metadata mutation changed the schema revision",
-      );
+      throw new Error('Invalid backend response: metadata mutation changed the schema revision');
     }
     return {
       definitionKeyId: dto.definitionKeyId,
@@ -222,20 +195,15 @@ export const apiEventCatalogRepository: EventCatalogRepository = {
     return this.getDefinition(projectId, definitionKeyId);
   },
   async archive(projectId, definitionKeyId, command) {
-    return toEventCatalogDefinition(
-      await eventCatalogArchive(projectId, definitionKeyId, command),
-    );
+    return toEventCatalogDefinition(await eventCatalogArchive(projectId, definitionKeyId, command));
   },
   async restore(projectId, definitionKeyId, command) {
-    return toEventCatalogDefinition(
-      await eventCatalogRestore(projectId, definitionKeyId, command),
-    );
+    return toEventCatalogDefinition(await eventCatalogRestore(projectId, definitionKeyId, command));
   },
   async hardDelete(projectId, definitionKeyId, command) {
     const intentKey = deleteIntentKey(projectId, definitionKeyId);
     const fingerprint = deleteIntentFingerprint(command);
-    const retryingSameIntent =
-      pendingDeleteIntents.get(intentKey) === fingerprint;
+    const retryingSameIntent = pendingDeleteIntents.get(intentKey) === fingerprint;
     pendingDeleteIntents.set(intentKey, fingerprint);
     try {
       await eventCatalogHardDelete(projectId, definitionKeyId, command);
@@ -257,7 +225,7 @@ export const apiEventCatalogRepository: EventCatalogRepository = {
       throw error;
     }
     pendingDeleteIntents.delete(intentKey);
-    throw new Error("EVENT_DELETE_NOT_CONFIRMED");
+    throw new Error('EVENT_DELETE_NOT_CONFIRMED');
   },
   listRevisions: eventCatalogRevisions,
   getRevision: eventCatalogRevision,

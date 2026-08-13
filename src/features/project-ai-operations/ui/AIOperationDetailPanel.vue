@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import { cmsUserDetailRoute } from "@/features/cms-user-management/model/cms-user-route";
+import { computed } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import { cmsUserDetailRoute } from '@/features/cms-user-management/model/cms-user-route';
 import type {
   AiOperationDetailResponseDto,
   AiOperationProtectedAccessPageResponseDto,
   AiOperationSubjectPageResponseDto,
-} from "@/shared/api/generated/models";
-import TechnicalIdentifier from "@/shared/ui/TechnicalIdentifier.vue";
+} from '@/shared/api/generated/models';
+import TechnicalIdentifier from '@/shared/ui/TechnicalIdentifier.vue';
 import {
   aiOperationActorLabel,
   aiOperationCategoryLabel,
@@ -21,7 +21,7 @@ import {
   aiOperationOutcomeLabel,
   aiOperationStatusPresentation,
   aiOperationTitleLabel,
-} from "../model/project-ai-operation-presentation";
+} from '../model/project-ai-operation-presentation';
 
 const props = defineProps<{
   projectId: string;
@@ -53,74 +53,65 @@ defineEmits<{
 }>();
 
 function timelineIcon(kind: string): string {
-  if (kind === "MODEL_ATTEMPT") return "pi pi-sparkles";
-  if (kind === "TOOL_CALL") return "pi pi-wrench";
-  if (kind === "DATA_ACCESS") return "pi pi-database";
-  if (kind === "RESULT") return "pi pi-check-circle";
-  return "pi pi-circle-fill";
+  if (kind === 'MODEL_ATTEMPT') return 'pi pi-sparkles';
+  if (kind === 'TOOL_CALL') return 'pi pi-wrench';
+  if (kind === 'DATA_ACCESS') return 'pi pi-database';
+  if (kind === 'RESULT') return 'pi pi-check-circle';
+  return 'pi pi-circle-fill';
 }
 
-function timelineLabel(
-  kind: string,
-  eventType: string,
-  name?: string | null,
-): string {
+function timelineLabel(kind: string, eventType: string, name?: string | null): string {
   const labels: Record<string, string> = {
-    DATA_ACCESS_COMPLETED: "Данные прочитаны",
-    OPERATION_FAILED: "Операция завершилась ошибкой",
-    OPERATION_COMPLETED: "Операция завершена",
-    MODEL_ATTEMPT_STARTED: "Отправлен запрос модели",
-    MODEL_ATTEMPT_COMPLETED: "Получен ответ модели",
-    TOOL_CALL_STARTED: "Запущен инструмент",
-    TOOL_CALL_COMPLETED: "Инструмент завершил работу",
+    DATA_ACCESS_COMPLETED: 'Данные прочитаны',
+    OPERATION_FAILED: 'Операция завершилась ошибкой',
+    OPERATION_COMPLETED: 'Операция завершена',
+    MODEL_ATTEMPT_STARTED: 'Отправлен запрос модели',
+    MODEL_ATTEMPT_COMPLETED: 'Получен ответ модели',
+    TOOL_CALL_STARTED: 'Запущен инструмент',
+    TOOL_CALL_COMPLETED: 'Инструмент завершил работу',
   };
   if (labels[eventType]) return labels[eventType];
   if (name && !/^[A-Z0-9_]+$/.test(name)) return name;
   const byKind: Record<string, string> = {
-    MODEL_ATTEMPT: "Обращение к модели",
-    TOOL_CALL: "Выполнение действия",
-    DATA_ACCESS: "Работа с данными",
-    RESULT: "Результат операции",
+    MODEL_ATTEMPT: 'Обращение к модели',
+    TOOL_CALL: 'Выполнение действия',
+    DATA_ACCESS: 'Работа с данными',
+    RESULT: 'Результат операции',
   };
-  return byKind[kind] ?? "Этап операции";
+  return byKind[kind] ?? 'Этап операции';
 }
 
 function eventStatusLabel(status?: string | null): string {
   const labels: Record<string, string> = {
-    STARTED: "Запущено",
-    RUNNING: "Выполняется",
-    SUCCEEDED: "Завершено",
-    FAILED: "Ошибка",
-    CANCELLED: "Отменено",
+    STARTED: 'Запущено',
+    RUNNING: 'Выполняется',
+    SUCCEEDED: 'Завершено',
+    FAILED: 'Ошибка',
+    CANCELLED: 'Отменено',
   };
-  return status ? (labels[status] ?? status) : "";
+  return status ? (labels[status] ?? status) : '';
 }
 
 function dataSourceLabel(sourceType: string): string {
   const labels: Record<string, string> = {
-    PROJECT_ANALYSIS_QUERY: "Данные проекта для анализа",
-    CONVERSATION: "Диалог с пользователем",
-    USER_MEMORY: "Память пользователя",
-    END_USER_CASE: "Обращение пользователя",
+    PROJECT_ANALYSIS_QUERY: 'Данные проекта для анализа',
+    CONVERSATION: 'Диалог с пользователем',
+    USER_MEMORY: 'Память пользователя',
+    END_USER_CASE: 'Обращение пользователя',
   };
-  return labels[sourceType] ?? "Источник данных";
+  return labels[sourceType] ?? 'Источник данных';
 }
 
 function resultReferenceLabel(kind: string): string {
   const labels: Record<string, string> = {
-    AI_ANALYSIS: "анализ",
-    END_USER_CASE: "обращение",
-    CONVERSATION: "диалог",
+    AI_ANALYSIS: 'анализ',
+    END_USER_CASE: 'обращение',
+    CONVERSATION: 'диалог',
   };
-  return labels[kind] ?? "результат";
+  return labels[kind] ?? 'результат';
 }
 
-function countLabel(
-  count: number,
-  one: string,
-  few: string,
-  many: string,
-): string {
+function countLabel(count: number, one: string, few: string, many: string): string {
   const modulo100 = count % 100;
   const modulo10 = count % 10;
   const form =
@@ -145,28 +136,26 @@ const resultSummary = computed(() => {
 });
 
 const hasStoredPayload = computed(() =>
-  (props.detail?.timeline ?? []).some(
-    (event) => event.inputHash || event.outputHash,
-  ),
+  (props.detail?.timeline ?? []).some((event) => event.inputHash || event.outputHash),
 );
 
 function roleLabel(role: string): string {
   const labels: Record<string, string> = {
-    SCOPE_MEMBER: "в области",
-    DATA_CONTRIBUTOR: "данные участвовали",
-    DIRECT_SUBJECT: "прямой объект",
+    SCOPE_MEMBER: 'в области',
+    DATA_CONTRIBUTOR: 'данные участвовали',
+    DIRECT_SUBJECT: 'прямой объект',
   };
   return labels[role] ?? role;
 }
 
 function accessKindLabel(kind: string): string {
   const labels: Record<string, string> = {
-    METADATA: "Метаданные операции",
-    RESULT: "Результат операции",
-    COST: "Стоимость и нагрузка на базу данных",
-    SENSITIVE_DETAIL: "Детали операции",
-    SUBJECT_MANIFEST: "Список участников",
-    ACCESS_HISTORY: "История доступа",
+    METADATA: 'Метаданные операции',
+    RESULT: 'Результат операции',
+    COST: 'Стоимость и нагрузка на базу данных',
+    SENSITIVE_DETAIL: 'Детали операции',
+    SUBJECT_MANIFEST: 'Список участников',
+    ACCESS_HISTORY: 'История доступа',
   };
   return labels[kind] ?? kind;
 }
@@ -176,9 +165,9 @@ function attemptCostLabel(
   billedCost?: string | null,
   estimatedCost?: string | null,
 ): string {
-  if (!canReadCost) return "стоимость скрыта";
+  if (!canReadCost) return 'стоимость скрыта';
   const value = billedCost ?? estimatedCost;
-  return value == null ? "стоимость неизвестна" : aiOperationCostLabel(value);
+  return value == null ? 'стоимость неизвестна' : aiOperationCostLabel(value);
 }
 
 function resultRoute(
@@ -188,27 +177,27 @@ function resultRoute(
   canReadCaseResult: boolean,
   canReadConversationResult: boolean,
 ) {
-  if (canReadAnalysisResult && detail.resultReference?.kind === "AI_ANALYSIS") {
+  if (canReadAnalysisResult && detail.resultReference?.kind === 'AI_ANALYSIS') {
     return {
-      name: "ai-analysis-detail",
+      name: 'ai-analysis-detail',
       params: { analysisId: detail.resultReference.id },
       query: { projectId },
     };
   }
-  if (canReadCaseResult && detail.resultReference?.kind === "END_USER_CASE") {
+  if (canReadCaseResult && detail.resultReference?.kind === 'END_USER_CASE') {
     return {
-      name: "end-user-case-detail",
+      name: 'end-user-case-detail',
       params: { caseId: detail.resultReference.id },
       query: { projectId },
     };
   }
   if (
     canReadConversationResult &&
-    detail.resultReference?.kind === "CONVERSATION" &&
+    detail.resultReference?.kind === 'CONVERSATION' &&
     detail.resultReference.endUserId
   ) {
     return {
-      name: "users",
+      name: 'users',
       params: { endUserId: detail.resultReference.endUserId },
       query: { conversationId: detail.resultReference.id, projectId },
     };
@@ -250,19 +239,13 @@ function resultRoute(
             :severity="aiOperationStatusPresentation(detail.status).severity"
           />
         </div>
-        <span class="category">{{
-          aiOperationCategoryLabel(detail.category)
-        }}</span>
+        <span class="category">{{ aiOperationCategoryLabel(detail.category) }}</span>
         <h2>{{ aiOperationTitleLabel(detail.title, detail.category) }}</h2>
       </header>
 
-      <Message
-        v-if="detail.restrictedSections.length"
-        severity="warn"
-        :closable="false"
-      >
+      <Message v-if="detail.restrictedSections.length" severity="warn" :closable="false">
         Часть данных недоступна:
-        {{ detail.restrictedSections.join(", ") }}
+        {{ detail.restrictedSections.join(', ') }}
       </Message>
 
       <section class="request-result" aria-label="Запрос и результат операции">
@@ -272,25 +255,21 @@ function resultRoute(
             {{
               detail.purpose
                 ? aiOperationDescriptionLabel(detail.purpose)
-                : "Описание запроса не передано в журнал."
+                : 'Описание запроса не передано в журнал.'
             }}
           </p>
         </article>
         <article :class="{ failed: detail.status === 'FAILED' }">
           <div class="result-heading">
             <span class="request-result-label">Что получили</span>
-            <strong>{{
-              aiOperationOutcomeLabel(detail.outcomeCode, detail.status)
-            }}</strong>
+            <strong>{{ aiOperationOutcomeLabel(detail.outcomeCode, detail.status) }}</strong>
           </div>
           <p>
             {{
-              (resultSummary
-                ? aiOperationDescriptionLabel(resultSummary)
-                : null) ||
+              (resultSummary ? aiOperationDescriptionLabel(resultSummary) : null) ||
               (detail.resultReference
-                ? "Результат сохранён и доступен в соответствующем разделе."
-                : "Краткое содержание результата не передано в журнал.")
+                ? 'Результат сохранён и доступен в соответствующем разделе.'
+                : 'Краткое содержание результата не передано в журнал.')
             }}
           </p>
           <RouterLink
@@ -319,8 +298,8 @@ function resultRoute(
           </RouterLink>
         </article>
         <small v-if="hasStoredPayload" class="payload-note">
-          Полный текст запроса и ответа в журнале не хранится; доступны
-          безопасные сводки и контрольные отпечатки.
+          Полный текст запроса и ответа в журнале не хранится; доступны безопасные сводки и
+          контрольные отпечатки.
         </small>
       </section>
 
@@ -343,7 +322,7 @@ function resultRoute(
               {{
                 detail.responsibleCmsUserDisplayName ||
                 detail.responsibleCmsUserId ||
-                "не применяется"
+                'не применяется'
               }}
             </dd>
           </div>
@@ -353,7 +332,7 @@ function resultRoute(
               {{
                 detail.authorizedByCmsUserDisplayName ||
                 detail.authorizedByCmsUserId ||
-                "не применяется"
+                'не применяется'
               }}
             </dd>
           </div>
@@ -361,16 +340,14 @@ function resultRoute(
         <div class="cost-line">
           <template v-if="canReadCost && detail.cost">
             <span>Итоговая стоимость</span>
-            <strong>{{
-              aiOperationCostLabel(detail.cost.effectiveCost)
-            }}</strong>
+            <strong>{{ aiOperationCostLabel(detail.cost.effectiveCost) }}</strong>
             <small>
               {{
                 countLabel(
                   detail.usageRecords,
-                  "обращение к модели",
-                  "обращения к моделям",
-                  "обращений к моделям",
+                  'обращение к модели',
+                  'обращения к моделям',
+                  'обращений к моделям',
                 )
               }}
               <template v-if="detail.dbWorkUnits != null">
@@ -395,18 +372,9 @@ function resultRoute(
           <i class="pi pi-chevron-down" />
         </summary>
         <div class="technical-grid">
-          <TechnicalIdentifier
-            label="Operation ID"
-            :value="detail.operationId"
-          />
-          <TechnicalIdentifier
-            label="Root correlation"
-            :value="detail.rootCorrelationId"
-          />
-          <TechnicalIdentifier
-            label="Тип источника"
-            :value="detail.sourceKind"
-          />
+          <TechnicalIdentifier label="Operation ID" :value="detail.operationId" />
+          <TechnicalIdentifier label="Root correlation" :value="detail.rootCorrelationId" />
+          <TechnicalIdentifier label="Тип источника" :value="detail.sourceKind" />
           <TechnicalIdentifier label="Источник" :value="detail.sourceId" />
           <TechnicalIdentifier
             v-if="detail.initiator.id"
@@ -420,10 +388,7 @@ function resultRoute(
                     query: { projectId },
                   }
                 : detail.initiator.type === 'CMS_USER'
-                  ? cmsUserDetailRoute(
-                      detail.initiator.id,
-                      Boolean(canReadCmsUsers),
-                    )
+                  ? cmsUserDetailRoute(detail.initiator.id, Boolean(canReadCmsUsers))
                   : undefined
             "
           />
@@ -441,23 +406,13 @@ function resultRoute(
             v-if="detail.responsibleCmsUserId"
             label="Ответственный администратор"
             :value="detail.responsibleCmsUserId"
-            :to="
-              cmsUserDetailRoute(
-                detail.responsibleCmsUserId,
-                Boolean(canReadCmsUsers),
-              )
-            "
+            :to="cmsUserDetailRoute(detail.responsibleCmsUserId, Boolean(canReadCmsUsers))"
           />
           <TechnicalIdentifier
             v-if="detail.authorizedByCmsUserId"
             label="Разрешил фоновый запуск"
             :value="detail.authorizedByCmsUserId"
-            :to="
-              cmsUserDetailRoute(
-                detail.authorizedByCmsUserId,
-                Boolean(canReadCmsUsers),
-              )
-            "
+            :to="cmsUserDetailRoute(detail.authorizedByCmsUserId, Boolean(canReadCmsUsers))"
           />
           <TechnicalIdentifier
             v-if="detail.resultReference"
@@ -479,20 +434,14 @@ function resultRoute(
       <section class="section">
         <div class="section-heading">
           <h3>Хронология</h3>
-          <span>{{
-            countLabel(detail.timeline.length, "событие", "события", "событий")
-          }}</span>
+          <span>{{ countLabel(detail.timeline.length, 'событие', 'события', 'событий') }}</span>
         </div>
         <ol class="timeline">
           <li v-for="event in detail.timeline" :key="event.sequence">
-            <span class="timeline-icon"
-              ><i :class="timelineIcon(event.kind)"
-            /></span>
+            <span class="timeline-icon"><i :class="timelineIcon(event.kind)" /></span>
             <div class="timeline-body">
               <div class="timeline-title">
-                <strong>{{
-                  timelineLabel(event.kind, event.eventType, event.name)
-                }}</strong>
+                <strong>{{ timelineLabel(event.kind, event.eventType, event.name) }}</strong>
                 <time>{{ aiOperationDateLabel(event.occurredAt) }}</time>
               </div>
               <p v-if="event.summary">
@@ -500,12 +449,8 @@ function resultRoute(
               </p>
               <div class="timeline-meta">
                 <span>{{ aiOperationActorLabel(event.actor) }}</span>
-                <span v-if="event.status">{{
-                  eventStatusLabel(event.status)
-                }}</span>
-                <span v-if="event.errorCode">{{
-                  aiOperationOutcomeLabel(event.errorCode)
-                }}</span>
+                <span v-if="event.status">{{ eventStatusLabel(event.status) }}</span>
+                <span v-if="event.errorCode">{{ aiOperationOutcomeLabel(event.errorCode) }}</span>
               </div>
               <dl v-if="event.dataAccess" class="data-access">
                 <div>
@@ -521,15 +466,15 @@ function resultRoute(
                 </div>
                 <div v-if="canReadCost">
                   <dt>Нагрузка на БД</dt>
-                  <dd>{{ event.dataAccess.workUnits ?? "неизвестно" }}</dd>
+                  <dd>{{ event.dataAccess.workUnits ?? 'неизвестно' }}</dd>
                 </div>
                 <div>
                   <dt>Полнота</dt>
                   <dd>
                     {{
                       event.dataAccess.complete && !event.dataAccess.truncated
-                        ? "полные данные"
-                        : "есть ограничения"
+                        ? 'полные данные'
+                        : 'есть ограничения'
                     }}
                   </dd>
                 </div>
@@ -537,10 +482,8 @@ function resultRoute(
               <div v-if="event.toolCall" class="safe-box">
                 {{
                   event.toolCall.normalizedSummary
-                    ? aiOperationDescriptionLabel(
-                        event.toolCall.normalizedSummary,
-                      )
-                    : "Действие выполнено"
+                    ? aiOperationDescriptionLabel(event.toolCall.normalizedSummary)
+                    : 'Действие выполнено'
                 }}
               </div>
               <div v-if="event.modelAttempt" class="safe-box">
@@ -564,31 +507,19 @@ function resultRoute(
       <section class="section">
         <div class="section-heading">
           <h3>Обращения к моделям</h3>
-          <span>{{
-            countLabel(detail.usageRecords, "запись", "записи", "записей")
-          }}</span>
+          <span>{{ countLabel(detail.usageRecords, 'запись', 'записи', 'записей') }}</span>
         </div>
         <div v-if="detail.usage.attempts.length" class="usage-list">
           <article v-for="attempt in detail.usage.attempts" :key="attempt.id">
-            <strong
-              >{{ attempt.provider }} / {{ attempt.model || "model" }}</strong
-            >
+            <strong>{{ attempt.provider }} / {{ attempt.model || 'model' }}</strong>
             <span>{{ attempt.operation }} · {{ attempt.costStatus }}</span>
             <small>
               {{ attempt.totalTokens }} токенов ·
-              {{
-                attemptCostLabel(
-                  canReadCost,
-                  attempt.billedCost,
-                  attempt.estimatedCost,
-                )
-              }}
+              {{ attemptCostLabel(canReadCost, attempt.billedCost, attempt.estimatedCost) }}
             </small>
           </article>
         </div>
-        <p v-else class="empty-inline">
-          Подробные записи об обращениях не переданы в журнал.
-        </p>
+        <p v-else class="empty-inline">Подробные записи об обращениях не переданы в журнал.</p>
         <Button
           v-if="detail.usage.pageInfo.hasMore"
           label="Ещё AI-вызовы"
@@ -628,24 +559,17 @@ function resultRoute(
             Точный список участников для этой операции не был сохранён.
           </Message>
           <div v-else class="subject-list">
-            <article
-              v-for="subject in subjects.items"
-              :key="subject.subjectRowId"
-            >
+            <article v-for="subject in subjects.items" :key="subject.subjectRowId">
               <div>
                 <strong>{{
                   subject.redactedAt
-                    ? "Удалённый пользователь"
+                    ? 'Удалённый пользователь'
                     : subject.endUserId || subject.subjectReference
                 }}</strong>
-                <span>{{ subject.roles.map(roleLabel).join(" · ") }}</span>
+                <span>{{ subject.roles.map(roleLabel).join(' · ') }}</span>
               </div>
               <Tag
-                :value="
-                  subject.charged
-                    ? 'Списано с пользователя'
-                    : 'Не списано с пользователя'
-                "
+                :value="subject.charged ? 'Списано с пользователя' : 'Не списано с пользователя'"
                 :severity="subject.charged ? 'warn' : 'secondary'"
               />
             </article>
@@ -681,14 +605,8 @@ function resultRoute(
           Для просмотра истории доступа нужен отдельный доступ.
         </Message>
         <div v-else-if="accessHistory" class="access-list">
-          <article
-            v-for="access in accessHistory.items"
-            :key="access.accessEventId"
-          >
-            <span
-              class="access-outcome"
-              :class="{ denied: access.outcome === 'DENIED' }"
-            />
+          <article v-for="access in accessHistory.items" :key="access.accessEventId">
+            <span class="access-outcome" :class="{ denied: access.outcome === 'DENIED' }" />
             <div>
               <strong>{{
                 access.actor.displayName ||
@@ -696,9 +614,7 @@ function resultRoute(
                 access.actor.externalId ||
                 access.actor.type
               }}</strong>
-              <code v-if="access.actor.cmsUserId">{{
-                access.actor.cmsUserId
-              }}</code>
+              <code v-if="access.actor.cmsUserId">{{ access.actor.cmsUserId }}</code>
               <span>
                 {{ accessKindLabel(access.accessKind) }} ·
                 {{ access.outcome }}
@@ -938,7 +854,7 @@ code {
   bottom: -100%;
   width: 1px;
   min-height: 22px;
-  content: "";
+  content: '';
   background: var(--line);
 }
 .timeline-body {

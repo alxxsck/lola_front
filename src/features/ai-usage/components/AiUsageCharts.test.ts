@@ -1,12 +1,8 @@
-import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
-import type {
-  AiModelUsage,
-  AiProviderUsage,
-  AiUsageBreakdown,
-} from '../ai-usage.model'
-import AiModalityChart from './AiModalityChart.vue'
-import AiModelUsageChart from './AiModelUsageChart.vue'
+import { mount } from '@vue/test-utils';
+import { describe, expect, it } from 'vitest';
+import type { AiModelUsage, AiProviderUsage, AiUsageBreakdown } from '../ai-usage.model';
+import AiModalityChart from './AiModalityChart.vue';
+import AiModelUsageChart from './AiModelUsageChart.vue';
 
 const xAiRow: AiModelUsage = {
   key: 'xai\u0000grok-4.5\u0000usd',
@@ -23,7 +19,7 @@ const xAiRow: AiModelUsage = {
   durationSeconds: 0,
   estimatedCost: '0.005',
   billedCost: '0.025',
-}
+};
 
 const voiceRow: AiModelUsage = {
   ...xAiRow,
@@ -37,7 +33,7 @@ const voiceRow: AiModelUsage = {
   durationSeconds: 170.35,
   estimatedCost: '0.197958333333',
   billedCost: '0',
-}
+};
 
 const emptyXAiUsage: AiProviderUsage = {
   records: 0,
@@ -64,7 +60,7 @@ const emptyXAiUsage: AiProviderUsage = {
   providerReportedCost: '0',
   estimatedFallbackCost: '0',
   effectiveCost: '0',
-}
+};
 
 const xAiBreakdown: AiUsageBreakdown = {
   provider: 'xai',
@@ -95,32 +91,32 @@ const xAiBreakdown: AiUsageBreakdown = {
   providerReportedCost: '0.025',
   estimatedFallbackCost: '0.005',
   effectiveCost: '0.03',
-}
+};
 
 describe('AI usage charts', () => {
   it('renders the Grok model chart using the metric controlled by its parent', async () => {
     const wrapper = mount(AiModelUsageChart, {
       props: { rows: [xAiRow], metric: 'tokens' },
-    })
+    });
 
-    expect(wrapper.text()).toContain('1,3 тыс. токенов')
+    expect(wrapper.text()).toContain('1,3 тыс. токенов');
 
-    await wrapper.setProps({ metric: 'cost' })
-    expect(wrapper.text()).toContain('0,03 $')
-  })
+    await wrapper.setProps({ metric: 'cost' });
+    expect(wrapper.text()).toContain('0,03 $');
+  });
 
   it('keeps a Voice model visible when xAI reports duration and cost without tokens', async () => {
     const wrapper = mount(AiModelUsageChart, {
       props: { rows: [xAiRow, voiceRow], metric: 'tokens' },
-    })
+    });
 
-    expect(wrapper.text()).toContain('grok-voice-latest')
-    expect(wrapper.text()).toContain('170,4 сек. аудио · токены не переданы')
-    expect(wrapper.text()).not.toContain('Ещё 1 модель')
+    expect(wrapper.text()).toContain('grok-voice-latest');
+    expect(wrapper.text()).toContain('170,4 сек. аудио · токены не переданы');
+    expect(wrapper.text()).not.toContain('Ещё 1 модель');
 
-    await wrapper.setProps({ metric: 'cost' })
-    expect(wrapper.text()).toContain('0,20 $')
-  })
+    await wrapper.setProps({ metric: 'cost' });
+    expect(wrapper.text()).toContain('0,20 $');
+  });
 
   it('keeps the Grok modality empty state provider-specific', () => {
     const wrapper = mount(AiModalityChart, {
@@ -129,12 +125,12 @@ describe('AI usage charts', () => {
         breakdown: [],
         metric: 'tokens',
       },
-    })
+    });
 
-    expect(wrapper.text()).toContain('Форматы токенов Grok')
-    expect(wrapper.text()).toContain('Детализация по форматам пока отсутствует')
-    expect(wrapper.text()).not.toContain('ElevenLabs')
-  })
+    expect(wrapper.text()).toContain('Форматы токенов Grok');
+    expect(wrapper.text()).toContain('Детализация по форматам пока отсутствует');
+    expect(wrapper.text()).not.toContain('ElevenLabs');
+  });
 
   it('switches the Grok donut from token formats to total cost by operation', async () => {
     const wrapper = mount(AiModalityChart, {
@@ -156,20 +152,20 @@ describe('AI usage charts', () => {
         metric: 'tokens',
         currency: 'USD',
       },
-    })
+    });
 
-    expect(wrapper.text()).toContain('Форматы токенов Grok')
-    expect(wrapper.text()).toContain('1,3 тыс. токенов')
-    expect(wrapper.find('.chart-summary').text()).toContain('1,3 тыс.')
-    expect(wrapper.find('.donut-total').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Форматы токенов Grok');
+    expect(wrapper.text()).toContain('1,3 тыс. токенов');
+    expect(wrapper.find('.chart-summary').text()).toContain('1,3 тыс.');
+    expect(wrapper.find('.donut-total').exists()).toBe(false);
 
-    await wrapper.setProps({ metric: 'cost' })
-    expect(wrapper.text()).toContain('Структура стоимости Grok')
-    expect(wrapper.text()).toContain('Web search')
-    expect(wrapper.text()).toContain('0,03 $')
-    expect(wrapper.find('.chart-summary').text()).toContain('3 операции')
-    expect(wrapper.text()).toContain('Фактическая и расчётная стоимость')
-  })
+    await wrapper.setProps({ metric: 'cost' });
+    expect(wrapper.text()).toContain('Структура стоимости Grok');
+    expect(wrapper.text()).toContain('Web search');
+    expect(wrapper.text()).toContain('0,03 $');
+    expect(wrapper.find('.chart-summary').text()).toContain('3 операции');
+    expect(wrapper.text()).toContain('Фактическая и расчётная стоимость');
+  });
 
   it('shows Voice duration when xAI does not return audio tokens', () => {
     const wrapper = mount(AiModalityChart, {
@@ -188,11 +184,11 @@ describe('AI usage charts', () => {
         breakdown: [],
         metric: 'tokens',
       },
-    })
+    });
 
-    expect(wrapper.text()).toContain('Голос')
-    expect(wrapper.text()).toContain('170,4 сек. аудио · токены не переданы')
-  })
+    expect(wrapper.text()).toContain('Голос');
+    expect(wrapper.text()).toContain('170,4 сек. аудио · токены не переданы');
+  });
 
   it('labels Voice text operations in the cost breakdown', () => {
     const wrapper = mount(AiModalityChart, {
@@ -222,11 +218,11 @@ describe('AI usage charts', () => {
         metric: 'cost',
         currency: 'USD',
       },
-    })
+    });
 
-    expect(wrapper.text()).toContain('Текстовые команды Voice')
-    expect(wrapper.text()).toContain('0,06 $')
-  })
+    expect(wrapper.text()).toContain('Текстовые команды Voice');
+    expect(wrapper.text()).toContain('0,06 $');
+  });
 
   it('labels speech operations as text-to-speech in a cost breakdown', () => {
     const wrapper = mount(AiModalityChart, {
@@ -246,10 +242,10 @@ describe('AI usage charts', () => {
         metric: 'cost',
         currency: 'USD',
       },
-    })
+    });
 
-    expect(wrapper.text()).toContain('Озвучивание текста')
-  })
+    expect(wrapper.text()).toContain('Озвучивание текста');
+  });
 
   it('assigns a distinct theme series token to every visible cost operation', () => {
     const breakdown = Array.from({ length: 6 }, (_, index) => ({
@@ -257,7 +253,7 @@ describe('AI usage charts', () => {
       operation: `operation_${index + 1}`,
       billedCost: String(index + 1),
       estimatedCost: '0',
-    }))
+    }));
     const wrapper = mount(AiModalityChart, {
       props: {
         totals: { ...emptyXAiUsage, records: 6, billedCost: '21' },
@@ -265,11 +261,9 @@ describe('AI usage charts', () => {
         metric: 'cost',
         currency: 'USD',
       },
-    })
+    });
 
-    const colors = wrapper
-      .findAll('.donut-segment')
-      .map((segment) => segment.attributes('stroke'))
-    expect(new Set(colors).size).toBe(6)
-  })
-})
+    const colors = wrapper.findAll('.donut-segment').map((segment) => segment.attributes('stroke'));
+    expect(new Set(colors).size).toBe(6);
+  });
+});

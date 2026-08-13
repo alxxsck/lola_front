@@ -1,85 +1,80 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import "@/app/styles/project-integrations.css";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import IntegrationCanonicalIdentityPolicyCard from "@/features/integration-canonical-identity/IntegrationCanonicalIdentityPolicyCard.vue";
-import IntegrationRecoveryOperationsCard from "@/features/integration-recovery/IntegrationRecoveryOperationsCard.vue";
-import IntegrationProviderWorkspace from "@/features/integrations/IntegrationProviderWorkspace.vue";
-import { notificationDestinationsApi } from "@/features/notification-destinations/notification-destinations.api";
-import OperationalTelegramCard from "@/features/notification-destinations/OperationalTelegramCard.vue";
-import ProductTelegramCard from "@/features/telegram-product-installations/ProductTelegramCard.vue";
-import type { NotificationDestinationResponseDto } from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
-import { canonicalIdentityPolicyEnabled } from "@/shared/config/features";
-import { formatAuditActor } from "@/shared/lib/format";
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import '@/app/styles/project-integrations.css';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import IntegrationCanonicalIdentityPolicyCard from '@/features/integration-canonical-identity/IntegrationCanonicalIdentityPolicyCard.vue';
+import IntegrationRecoveryOperationsCard from '@/features/integration-recovery/IntegrationRecoveryOperationsCard.vue';
+import IntegrationProviderWorkspace from '@/features/integrations/IntegrationProviderWorkspace.vue';
+import { notificationDestinationsApi } from '@/features/notification-destinations/notification-destinations.api';
+import OperationalTelegramCard from '@/features/notification-destinations/OperationalTelegramCard.vue';
+import ProductTelegramCard from '@/features/telegram-product-installations/ProductTelegramCard.vue';
+import type { NotificationDestinationResponseDto } from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
+import { canonicalIdentityPolicyEnabled } from '@/shared/config/features';
+import { formatAuditActor } from '@/shared/lib/format';
 
 const auth = useAuthStore();
 const router = useRouter();
 const route = useRoute();
-const projectId = computed(() => auth.project?.id ?? "");
-const permissions = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
+const projectId = computed(() => auth.project?.id ?? '');
+const permissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
 const canRead = computed(() =>
-  hasProjectPermission(permissions.value, "project.notifications.read"),
+  hasProjectPermission(permissions.value, 'project.notifications.read'),
 );
 const canManage = computed(() =>
-  hasProjectPermission(permissions.value, "project.notifications.manage"),
+  hasProjectPermission(permissions.value, 'project.notifications.manage'),
 );
 const canReadIntegrations = computed(() =>
-  hasProjectPermission(permissions.value, "project.integrations.read"),
+  hasProjectPermission(permissions.value, 'project.integrations.read'),
 );
 const canManageIntegrations = computed(() =>
-  hasProjectPermission(permissions.value, "project.integrations.manage"),
+  hasProjectPermission(permissions.value, 'project.integrations.manage'),
 );
 const canReadIntegrationActivity = computed(() =>
-  hasProjectPermission(permissions.value, "project.integration_activity.read"),
+  hasProjectPermission(permissions.value, 'project.integration_activity.read'),
 );
 const hasOperationsSection = computed(
   () =>
     (canonicalIdentityPolicyEnabled && canReadIntegrations.value) ||
     canReadIntegrationActivity.value,
 );
-type IntegrationSection =
-  "team" | "users" | "CUSTOMER_IO" | "AMPLITUDE" | "operations";
+type IntegrationSection = 'team' | 'users' | 'CUSTOMER_IO' | 'AMPLITUDE' | 'operations';
 
-const activeSection = ref<IntegrationSection>("team");
+const activeSection = ref<IntegrationSection>('team');
 const focusRouteId = computed(() =>
-  typeof route.query.routeId === "string" ? route.query.routeId : undefined,
+  typeof route.query.routeId === 'string' ? route.query.routeId : undefined,
 );
 const integrationSections = computed<
   Array<{ id: IntegrationSection; label: string; icon: string }>
 >(() => [
-  ...(canRead.value
-    ? [{ id: "team" as const, label: "Для команды", icon: "pi-users" }]
-    : []),
+  ...(canRead.value ? [{ id: 'team' as const, label: 'Для команды', icon: 'pi-users' }] : []),
   ...(canReadIntegrations.value
     ? [
         {
-          id: "users" as const,
-          label: "Для пользователей",
-          icon: "pi-comments",
+          id: 'users' as const,
+          label: 'Для пользователей',
+          icon: 'pi-comments',
         },
         {
-          id: "CUSTOMER_IO" as const,
-          label: "Customer.io",
-          icon: "pi-megaphone",
+          id: 'CUSTOMER_IO' as const,
+          label: 'Customer.io',
+          icon: 'pi-megaphone',
         },
         {
-          id: "AMPLITUDE" as const,
-          label: "Amplitude",
-          icon: "pi-chart-line",
+          id: 'AMPLITUDE' as const,
+          label: 'Amplitude',
+          icon: 'pi-chart-line',
         },
       ]
     : []),
   ...(hasOperationsSection.value
     ? [
         {
-          id: "operations" as const,
-          label: "Общие правила",
-          icon: "pi-wrench",
+          id: 'operations' as const,
+          label: 'Общие правила',
+          icon: 'pi-wrench',
         },
       ]
     : []),
@@ -87,18 +82,16 @@ const integrationSections = computed<
 
 function handleSectionKeydown(event: KeyboardEvent): void {
   const sections = integrationSections.value;
-  const currentIndex = sections.findIndex(
-    ({ id }) => id === activeSection.value,
-  );
+  const currentIndex = sections.findIndex(({ id }) => id === activeSection.value);
   if (currentIndex < 0) return;
   let nextIndex = currentIndex;
-  if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+  if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
     nextIndex = (currentIndex + 1) % sections.length;
-  } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+  } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
     nextIndex = (currentIndex - 1 + sections.length) % sections.length;
-  } else if (event.key === "Home") {
+  } else if (event.key === 'Home') {
     nextIndex = 0;
-  } else if (event.key === "End") {
+  } else if (event.key === 'End') {
     nextIndex = sections.length - 1;
   } else {
     return;
@@ -107,48 +100,45 @@ function handleSectionKeydown(event: KeyboardEvent): void {
   const nextSection = sections[nextIndex];
   if (!nextSection) return;
   activeSection.value = nextSection.id;
-  void nextTick(() =>
-    document.getElementById(`integration-tab-${nextSection.id}`)?.focus(),
-  );
+  void nextTick(() => document.getElementById(`integration-tab-${nextSection.id}`)?.focus());
 }
 const destination = ref<NotificationDestinationResponseDto | null>(null);
 const loading = ref(true);
 const pending = ref(false);
-const loadError = ref("");
-const actionError = ref("");
-const actionSuccess = ref("");
-const displayName = ref("Эскалации обращений");
-const webhookUrl = ref("");
-const createRetryKey = ref("");
+const loadError = ref('');
+const actionError = ref('');
+const actionSuccess = ref('');
+const displayName = ref('Эскалации обращений');
+const webhookUrl = ref('');
+const createRetryKey = ref('');
 const testRetry = ref<{ signature: string; key: string } | null>(null);
 const productTelegramStepUpPending = ref(false);
 let operationEpoch = 0;
 
 const statusLabel = computed(() => {
   switch (destination.value?.status) {
-    case "ACTIVE":
-      return "Подключено";
-    case "DISABLED":
-      return "Отключено";
-    case "INVALID":
-      return "Требуется переподключение";
-    case "PENDING_TEST":
-      return "Требуется проверка";
+    case 'ACTIVE':
+      return 'Подключено';
+    case 'DISABLED':
+      return 'Отключено';
+    case 'INVALID':
+      return 'Требуется переподключение';
+    case 'PENDING_TEST':
+      return 'Требуется проверка';
     default:
-      return "Не подключено";
+      return 'Не подключено';
   }
 });
 const readyToActivate = computed(
   () =>
     destination.value &&
-    destination.value.testedSecretRevision ===
-      destination.value.secretRevision &&
-    destination.value.status !== "ACTIVE",
+    destination.value.testedSecretRevision === destination.value.secretRevision &&
+    destination.value.status !== 'ACTIVE',
 );
 
 function clearFeedback(): void {
-  actionError.value = "";
-  actionSuccess.value = "";
+  actionError.value = '';
+  actionSuccess.value = '';
 }
 
 async function requireFreshProductTelegramLogin(): Promise<void> {
@@ -158,10 +148,10 @@ async function requireFreshProductTelegramLogin(): Promise<void> {
     await auth.logout();
     operationEpoch += 1;
     destination.value = null;
-    webhookUrl.value = "";
+    webhookUrl.value = '';
     await router.replace({
-      name: "login",
-      query: { redirect: "/settings/integrations" },
+      name: 'login',
+      query: { redirect: '/settings/integrations' },
     });
   } finally {
     productTelegramStepUpPending.value = false;
@@ -169,16 +159,11 @@ async function requireFreshProductTelegramLogin(): Promise<void> {
 }
 
 function beginOperation(): { projectId: string; epoch: number } | null {
-  return projectId.value
-    ? { projectId: projectId.value, epoch: operationEpoch }
-    : null;
+  return projectId.value ? { projectId: projectId.value, epoch: operationEpoch } : null;
 }
 
 function isCurrent(operation: { projectId: string; epoch: number }): boolean {
-  return (
-    operation.epoch === operationEpoch &&
-    operation.projectId === projectId.value
-  );
+  return operation.epoch === operationEpoch && operation.projectId === projectId.value;
 }
 
 function testIdempotencyKey(destinationId: string, version: number): string {
@@ -190,17 +175,11 @@ function testIdempotencyKey(destinationId: string, version: number): string {
 }
 
 function terminalTestStatus(status: string): boolean {
-  return (
-    status === "SUCCEEDED" ||
-    status === "FAILED" ||
-    status === "OUTCOME_UNKNOWN"
-  );
+  return status === 'SUCCEEDED' || status === 'FAILED' || status === 'OUTCOME_UNKNOWN';
 }
 
 function pendingTestStatus(status: string): boolean {
-  return (
-    status === "PENDING" || status === "PROCESSING" || status === "RETRY_WAIT"
-  );
+  return status === 'PENDING' || status === 'PROCESSING' || status === 'RETRY_WAIT';
 }
 
 async function awaitDurableTest(
@@ -215,11 +194,7 @@ async function awaitDurableTest(
     version,
     key,
   );
-  for (
-    let attempt = 0;
-    attempt < 20 && !terminalTestStatus(result.status);
-    attempt += 1
-  ) {
+  for (let attempt = 0; attempt < 20 && !terminalTestStatus(result.status); attempt += 1) {
     if (!isCurrent(operation)) return result;
     await new Promise((resolve) => window.setTimeout(resolve, 500));
     if (!isCurrent(operation)) return result;
@@ -241,17 +216,16 @@ async function load(): Promise<void> {
     return;
   }
   loading.value = true;
-  loadError.value = "";
+  loadError.value = '';
   try {
     const response = await notificationDestinationsApi.list(selectedProjectId);
     if (projectId.value !== selectedProjectId) return;
-    destination.value =
-      response.items.find(({ channel }) => channel === "SLACK_WEBHOOK") ?? null;
-    displayName.value = destination.value?.displayName ?? "Эскалации обращений";
+    destination.value = response.items.find(({ channel }) => channel === 'SLACK_WEBHOOK') ?? null;
+    displayName.value = destination.value?.displayName ?? 'Эскалации обращений';
   } catch {
     if (projectId.value === selectedProjectId) {
       destination.value = null;
-      loadError.value = "Не удалось загрузить интеграции проекта.";
+      loadError.value = 'Не удалось загрузить интеграции проекта.';
     }
   } finally {
     if (projectId.value === selectedProjectId) loading.value = false;
@@ -264,12 +238,12 @@ async function createAndTest(): Promise<void> {
   const secret = webhookUrl.value.trim();
   const name = displayName.value.trim();
   if (!secret || !name) {
-    actionError.value = "Укажите название и Slack Incoming Webhook URL.";
+    actionError.value = 'Укажите название и Slack Incoming Webhook URL.';
     return;
   }
   clearFeedback();
   pending.value = true;
-  webhookUrl.value = "";
+  webhookUrl.value = '';
   try {
     const createKey = createRetryKey.value || crypto.randomUUID();
     createRetryKey.value = createKey;
@@ -278,7 +252,7 @@ async function createAndTest(): Promise<void> {
       { displayName: name, webhookUrl: secret },
       createKey,
     );
-    createRetryKey.value = "";
+    createRetryKey.value = '';
     if (!isCurrent(operation)) return;
     const result = await awaitDurableTest(
       operation,
@@ -288,9 +262,8 @@ async function createAndTest(): Promise<void> {
     );
     if (!isCurrent(operation)) return;
     if (terminalTestStatus(result.status)) testRetry.value = null;
-    if (result.status === "SUCCEEDED") {
-      actionSuccess.value =
-        "Проверка Slack прошла успешно. Теперь интеграцию можно активировать.";
+    if (result.status === 'SUCCEEDED') {
+      actionSuccess.value = 'Проверка Slack прошла успешно. Теперь интеграцию можно активировать.';
     } else if (pendingTestStatus(result.status)) {
       actionSuccess.value = testFailureCopy(result.status);
     } else {
@@ -300,7 +273,7 @@ async function createAndTest(): Promise<void> {
     if (isCurrent(operation)) actionError.value = safeError(cause);
   } finally {
     if (isCurrent(operation)) {
-      webhookUrl.value = "";
+      webhookUrl.value = '';
       await load();
       pending.value = false;
     }
@@ -329,9 +302,8 @@ async function testCurrent(): Promise<void> {
     );
     if (!isCurrent(operation)) return;
     if (terminalTestStatus(result.status)) testRetry.value = null;
-    if (result.status === "SUCCEEDED") {
-      actionSuccess.value =
-        "Проверка Slack прошла успешно. Теперь интеграцию можно активировать.";
+    if (result.status === 'SUCCEEDED') {
+      actionSuccess.value = 'Проверка Slack прошла успешно. Теперь интеграцию можно активировать.';
     } else if (pendingTestStatus(result.status)) {
       actionSuccess.value = testFailureCopy(result.status);
     } else {
@@ -362,14 +334,13 @@ async function activate(): Promise<void> {
   clearFeedback();
   pending.value = true;
   try {
-    const updated = await notificationDestinationsApi.updateSlack(
-      current.projectId,
-      current.id,
-      { expectedVersion: current.version, desiredStatus: "ACTIVE" },
-    );
+    const updated = await notificationDestinationsApi.updateSlack(current.projectId, current.id, {
+      expectedVersion: current.version,
+      desiredStatus: 'ACTIVE',
+    });
     if (isCurrent(operation)) {
       destination.value = updated;
-      actionSuccess.value = "Slack-уведомления включены.";
+      actionSuccess.value = 'Slack-уведомления включены.';
     }
   } catch (cause) {
     if (isCurrent(operation)) actionError.value = safeError(cause);
@@ -385,7 +356,7 @@ async function disable(): Promise<void> {
     !current ||
     !operation ||
     current.projectId !== operation.projectId ||
-    current.status !== "ACTIVE" ||
+    current.status !== 'ACTIVE' ||
     !canManage.value ||
     pending.value ||
     !window.confirm(`Отключить Slack-интеграцию «${current.displayName}»?`)
@@ -395,14 +366,13 @@ async function disable(): Promise<void> {
   clearFeedback();
   pending.value = true;
   try {
-    const updated = await notificationDestinationsApi.updateSlack(
-      current.projectId,
-      current.id,
-      { expectedVersion: current.version, desiredStatus: "DISABLED" },
-    );
+    const updated = await notificationDestinationsApi.updateSlack(current.projectId, current.id, {
+      expectedVersion: current.version,
+      desiredStatus: 'DISABLED',
+    });
     if (isCurrent(operation)) {
       destination.value = updated;
-      actionSuccess.value = "Slack-уведомления отключены.";
+      actionSuccess.value = 'Slack-уведомления отключены.';
     }
   } catch (cause) {
     if (isCurrent(operation)) actionError.value = safeError(cause);
@@ -433,13 +403,12 @@ async function rotateAndTest(): Promise<void> {
   }
   clearFeedback();
   pending.value = true;
-  webhookUrl.value = "";
+  webhookUrl.value = '';
   try {
-    const rotated = await notificationDestinationsApi.updateSlack(
-      current.projectId,
-      current.id,
-      { expectedVersion: current.version, webhookUrl: secret },
-    );
+    const rotated = await notificationDestinationsApi.updateSlack(current.projectId, current.id, {
+      expectedVersion: current.version,
+      webhookUrl: secret,
+    });
     if (!isCurrent(operation)) return;
     const result = await awaitDurableTest(
       operation,
@@ -449,9 +418,8 @@ async function rotateAndTest(): Promise<void> {
     );
     if (!isCurrent(operation)) return;
     if (terminalTestStatus(result.status)) testRetry.value = null;
-    if (result.status === "SUCCEEDED") {
-      actionSuccess.value =
-        "Новый webhook сохранён и проверен. Активируйте интеграцию.";
+    if (result.status === 'SUCCEEDED') {
+      actionSuccess.value = 'Новый webhook сохранён и проверен. Активируйте интеграцию.';
     } else if (pendingTestStatus(result.status)) {
       actionSuccess.value = testFailureCopy(result.status);
     } else {
@@ -461,7 +429,7 @@ async function rotateAndTest(): Promise<void> {
     if (isCurrent(operation)) actionError.value = safeError(cause);
   } finally {
     if (isCurrent(operation)) {
-      webhookUrl.value = "";
+      webhookUrl.value = '';
       await load();
       pending.value = false;
     }
@@ -469,31 +437,27 @@ async function rotateAndTest(): Promise<void> {
 }
 
 function testFailureCopy(status: string): string {
-  if (
-    status === "PENDING" ||
-    status === "PROCESSING" ||
-    status === "RETRY_WAIT"
-  ) {
-    return "Проверка ещё выполняется. Нажмите «Проверить», чтобы обновить статус.";
+  if (status === 'PENDING' || status === 'PROCESSING' || status === 'RETRY_WAIT') {
+    return 'Проверка ещё выполняется. Нажмите «Проверить», чтобы обновить статус.';
   }
-  return status === "OUTCOME_UNKNOWN"
-    ? "Slack не подтвердил результат проверки. Не активируйте интеграцию и повторите проверку позже."
-    : "Slack отклонил проверку. Проверьте webhook и попробуйте снова.";
+  return status === 'OUTCOME_UNKNOWN'
+    ? 'Slack не подтвердил результат проверки. Не активируйте интеграцию и повторите проверку позже.'
+    : 'Slack отклонил проверку. Проверьте webhook и попробуйте снова.';
 }
 
 function safeError(cause: unknown): string {
   const error = normalizeApiError(cause);
-  if (error.code === "NOTIFICATION_DESTINATION_VERSION_CONFLICT") {
+  if (error.code === 'NOTIFICATION_DESTINATION_VERSION_CONFLICT') {
     void load();
-    return "Настройки уже изменились в другой вкладке. Данные обновлены — повторите действие.";
+    return 'Настройки уже изменились в другой вкладке. Данные обновлены — повторите действие.';
   }
-  if (error.code === "SLACK_WEBHOOK_URL_INVALID")
-    return "Slack Incoming Webhook URL имеет неверный формат.";
-  if (error.code === "NOTIFICATION_DESTINATION_TEST_REQUIRED")
-    return "Сначала выполните успешную проверку текущего webhook.";
-  if (error.code === "FORBIDDEN" || error.status === 403)
-    return "Недостаточно прав для изменения интеграции.";
-  return "Не удалось изменить Slack-интеграцию. Повторите попытку.";
+  if (error.code === 'SLACK_WEBHOOK_URL_INVALID')
+    return 'Slack Incoming Webhook URL имеет неверный формат.';
+  if (error.code === 'NOTIFICATION_DESTINATION_TEST_REQUIRED')
+    return 'Сначала выполните успешную проверку текущего webhook.';
+  if (error.code === 'FORBIDDEN' || error.status === 403)
+    return 'Недостаточно прав для изменения интеграции.';
+  return 'Не удалось изменить Slack-интеграцию. Повторите попытку.';
 }
 
 watch([projectId, canRead, canManage], () => {
@@ -501,9 +465,9 @@ watch([projectId, canRead, canManage], () => {
   pending.value = false;
   destination.value = null;
   loading.value = true;
-  createRetryKey.value = "";
+  createRetryKey.value = '';
   testRetry.value = null;
-  webhookUrl.value = "";
+  webhookUrl.value = '';
   clearFeedback();
   if (canRead.value) void load();
   else loading.value = false;
@@ -513,7 +477,7 @@ watch(
   integrationSections,
   (sections) => {
     if (!sections.some(({ id }) => id === activeSection.value)) {
-      activeSection.value = sections[0]?.id ?? "team";
+      activeSection.value = sections[0]?.id ?? 'team';
     }
   },
   { immediate: true },
@@ -524,8 +488,8 @@ watch(
   ([section, allowed]) => {
     if (
       allowed &&
-      typeof section === "string" &&
-      (section === "CUSTOMER_IO" || section === "AMPLITUDE")
+      typeof section === 'string' &&
+      (section === 'CUSTOMER_IO' || section === 'AMPLITUDE')
     ) {
       activeSection.value = section;
     }
@@ -543,9 +507,8 @@ onMounted(load);
         <div class="eyebrow">Проект</div>
         <h1>Интеграции</h1>
         <p class="subtitle">
-          Настройте оповещения, пользовательские каналы и обмен событиями с
-          внешними платформами. Секреты хранятся зашифрованными и не
-          отображаются после сохранения.
+          Настройте оповещения, пользовательские каналы и обмен событиями с внешними платформами.
+          Секреты хранятся зашифрованными и не отображаются после сохранения.
         </p>
       </div>
     </header>
@@ -588,8 +551,7 @@ onMounted(load);
           <span class="integration-section-intro__eyebrow">Оповещения</span>
           <h2>Каналы для команды</h2>
           <p>
-            Сюда Retenive отправляет операционные уведомления и эскалации для
-            сотрудников проекта.
+            Сюда Retenive отправляет операционные уведомления и эскалации для сотрудников проекта.
           </p>
         </div>
       </header>
@@ -601,12 +563,7 @@ onMounted(load);
       <p v-if="actionError" class="feedback error" role="alert">
         {{ actionError }}
       </p>
-      <p
-        v-if="actionSuccess"
-        class="feedback success"
-        role="status"
-        aria-live="polite"
-      >
+      <p v-if="actionSuccess" class="feedback success" role="status" aria-live="polite">
         {{ actionSuccess }}
       </p>
 
@@ -629,9 +586,7 @@ onMounted(load);
           </span>
         </div>
 
-        <div v-if="loading" class="skeleton" aria-live="polite">
-          Загружаем интеграцию…
-        </div>
+        <div v-if="loading" class="skeleton" aria-live="polite">Загружаем интеграцию…</div>
 
         <template v-else-if="destination">
           <dl class="integration-facts">
@@ -650,32 +605,25 @@ onMounted(load);
               <dd>
                 {{
                   destination.lastSuccessfulTestAt
-                    ? new Date(destination.lastSuccessfulTestAt).toLocaleString(
-                        "ru-RU",
-                      )
-                    : "Ещё не выполнялась"
+                    ? new Date(destination.lastSuccessfulTestAt).toLocaleString('ru-RU')
+                    : 'Ещё не выполнялась'
                 }}
               </dd>
             </div>
             <div>
               <dt>Последняя ошибка</dt>
-              <dd>{{ destination.lastFailureCategory ?? "Нет" }}</dd>
+              <dd>{{ destination.lastFailureCategory ?? 'Нет' }}</dd>
             </div>
             <div>
               <dt>Последнее изменение</dt>
               <dd>
-                {{ new Date(destination.updatedAt).toLocaleString("ru-RU") }}
+                {{ new Date(destination.updatedAt).toLocaleString('ru-RU') }}
               </dd>
             </div>
             <div>
               <dt>Изменил</dt>
               <dd>
-                {{
-                  formatAuditActor(
-                    destination.updatedByActorType,
-                    destination.updatedByActorId,
-                  )
-                }}
+                {{ formatAuditActor(destination.updatedByActorType, destination.updatedByActorId) }}
               </dd>
             </div>
           </dl>
@@ -730,15 +678,11 @@ onMounted(load);
               />
             </label>
             <small
-              >После замены Retenive проверит подключение. URL очистится сразу
-              после отправки.</small
+              >После замены Retenive проверит подключение. URL очистится сразу после
+              отправки.</small
             >
             <div class="form-actions">
-              <button
-                type="submit"
-                class="secondary"
-                :disabled="pending || !webhookUrl.trim()"
-              >
+              <button type="submit" class="secondary" :disabled="pending || !webhookUrl.trim()">
                 Заменить и проверить
               </button>
             </div>
@@ -774,22 +718,17 @@ onMounted(load);
             />
           </label>
           <small
-            >Создайте Incoming Webhook в Slack и вставьте URL. После сохранения
-            Retenive сразу проверит подключение.</small
+            >Создайте Incoming Webhook в Slack и вставьте URL. После сохранения Retenive сразу
+            проверит подключение.</small
           >
           <div class="form-actions">
-            <button
-              type="submit"
-              :disabled="pending || !displayName.trim() || !webhookUrl.trim()"
-            >
+            <button type="submit" :disabled="pending || !displayName.trim() || !webhookUrl.trim()">
               Сохранить и проверить
             </button>
           </div>
         </form>
 
-        <p v-else class="read-only-note">
-          У вас есть доступ только для просмотра интеграций.
-        </p>
+        <p v-else class="read-only-note">У вас есть доступ только для просмотра интеграций.</p>
       </section>
 
       <OperationalTelegramCard
@@ -812,10 +751,7 @@ onMounted(load);
         <div>
           <span class="integration-section-intro__eyebrow">Мессенджеры</span>
           <h2>Каналы для пользователей</h2>
-          <p>
-            Подключения, через которые пользователи взаимодействуют с продуктом
-            Retenive.
-          </p>
+          <p>Подключения, через которые пользователи взаимодействуют с продуктом Retenive.</p>
         </div>
       </header>
       <ProductTelegramCard
@@ -875,13 +811,11 @@ onMounted(load);
     >
       <header class="integration-section-intro">
         <div>
-          <span class="integration-section-intro__eyebrow"
-            >Общие настройки</span
-          >
+          <span class="integration-section-intro__eyebrow">Общие настройки</span>
           <h2>Правила для нескольких источников</h2>
           <p>
-            Настройте объединение одинаковых событий и восстановление проблемных
-            операций независимо от конкретного провайдера.
+            Настройте объединение одинаковых событий и восстановление проблемных операций независимо
+            от конкретного провайдера.
           </p>
         </div>
       </header>

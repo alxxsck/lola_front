@@ -1,6 +1,6 @@
-import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
-import ConversationAISuspensionHeaderActions from './ConversationAISuspensionHeaderActions.vue'
+import { mount } from '@vue/test-utils';
+import { describe, expect, it } from 'vitest';
+import ConversationAISuspensionHeaderActions from './ConversationAISuspensionHeaderActions.vue';
 
 const entry = {
   summary: {
@@ -17,7 +17,7 @@ const entry = {
   locallyExpired: false,
   cancellationRequested: false,
   serverOffsetMs: 0,
-}
+};
 
 const global = {
   stubs: {
@@ -31,20 +31,20 @@ const global = {
       template: '<span>{{ value }}</span>',
     },
   },
-}
+};
 
 describe('действия AI в заголовке диалога', () => {
   it('показывает компактные действия только для автоматического режима', async () => {
     const wrapper = mount(ConversationAISuspensionHeaderActions, {
       props: { entry, canManage: true, conversationOpen: true },
       global,
-    })
+    });
 
-    expect(wrapper.text()).toContain('AI активен · приостановить')
-    expect(wrapper.find('[aria-label="История приостановок AI"]').exists()).toBe(true)
-    await wrapper.get('button').trigger('click')
-    expect(wrapper.emitted('start')).toHaveLength(1)
-  })
+    expect(wrapper.text()).toContain('AI активен · приостановить');
+    expect(wrapper.find('[aria-label="История приостановок AI"]').exists()).toBe(true);
+    await wrapper.get('button').trigger('click');
+    expect(wrapper.emitted('start')).toHaveLength(1);
+  });
 
   it('скрывает историю, когда она перенесена в меню диалога', () => {
     const wrapper = mount(ConversationAISuspensionHeaderActions, {
@@ -55,11 +55,11 @@ describe('действия AI в заголовке диалога', () => {
         showHistory: false,
       },
       global,
-    })
+    });
 
-    expect(wrapper.text()).toContain('AI активен · приостановить')
-    expect(wrapper.find('[aria-label="История приостановок AI"]').exists()).toBe(false)
-  })
+    expect(wrapper.text()).toContain('AI активен · приостановить');
+    expect(wrapper.find('[aria-label="История приостановок AI"]').exists()).toBe(false);
+  });
 
   it('заменяет действие статусом, пока AI приостановлен', () => {
     const wrapper = mount(ConversationAISuspensionHeaderActions, {
@@ -77,10 +77,10 @@ describe('действия AI в заголовке диалога', () => {
         conversationOpen: true,
       },
       global,
-    })
+    });
 
-    expect(wrapper.text()).toBe('AI приостановлен')
-  })
+    expect(wrapper.text()).toBe('AI приостановлен');
+  });
 
   it('сохраняет место управления в заголовке и предлагает retry при ошибке', async () => {
     const wrapper = mount(ConversationAISuspensionHeaderActions, {
@@ -93,11 +93,11 @@ describe('действия AI в заголовке диалога', () => {
         conversationOpen: true,
       },
       global,
-    })
+    });
 
-    expect(wrapper.get('button').attributes('disabled')).toBeDefined()
-    const retry = wrapper.get('[aria-label="Повторить проверку состояния AI"]')
-    await retry.trigger('click')
-    expect(wrapper.emitted('retry')).toHaveLength(1)
-  })
-})
+    expect(wrapper.get('button').attributes('disabled')).toBeDefined();
+    const retry = wrapper.get('[aria-label="Повторить проверку состояния AI"]');
+    await retry.trigger('click');
+    expect(wrapper.emitted('retry')).toHaveLength(1);
+  });
+});

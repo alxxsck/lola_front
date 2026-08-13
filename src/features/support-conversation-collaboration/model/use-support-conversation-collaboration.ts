@@ -1,12 +1,12 @@
-import { computed, ref } from "vue";
-import { ApiError } from "@/shared/api/http/api-error";
+import { computed, ref } from 'vue';
+import { ApiError } from '@/shared/api/http/api-error';
 import type {
   SupportConversationCollaborationSnapshot,
   SupportConversationCollaborationSource,
   SupportConversationCollision,
   SupportConversationTyper,
   SupportConversationViewer,
-} from "../api/support-conversation-collaboration-source";
+} from '../api/support-conversation-collaboration-source';
 
 interface CollaborationContext {
   actorId(): string | undefined;
@@ -31,8 +31,10 @@ function isNewerTyping(
   if (!current) return true;
   const nextWatch = BigInt(watchGeneration);
   const currentWatch = BigInt(current.watchGeneration);
-  return nextWatch > currentWatch ||
-    (nextWatch === currentWatch && BigInt(revision) > BigInt(current.revision));
+  return (
+    nextWatch > currentWatch ||
+    (nextWatch === currentWatch && BigInt(revision) > BigInt(current.revision))
+  );
 }
 
 export function createSupportConversationCollaborationController(
@@ -41,14 +43,11 @@ export function createSupportConversationCollaborationController(
 ) {
   const viewers = ref<SupportConversationViewer[]>([]);
   const typersByActor = new Map<string, SupportConversationTyper>();
-  const typingVersions = new Map<
-    string,
-    { watchGeneration: string; revision: string }
-  >();
+  const typingVersions = new Map<string, { watchGeneration: string; revision: string }>();
   const typers = ref<SupportConversationTyper[]>([]);
-  const collision = ref<SupportConversationCollision>({ state: "NOT_ARMED" });
+  const collision = ref<SupportConversationCollision>({ state: 'NOT_ARMED' });
   const loading = ref(false);
-  const error = ref("");
+  const error = ref('');
   let projectId: string | undefined;
   let conversationId: string | undefined;
   let requestGeneration = 0;
@@ -76,10 +75,7 @@ export function createSupportConversationCollaborationController(
       expiryTimer = undefined;
       return;
     }
-    const delay = Math.min(
-      2_147_483_647,
-      Math.max(0, Math.min(...expiries) - Date.now() + 1),
-    );
+    const delay = Math.min(2_147_483_647, Math.max(0, Math.min(...expiries) - Date.now() + 1));
     expiryTimer = setTimeout(pruneExpired, delay);
     (expiryTimer as ReturnType<typeof setTimeout> & { unref?: () => void }).unref?.();
   }
@@ -108,7 +104,7 @@ export function createSupportConversationCollaborationController(
       });
     }
     typers.value = [...typersByActor.values()];
-    collision.value = draftBaseline === undefined ? { state: "NOT_ARMED" } : snapshot.collision;
+    collision.value = draftBaseline === undefined ? { state: 'NOT_ARMED' } : snapshot.collision;
     pruneExpired();
   }
 
@@ -122,7 +118,7 @@ export function createSupportConversationCollaborationController(
     abort = new AbortController();
     const requestAbort = abort;
     loading.value = true;
-    error.value = "";
+    error.value = '';
     try {
       const snapshot = await source.read(
         expectedProjectId,
@@ -134,7 +130,8 @@ export function createSupportConversationCollaborationController(
         generation !== requestGeneration ||
         expectedProjectId !== projectId ||
         expectedConversationId !== conversationId
-      ) return;
+      )
+        return;
       if (expectedEventRevision === eventRevision) applySnapshot(snapshot);
       else if (draftBaseline !== undefined) collision.value = snapshot.collision;
     } catch (cause) {
@@ -144,7 +141,8 @@ export function createSupportConversationCollaborationController(
         purgeProjection();
         void context.onAccessRevoked?.();
       }
-      error.value = cause instanceof Error ? cause.message : "Не удалось обновить совместную работу";
+      error.value =
+        cause instanceof Error ? cause.message : 'Не удалось обновить совместную работу';
     } finally {
       if (generation === requestGeneration) loading.value = false;
     }
@@ -166,7 +164,7 @@ export function createSupportConversationCollaborationController(
     if (active && draftBaseline === undefined) draftBaseline = currentMessageOrdinal;
     if (!active) {
       draftBaseline = undefined;
-      collision.value = { state: "NOT_ARMED" };
+      collision.value = { state: 'NOT_ARMED' };
     }
   }
 
@@ -222,7 +220,7 @@ export function createSupportConversationCollaborationController(
     typersByActor.clear();
     typingVersions.clear();
     typers.value = [];
-    collision.value = { state: "NOT_ARMED" };
+    collision.value = { state: 'NOT_ARMED' };
     draftBaseline = undefined;
   }
 
@@ -239,7 +237,7 @@ export function createSupportConversationCollaborationController(
     lastViewerGeneration = 0n;
     purgeProjection();
     loading.value = false;
-    error.value = "";
+    error.value = '';
   }
 
   return {

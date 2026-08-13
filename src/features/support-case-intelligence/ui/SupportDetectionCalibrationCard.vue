@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import Tag from "primevue/tag";
+import { computed } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import Tag from 'primevue/tag';
 import {
   calibrationBlockedReasonLabel,
   calibrationStateLabel,
-} from "../model/support-case-intelligence-policy";
-import type { CaseIntelligenceCalibrationResponseDto } from "@/shared/api/generated/models";
+} from '../model/support-case-intelligence-policy';
+import type { CaseIntelligenceCalibrationResponseDto } from '@/shared/api/generated/models';
 
 const props = defineProps<{
   calibration: CaseIntelligenceCalibrationResponseDto | null;
@@ -24,121 +24,124 @@ const total = computed(() => props.calibration?.cells.length ?? 0);
 
 function decisionLabel(value: string) {
   const labels: Record<string, string> = {
-    NO_CASE: "Без обращения",
-    CREATE: "Создание",
-    ATTACH: "Привязка",
-    REOPEN: "Повторное открытие",
+    NO_CASE: 'Без обращения',
+    CREATE: 'Создание',
+    ATTACH: 'Привязка',
+    REOPEN: 'Повторное открытие',
   };
-  return labels[value] ?? "Неизвестное решение";
+  return labels[value] ?? 'Неизвестное решение';
 }
 
 function channelLabel(value: string) {
-  if (value === "TEXT") return "Текст";
-  if (value === "VOICE") return "Голос";
-  if (value === "TELEGRAM") return "Telegram";
-  return "Неизвестный канал";
+  if (value === 'TEXT') return 'Текст';
+  if (value === 'VOICE') return 'Голос';
+  if (value === 'TELEGRAM') return 'Telegram';
+  return 'Неизвестный канал';
 }
 
 function intervalLabel(value: { lower: number; upper: number } | null) {
-  if (!value) return "—";
+  if (!value) return '—';
   return `${Math.round(value.lower * 100)}–${Math.round(value.upper * 100)}%`;
 }
 </script>
 
 <template>
-<section class="calibration-card" aria-labelledby="calibration-title">
-  <div class="calibration-heading">
-    <div>
-      <div class="card-kicker">Надёжность модели</div>
-      <h2 id="calibration-title">Покрытие калибровки</h2>
-      <p>
-        Сервер проверяет отдельно каждое решение, язык и канал. Если данных
-        мало, автоматическое действие остаётся заблокированным.
-      </p>
-    </div>
-    <Button
-      label="Проверить покрытие"
-      icon="pi pi-chart-bar"
-      severity="secondary"
-      outlined
-      :loading="loading"
-      :disabled="!canPreview"
-      @click="$emit('load')"
-    />
-  </div>
-
-  <p v-if="!canPreview" class="permission-note">
-    <i class="pi pi-lock" /> Для проверки покрытия нужен доступ к предпросмотру.
-  </p>
-
-  <template v-if="calibration">
-    <div class="calibration-summary">
+  <section class="calibration-card" aria-labelledby="calibration-title">
+    <div class="calibration-heading">
       <div>
-        <span>Состояние</span>
-        <strong>{{ calibrationStateLabel(calibration.state) }}</strong>
+        <div class="card-kicker">Надёжность модели</div>
+        <h2 id="calibration-title">Покрытие калибровки</h2>
+        <p>
+          Сервер проверяет отдельно каждое решение, язык и канал. Если данных мало, автоматическое
+          действие остаётся заблокированным.
+        </p>
       </div>
-      <div>
-        <span>Группы с достаточным покрытием</span>
-        <strong>{{ passed }} из {{ total }}</strong>
-      </div>
-      <div>
-        <span>Минимум примеров</span>
-        <strong>{{ calibration.minimumSamples ?? "Не задан" }}</strong>
-      </div>
-      <div>
-        <span>Порог автоматического действия</span>
-        <strong>{{ Math.round(calibration.autoApplyThreshold * 100) }}%</strong>
-      </div>
+      <Button
+        label="Проверить покрытие"
+        icon="pi pi-chart-bar"
+        severity="secondary"
+        outlined
+        :loading="loading"
+        :disabled="!canPreview"
+        @click="$emit('load')"
+      />
     </div>
 
-    <Message
-      v-if="calibration.state !== 'READY'"
-      severity="warn"
-      :closable="false"
-    >
-      Часть групп не прошла проверку. Публикация правил не означает, что сервер
-      разрешит автоматическое действие для этих групп.
-    </Message>
+    <p v-if="!canPreview" class="permission-note">
+      <i class="pi pi-lock" /> Для проверки покрытия нужен доступ к предпросмотру.
+    </p>
 
-    <div class="calibration-table-wrap" tabindex="0" aria-label="Таблица покрытия калибровки">
-      <table class="calibration-table">
-        <thead>
-          <tr>
-            <th scope="col">Решение</th>
-            <th scope="col">Язык</th>
-            <th scope="col">Канал</th>
-            <th scope="col">Примеры</th>
-            <th scope="col">Интервал</th>
-            <th scope="col">Автоматическое действие</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="cell in calibration.cells" :key="`${cell.modelId}-${cell.category}-${cell.locale}-${cell.channel}`">
-            <td>{{ decisionLabel(cell.category) }}</td>
-            <td>{{ cell.locale }}</td>
-            <td>{{ channelLabel(cell.channel) }}</td>
-            <td>{{ cell.samples.toLocaleString("ru-RU") }}</td>
-            <td>{{ intervalLabel(cell.confidenceInterval) }}</td>
-            <td>
-              <Tag
-                :value="cell.coverageGatePassed ? 'Разрешено по покрытию' : calibrationBlockedReasonLabel(cell.autoApplyBlockedReason)"
-                :severity="cell.coverageGatePassed ? 'success' : 'warn'"
-              />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </template>
+    <template v-if="calibration">
+      <div class="calibration-summary">
+        <div>
+          <span>Состояние</span>
+          <strong>{{ calibrationStateLabel(calibration.state) }}</strong>
+        </div>
+        <div>
+          <span>Группы с достаточным покрытием</span>
+          <strong>{{ passed }} из {{ total }}</strong>
+        </div>
+        <div>
+          <span>Минимум примеров</span>
+          <strong>{{ calibration.minimumSamples ?? 'Не задан' }}</strong>
+        </div>
+        <div>
+          <span>Порог автоматического действия</span>
+          <strong>{{ Math.round(calibration.autoApplyThreshold * 100) }}%</strong>
+        </div>
+      </div>
 
-  <div v-else class="calibration-empty">
-    <i class="pi pi-chart-line" aria-hidden="true" />
-    <div>
-      <strong>Покрытие ещё не проверено</strong>
-      <span>Запрос использует текущий черновик и ничего не меняет.</span>
+      <Message v-if="calibration.state !== 'READY'" severity="warn" :closable="false">
+        Часть групп не прошла проверку. Публикация правил не означает, что сервер разрешит
+        автоматическое действие для этих групп.
+      </Message>
+
+      <div class="calibration-table-wrap" tabindex="0" aria-label="Таблица покрытия калибровки">
+        <table class="calibration-table">
+          <thead>
+            <tr>
+              <th scope="col">Решение</th>
+              <th scope="col">Язык</th>
+              <th scope="col">Канал</th>
+              <th scope="col">Примеры</th>
+              <th scope="col">Интервал</th>
+              <th scope="col">Автоматическое действие</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="cell in calibration.cells"
+              :key="`${cell.modelId}-${cell.category}-${cell.locale}-${cell.channel}`"
+            >
+              <td>{{ decisionLabel(cell.category) }}</td>
+              <td>{{ cell.locale }}</td>
+              <td>{{ channelLabel(cell.channel) }}</td>
+              <td>{{ cell.samples.toLocaleString('ru-RU') }}</td>
+              <td>{{ intervalLabel(cell.confidenceInterval) }}</td>
+              <td>
+                <Tag
+                  :value="
+                    cell.coverageGatePassed
+                      ? 'Разрешено по покрытию'
+                      : calibrationBlockedReasonLabel(cell.autoApplyBlockedReason)
+                  "
+                  :severity="cell.coverageGatePassed ? 'success' : 'warn'"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </template>
+
+    <div v-else class="calibration-empty">
+      <i class="pi pi-chart-line" aria-hidden="true" />
+      <div>
+        <strong>Покрытие ещё не проверено</strong>
+        <span>Запрос использует текущий черновик и ничего не меняет.</span>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
 </template>
 
 <style scoped>

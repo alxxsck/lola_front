@@ -3,8 +3,8 @@ import type {
   PublicKeyCredentialCreationOptionsJSON,
   PublicKeyCredentialRequestOptionsJSON,
   RegistrationResponseJSON,
-} from "@simplewebauthn/browser";
-import { startRegistration } from "@simplewebauthn/browser";
+} from '@simplewebauthn/browser';
+import { startRegistration } from '@simplewebauthn/browser';
 import {
   iamMfaCompleteAuthentication,
   iamMfaCompleteEnrollment,
@@ -14,7 +14,7 @@ import {
   iamMfaManagementRemovePasskey,
   iamMfaManagementRotateRecoveryCodes,
   iamMfaManagementSummary,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   IamMfaAuthenticatedResponseDto,
   IamMfaAuthenticationCompleteRequestDtoCredential,
@@ -24,11 +24,10 @@ import type {
   IamMfaFactorSummaryResponseDto,
   IamMfaPasskeySummaryDto,
   IamMfaRecoveryEnrollmentOptionsResponseDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 export type MfaEnrollmentOptions =
-  | IamMfaEnrollmentOptionsResponseDto
-  | IamMfaRecoveryEnrollmentOptionsResponseDto;
+  IamMfaEnrollmentOptionsResponseDto | IamMfaRecoveryEnrollmentOptionsResponseDto;
 export type MfaEnrolledResponse = IamMfaEnrollmentCompleteResponseDto;
 export type MfaAuthenticatedResponse = IamMfaAuthenticatedResponseDto;
 export type MfaPasskeySummary = IamMfaPasskeySummaryDto;
@@ -39,27 +38,18 @@ export const mfaApi = {
     return iamMfaEnrollmentOptions({ ceremonyToken });
   },
 
-  completeEnrollment(
-    ceremonyToken: string,
-    credential: RegistrationResponseJSON,
-    label?: string,
-  ) {
+  completeEnrollment(ceremonyToken: string, credential: RegistrationResponseJSON, label?: string) {
     return iamMfaCompleteEnrollment({
       ceremonyToken,
-      credential:
-        credential as unknown as IamMfaEnrollmentCompleteRequestDtoCredential,
+      credential: credential as unknown as IamMfaEnrollmentCompleteRequestDtoCredential,
       ...(label ? { label } : {}),
     });
   },
 
-  completeAuthentication(
-    ceremonyToken: string,
-    credential: AuthenticationResponseJSON,
-  ) {
+  completeAuthentication(ceremonyToken: string, credential: AuthenticationResponseJSON) {
     return iamMfaCompleteAuthentication({
       ceremonyToken,
-      credential:
-        credential as unknown as IamMfaAuthenticationCompleteRequestDtoCredential,
+      credential: credential as unknown as IamMfaAuthenticationCompleteRequestDtoCredential,
     });
   },
 
@@ -90,8 +80,7 @@ export const mfaManagementApi = {
   async addPasskey(label?: string) {
     const options = await mfaApi.beginManagedEnrollment();
     const credential = await startRegistration({
-      optionsJSON:
-        options.publicKey as unknown as PublicKeyCredentialCreationOptionsJSON,
+      optionsJSON: options.publicKey as unknown as PublicKeyCredentialCreationOptionsJSON,
     });
     return mfaApi.completeEnrollment(options.ceremonyToken, credential, label);
   },

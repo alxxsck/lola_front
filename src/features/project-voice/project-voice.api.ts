@@ -1,5 +1,5 @@
-import { xaiVoiceCatalogList } from "@/shared/api/generated/retenive-backend";
-import { isMockMode } from "@/shared/config/data-mode";
+import { xaiVoiceCatalogList } from '@/shared/api/generated/retenive-backend';
+import { isMockMode } from '@/shared/config/data-mode';
 
 export interface ProjectVoiceCatalogItem {
   id: string;
@@ -14,35 +14,33 @@ export interface ProjectVoiceCatalog {
 
 const demoCatalog: ProjectVoiceCatalog = {
   items: [
-    { id: "ara", name: "Ara", language: "multilingual" },
-    { id: "eve", name: "Eve", language: "multilingual" },
-    { id: "leo", name: "Leo", language: "multilingual" },
-    { id: "rex", name: "Rex", language: "multilingual" },
-    { id: "sal", name: "Sal", language: "multilingual" },
+    { id: 'ara', name: 'Ara', language: 'multilingual' },
+    { id: 'eve', name: 'Eve', language: 'multilingual' },
+    { id: 'leo', name: 'Leo', language: 'multilingual' },
+    { id: 'rex', name: 'Rex', language: 'multilingual' },
+    { id: 'sal', name: 'Sal', language: 'multilingual' },
   ],
   stale: false,
 };
 
 function boundedText(value: unknown, maximum: number): value is string {
   return (
-    typeof value === "string" &&
+    typeof value === 'string' &&
     value.length > 0 &&
     value.length <= maximum &&
     value.trim() === value
   );
 }
 
-export function parseProjectVoiceCatalog(
-  value: unknown,
-): ProjectVoiceCatalog | undefined {
+export function parseProjectVoiceCatalog(value: unknown): ProjectVoiceCatalog | undefined {
   if (
-    typeof value !== "object" ||
+    typeof value !== 'object' ||
     value === null ||
-    !("items" in value) ||
+    !('items' in value) ||
     !Array.isArray(value.items) ||
     value.items.length > 100 ||
-    !("stale" in value) ||
-    typeof value.stale !== "boolean"
+    !('stale' in value) ||
+    typeof value.stale !== 'boolean'
   ) {
     return undefined;
   }
@@ -51,13 +49,13 @@ export function parseProjectVoiceCatalog(
   const items: ProjectVoiceCatalogItem[] = [];
   for (const item of value.items) {
     if (
-      typeof item !== "object" ||
+      typeof item !== 'object' ||
       item === null ||
-      !("id" in item) ||
+      !('id' in item) ||
       !boundedText(item.id, 64) ||
-      !("name" in item) ||
+      !('name' in item) ||
       !boundedText(item.name, 100) ||
-      !("language" in item) ||
+      !('language' in item) ||
       !boundedText(item.language, 64) ||
       ids.has(item.id)
     ) {
@@ -77,7 +75,7 @@ export async function fetchProjectVoiceCatalog(
   const response: unknown = await xaiVoiceCatalogList(projectId, { signal });
   const catalog = parseProjectVoiceCatalog(response);
   if (!catalog) {
-    throw new Error("Сервер вернул некорректный каталог голосов xAI");
+    throw new Error('Сервер вернул некорректный каталог голосов xAI');
   }
   return catalog;
 }

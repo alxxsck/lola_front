@@ -6,18 +6,15 @@ import type {
   NotificationOperationsProviderHealthDtoChannel,
   NotificationOperationsProviderHealthDtoState,
   NotificationQuarantineDtoReason,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
-export type NotificationOperationsChannel =
-  NotificationOperationsDeliveriesChannel;
-export type NotificationOperationsDeliveryFilterStatus =
-  NotificationOperationsDeliveriesStatus;
+export type NotificationOperationsChannel = NotificationOperationsDeliveriesChannel;
+export type NotificationOperationsDeliveryFilterStatus = NotificationOperationsDeliveriesStatus;
 export type NotificationOperationsReplayEligibility =
   NotificationOperationsDeliveryResponseDtoReplayEligibility;
 export type NotificationOperationsIntegrationKind =
   NotificationOperationsIntegrationResponseDtoKind;
-export type NotificationOperationsQuarantineReason =
-  NotificationQuarantineDtoReason;
+export type NotificationOperationsQuarantineReason = NotificationQuarantineDtoReason;
 
 export interface NotificationOperationsPermissions {
   read: boolean;
@@ -25,12 +22,8 @@ export interface NotificationOperationsPermissions {
 }
 
 export interface NotificationOperationsQueueHealth {
-  queueKind:
-    | "OPERATIONAL_NOTIFICATION"
-    | "TELEGRAM_PERSONAL"
-    | "TELEGRAM_BROADCAST"
-    | "OTHER";
-  channel: NotificationOperationsChannel | "TELEGRAM_PRODUCT" | "OTHER";
+  queueKind: 'OPERATIONAL_NOTIFICATION' | 'TELEGRAM_PERSONAL' | 'TELEGRAM_BROADCAST' | 'OTHER';
+  channel: NotificationOperationsChannel | 'TELEGRAM_PRODUCT' | 'OTHER';
   status: string;
   count: number;
   oldestAgeSeconds: number;
@@ -43,7 +36,7 @@ export interface NotificationOperationsProviderHealth {
 }
 
 export interface NotificationOperationsAdmissionHealth {
-  scope: "INSTALLATION" | "CHAT";
+  scope: 'INSTALLATION' | 'CHAT';
   exhaustedBucketCount: number;
   maximumRetryDelaySeconds: number;
 }
@@ -70,14 +63,14 @@ export interface NotificationOperationsHealth {
 }
 
 export type NotificationOperationsSafeErrorCategory =
-  | "RATE_LIMITED"
-  | "TRANSIENT"
-  | "DESTINATION_INVALID"
-  | "PAYLOAD_INVALID"
-  | "LEASE_EXPIRED"
-  | "EXHAUSTED"
-  | "QUARANTINED"
-  | "OTHER";
+  | 'RATE_LIMITED'
+  | 'TRANSIENT'
+  | 'DESTINATION_INVALID'
+  | 'PAYLOAD_INVALID'
+  | 'LEASE_EXPIRED'
+  | 'EXHAUSTED'
+  | 'QUARANTINED'
+  | 'OTHER';
 
 export interface NotificationOperationsDelivery {
   id: string;
@@ -110,21 +103,21 @@ export interface NotificationOperationsPage<T> {
 
 export interface NotificationOperationsFilters {
   projectId: string;
-  channel: NotificationOperationsChannel | "";
-  status: NotificationOperationsDeliveryFilterStatus | "";
-  integrationKind: NotificationOperationsIntegrationKind | "";
+  channel: NotificationOperationsChannel | '';
+  status: NotificationOperationsDeliveryFilterStatus | '';
+  integrationKind: NotificationOperationsIntegrationKind | '';
   integrationStatus: string;
 }
 
 export interface NotificationOperationsSafeError {
   kind:
-    | "AMBIGUOUS"
-    | "CONFLICT"
-    | "FRESH_AUTH"
-    | "FORBIDDEN"
-    | "NOT_FOUND"
-    | "INVALID_STATE"
-    | "UNKNOWN";
+    | 'AMBIGUOUS'
+    | 'CONFLICT'
+    | 'FRESH_AUTH'
+    | 'FORBIDDEN'
+    | 'NOT_FOUND'
+    | 'INVALID_STATE'
+    | 'UNKNOWN';
   message: string;
   retryable: boolean;
 }
@@ -134,28 +127,26 @@ export const NOTIFICATION_OPERATIONS_QUARANTINE_REASONS: ReadonlyArray<{
   label: string;
 }> = [
   {
-    value: "CREDENTIAL_COMPROMISED",
-    label: "Credential скомпрометирован",
+    value: 'CREDENTIAL_COMPROMISED',
+    label: 'Credential скомпрометирован',
   },
   {
-    value: "PROVIDER_ACCOUNT_COMPROMISED",
-    label: "Аккаунт provider скомпрометирован",
+    value: 'PROVIDER_ACCOUNT_COMPROMISED',
+    label: 'Аккаунт provider скомпрометирован',
   },
   {
-    value: "INCIDENT_CONTAINMENT",
-    label: "Локализация инцидента",
+    value: 'INCIDENT_CONTAINMENT',
+    label: 'Локализация инцидента',
   },
-  { value: "OPERATOR_REQUEST", label: "Запрос оператора" },
+  { value: 'OPERATOR_REQUEST', label: 'Запрос оператора' },
 ];
 
 export function notificationOperationsPermissions(
   permissionCodes: readonly string[],
 ): NotificationOperationsPermissions {
   return {
-    read: permissionCodes.includes("platform.notifications.operations.read"),
-    operate: permissionCodes.includes(
-      "platform.notifications.operations.operate",
-    ),
+    read: permissionCodes.includes('platform.notifications.operations.read'),
+    operate: permissionCodes.includes('platform.notifications.operations.operate'),
   };
 }
 
@@ -163,10 +154,7 @@ export function canReplayNotificationDelivery(
   delivery: NotificationOperationsDelivery,
   permissions: NotificationOperationsPermissions,
 ): boolean {
-  return (
-    permissions.operate &&
-    delivery.replayEligibility === "ELIGIBLE_KNOWN_NOT_ACCEPTED"
-  );
+  return permissions.operate && delivery.replayEligibility === 'ELIGIBLE_KNOWN_NOT_ACCEPTED';
 }
 
 export function canQuarantineNotificationIntegration(
@@ -176,71 +164,56 @@ export function canQuarantineNotificationIntegration(
   return permissions.operate && integration.quarantineAllowed;
 }
 
-export function safeNotificationOperationsError(
-  cause: unknown,
-): NotificationOperationsSafeError {
+export function safeNotificationOperationsError(cause: unknown): NotificationOperationsSafeError {
   const value =
-    cause && typeof cause === "object"
-      ? (cause as { status?: unknown; code?: unknown })
-      : {};
-  const status = typeof value.status === "number" ? value.status : undefined;
-  const code = typeof value.code === "string" ? value.code : undefined;
-  if (
-    status === 428 ||
-    code === "REAUTHENTICATION_REQUIRED" ||
-    code === "MFA_REQUIRED"
-  )
+    cause && typeof cause === 'object' ? (cause as { status?: unknown; code?: unknown }) : {};
+  const status = typeof value.status === 'number' ? value.status : undefined;
+  const code = typeof value.code === 'string' ? value.code : undefined;
+  if (status === 428 || code === 'REAUTHENTICATION_REQUIRED' || code === 'MFA_REQUIRED')
     return {
-      kind: "FRESH_AUTH",
-      message:
-        "Требуется свежий вход с MFA. Команда не повторялась автоматически.",
+      kind: 'FRESH_AUTH',
+      message: 'Требуется свежий вход с MFA. Команда не повторялась автоматически.',
       retryable: false,
     };
-  if (
-    status === 0 ||
-    code === "NETWORK_ERROR" ||
-    code === "TIMEOUT" ||
-    code === "OUTCOME_UNKNOWN"
-  )
+  if (status === 0 || code === 'NETWORK_ERROR' || code === 'TIMEOUT' || code === 'OUTCOME_UNKNOWN')
     return {
-      kind: "AMBIGUOUS",
+      kind: 'AMBIGUOUS',
       message:
-        "Результат запроса не подтверждён. Можно явно повторить тот же запрос с сохранённым ключом.",
+        'Результат запроса не подтверждён. Можно явно повторить тот же запрос с сохранённым ключом.',
       retryable: true,
     };
-  if (status === 409 || code?.includes("VERSION_CONFLICT"))
+  if (status === 409 || code?.includes('VERSION_CONFLICT'))
     return {
-      kind: "CONFLICT",
+      kind: 'CONFLICT',
       message:
-        "Состояние уже изменилось. Загружены актуальные данные; подтвердите действие заново.",
+        'Состояние уже изменилось. Загружены актуальные данные; подтвердите действие заново.',
       retryable: false,
     };
   if (status === 403)
     return {
-      kind: "FORBIDDEN",
-      message: "Доступ к операциям доставки изменился.",
+      kind: 'FORBIDDEN',
+      message: 'Доступ к операциям доставки изменился.',
       retryable: false,
     };
   if (status === 404)
     return {
-      kind: "NOT_FOUND",
-      message: "Ресурс не найден или больше недоступен.",
+      kind: 'NOT_FOUND',
+      message: 'Ресурс не найден или больше недоступен.',
       retryable: false,
     };
   if (
-    code?.includes("INELIGIBLE") ||
-    code?.includes("INVALID_STATE") ||
-    code?.includes("DESTINATION_CHANGED")
+    code?.includes('INELIGIBLE') ||
+    code?.includes('INVALID_STATE') ||
+    code?.includes('DESTINATION_CHANGED')
   )
     return {
-      kind: "INVALID_STATE",
-      message:
-        "Действие больше не разрешено для текущего состояния. Данные обновлены.",
+      kind: 'INVALID_STATE',
+      message: 'Действие больше не разрешено для текущего состояния. Данные обновлены.',
       retryable: false,
     };
   return {
-    kind: "UNKNOWN",
-    message: "Не удалось выполнить операцию. Обновите данные и повторите.",
+    kind: 'UNKNOWN',
+    message: 'Не удалось выполнить операцию. Обновите данные и повторите.',
     retryable: false,
   };
 }

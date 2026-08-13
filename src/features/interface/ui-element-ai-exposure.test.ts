@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import type { UiElement } from '@/shared/types/domain'
+import { describe, expect, it } from 'vitest';
+import type { UiElement } from '@/shared/types/domain';
 import {
   aiAliases,
   aiExposureChanged,
@@ -7,7 +7,7 @@ import {
   requiresUiElementAiAuditReason,
   toUiElementAiExposureUpdate,
   validateUiElementAiExposure,
-} from './ui-element-ai-exposure'
+} from './ui-element-ai-exposure';
 
 const current: UiElement = {
   id: 'ui-1',
@@ -21,7 +21,7 @@ const current: UiElement = {
   aiEnabled: false,
   aiDescription: null,
   aiAliases: [],
-}
+};
 
 const draft = {
   code: 'bonuses',
@@ -34,18 +34,18 @@ const draft = {
   aiDescription: 'Страница с доступными пользователю бонусами.',
   aiAliasesText: ' награды, rewards, награды ',
   aiAuditReason: 'Разрешаем безопасный переход к бонусам',
-}
+};
 
 describe('UiElement AI exposure policy', () => {
   it('normalizes aliases and derives binding from the target kind', () => {
-    expect(aiAliases(draft.aiAliasesText)).toEqual(['награды', 'rewards'])
-    expect(aiTargetBound(draft)).toBe(true)
-    expect(aiTargetBound({ ...draft, route: '' })).toBe(false)
-  })
+    expect(aiAliases(draft.aiAliasesText)).toEqual(['награды', 'rewards']);
+    expect(aiTargetBound(draft)).toBe(true);
+    expect(aiTargetBound({ ...draft, route: '' })).toBe(false);
+  });
 
   it('requires audited OWNER authority only while AI remains enabled and exposure broadens', () => {
-    expect(aiExposureChanged(current, draft)).toBe(true)
-    expect(requiresUiElementAiAuditReason(current, draft)).toBe(true)
+    expect(aiExposureChanged(current, draft)).toBe(true);
+    expect(requiresUiElementAiAuditReason(current, draft)).toBe(true);
     expect(
       requiresUiElementAiAuditReason(
         {
@@ -56,14 +56,14 @@ describe('UiElement AI exposure policy', () => {
         },
         draft,
       ),
-    ).toBe(false)
+    ).toBe(false);
     expect(
       requiresUiElementAiAuditReason(
         { ...current, aiEnabled: true },
         { ...draft, aiEnabled: false },
       ),
-    ).toBe(false)
-  })
+    ).toBe(false);
+  });
 
   it('validates role, binding, description, aliases and audit reason before serialization', () => {
     expect(
@@ -84,29 +84,23 @@ describe('UiElement AI exposure policy', () => {
       'Описание для Retenive должно содержать от 20 до 1000 символов.',
       'Можно указать не более 20 дополнительных названий длиной до 100 символов.',
       'Объясните, зачем Retenive нужен доступ: от 10 до 500 символов.',
-    ])
-    expect(validateUiElementAiExposure(current, draft, true)).toEqual([])
+    ]);
+    expect(validateUiElementAiExposure(current, draft, true)).toEqual([]);
     expect(toUiElementAiExposureUpdate(current, draft, true)).toEqual({
       aiEnabled: true,
       aiDescription: draft.aiDescription,
       aiAliases: ['награды', 'rewards'],
       auditReason: draft.aiAuditReason,
-    })
+    });
 
     const exposed = {
       ...current,
       aiEnabled: true,
       aiDescription: draft.aiDescription,
       aiAliases: ['награды', 'rewards'],
-    }
-    expect(
-      toUiElementAiExposureUpdate(
-        exposed,
-        { ...draft, route: '/rewards' },
-        true,
-      ),
-    ).toEqual({
+    };
+    expect(toUiElementAiExposureUpdate(exposed, { ...draft, route: '/rewards' }, true)).toEqual({
       auditReason: draft.aiAuditReason,
-    })
-  })
-})
+    });
+  });
+});

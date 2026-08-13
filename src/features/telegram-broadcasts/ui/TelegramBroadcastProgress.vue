@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { TelegramBroadcastProgress as Progress } from "../model/telegram-broadcast";
+import type { TelegramBroadcastProgress as Progress } from '../model/telegram-broadcast';
 import type {
   TelegramBroadcastDelivery,
   TelegramBroadcastDeliveryStatus,
-} from "../model/use-telegram-broadcasts";
+} from '../model/use-telegram-broadcasts';
 
 defineProps<{
   progress: Progress;
@@ -16,48 +16,47 @@ defineProps<{
 defineEmits<{ loadMore: [] }>();
 
 const statusLabels: Record<TelegramBroadcastDeliveryStatus, string> = {
-  PENDING: "В очереди",
-  SENDING: "Отправляется",
-  RETRY_WAIT: "Ожидает повтора",
-  SENT: "Принято Telegram",
-  FAILED_PERMANENT: "Не доставлено",
-  OUTCOME_UNKNOWN: "Результат неизвестен",
-  SUPPRESSED_LINK: "Исключено: привязка неактивна",
-  SUPPRESSED_CONSENT: "Исключено: согласие отозвано",
-  SUPPRESSED_INSTALLATION: "Исключено: канал недоступен",
-  CANCELLED: "Отменено",
+  PENDING: 'В очереди',
+  SENDING: 'Отправляется',
+  RETRY_WAIT: 'Ожидает повтора',
+  SENT: 'Принято Telegram',
+  FAILED_PERMANENT: 'Не доставлено',
+  OUTCOME_UNKNOWN: 'Результат неизвестен',
+  SUPPRESSED_LINK: 'Исключено: привязка неактивна',
+  SUPPRESSED_CONSENT: 'Исключено: согласие отозвано',
+  SUPPRESSED_INSTALLATION: 'Исключено: канал недоступен',
+  CANCELLED: 'Отменено',
 };
 const failureLabels: Record<
-  NonNullable<TelegramBroadcastDelivery["safeFailureCategory"]>,
+  NonNullable<TelegramBroadcastDelivery['safeFailureCategory']>,
   string
 > = {
-  AMBIGUOUS_PROVIDER_RESULT: "Результат отправки не подтверждён",
-  RECIPIENT_UNAVAILABLE: "Получатель недоступен в Telegram",
-  PAYLOAD_REJECTED: "Telegram отклонил содержимое",
-  RATE_LIMIT_EXHAUSTED: "Лимит повторов исчерпан",
-  LINK_NOT_ACTIVE: "Привязка Telegram больше не активна",
-  CONSENT_REVOKED: "Явное согласие отозвано или устарело",
-  INSTALLATION_UNAVAILABLE: "Telegram-канал проекта недоступен",
-  INTERNAL_FAILURE: "Внутренняя ошибка доставки",
-  CANCELLED: "Доставка отменена вместе с рассылкой",
+  AMBIGUOUS_PROVIDER_RESULT: 'Результат отправки не подтверждён',
+  RECIPIENT_UNAVAILABLE: 'Получатель недоступен в Telegram',
+  PAYLOAD_REJECTED: 'Telegram отклонил содержимое',
+  RATE_LIMIT_EXHAUSTED: 'Лимит повторов исчерпан',
+  LINK_NOT_ACTIVE: 'Привязка Telegram больше не активна',
+  CONSENT_REVOKED: 'Явное согласие отозвано или устарело',
+  INSTALLATION_UNAVAILABLE: 'Telegram-канал проекта недоступен',
+  INTERNAL_FAILURE: 'Внутренняя ошибка доставки',
+  CANCELLED: 'Доставка отменена вместе с рассылкой',
 };
 
-const cards = (progress: Progress) => [
-  ["Зафиксировано", progress.total],
-  ["В очереди", progress.pending],
-  ["Отправляется", progress.sending],
-  ["Принято Telegram", progress.sent],
-  ["Ожидает повтора", progress.retryWait],
-  ["Результат неизвестен", progress.outcomeUnknown],
-  ["Не доставлено", progress.failedPermanent],
+const cards = (progress: Progress) =>
   [
-    "Исключено",
-    progress.suppressedLink +
-      progress.suppressedConsent +
-      progress.suppressedInstallation,
-  ],
-  ["Отменено", progress.cancelled],
-] as const;
+    ['Зафиксировано', progress.total],
+    ['В очереди', progress.pending],
+    ['Отправляется', progress.sending],
+    ['Принято Telegram', progress.sent],
+    ['Ожидает повтора', progress.retryWait],
+    ['Результат неизвестен', progress.outcomeUnknown],
+    ['Не доставлено', progress.failedPermanent],
+    [
+      'Исключено',
+      progress.suppressedLink + progress.suppressedConsent + progress.suppressedInstallation,
+    ],
+    ['Отменено', progress.cancelled],
+  ] as const;
 </script>
 
 <template>
@@ -70,8 +69,8 @@ const cards = (progress: Progress) => [
       </div>
     </div>
     <p class="delivery-summary">
-      Показано {{ deliveries.length }} из {{ deliveryTotal }} результатов.
-      Получатели не раскрываются в списке доставки.
+      Показано {{ deliveries.length }} из {{ deliveryTotal }} результатов. Получатели не
+      раскрываются в списке доставки.
     </p>
     <div class="delivery-table" role="table" aria-label="Результаты доставки">
       <div class="delivery-row heading" role="row">
@@ -81,33 +80,22 @@ const cards = (progress: Progress) => [
         <span role="columnheader">Завершено</span>
         <span role="columnheader">Создано</span>
       </div>
-      <div
-        v-for="delivery in deliveries"
-        :key="delivery.id"
-        class="delivery-row"
-        role="row"
-      >
+      <div v-for="delivery in deliveries" :key="delivery.id" class="delivery-row" role="row">
         <span role="cell">•••• {{ delivery.id.slice(-6) }}</span>
         <span role="cell">{{ statusLabels[delivery.status] }}</span>
         <span role="cell">
-          {{
-            delivery.safeFailureCategory
-              ? failureLabels[delivery.safeFailureCategory]
-              : "—"
-          }}
+          {{ delivery.safeFailureCategory ? failureLabels[delivery.safeFailureCategory] : '—' }}
         </span>
         <time v-if="delivery.finishedAt" role="cell" :datetime="delivery.finishedAt">
-          {{ new Date(delivery.finishedAt).toLocaleString("ru-RU") }}
+          {{ new Date(delivery.finishedAt).toLocaleString('ru-RU') }}
         </time>
         <span v-else role="cell">—</span>
         <time role="cell" :datetime="delivery.createdAt">
-          {{ new Date(delivery.createdAt).toLocaleString("ru-RU") }}
+          {{ new Date(delivery.createdAt).toLocaleString('ru-RU') }}
         </time>
       </div>
     </div>
-    <p v-if="loading" role="status" aria-live="polite">
-      Обновляем результаты…
-    </p>
+    <p v-if="loading" role="status" aria-live="polite">Обновляем результаты…</p>
     <button
       v-if="nextDeliveryCursor"
       type="button"

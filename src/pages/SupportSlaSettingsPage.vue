@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { onBeforeRouteLeave } from "vue-router";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { supportSlaConfigurationSource } from "@/features/support-sla/api/support-sla-configuration-source";
-import { createSupportSlaConfigurationController } from "@/features/support-sla/model/use-support-sla-configuration";
-import SupportBusinessCalendarEditor from "@/features/support-sla/ui/SupportBusinessCalendarEditor.vue";
-import SupportSlaLifecycleRail from "@/features/support-sla/ui/SupportSlaLifecycleRail.vue";
-import SupportSlaRulesEditor from "@/features/support-sla/ui/SupportSlaRulesEditor.vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { onBeforeRouteLeave } from 'vue-router';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { supportSlaConfigurationSource } from '@/features/support-sla/api/support-sla-configuration-source';
+import { createSupportSlaConfigurationController } from '@/features/support-sla/model/use-support-sla-configuration';
+import SupportBusinessCalendarEditor from '@/features/support-sla/ui/SupportBusinessCalendarEditor.vue';
+import SupportSlaLifecycleRail from '@/features/support-sla/ui/SupportSlaLifecycleRail.vue';
+import SupportSlaRulesEditor from '@/features/support-sla/ui/SupportSlaRulesEditor.vue';
 
 const auth = useAuthStore();
 const accessDenied = ref(false);
@@ -20,25 +20,16 @@ const editorStarted = ref(false);
 const discardVisible = ref(false);
 const publishVisible = ref(false);
 
-const permissionCodes = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
-const permissionSignature = computed(() =>
-  [...permissionCodes.value].sort().join(","),
-);
+const permissionCodes = computed(() => auth.project?.effectivePermissionCodes ?? []);
+const permissionSignature = computed(() => [...permissionCodes.value].sort().join(','));
 const canRead = computed(
   () =>
     !accessDenied.value &&
-    (hasProjectPermission(permissionCodes.value, "project.support.sla.read") ||
-      hasProjectPermission(
-        permissionCodes.value,
-        "project.support.sla.manage",
-      )),
+    (hasProjectPermission(permissionCodes.value, 'project.support.sla.read') ||
+      hasProjectPermission(permissionCodes.value, 'project.support.sla.manage')),
 );
 const canManage = computed(
-  () =>
-    canRead.value &&
-    hasProjectPermission(permissionCodes.value, "project.support.sla.manage"),
+  () => canRead.value && hasProjectPermission(permissionCodes.value, 'project.support.sla.manage'),
 );
 
 const controller = createSupportSlaConfigurationController(
@@ -63,17 +54,13 @@ const hasConfiguration = computed(
   () =>
     Boolean(controller.snapshot.value?.draft?.configuration) ||
     Boolean(
-      controller.snapshot.value?.publishedConfiguration?.calendarRevision
-        .calendar &&
+      controller.snapshot.value?.publishedConfiguration?.calendarRevision.calendar &&
       controller.snapshot.value?.publishedConfiguration?.policyRevision.policy,
     ),
 );
-const showEditor = computed(
-  () => hasConfiguration.value || editorStarted.value,
-);
+const showEditor = computed(() => hasConfiguration.value || editorStarted.value);
 const openWeekdays = computed(
-  () =>
-    controller.form.value.weekly.filter((day) => day.intervals.length).length,
+  () => controller.form.value.weekly.filter((day) => day.intervals.length).length,
 );
 const issueCount = computed(() => controller.validationIssues.value.length);
 const readOnly = computed(() => !canManage.value);
@@ -102,15 +89,15 @@ async function confirmPublish(): Promise<void> {
 function beforeUnload(event: BeforeUnloadEvent): void {
   if (!controller.dirty.value && !controller.recovery.value) return;
   event.preventDefault();
-  event.returnValue = "";
+  event.returnValue = '';
 }
 
 onBeforeRouteLeave(() => {
   if (!controller.dirty.value && !controller.recovery.value) return true;
   return window.confirm(
     controller.recovery.value
-      ? "Есть команда с неизвестным результатом. Покинуть страницу и прервать восстановление?"
-      : "Есть несохранённые изменения SLA. Покинуть страницу?",
+      ? 'Есть команда с неизвестным результатом. Покинуть страницу и прервать восстановление?'
+      : 'Есть несохранённые изменения SLA. Покинуть страницу?',
   );
 });
 
@@ -124,14 +111,14 @@ watch(
     controller.reset();
     if (canRead.value) void load();
   },
-  { flush: "sync" },
+  { flush: 'sync' },
 );
 onMounted(() => {
-  window.addEventListener("beforeunload", beforeUnload);
+  window.addEventListener('beforeunload', beforeUnload);
   if (canRead.value) void load();
 });
 onBeforeUnmount(() => {
-  window.removeEventListener("beforeunload", beforeUnload);
+  window.removeEventListener('beforeunload', beforeUnload);
   controller.reset();
 });
 </script>
@@ -143,16 +130,12 @@ onBeforeUnmount(() => {
         <div class="eyebrow"><i class="pi pi-clock" /> Настройки поддержки</div>
         <h1 id="sla-settings-title">Календарь и правила SLA</h1>
         <p class="subtitle">
-          Определите рабочее время и сроки ответа для обращений. Публикация
-          создаёт неизменяемые редакции, но не включает расчёт SLA автоматически.
+          Определите рабочее время и сроки ответа для обращений. Публикация создаёт неизменяемые
+          редакции, но не включает расчёт SLA автоматически.
         </p>
       </div>
       <div class="sla-settings-header__actions">
-        <Tag
-          v-if="readOnly && canRead"
-          value="Только просмотр"
-          severity="secondary"
-        />
+        <Tag v-if="readOnly && canRead" value="Только просмотр" severity="secondary" />
         <Button
           v-if="canRead"
           label="Перечитать"
@@ -160,9 +143,7 @@ onBeforeUnmount(() => {
           severity="secondary"
           outlined
           :loading="controller.loading.value"
-          :disabled="
-            controller.mutating.value || Boolean(controller.recovery.value)
-          "
+          :disabled="controller.mutating.value || Boolean(controller.recovery.value)"
           @click="load"
         />
       </div>
@@ -174,18 +155,10 @@ onBeforeUnmount(() => {
 
     <template v-if="canRead">
       <div class="sla-live-region" aria-live="polite" aria-atomic="true">
-        <Message
-          v-if="controller.error.value"
-          severity="error"
-          :closable="false"
-        >
+        <Message v-if="controller.error.value" severity="error" :closable="false">
           {{ controller.error.value }}
         </Message>
-        <Message
-          v-if="controller.success.value"
-          severity="success"
-          :closable="false"
-        >
+        <Message v-if="controller.success.value" severity="success" :closable="false">
           {{ controller.success.value }}
         </Message>
       </div>
@@ -205,16 +178,13 @@ onBeforeUnmount(() => {
           :can-manage="canManage"
         />
 
-
         <section v-if="!showEditor" class="sla-empty-state">
-          <span class="sla-empty-state__icon"
-            ><i class="pi pi-calendar-plus"
-          /></span>
+          <span class="sla-empty-state__icon"><i class="pi pi-calendar-plus" /></span>
           <div>
             <h2>Соберите первую SLA-конфигурацию</h2>
             <p>
-              Часовой пояс, рабочее расписание и три цели не заполняются за вас:
-              их нужно подтвердить перед сохранением.
+              Часовой пояс, рабочее расписание и три цели не заполняются за вас: их нужно
+              подтвердить перед сохранением.
             </p>
           </div>
           <Button
@@ -229,9 +199,7 @@ onBeforeUnmount(() => {
           <section class="sla-review-strip" aria-label="Проверка формы">
             <div>
               <small>Часовой пояс</small>
-              <strong>{{
-                controller.form.value.timeZone || "Не выбран"
-              }}</strong>
+              <strong>{{ controller.form.value.timeZone || 'Не выбран' }}</strong>
             </div>
             <div>
               <small>Рабочие дни</small>
@@ -248,22 +216,16 @@ onBeforeUnmount(() => {
             <div :class="{ 'has-issues': issueCount }">
               <small>Проверка формы</small>
               <strong>{{
-                issueCount
-                  ? `${issueCount} замечаний`
-                  : "Готова к проверке сервером"
+                issueCount ? `${issueCount} замечаний` : 'Готова к проверке сервером'
               }}</strong>
             </div>
           </section>
 
-          <Message
-            v-if="controller.conflict.value"
-            severity="warn"
-            :closable="false"
-          >
+          <Message v-if="controller.conflict.value" severity="warn" :closable="false">
             <div class="sla-conflict-message">
               <span>
-                Серверное состояние уже перечитано. Можно вручную перенести
-                изменения или заменить локальную форму актуальной версией.
+                Серверное состояние уже перечитано. Можно вручную перенести изменения или заменить
+                локальную форму актуальной версией.
               </span>
               <Button
                 label="Взять версию сервера"
@@ -289,15 +251,12 @@ onBeforeUnmount(() => {
 
           <footer v-if="canManage" class="sla-action-bar">
             <div class="sla-action-bar__state">
-              <span
-                class="sla-action-bar__dot"
-                :class="{ 'is-dirty': controller.dirty.value }"
-              />
+              <span class="sla-action-bar__dot" :class="{ 'is-dirty': controller.dirty.value }" />
               <div>
                 <strong>{{
                   controller.dirty.value
-                    ? "Изменения только на этом устройстве"
-                    : "Форма синхронизирована"
+                    ? 'Изменения только на этом устройстве'
+                    : 'Форма синхронизирована'
                 }}</strong>
                 <small v-if="controller.snapshot.value.draft">
                   Сохранённый черновик: поколение
@@ -307,10 +266,7 @@ onBeforeUnmount(() => {
                 <small v-else>Сохранённого черновика пока нет</small>
               </div>
             </div>
-            <div
-              v-if="controller.recovery.value"
-              class="sla-action-bar__recovery"
-            >
+            <div v-if="controller.recovery.value" class="sla-action-bar__recovery">
               <Button
                 label="Повторить тот же запрос"
                 icon="pi pi-replay"
@@ -364,16 +320,11 @@ onBeforeUnmount(() => {
       :style="{ width: 'min(460px, calc(100vw - 32px))' }"
     >
       <p class="dialog-copy">
-        Восстановить этот черновик через текущий API нельзя. Опубликованная
-        конфигурация не изменится.
+        Восстановить этот черновик через текущий API нельзя. Опубликованная конфигурация не
+        изменится.
       </p>
       <template #footer>
-        <Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="discardVisible = false"
-        />
+        <Button label="Отмена" severity="secondary" text @click="discardVisible = false" />
         <Button
           label="Удалить черновик"
           severity="danger"
@@ -391,17 +342,12 @@ onBeforeUnmount(() => {
     >
       <div class="publish-confirmation">
         <p class="dialog-copy">
-          Сервер создаст новые неизменяемые редакции календаря и правил, затем
-          удалит сохранённый черновик.
+          Сервер создаст новые неизменяемые редакции календаря и правил, затем удалит сохранённый
+          черновик.
         </p>
       </div>
       <template #footer>
-        <Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="publishVisible = false"
-        />
+        <Button label="Отмена" severity="secondary" text @click="publishVisible = false" />
         <Button
           label="Опубликовать конфигурацию"
           icon="pi pi-send"

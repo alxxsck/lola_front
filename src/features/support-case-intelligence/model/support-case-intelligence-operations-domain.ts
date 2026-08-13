@@ -1,15 +1,7 @@
 export type CaseIntelligenceOperationsSection =
-  | "evaluation"
-  | "observability"
-  | "decisions"
-  | "versions";
+  'evaluation' | 'observability' | 'decisions' | 'versions';
 
-export type CaseIntelligenceGateName =
-  | "security"
-  | "quality"
-  | "calibration"
-  | "cost"
-  | "capacity";
+export type CaseIntelligenceGateName = 'security' | 'quality' | 'calibration' | 'cost' | 'capacity';
 
 export type CaseIntelligenceGates = Record<CaseIntelligenceGateName, boolean>;
 
@@ -76,8 +68,7 @@ export interface CaseIntelligenceDatasetDistributionItem {
   count: number;
 }
 
-export interface CaseIntelligenceDatasetDetail
-  extends CaseIntelligenceDatasetSummary {
+export interface CaseIntelligenceDatasetDetail extends CaseIntelligenceDatasetSummary {
   locales: CaseIntelligenceDatasetDistributionItem[];
   channels: CaseIntelligenceDatasetDistributionItem[];
   classes: CaseIntelligenceDatasetDistributionItem[];
@@ -88,7 +79,7 @@ export interface CaseIntelligenceDatasetDetail
 export interface CaseIntelligenceEvaluationHistoryItem {
   id: string;
   version: number;
-  status: "PENDING" | "PROCESSING" | "PASSED" | "FAILED" | "OUTCOME_UNKNOWN";
+  status: 'PENDING' | 'PROCESSING' | 'PASSED' | 'FAILED' | 'OUTCOME_UNKNOWN';
   gates: CaseIntelligenceGates;
   datasetRevisionId: string;
   detectionPolicyRevisionId: string;
@@ -173,8 +164,7 @@ export interface CaseIntelligenceObservation {
   reviewed: boolean;
 }
 
-export interface CaseIntelligenceEvaluationReport
-  extends CaseIntelligenceEvaluationHistoryItem {
+export interface CaseIntelligenceEvaluationReport extends CaseIntelligenceEvaluationHistoryItem {
   pending: boolean;
   failureCode: string | null;
   sampleCount: number;
@@ -352,7 +342,7 @@ export interface CorrectCaseIntelligenceDecisionCommand {
 }
 
 export type CaseIntelligencePendingCommand =
-  | { operation: "RUN_EVALUATION"; body: RunCaseIntelligenceEvaluationCommand }
-  | { operation: "ACTIVATE_RELEASE"; body: ActivateCaseIntelligenceReleaseCommand }
-  | { operation: "ROLLBACK_RELEASE"; body: RollbackCaseIntelligenceReleaseCommand }
-  | { operation: "CORRECT_DECISION"; body: CorrectCaseIntelligenceDecisionCommand };
+  | { operation: 'RUN_EVALUATION'; body: RunCaseIntelligenceEvaluationCommand }
+  | { operation: 'ACTIVATE_RELEASE'; body: ActivateCaseIntelligenceReleaseCommand }
+  | { operation: 'ROLLBACK_RELEASE'; body: RollbackCaseIntelligenceReleaseCommand }
+  | { operation: 'CORRECT_DECISION'; body: CorrectCaseIntelligenceDecisionCommand };

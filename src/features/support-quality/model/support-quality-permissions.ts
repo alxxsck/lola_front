@@ -1,4 +1,4 @@
-export type QualityReviewScope = "NONE" | "SELF" | "PROJECT";
+export type QualityReviewScope = 'NONE' | 'SELF' | 'PROJECT';
 
 export function qualityQueueAccess(permissionCodes: string[]): {
   tasks: boolean;
@@ -6,11 +6,11 @@ export function qualityQueueAccess(permissionCodes: string[]): {
 } {
   const permissions = new Set(permissionCodes);
   return {
-    tasks: permissions.has("project.support.quality.review"),
-    reviews: permissions.has("project.support.quality.read")
-      ? "PROJECT"
-      : permissions.has("project.support.quality.self_read")
-        ? "SELF"
-        : "NONE",
+    tasks: permissions.has('project.support.quality.review'),
+    reviews: permissions.has('project.support.quality.read')
+      ? 'PROJECT'
+      : permissions.has('project.support.quality.self_read')
+        ? 'SELF'
+        : 'NONE',
   };
 }

@@ -1,35 +1,30 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import Column from "primevue/column";
-import DataTable from "primevue/datatable";
-import Drawer from "primevue/drawer";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import MultiSelect from "primevue/multiselect";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import { useToast } from "primevue/usetoast";
-import { useAuthStore } from "@/features/auth/auth.store";
-import EventPicker, {
-  type EventPickerOption,
-} from "@/features/events/EventPicker.vue";
-import { createLocalEventPickerLoader } from "@/features/events/event-picker-loader";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { repository } from "@/shared/api/repository";
-import type { EventLogFilters } from "@/shared/api/repository/contracts";
-import {
-  buildEventLogFilters,
-  eventPayloadHighlights,
-} from "@/shared/lib/event-logs";
-import { formatDate, relativeTime } from "@/shared/lib/format";
-import type { EventDefinition, EventLog } from "@/shared/types/domain";
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Column from 'primevue/column';
+import DataTable from 'primevue/datatable';
+import Drawer from 'primevue/drawer';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import MultiSelect from 'primevue/multiselect';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import { useToast } from 'primevue/usetoast';
+import { useAuthStore } from '@/features/auth/auth.store';
+import EventPicker, { type EventPickerOption } from '@/features/events/EventPicker.vue';
+import { createLocalEventPickerLoader } from '@/features/events/event-picker-loader';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { repository } from '@/shared/api/repository';
+import type { EventLogFilters } from '@/shared/api/repository/contracts';
+import { buildEventLogFilters, eventPayloadHighlights } from '@/shared/lib/event-logs';
+import { formatDate, relativeTime } from '@/shared/lib/format';
+import type { EventDefinition, EventLog } from '@/shared/types/domain';
 
 withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false });
 
-type ViewMode = "table" | "timeline";
+type ViewMode = 'table' | 'timeline';
 interface FailedPageRequest {
   cursor: string | undefined;
   index: number;
@@ -41,13 +36,8 @@ const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 const toast = useToast();
-const sourceValues: EventLog["source"][] = [
-  "SERVER",
-  "FRONTEND",
-  "INTERNAL",
-  "INTEGRATION",
-];
-const statusValues: EventLog["status"][] = ["PROCESSED", "FAILED", "RECEIVED"];
+const sourceValues: EventLog['source'][] = ['SERVER', 'FRONTEND', 'INTERNAL', 'INTEGRATION'];
+const statusValues: EventLog['status'][] = ['PROCESSED', 'FAILED', 'RECEIVED'];
 const eventDefinitions = ref<EventDefinition[]>([]);
 const logs = ref<EventLog[]>([]);
 const nextCursor = ref<string | null>(null);
@@ -55,40 +45,34 @@ const pageCursors = ref<Array<string | undefined>>([undefined]);
 const pageIndex = ref(0);
 const loading = ref(true);
 const detailLoading = ref(false);
-const error = ref("");
-const filterError = ref("");
+const error = ref('');
+const filterError = ref('');
 const selectedLog = ref<EventLog | null>(null);
 const advancedFilters = ref(false);
 const viewMode = ref<ViewMode>(
-  typeof window !== "undefined" &&
-    window.matchMedia?.("(max-width: 700px)").matches
-    ? "timeline"
-    : "table",
+  typeof window !== 'undefined' && window.matchMedia?.('(max-width: 700px)').matches
+    ? 'timeline'
+    : 'table',
 );
 const filters = reactive({
-  eventCode: queryValues("eventCode").slice(0, 50),
-  externalUserId: queryValue("user"),
-  source: queryValues("source").filter((value): value is EventLog["source"] =>
-    sourceValues.includes(value as EventLog["source"]),
+  eventCode: queryValues('eventCode').slice(0, 50),
+  externalUserId: queryValue('user'),
+  source: queryValues('source').filter((value): value is EventLog['source'] =>
+    sourceValues.includes(value as EventLog['source']),
   ),
-  status: queryValues("status").filter((value): value is EventLog["status"] =>
-    statusValues.includes(value as EventLog["status"]),
+  status: queryValues('status').filter((value): value is EventLog['status'] =>
+    statusValues.includes(value as EventLog['status']),
   ),
-  receivedFrom: queryValue("receivedFrom"),
-  receivedTo: queryValue("receivedTo"),
-  occurredFrom: queryValue("occurredFrom"),
-  occurredTo: queryValue("occurredTo"),
-  limit: [25, 50, 100].includes(Number(queryValue("limit")))
-    ? Number(queryValue("limit"))
-    : 25,
+  receivedFrom: queryValue('receivedFrom'),
+  receivedTo: queryValue('receivedTo'),
+  occurredFrom: queryValue('occurredFrom'),
+  occurredTo: queryValue('occurredTo'),
+  limit: [25, 50, 100].includes(Number(queryValue('limit'))) ? Number(queryValue('limit')) : 25,
 });
 const appliedFilters = ref<EventLogFilters>({});
 const failedRequest = ref<FailedPageRequest | null>(null);
 const canRead = computed(() =>
-  hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
-    "project.event_logs.read",
-  ),
+  hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.event_logs.read'),
 );
 const eventOptions = computed<EventPickerOption[]>(() =>
   eventDefinitions.value.map((item) => ({
@@ -96,26 +80,26 @@ const eventOptions = computed<EventPickerOption[]>(() =>
     name: item.name,
     code: item.code,
     description: item.description,
-    ingestion: item.clientIngestible ? "FRONTEND_ALLOWED" : "BACKEND_ONLY",
+    ingestion: item.clientIngestible ? 'FRONTEND_ALLOWED' : 'BACKEND_ONLY',
     tags: [`Схема v${item.version}`],
   })),
 );
 const loadEvents = createLocalEventPickerLoader(() => eventOptions.value);
 const sourceOptions = [
-  { label: "Backend", value: "SERVER" },
-  { label: "Frontend", value: "FRONTEND" },
-  { label: "Внутренние", value: "INTERNAL" },
-  { label: "Интеграции", value: "INTEGRATION" },
+  { label: 'Backend', value: 'SERVER' },
+  { label: 'Frontend', value: 'FRONTEND' },
+  { label: 'Внутренние', value: 'INTERNAL' },
+  { label: 'Интеграции', value: 'INTEGRATION' },
 ];
 const statusOptions = [
-  { label: "Обработано", value: "PROCESSED" },
-  { label: "Ошибка", value: "FAILED" },
-  { label: "Получено", value: "RECEIVED" },
+  { label: 'Обработано', value: 'PROCESSED' },
+  { label: 'Ошибка', value: 'FAILED' },
+  { label: 'Получено', value: 'RECEIVED' },
 ];
 const limitOptions = [
-  { label: "25 на странице", value: 25 },
-  { label: "50 на странице", value: 50 },
-  { label: "100 на странице", value: 100 },
+  { label: '25 на странице', value: 25 },
+  { label: '50 на странице', value: 50 },
+  { label: '100 на странице', value: 100 },
 ];
 const activeFilterCount = computed(
   () =>
@@ -130,13 +114,11 @@ const activeFilterCount = computed(
       filters.occurredTo,
     ].filter(Boolean).length,
 );
-const failedCount = computed(
-  () => logs.value.filter((item) => item.status === "FAILED").length,
-);
+const failedCount = computed(() => logs.value.filter((item) => item.status === 'FAILED').length);
 const frontendCount = computed(
-  () => logs.value.filter((item) => item.source === "FRONTEND").length,
+  () => logs.value.filter((item) => item.source === 'FRONTEND').length,
 );
-const appliedUserId = computed(() => appliedFilters.value.externalUserId ?? "");
+const appliedUserId = computed(() => appliedFilters.value.externalUserId ?? '');
 let loadSequence = 0;
 let detailSequence = 0;
 let projectGeneration = 0;
@@ -153,15 +135,13 @@ async function initializeProject() {
     const definitionsPromise = repository
       .getEvents(projectId)
       .then((items) => {
-        if (isCurrentProject(projectId, generation))
-          eventDefinitions.value = items;
+        if (isCurrentProject(projectId, generation)) eventDefinitions.value = items;
       })
       .catch(() => undefined);
     await Promise.all([definitionsPromise, loadPage(undefined, 0)]);
     if (!isCurrentProject(projectId, generation)) return;
-    const linkedEventId = queryValue("eventId");
-    if (linkedEventId)
-      await openLinkedDetail(projectId, linkedEventId, generation);
+    const linkedEventId = queryValue('eventId');
+    if (linkedEventId) await openLinkedDetail(projectId, linkedEventId, generation);
   }
 }
 
@@ -178,8 +158,8 @@ function resetProjectState() {
   failedRequest.value = null;
   loading.value = false;
   detailLoading.value = false;
-  error.value = "";
-  filterError.value = "";
+  error.value = '';
+  filterError.value = '';
 }
 
 function isCurrentProject(projectId: string, generation: number) {
@@ -190,8 +170,7 @@ onMounted(initializeProject);
 watch(
   () => [auth.project?.id, canRead.value] as const,
   ([projectId, readable], [previousProjectId, previousReadable]) => {
-    if (projectId === previousProjectId && readable === previousReadable)
-      return;
+    if (projectId === previousProjectId && readable === previousReadable) return;
     void initializeProject();
   },
 );
@@ -210,9 +189,9 @@ async function openLinkedDetail(
   } catch (cause) {
     if (sequence === detailSequence && isCurrentProject(projectId, generation))
       toast.add({
-        severity: "error",
-        summary: "Event Log не найден",
-        detail: cause instanceof Error ? cause.message : "Произошла ошибка",
+        severity: 'error',
+        summary: 'Event Log не найден',
+        detail: cause instanceof Error ? cause.message : 'Произошла ошибка',
         life: 3500,
       });
   } finally {
@@ -222,18 +201,14 @@ async function openLinkedDetail(
 }
 
 function queryValue(key: string) {
-  return typeof route.query[key] === "string" ? route.query[key] : "";
+  return typeof route.query[key] === 'string' ? route.query[key] : '';
 }
 
 function queryValues(key: string): string[] {
   const value = route.query[key];
   const values = Array.isArray(value) ? value : [value];
   return [
-    ...new Set(
-      values.filter(
-        (item): item is string => typeof item === "string" && Boolean(item),
-      ),
-    ),
+    ...new Set(values.filter((item): item is string => typeof item === 'string' && Boolean(item))),
   ];
 }
 
@@ -248,28 +223,23 @@ async function loadPage(
   const generation = projectGeneration;
   const sequence = ++loadSequence;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const page = await repository.getEventLogPage(projectId, {
       ...requestFilters,
       ...(cursor ? { cursor } : {}),
     });
-    if (sequence !== loadSequence || !isCurrentProject(projectId, generation))
-      return false;
+    if (sequence !== loadSequence || !isCurrentProject(projectId, generation)) return false;
     logs.value = page.items;
     nextCursor.value = page.nextCursor;
     pageIndex.value = index;
     failedRequest.value = null;
     afterSuccess?.();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     return true;
   } catch (cause) {
-    if (sequence !== loadSequence || !isCurrentProject(projectId, generation))
-      return false;
-    error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить журнал событий";
+    if (sequence !== loadSequence || !isCurrentProject(projectId, generation)) return false;
+    error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить журнал событий';
     failedRequest.value = {
       cursor,
       index,
@@ -278,8 +248,7 @@ async function loadPage(
     };
     return false;
   } finally {
-    if (sequence === loadSequence && isCurrentProject(projectId, generation))
-      loading.value = false;
+    if (sequence === loadSequence && isCurrentProject(projectId, generation)) loading.value = false;
   }
 }
 
@@ -288,27 +257,23 @@ function validateDates() {
     [
       filters.receivedFrom,
       filters.receivedTo,
-      "Время получения «с» должно быть раньше времени «по».",
+      'Время получения «с» должно быть раньше времени «по».',
     ],
     [
       filters.occurredFrom,
       filters.occurredTo,
-      "Время события «с» должно быть раньше времени «по».",
+      'Время события «с» должно быть раньше времени «по».',
     ],
   ];
-  const invalid = ranges.find(
-    ([from, to]) => from && to && new Date(from) > new Date(to),
-  );
-  filterError.value = invalid?.[2] ?? "";
+  const invalid = ranges.find(([from, to]) => from && to && new Date(from) > new Date(to));
+  filterError.value = invalid?.[2] ?? '';
   return !filterError.value;
 }
 
 async function applyFilters() {
   if (!validateDates()) return;
   const nextFilters = buildEventLogFilters(filters);
-  return loadPage(undefined, 0, nextFilters, () =>
-    commitAppliedFilters(nextFilters),
-  );
+  return loadPage(undefined, 0, nextFilters, () => commitAppliedFilters(nextFilters));
 }
 
 function commitAppliedFilters(nextFilters: EventLogFilters) {
@@ -317,18 +282,12 @@ function commitAppliedFilters(nextFilters: EventLogFilters) {
   void router.replace({
     query: {
       ...(nextFilters.eventCode ? { eventCode: nextFilters.eventCode } : {}),
-      ...(nextFilters.externalUserId
-        ? { user: nextFilters.externalUserId }
-        : {}),
+      ...(nextFilters.externalUserId ? { user: nextFilters.externalUserId } : {}),
       ...(nextFilters.source ? { source: nextFilters.source } : {}),
       ...(nextFilters.status ? { status: nextFilters.status } : {}),
-      ...(nextFilters.receivedFrom
-        ? { receivedFrom: nextFilters.receivedFrom }
-        : {}),
+      ...(nextFilters.receivedFrom ? { receivedFrom: nextFilters.receivedFrom } : {}),
       ...(nextFilters.receivedTo ? { receivedTo: nextFilters.receivedTo } : {}),
-      ...(nextFilters.occurredFrom
-        ? { occurredFrom: nextFilters.occurredFrom }
-        : {}),
+      ...(nextFilters.occurredFrom ? { occurredFrom: nextFilters.occurredFrom } : {}),
       ...(nextFilters.occurredTo ? { occurredTo: nextFilters.occurredTo } : {}),
       ...(nextFilters.limit !== 25 ? { limit: String(nextFilters.limit) } : {}),
     },
@@ -338,16 +297,16 @@ function commitAppliedFilters(nextFilters: EventLogFilters) {
 function resetFilters() {
   Object.assign(filters, {
     eventCode: [],
-    externalUserId: "",
+    externalUserId: '',
     source: [],
     status: [],
-    receivedFrom: "",
-    receivedTo: "",
-    occurredFrom: "",
-    occurredTo: "",
+    receivedFrom: '',
+    receivedTo: '',
+    occurredFrom: '',
+    occurredTo: '',
     limit: 25,
   });
-  filterError.value = "";
+  filterError.value = '';
   return applyFilters();
 }
 
@@ -377,9 +336,9 @@ async function openDetail(item: EventLog) {
   } catch (cause) {
     if (sequence === detailSequence && selectedLog.value?.id === item.id)
       toast.add({
-        severity: "error",
-        summary: "Детали не загружены",
-        detail: cause instanceof Error ? cause.message : "Произошла ошибка",
+        severity: 'error',
+        summary: 'Детали не загружены',
+        detail: cause instanceof Error ? cause.message : 'Произошла ошибка',
         life: 3500,
       });
   } finally {
@@ -402,40 +361,33 @@ function refreshLogs() {
 function retryFailedRequest() {
   const request = failedRequest.value;
   if (!request) return;
-  return loadPage(
-    request.cursor,
-    request.index,
-    request.filters,
-    request.afterSuccess,
-  );
+  return loadPage(request.cursor, request.index, request.filters, request.afterSuccess);
 }
 
 function openEventDefinition(item: EventLog) {
   return router.push({
-    name: "event-definition-workspace",
+    name: 'event-definition-workspace',
     params: { definitionKeyId: item.eventDefinitionKeyId },
     query: { revisionId: item.eventDefinitionId },
   });
 }
 
-function severity(status: EventLog["status"]): "success" | "danger" | "warn" {
-  if (status === "PROCESSED") return "success";
-  if (status === "FAILED") return "danger";
-  return "warn";
+function severity(status: EventLog['status']): 'success' | 'danger' | 'warn' {
+  if (status === 'PROCESSED') return 'success';
+  if (status === 'FAILED') return 'danger';
+  return 'warn';
 }
 
-function statusLabel(status: EventLog["status"]) {
-  return { PROCESSED: "Обработано", FAILED: "Ошибка", RECEIVED: "Получено" }[
-    status
-  ];
+function statusLabel(status: EventLog['status']) {
+  return { PROCESSED: 'Обработано', FAILED: 'Ошибка', RECEIVED: 'Получено' }[status];
 }
 
-function sourceLabel(source: EventLog["source"]) {
+function sourceLabel(source: EventLog['source']) {
   return {
-    SERVER: "Backend",
-    FRONTEND: "Frontend",
-    INTERNAL: "Internal",
-    INTEGRATION: "Интеграция",
+    SERVER: 'Backend',
+    FRONTEND: 'Frontend',
+    INTERNAL: 'Internal',
+    INTEGRATION: 'Интеграция',
   }[source];
 }
 
@@ -451,8 +403,8 @@ function json(value: unknown) {
         <div class="eyebrow">Observability · Event stream</div>
         <h1>Журнал событий</h1>
         <p class="subtitle">
-          Восстановите путь пользователя, проверьте входные данные и результат
-          обработки каждого события.
+          Восстановите путь пользователя, проверьте входные данные и результат обработки каждого
+          события.
         </p>
       </div>
       <div class="header-actions">
@@ -486,8 +438,8 @@ function json(value: unknown) {
     </header>
 
     <Message v-if="!canRead" severity="warn" :closable="false"
-      >Журнал содержит чувствительные диагностические данные и доступен только
-      OWNER и ADMIN.</Message
+      >Журнал содержит чувствительные диагностические данные и доступен только OWNER и
+      ADMIN.</Message
     >
     <template v-else>
       <section class="filter-panel card">
@@ -504,9 +456,7 @@ function json(value: unknown) {
               label="События"
               placeholder="Все события"
               show-ingestion-filter
-              @update:model-value="
-                Array.isArray($event) && (filters.eventCode = $event)
-              "
+              @update:model-value="Array.isArray($event) && (filters.eventCode = $event)"
             />
           </div>
           <div class="field user-filter">
@@ -554,54 +504,28 @@ function json(value: unknown) {
         <div v-if="advancedFilters" class="filter-advanced">
           <div class="field">
             <label for="received-from">Получено с</label
-            ><InputText
-              id="received-from"
-              v-model="filters.receivedFrom"
-              type="datetime-local"
-            />
+            ><InputText id="received-from" v-model="filters.receivedFrom" type="datetime-local" />
           </div>
           <div class="field">
             <label for="received-to">Получено по</label
-            ><InputText
-              id="received-to"
-              v-model="filters.receivedTo"
-              type="datetime-local"
-            />
+            ><InputText id="received-to" v-model="filters.receivedTo" type="datetime-local" />
           </div>
           <div class="field">
             <label for="occurred-from">Событие с</label
-            ><InputText
-              id="occurred-from"
-              v-model="filters.occurredFrom"
-              type="datetime-local"
-            />
+            ><InputText id="occurred-from" v-model="filters.occurredFrom" type="datetime-local" />
           </div>
           <div class="field">
             <label for="occurred-to">Событие по</label
-            ><InputText
-              id="occurred-to"
-              v-model="filters.occurredTo"
-              type="datetime-local"
-            />
+            ><InputText id="occurred-to" v-model="filters.occurredTo" type="datetime-local" />
           </div>
         </div>
-        <Message
-          v-if="filterError"
-          severity="warn"
-          size="small"
-          :closable="false"
-          >{{ filterError }}</Message
-        >
+        <Message v-if="filterError" severity="warn" size="small" :closable="false">{{
+          filterError
+        }}</Message>
         <footer>
-          <button
-            type="button"
-            class="advanced-button"
-            @click="advancedFilters = !advancedFilters"
-          >
-            <i
-              :class="advancedFilters ? 'pi pi-chevron-up' : 'pi pi-sliders-h'"
-            />
-            {{ advancedFilters ? "Скрыть даты" : "Фильтры по времени" }}</button
+          <button type="button" class="advanced-button" @click="advancedFilters = !advancedFilters">
+            <i :class="advancedFilters ? 'pi pi-chevron-up' : 'pi pi-sliders-h'" />
+            {{ advancedFilters ? 'Скрыть даты' : 'Фильтры по времени' }}</button
           ><span v-if="activeFilterCount" class="filter-count"
             >{{ activeFilterCount }} активных</span
           ><Button
@@ -617,25 +541,16 @@ function json(value: unknown) {
             option-label="label"
             option-value="value"
             class="limit-select"
-          /><Button
-            label="Применить"
-            icon="pi pi-search"
-            @click="applyFilters"
-          />
+          /><Button label="Применить" icon="pi pi-search" @click="applyFilters" />
         </footer>
       </section>
 
-      <div
-        class="stream-summary"
-        tabindex="0"
-        aria-label="Сводка потока событий"
-      >
+      <div class="stream-summary" tabindex="0" aria-label="Сводка потока событий">
         <span
-          ><i class="pi pi-lock" /> Список зафиксирован на момент загрузки.
-          Новые события появятся после обновления.</span
+          ><i class="pi pi-lock" /> Список зафиксирован на момент загрузки. Новые события появятся
+          после обновления.</span
         ><span v-if="appliedUserId"
-          ><i class="pi pi-user" /> Путь
-          <strong class="mono">{{ appliedUserId }}</strong></span
+          ><i class="pi pi-user" /> Путь <strong class="mono">{{ appliedUserId }}</strong></span
         ><span><i class="pi pi-desktop" /> {{ frontendCount }} frontend</span
         ><span :class="{ danger: failedCount }"
           ><i class="pi pi-exclamation-circle" /> {{ failedCount }} ошибок</span
@@ -644,12 +559,7 @@ function json(value: unknown) {
       <Message v-if="error" severity="error" :closable="false"
         ><div class="message-row">
           <span>{{ error }}</span
-          ><Button
-            label="Повторить"
-            size="small"
-            text
-            @click="retryFailedRequest"
-          /></div
+          ><Button label="Повторить" size="small" text @click="retryFailedRequest" /></div
       ></Message>
 
       <div v-if="loading" class="loading-list card">
@@ -667,21 +577,14 @@ function json(value: unknown) {
       </div>
 
       <div v-else-if="viewMode === 'table'" class="log-table card">
-        <DataTable
-          :value="logs"
-          data-key="id"
-          row-hover
-          @row-click="openDetail($event.data)"
-        >
+        <DataTable :value="logs" data-key="id" row-hover @row-click="openDetail($event.data)">
           <Column header="Событие"
             ><template #body="{ data }"
               ><div class="event-cell">
                 <span class="event-dot" :class="data.status.toLowerCase()" />
                 <div>
                   <strong>{{ data.eventName }}</strong
-                  ><small class="mono"
-                    >{{ data.eventCode }} · v{{ data.eventVersion }}</small
-                  >
+                  ><small class="mono">{{ data.eventCode }} · v{{ data.eventVersion }}</small>
                 </div>
               </div></template
             ></Column
@@ -696,13 +599,8 @@ function json(value: unknown) {
           >
           <Column header="Главные параметры"
             ><template #body="{ data }"
-              ><div
-                v-if="eventPayloadHighlights(data.payload).length"
-                class="payload-pills"
-              >
-                <span
-                  v-for="entry in eventPayloadHighlights(data.payload)"
-                  :key="entry.key"
+              ><div v-if="eventPayloadHighlights(data.payload).length" class="payload-pills">
+                <span v-for="entry in eventPayloadHighlights(data.payload)" :key="entry.key"
                   ><b>{{ entry.key }}</b> {{ entry.value }}</span
                 ><small v-if="Object.keys(data.payload).length > 3"
                   >+{{ Object.keys(data.payload).length - 3 }}</small
@@ -725,10 +623,10 @@ function json(value: unknown) {
                   relativeTime(data.receivedAt)
                 }}</strong
                 ><small>{{
-                  new Date(data.receivedAt).toLocaleTimeString("ru-RU", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
+                  new Date(data.receivedAt).toLocaleTimeString('ru-RU', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
                   })
                 }}</small>
               </div></template
@@ -751,10 +649,10 @@ function json(value: unknown) {
         <header>
           <div>
             <span class="timeline-kicker">{{
-              appliedUserId ? "User journey" : "Event stream"
+              appliedUserId ? 'User journey' : 'Event stream'
             }}</span>
             <h2>
-              {{ appliedUserId ? "Путь пользователя" : "Хронология событий" }}
+              {{ appliedUserId ? 'Путь пользователя' : 'Хронология событий' }}
             </h2>
           </div>
           <Tag :value="`${logs.length} на странице`" severity="secondary" />
@@ -767,20 +665,19 @@ function json(value: unknown) {
             class="timeline-item"
             @click="openDetail(item)"
           >
-            <span class="timeline-rail"
-              ><i :class="item.status.toLowerCase()" /></span
+            <span class="timeline-rail"><i :class="item.status.toLowerCase()" /></span
             ><span class="timeline-time"
               ><strong>{{
-                new Date(item.receivedAt).toLocaleTimeString("ru-RU", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
+                new Date(item.receivedAt).toLocaleTimeString('ru-RU', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
                 })
               }}</strong
               ><small>{{
-                new Date(item.receivedAt).toLocaleDateString("ru-RU", {
-                  day: "2-digit",
-                  month: "short",
+                new Date(item.receivedAt).toLocaleDateString('ru-RU', {
+                  day: '2-digit',
+                  month: 'short',
                 })
               }}</small></span
             ><span class="timeline-body"
@@ -790,19 +687,10 @@ function json(value: unknown) {
               ><span class="timeline-user"
                 ><i
                   class="timeline-source-icon"
-                  :class="
-                    item.source === 'FRONTEND'
-                      ? 'pi pi-desktop'
-                      : 'pi pi-server'
-                  "
+                  :class="item.source === 'FRONTEND' ? 'pi pi-desktop' : 'pi pi-server'"
                   aria-hidden="true"
-                /><span
-                  >{{ item.userExternalId }} ·
-                  {{ sourceLabel(item.source) }}</span
-                ></span
-              ><span
-                v-if="eventPayloadHighlights(item.payload).length"
-                class="timeline-payload"
+                /><span>{{ item.userExternalId }} · {{ sourceLabel(item.source) }}</span></span
+              ><span v-if="eventPayloadHighlights(item.payload).length" class="timeline-payload"
                 ><span
                   v-for="entry in eventPayloadHighlights(
                     item.payload,
@@ -812,11 +700,9 @@ function json(value: unknown) {
                   ><b>{{ entry.key }}</b> {{ entry.value }}</span
                 ></span
               ></span
-            ><Tag
-              :value="statusLabel(item.status)"
-              :severity="severity(item.status)"
-              rounded
-            /><i class="pi pi-arrow-up-right open-icon" />
+            ><Tag :value="statusLabel(item.status)" :severity="severity(item.status)" rounded /><i
+              class="pi pi-arrow-up-right open-icon"
+            />
           </button>
         </div>
       </div>
@@ -867,30 +753,20 @@ function json(value: unknown) {
             />
           </div>
           <div>
-            <span>Источник</span
-            ><strong>{{ sourceLabel(selectedLog.source) }}</strong>
+            <span>Источник</span><strong>{{ sourceLabel(selectedLog.source) }}</strong>
           </div>
           <div>
-            <span>Получено</span
-            ><strong>{{ formatDate(selectedLog.receivedAt) }}</strong>
+            <span>Получено</span><strong>{{ formatDate(selectedLog.receivedAt) }}</strong>
           </div>
           <div>
-            <span>Пользователь</span
-            ><strong class="mono">{{ selectedLog.userExternalId }}</strong>
+            <span>Пользователь</span><strong class="mono">{{ selectedLog.userExternalId }}</strong>
           </div>
         </div>
-        <Message
-          v-if="selectedLog.status === 'FAILED'"
-          severity="error"
-          :closable="false"
+        <Message v-if="selectedLog.status === 'FAILED'" severity="error" :closable="false"
           ><div>
             <strong>Событие завершилось ошибкой</strong>
             <p>
-              {{
-                selectedLog.error ||
-                selectedLog.message ||
-                "Backend не вернул текст ошибки."
-              }}
+              {{ selectedLog.error || selectedLog.message || 'Backend не вернул текст ошибки.' }}
             </p>
           </div></Message
         >
@@ -917,12 +793,10 @@ function json(value: unknown) {
               <span>Event code</span><code>{{ selectedLog.eventCode }}</code>
             </div>
             <div>
-              <span>Definition</span
-              ><code>{{ selectedLog.eventDefinitionId }}</code>
+              <span>Definition</span><code>{{ selectedLog.eventDefinitionId }}</code>
             </div>
             <div>
-              <span>Schema revision</span
-              ><strong>v{{ selectedLog.eventVersion }}</strong>
+              <span>Schema revision</span><strong>v{{ selectedLog.eventVersion }}</strong>
             </div>
             <div>
               <span>Ingestion policy</span
@@ -932,8 +806,7 @@ function json(value: unknown) {
               <span>Log ID</span><code>{{ selectedLog.id }}</code>
             </div>
             <div>
-              <span>Idempotency</span
-              ><code>{{ selectedLog.externalEventId || "—" }}</code>
+              <span>Idempotency</span><code>{{ selectedLog.externalEventId || '—' }}</code>
             </div>
           </div>
           <div class="policy-snapshot" data-test="policy-snapshot">
@@ -942,42 +815,25 @@ function json(value: unknown) {
               <div>
                 <dt>Приём включён</dt>
                 <dd>
-                  {{
-                    selectedLog.ingestionPolicySnapshot.enabled === true
-                      ? "Да"
-                      : "Нет"
-                  }}
+                  {{ selectedLog.ingestionPolicySnapshot.enabled === true ? 'Да' : 'Нет' }}
                 </dd>
               </div>
               <div>
                 <dt>Из браузера</dt>
                 <dd>
-                  {{
-                    selectedLog.ingestionPolicySnapshot.clientIngestible ===
-                    true
-                      ? "Да"
-                      : "Нет"
-                  }}
+                  {{ selectedLog.ingestionPolicySnapshot.clientIngestible === true ? 'Да' : 'Нет' }}
                 </dd>
               </div>
               <div>
                 <dt>Считает активность</dt>
                 <dd>
-                  {{
-                    selectedLog.ingestionPolicySnapshot.countsAsActivity ===
-                    true
-                      ? "Да"
-                      : "Нет"
-                  }}
+                  {{ selectedLog.ingestionPolicySnapshot.countsAsActivity === true ? 'Да' : 'Нет' }}
                 </dd>
               </div>
               <div>
                 <dt>Источник</dt>
                 <dd>
-                  {{
-                    selectedLog.ingestionPolicySnapshot.source ??
-                    selectedLog.source
-                  }}
+                  {{ selectedLog.ingestionPolicySnapshot.source ?? selectedLog.source }}
                 </dd>
               </div>
             </dl>
@@ -989,10 +845,7 @@ function json(value: unknown) {
               <span class="section-index">02</span>
               <div>
                 <h3>Payload</h3>
-                <p>
-                  {{ Object.keys(selectedLog.payload).length }} параметров от
-                  продукта
-                </p>
+                <p>{{ Object.keys(selectedLog.payload).length }} параметров от продукта</p>
               </div>
             </div>
           </header>
@@ -1339,7 +1192,7 @@ function json(value: unknown) {
 }
 .timeline-rail:before,
 .timeline-rail:after {
-  content: "";
+  content: '';
   position: absolute;
   left: 11px;
   width: 1px;

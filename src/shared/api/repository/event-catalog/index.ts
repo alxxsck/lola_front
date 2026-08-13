@@ -1,13 +1,13 @@
-import { isMockMode } from "@/shared/config/data-mode";
-import { apiEventCatalogRepository } from "./event-catalog-repository";
-import { mockEventCatalogRepository } from "./mock-event-catalog-repository";
+import { isMockMode } from '@/shared/config/data-mode';
+import { apiEventCatalogRepository } from './event-catalog-repository';
+import { mockEventCatalogRepository } from './mock-event-catalog-repository';
 
 export const eventCatalogRepository = isMockMode
   ? mockEventCatalogRepository
   : apiEventCatalogRepository;
 
-export { applyEventMetadataUpdate } from "./event-catalog-contract";
-export type { EventCatalogRepository } from "./event-catalog-repository";
+export { applyEventMetadataUpdate } from './event-catalog-contract';
+export type { EventCatalogRepository } from './event-catalog-repository';
 export type {
   EventCatalogDefinition,
   EventDefinitionLifecycle,
@@ -28,4 +28,4 @@ export type {
   AnalyzeEventSchemaDraftCommand,
   PublishEventSchemaDraftCommand,
   DiscardEventSchemaDraftCommand,
-} from "./event-catalog-contract";
+} from './event-catalog-contract';

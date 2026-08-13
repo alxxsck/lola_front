@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import type { RouteLocationRaw } from "vue-router";
+import { ref, watch } from 'vue';
+import type { RouteLocationRaw } from 'vue-router';
 
 const props = defineProps<{
   label: string;
@@ -8,23 +8,22 @@ const props = defineProps<{
   to?: RouteLocationRaw;
 }>();
 
-const copyState = ref<"idle" | "success" | "error">("idle");
+const copyState = ref<'idle' | 'success' | 'error'>('idle');
 
 watch(
   () => props.value,
   () => {
-    copyState.value = "idle";
+    copyState.value = 'idle';
   },
 );
 
 async function copyIdentifier(): Promise<void> {
   try {
-    if (!navigator.clipboard?.writeText)
-      throw new Error("Clipboard unavailable");
+    if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
     await navigator.clipboard.writeText(props.value);
-    copyState.value = "success";
+    copyState.value = 'success';
   } catch {
-    copyState.value = "error";
+    copyState.value = 'error';
   }
 }
 </script>
@@ -42,11 +41,7 @@ async function copyIdentifier(): Promise<void> {
         type="button"
         class="copy-identifier"
         :class="{ copied: copyState === 'success' }"
-        :aria-label="
-          copyState === 'success'
-            ? `${label} скопирован`
-            : `Скопировать ${label}`
-        "
+        :aria-label="copyState === 'success' ? `${label} скопирован` : `Скопировать ${label}`"
         :title="copyState === 'success' ? 'Скопировано' : 'Копировать ID'"
         @click.stop="copyIdentifier"
       >
@@ -54,7 +49,7 @@ async function copyIdentifier(): Promise<void> {
       </button>
     </div>
     <small v-if="copyState !== 'idle'" aria-live="polite">
-      {{ copyState === "success" ? "Скопировано" : "Не удалось скопировать" }}
+      {{ copyState === 'success' ? 'Скопировано' : 'Не удалось скопировать' }}
     </small>
   </div>
 </template>

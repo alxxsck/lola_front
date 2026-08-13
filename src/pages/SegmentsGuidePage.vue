@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import guideSource from '../../docs/cms-segments-guide.ru.md?raw'
-import { AdminGuidePage } from '@/features/documentation/ui'
+import guideSource from '../../docs/cms-segments-guide.ru.md?raw';
+import { AdminGuidePage } from '@/features/documentation/ui';
 </script>
 
 <template>

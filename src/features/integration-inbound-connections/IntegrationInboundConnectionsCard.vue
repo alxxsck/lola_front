@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
-import Select from "primevue/select";
-import type { IntegrationConnectionResponseDto } from "@/shared/api/generated/models";
-import { integrationRegionOptions } from "@/features/integrations/provider-ui";
+import { computed, onMounted, ref, watch } from 'vue';
+import Select from 'primevue/select';
+import type { IntegrationConnectionResponseDto } from '@/shared/api/generated/models';
+import { integrationRegionOptions } from '@/features/integrations/provider-ui';
 import {
   integrationInboundConnectionsApi,
   type InboundIntegrationProvider,
   type InboundSetupReceipt,
-} from "./integration-inbound-connections.api";
+} from './integration-inbound-connections.api';
 
 const props = defineProps<{
   projectId: string;
@@ -17,31 +17,30 @@ const props = defineProps<{
 }>();
 
 const providerUi = computed(() =>
-  props.provider === "AMPLITUDE"
+  props.provider === 'AMPLITUDE'
     ? {
-        slug: "amplitude",
-        title: "Amplitude",
-        header: "x-retenive-amplitude-secret",
+        slug: 'amplitude',
+        title: 'Amplitude',
+        header: 'x-retenive-amplitude-secret',
         warning:
-          "Amplitude API Call не подписывает webhook: секретный заголовок Retenive обязателен.",
+          'Amplitude API Call не подписывает webhook: секретный заголовок Retenive обязателен.',
       }
     : {
-        slug: "customer-io",
-        title: "Customer.io",
-        header: "X-Signature",
-        warning:
-          "Customer.io должен подписывать исходные байты тела HMAC-SHA1 в X-Signature.",
+        slug: 'customer-io',
+        title: 'Customer.io',
+        header: 'X-Signature',
+        warning: 'Customer.io должен подписывать исходные байты тела HMAC-SHA1 в X-Signature.',
       },
 );
 
 const connections = ref<IntegrationConnectionResponseDto[]>([]);
 const loading = ref(false);
 const pending = ref(false);
-const error = ref("");
-const notice = ref("");
-const displayName = ref("");
-const region = ref<"US" | "EU">("EU");
-const remoteProjectLabel = ref("");
+const error = ref('');
+const notice = ref('');
+const displayName = ref('');
+const region = ref<'US' | 'EU'>('EU');
+const remoteProjectLabel = ref('');
 const overlapSeconds = ref(300);
 const oneTimeReceipt = ref<InboundSetupReceipt | null>(null);
 const commandKeys = new Map<string, string>();
@@ -54,34 +53,32 @@ const inboundConnections = computed(() =>
       connection.projectId === props.projectId &&
       connection.provider === props.provider &&
       connection.inboundEnabled &&
-      connection.lifecycle !== "ARCHIVED",
+      connection.lifecycle !== 'ARCHIVED',
   ),
 );
 
 function lifecycleLabel(value: string): string {
   return (
     {
-      DRAFT: "Черновик",
-      PENDING_TEST: "Ожидает проверки",
-      ACTIVE: "Активно",
-      PAUSED: "Приостановлено",
-      ARCHIVED: "В архиве",
+      DRAFT: 'Черновик',
+      PENDING_TEST: 'Ожидает проверки',
+      ACTIVE: 'Активно',
+      PAUSED: 'Приостановлено',
+      ARCHIVED: 'В архиве',
     }[value] ?? value
   );
 }
 
 function oneTimeSecret(receipt: InboundSetupReceipt): string | null {
-  return "secret" in receipt && receipt.replayed === false
-    ? receipt.secret
-    : null;
+  return 'secret' in receipt && receipt.replayed === false ? receipt.secret : null;
 }
 
 function endpointPath(receipt: InboundSetupReceipt): string | null {
-  return "endpointPath" in receipt ? receipt.endpointPath : null;
+  return 'endpointPath' in receipt ? receipt.endpointPath : null;
 }
 
 function headerName(receipt: InboundSetupReceipt): string {
-  return "headerName" in receipt ? receipt.headerName : providerUi.value.header;
+  return 'headerName' in receipt ? receipt.headerName : providerUi.value.header;
 }
 
 function commandKey(signature: string): string {
@@ -92,14 +89,12 @@ function commandKey(signature: string): string {
   return key;
 }
 
-function payloadTemplate(
-  receipt: InboundSetupReceipt,
-): Record<string, unknown> | null {
-  return "payloadTemplate" in receipt ? receipt.payloadTemplate : null;
+function payloadTemplate(receipt: InboundSetupReceipt): Record<string, unknown> | null {
+  return 'payloadTemplate' in receipt ? receipt.payloadTemplate : null;
 }
 
 function signatureAlgorithm(receipt: InboundSetupReceipt): string | null {
-  return "signatureAlgorithm" in receipt ? receipt.signatureAlgorithm : null;
+  return 'signatureAlgorithm' in receipt ? receipt.signatureAlgorithm : null;
 }
 
 async function load(): Promise<void> {
@@ -107,15 +102,12 @@ async function load(): Promise<void> {
   connections.value = [];
   if (!props.projectId || !props.canRead) return;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
-    const response = await integrationInboundConnectionsApi.list(
-      props.projectId,
-    );
+    const response = await integrationInboundConnectionsApi.list(props.projectId);
     if (epoch === loadEpoch) connections.value = response.items;
   } catch {
-    if (epoch === loadEpoch)
-      error.value = "Не удалось загрузить входящие подключения.";
+    if (epoch === loadEpoch) error.value = 'Не удалось загрузить входящие подключения.';
   } finally {
     if (epoch === loadEpoch) loading.value = false;
   }
@@ -127,8 +119,8 @@ async function create(): Promise<void> {
   const name = displayName.value.trim();
   if (!props.canManage || !name || pending.value) return;
   pending.value = true;
-  error.value = "";
-  notice.value = "";
+  error.value = '';
+  notice.value = '';
   oneTimeReceipt.value = null;
   const signature = `create:${props.provider}:${name}:${region.value}:${remoteProjectLabel.value.trim()}`;
   try {
@@ -144,20 +136,16 @@ async function create(): Promise<void> {
       },
       commandKey(signature),
     );
-    if (
-      projectId !== props.projectId ||
-      !props.canManage ||
-      operationEpoch !== mutationEpoch
-    )
+    if (projectId !== props.projectId || !props.canManage || operationEpoch !== mutationEpoch)
       return;
-    notice.value = "Черновик подключения создан. Теперь настройте webhook.";
+    notice.value = 'Черновик подключения создан. Теперь настройте webhook.';
     commandKeys.delete(signature);
-    displayName.value = "";
-    remoteProjectLabel.value = "";
+    displayName.value = '';
+    remoteProjectLabel.value = '';
     await load();
   } catch {
     if (projectId === props.projectId)
-      error.value = "Не удалось создать черновик входящего подключения.";
+      error.value = 'Не удалось создать черновик входящего подключения.';
   } finally {
     pending.value = false;
   }
@@ -165,19 +153,19 @@ async function create(): Promise<void> {
 
 async function configure(
   connection: IntegrationConnectionResponseDto,
-  operation: "SETUP" | "ROTATE",
+  operation: 'SETUP' | 'ROTATE',
 ): Promise<void> {
   if (!props.canManage || pending.value) return;
   const projectId = props.projectId;
   const operationEpoch = mutationEpoch;
   pending.value = true;
-  error.value = "";
-  notice.value = "";
+  error.value = '';
+  notice.value = '';
   oneTimeReceipt.value = null;
-  const signature = `${operation.toLowerCase()}:${props.provider}:${connection.id}:${connection.version}:${operation === "ROTATE" ? overlapSeconds.value : 0}`;
+  const signature = `${operation.toLowerCase()}:${props.provider}:${connection.id}:${connection.version}:${operation === 'ROTATE' ? overlapSeconds.value : 0}`;
   try {
     const receipt =
-      operation === "SETUP"
+      operation === 'SETUP'
         ? await integrationInboundConnectionsApi.setup(
             props.provider,
             projectId,
@@ -193,32 +181,24 @@ async function configure(
             overlapSeconds.value,
             commandKey(signature),
           );
-    if (
-      projectId !== props.projectId ||
-      !props.canManage ||
-      operationEpoch !== mutationEpoch
-    )
+    if (projectId !== props.projectId || !props.canManage || operationEpoch !== mutationEpoch)
       return;
     oneTimeReceipt.value = receipt;
     commandKeys.delete(signature);
     notice.value = oneTimeSecret(receipt)
-      ? "Сохраните секрет сейчас: после закрытия он больше не отображается."
-      : "Команда уже была выполнена. Секрет не возвращается при повторе; при утрате замените его ещё раз.";
+      ? 'Сохраните секрет сейчас: после закрытия он больше не отображается.'
+      : 'Команда уже была выполнена. Секрет не возвращается при повторе; при утрате замените его ещё раз.';
     await load();
   } catch {
     if (projectId === props.projectId)
-      error.value =
-        "Не удалось настроить входящий webhook. Обновите данные и повторите.";
+      error.value = 'Не удалось настроить входящий webhook. Обновите данные и повторите.';
   } finally {
     pending.value = false;
   }
 }
 
-async function activate(
-  connection: IntegrationConnectionResponseDto,
-): Promise<void> {
-  if (!props.canManage || pending.value || !connection.inbound.configured)
-    return;
+async function activate(connection: IntegrationConnectionResponseDto): Promise<void> {
+  if (!props.canManage || pending.value || !connection.inbound.configured) return;
   const projectId = props.projectId;
   const operationEpoch = mutationEpoch;
   const signature = `activate:${connection.id}:${connection.version}`;
@@ -230,31 +210,25 @@ async function activate(
       connection.version,
       commandKey(signature),
     );
-    if (
-      projectId === props.projectId &&
-      props.canManage &&
-      operationEpoch === mutationEpoch
-    ) {
-      notice.value = "Входящее подключение активировано.";
+    if (projectId === props.projectId && props.canManage && operationEpoch === mutationEpoch) {
+      notice.value = 'Входящее подключение активировано.';
       commandKeys.delete(signature);
       await load();
     }
   } catch {
-    if (projectId === props.projectId)
-      error.value = "Не удалось активировать подключение.";
+    if (projectId === props.projectId) error.value = 'Не удалось активировать подключение.';
   } finally {
     pending.value = false;
   }
 }
 
 watch(
-  () =>
-    [props.projectId, props.provider, props.canRead, props.canManage] as const,
+  () => [props.projectId, props.provider, props.canRead, props.canManage] as const,
   () => {
     mutationEpoch += 1;
     oneTimeReceipt.value = null;
     commandKeys.clear();
-    notice.value = "";
+    notice.value = '';
     void load();
   },
 );
@@ -270,19 +244,13 @@ onMounted(() => void load());
       <div>
         <h2>Защищённый приём из {{ providerUi.title }}</h2>
         <p>
-          Это не второй аккаунт {{ providerUi.title }} и не ещё один API-ключ.
-          Retenive создаёт отдельный адрес webhook и секрет, чтобы проверять каждый
-          входящий запрос до обработки.
+          Это не второй аккаунт {{ providerUi.title }} и не ещё один API-ключ. Retenive создаёт
+          отдельный адрес webhook и секрет, чтобы проверять каждый входящий запрос до обработки.
         </p>
       </div>
-      <span
-        class="status"
-        :data-status="inboundConnections.length ? 'ACTIVE' : 'EMPTY'"
-      >
+      <span class="status" :data-status="inboundConnections.length ? 'ACTIVE' : 'EMPTY'">
         {{
-          inboundConnections.length
-            ? `Подключений: ${inboundConnections.length}`
-            : "Не настроено"
+          inboundConnections.length ? `Подключений: ${inboundConnections.length}` : 'Не настроено'
         }}
       </span>
     </div>
@@ -292,11 +260,7 @@ onMounted(() => void load());
     <p v-if="error" class="feedback error" role="alert">{{ error }}</p>
     <p v-if="notice" class="feedback success" role="status">{{ notice }}</p>
 
-    <article
-      v-if="oneTimeReceipt && canManage"
-      class="one-time-secret"
-      aria-live="polite"
-    >
+    <article v-if="oneTimeReceipt && canManage" class="one-time-secret" aria-live="polite">
       <h3>Одноразовые настройки webhook</h3>
       <dl class="integration-facts">
         <div v-if="endpointPath(oneTimeReceipt)">
@@ -314,9 +278,7 @@ onMounted(() => void load());
         <div v-if="oneTimeSecret(oneTimeReceipt)">
           <dt>Секрет</dt>
           <dd>
-            <code data-testid="inbound-one-time-secret">{{
-              oneTimeSecret(oneTimeReceipt)
-            }}</code>
+            <code data-testid="inbound-one-time-secret">{{ oneTimeSecret(oneTimeReceipt) }}</code>
           </dd>
         </div>
         <div>
@@ -363,32 +325,28 @@ onMounted(() => void load());
           <div>
             <dt>Webhook</dt>
             <dd>
-              {{
-                connection.inbound.configured
-                  ? "Настроен"
-                  : "Webhook ещё не настроен"
-              }}
+              {{ connection.inbound.configured ? 'Настроен' : 'Webhook ещё не настроен' }}
             </dd>
           </div>
           <div>
             <dt>Готовность к приёму</dt>
             <dd>
-              {{ connection.inbound.admissionReady ? "Готов" : "Не готов" }}
+              {{ connection.inbound.admissionReady ? 'Готов' : 'Не готов' }}
             </dd>
           </div>
           <div>
             <dt>Идентификатор секрета</dt>
             <dd>
-              <code>{{ connection.inbound.credentialFingerprint ?? "—" }}</code>
+              <code>{{ connection.inbound.credentialFingerprint ?? '—' }}</code>
             </dd>
           </div>
           <div>
             <dt>Версия секрета</dt>
-            <dd>{{ connection.inbound.credentialRevision ?? "—" }}</dd>
+            <dd>{{ connection.inbound.credentialRevision ?? '—' }}</dd>
           </div>
           <div>
             <dt>Старый секрет действует до</dt>
-            <dd>{{ connection.inbound.overlapEndsAt ?? "—" }}</dd>
+            <dd>{{ connection.inbound.overlapEndsAt ?? '—' }}</dd>
           </div>
         </dl>
         <div v-if="canManage" class="actions">
@@ -423,9 +381,7 @@ onMounted(() => void load());
             </button>
           </div>
           <button
-            v-if="
-              connection.lifecycle !== 'ACTIVE' && connection.inbound.configured
-            "
+            v-if="connection.lifecycle !== 'ACTIVE' && connection.inbound.configured"
             type="button"
             :disabled="pending"
             @click="activate(connection)"
@@ -447,19 +403,14 @@ onMounted(() => void load());
         <div>
           <h3>Новый защищённый адрес</h3>
           <p>
-            Укажите его в {{ providerUi.title }} как получателя событий. После
-            создания Retenive покажет адрес webhook и секрет только один раз.
+            Укажите его в {{ providerUi.title }} как получателя событий. После создания Retenive
+            покажет адрес webhook и секрет только один раз.
           </p>
         </div>
       </div>
       <label class="integration-field">
         <span>Название адреса в Retenive</span>
-        <input
-          v-model="displayName"
-          name="inboundDisplayName"
-          maxlength="120"
-          required
-        />
+        <input v-model="displayName" name="inboundDisplayName" maxlength="120" required />
         <small>Например, «Customer.io — продакшен webhook».</small>
       </label>
       <label class="integration-field">
@@ -472,22 +423,18 @@ onMounted(() => void load());
           fluid
         />
         <small>
-          Выберите регион проекта {{ providerUi.title }}, из которого будут
-          приходить события.
+          Выберите регион проекта {{ providerUi.title }}, из которого будут приходить события.
         </small>
       </label>
       <label class="integration-field">
         <span>Проект в {{ providerUi.title }} (необязательно)</span>
         <input v-model="remoteProjectLabel" maxlength="120" />
         <small>
-          Справочная подпись внешнего проекта или рабочего пространства. На
-          обработку не влияет.
+          Справочная подпись внешнего проекта или рабочего пространства. На обработку не влияет.
         </small>
       </label>
       <div class="form-actions">
-        <button type="submit" :disabled="pending || !displayName.trim()">
-          Создать черновик
-        </button>
+        <button type="submit" :disabled="pending || !displayName.trim()">Создать черновик</button>
       </div>
     </form>
   </section>

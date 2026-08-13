@@ -1,26 +1,19 @@
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  watch,
-} from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import Drawer from "primevue/drawer";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { projectAIOperationsRepository } from "@/features/project-ai-operations/api/project-ai-operations-repository";
-import AIOperationTable from "@/features/project-ai-operations/ui/AIOperationTable.vue";
-import AIOperationDetailPanel from "@/features/project-ai-operations/ui/AIOperationDetailPanel.vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Drawer from 'primevue/drawer';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { projectAIOperationsRepository } from '@/features/project-ai-operations/api/project-ai-operations-repository';
+import AIOperationTable from '@/features/project-ai-operations/ui/AIOperationTable.vue';
+import AIOperationDetailPanel from '@/features/project-ai-operations/ui/AIOperationDetailPanel.vue';
 import AIOperationFilters, {
   type AIOperationFiltersModel,
-} from "@/features/project-ai-operations/ui/AIOperationFilters.vue";
-import AIOperationSummary from "@/features/project-ai-operations/ui/AIOperationSummary.vue";
+} from '@/features/project-ai-operations/ui/AIOperationFilters.vue';
+import AIOperationSummary from '@/features/project-ai-operations/ui/AIOperationSummary.vue';
 import type {
   AiOperationDetailResponseDto,
   AiOperationListItemDto,
@@ -29,7 +22,7 @@ import type {
   AiOperationSubjectPageResponseDto,
   AiOperationSummaryResponseDto,
   AiOperationsSummaryParams,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -42,9 +35,7 @@ const pageInfo = ref<AiOperationPageInfoDto>({
 const summary = ref<AiOperationSummaryResponseDto | null>(null);
 const detail = ref<AiOperationDetailResponseDto | null>(null);
 const subjects = ref<AiOperationSubjectPageResponseDto | null>(null);
-const accessHistory = ref<AiOperationProtectedAccessPageResponseDto | null>(
-  null,
-);
+const accessHistory = ref<AiOperationProtectedAccessPageResponseDto | null>(null);
 const filters = ref<AIOperationFiltersModel>(withBoundedDefaultPeriod({}));
 const listLoading = ref(false);
 const loadingMore = ref(false);
@@ -54,8 +45,8 @@ const timelineLoading = ref(false);
 const usageLoading = ref(false);
 const subjectsLoading = ref(false);
 const accessLoading = ref(false);
-const listError = ref("");
-const detailError = ref("");
+const listError = ref('');
+const detailError = ref('');
 let generation = 0;
 let listGeneration = 0;
 let summaryGeneration = 0;
@@ -67,46 +58,34 @@ let accessGeneration = 0;
 
 const projectId = computed(() => auth.project?.id ?? null);
 const operationId = computed(() =>
-  typeof route.params.operationId === "string"
-    ? route.params.operationId
-    : null,
+  typeof route.params.operationId === 'string' ? route.params.operationId : null,
 );
-const permissionCodes = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
+const permissionCodes = computed(() => auth.project?.effectivePermissionCodes ?? []);
 const canReadOperations = computed(() =>
-  hasProjectPermission(permissionCodes.value, "project.ai_operations.read"),
+  hasProjectPermission(permissionCodes.value, 'project.ai_operations.read'),
 );
 const canReadCost = computed(() =>
-  hasProjectPermission(permissionCodes.value, "project.ai_analysis_cost.read"),
+  hasProjectPermission(permissionCodes.value, 'project.ai_analysis_cost.read'),
 );
 const canReadCmsUsers = computed(
-  () =>
-    auth.user?.platformPermissionCodes?.includes("platform.cms_users.read") ??
-    false,
+  () => auth.user?.platformPermissionCodes?.includes('platform.cms_users.read') ?? false,
 );
 const canReadSubjects = computed(() =>
-  hasProjectPermission(
-    permissionCodes.value,
-    "project.ai_operations.subjects.read",
-  ),
+  hasProjectPermission(permissionCodes.value, 'project.ai_operations.subjects.read'),
 );
 const canReadAudit = computed(() =>
-  hasProjectPermission(
-    permissionCodes.value,
-    "project.ai_operations.audit.read",
-  ),
+  hasProjectPermission(permissionCodes.value, 'project.ai_operations.audit.read'),
 );
 const canReadAnalysisResult = computed(() =>
-  hasProjectPermission(permissionCodes.value, "project.ai_analyses.read"),
+  hasProjectPermission(permissionCodes.value, 'project.ai_analyses.read'),
 );
 const canReadCaseResult = computed(() =>
-  hasProjectPermission(permissionCodes.value, "project.cases.read"),
+  hasProjectPermission(permissionCodes.value, 'project.cases.read'),
 );
 const canReadConversationResult = computed(
   () =>
-    hasProjectPermission(permissionCodes.value, "project.profiles.read") &&
-    hasProjectPermission(permissionCodes.value, "project.conversations.read"),
+    hasProjectPermission(permissionCodes.value, 'project.profiles.read') &&
+    hasProjectPermission(permissionCodes.value, 'project.conversations.read'),
 );
 
 async function loadList(append = false): Promise<void> {
@@ -117,18 +96,13 @@ async function loadList(append = false): Promise<void> {
   const requestListGeneration = ++listGeneration;
   if (append) loadingMore.value = true;
   else listLoading.value = true;
-  listError.value = "";
+  listError.value = '';
   try {
-    const response = await projectAIOperationsRepository.list(
-      currentProjectId,
-      {
-        limit: 30,
-        ...filters.value,
-        ...(append && pageInfo.value.nextCursor
-          ? { cursor: pageInfo.value.nextCursor }
-          : {}),
-      },
-    );
+    const response = await projectAIOperationsRepository.list(currentProjectId, {
+      limit: 30,
+      ...filters.value,
+      ...(append && pageInfo.value.nextCursor ? { cursor: pageInfo.value.nextCursor } : {}),
+    });
     if (
       requestGeneration !== generation ||
       requestListGeneration !== listGeneration ||
@@ -145,14 +119,9 @@ async function loadList(append = false): Promise<void> {
     )
       return;
     listError.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить журнал AI-операций";
+      cause instanceof Error ? cause.message : 'Не удалось загрузить журнал AI-операций';
   } finally {
-    if (
-      requestGeneration === generation &&
-      requestListGeneration === listGeneration
-    ) {
+    if (requestGeneration === generation && requestListGeneration === listGeneration) {
       listLoading.value = false;
       loadingMore.value = false;
     }
@@ -165,12 +134,9 @@ async function loadSummary(): Promise<void> {
   const requestGeneration = generation;
   const requestSummaryGeneration = ++summaryGeneration;
   summaryLoading.value = true;
-  listError.value = "";
+  listError.value = '';
   try {
-    const response = await projectAIOperationsRepository.summary(
-      currentProjectId,
-      summaryParams(),
-    );
+    const response = await projectAIOperationsRepository.summary(currentProjectId, summaryParams());
     if (
       requestGeneration === generation &&
       requestSummaryGeneration === summaryGeneration &&
@@ -184,14 +150,9 @@ async function loadSummary(): Promise<void> {
       projectId.value === currentProjectId
     )
       listError.value =
-        cause instanceof Error
-          ? cause.message
-          : "Не удалось загрузить сводку AI-операций";
+        cause instanceof Error ? cause.message : 'Не удалось загрузить сводку AI-операций';
   } finally {
-    if (
-      requestGeneration === generation &&
-      requestSummaryGeneration === summaryGeneration
-    )
+    if (requestGeneration === generation && requestSummaryGeneration === summaryGeneration)
       summaryLoading.value = false;
   }
 }
@@ -200,30 +161,18 @@ function summaryParams(): AiOperationsSummaryParams {
   const value = filters.value;
   return {
     ...(value.initiatorType ? { initiatorType: value.initiatorType } : {}),
-    ...(value.initiatorCmsUserId
-      ? { initiatorCmsUserId: value.initiatorCmsUserId }
-      : {}),
-    ...(value.initiatorEndUserId
-      ? { initiatorEndUserId: value.initiatorEndUserId }
-      : {}),
+    ...(value.initiatorCmsUserId ? { initiatorCmsUserId: value.initiatorCmsUserId } : {}),
+    ...(value.initiatorEndUserId ? { initiatorEndUserId: value.initiatorEndUserId } : {}),
     ...(value.status ? { status: value.status } : {}),
     ...(value.category ? { category: value.category } : {}),
-    ...(value.authorizedByCmsUserId
-      ? { authorizedByCmsUserId: value.authorizedByCmsUserId }
-      : {}),
-    ...(value.responsibleCmsUserId
-      ? { responsibleCmsUserId: value.responsibleCmsUserId }
-      : {}),
-    ...(value.chargedEndUserId
-      ? { chargedEndUserId: value.chargedEndUserId }
-      : {}),
+    ...(value.authorizedByCmsUserId ? { authorizedByCmsUserId: value.authorizedByCmsUserId } : {}),
+    ...(value.responsibleCmsUserId ? { responsibleCmsUserId: value.responsibleCmsUserId } : {}),
+    ...(value.chargedEndUserId ? { chargedEndUserId: value.chargedEndUserId } : {}),
     ...(value.chargedAccount ? { chargedAccount: value.chargedAccount } : {}),
     ...(value.sourceKind ? { sourceKind: value.sourceKind } : {}),
     ...(value.sourceId ? { sourceId: value.sourceId } : {}),
     ...(value.provider ? { provider: value.provider } : {}),
-    ...(value.providerResponseId
-      ? { providerResponseId: value.providerResponseId }
-      : {}),
+    ...(value.providerResponseId ? { providerResponseId: value.providerResponseId } : {}),
     ...(value.eventCode ? { eventCode: value.eventCode } : {}),
     occurredFrom: value.occurredFrom!,
     occurredTo: value.occurredTo!,
@@ -243,26 +192,26 @@ async function loadDetail(options?: {
   if (!canReadOperations.value) return;
   const requestGeneration = generation;
   const requestKind = options?.appendTimeline
-    ? "timeline"
+    ? 'timeline'
     : options?.appendUsage
-      ? "usage"
-      : "detail";
-  if (requestKind === "timeline" && timelineLoading.value) return;
-  if (requestKind === "usage" && usageLoading.value) return;
+      ? 'usage'
+      : 'detail';
+  if (requestKind === 'timeline' && timelineLoading.value) return;
+  if (requestKind === 'usage' && usageLoading.value) return;
   const requestDetailGeneration =
-    requestKind === "timeline"
+    requestKind === 'timeline'
       ? ++timelineGeneration
-      : requestKind === "usage"
+      : requestKind === 'usage'
         ? ++usageGeneration
         : ++detailGeneration;
-  if (requestKind === "detail") {
+  if (requestKind === 'detail') {
     timelineGeneration += 1;
     usageGeneration += 1;
   }
-  if (requestKind === "detail") detailLoading.value = true;
-  else if (requestKind === "timeline") timelineLoading.value = true;
+  if (requestKind === 'detail') detailLoading.value = true;
+  else if (requestKind === 'timeline') timelineLoading.value = true;
   else usageLoading.value = true;
-  detailError.value = "";
+  detailError.value = '';
   try {
     const response = await projectAIOperationsRepository.detail(
       currentProjectId,
@@ -298,10 +247,7 @@ async function loadDetail(options?: {
         timelinePageInfo: detail.value.timelinePageInfo,
         usage: {
           ...response.usage,
-          attempts: [
-            ...detail.value.usage.attempts,
-            ...response.usage.attempts,
-          ],
+          attempts: [...detail.value.usage.attempts, ...response.usage.attempts],
         },
       };
     } else {
@@ -316,29 +262,27 @@ async function loadDetail(options?: {
     )
       return;
     detailError.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить защищённые детали операции";
+      cause instanceof Error ? cause.message : 'Не удалось загрузить защищённые детали операции';
   } finally {
     if (
       requestGeneration === generation &&
       isCurrentDetailRequest(requestKind, requestDetailGeneration)
     )
-      if (requestKind === "detail") detailLoading.value = false;
-      else if (requestKind === "timeline") timelineLoading.value = false;
+      if (requestKind === 'detail') detailLoading.value = false;
+      else if (requestKind === 'timeline') timelineLoading.value = false;
       else usageLoading.value = false;
   }
 }
 
 function isCurrentDetailRequest(
-  kind: "detail" | "timeline" | "usage",
+  kind: 'detail' | 'timeline' | 'usage',
   requestGeneration: number,
 ): boolean {
   return (
     requestGeneration ===
-    (kind === "timeline"
+    (kind === 'timeline'
       ? timelineGeneration
-      : kind === "usage"
+      : kind === 'usage'
         ? usageGeneration
         : detailGeneration)
   );
@@ -347,8 +291,7 @@ function isCurrentDetailRequest(
 async function loadSubjects(append = false): Promise<void> {
   const currentProjectId = projectId.value;
   const currentOperationId = operationId.value;
-  if (!currentProjectId || !currentOperationId || !canReadSubjects.value)
-    return;
+  if (!currentProjectId || !currentOperationId || !canReadSubjects.value) return;
   if (subjectsLoading.value) return;
   if (append && !subjects.value?.pageInfo.nextCursor) return;
   const requestGeneration = generation;
@@ -387,14 +330,9 @@ async function loadSubjects(append = false): Promise<void> {
       operationId.value === currentOperationId
     )
       detailError.value =
-        cause instanceof Error
-          ? cause.message
-          : "Не удалось загрузить участников данных";
+        cause instanceof Error ? cause.message : 'Не удалось загрузить участников данных';
   } finally {
-    if (
-      requestGeneration === generation &&
-      requestSubjectGeneration === subjectGeneration
-    )
+    if (requestGeneration === generation && requestSubjectGeneration === subjectGeneration)
       subjectsLoading.value = false;
   }
 }
@@ -441,14 +379,9 @@ async function loadAccessHistory(append = false): Promise<void> {
       operationId.value === currentOperationId
     )
       detailError.value =
-        cause instanceof Error
-          ? cause.message
-          : "Не удалось загрузить историю доступа";
+        cause instanceof Error ? cause.message : 'Не удалось загрузить историю доступа';
   } finally {
-    if (
-      requestGeneration === generation &&
-      requestAccessGeneration === accessGeneration
-    )
+    if (requestGeneration === generation && requestAccessGeneration === accessGeneration)
       accessLoading.value = false;
   }
 }
@@ -468,21 +401,17 @@ async function refresh(): Promise<void> {
 
 async function closeDetail(): Promise<void> {
   const selectedId = operationId.value;
-  await router.push({ name: "ai-operations" });
+  await router.push({ name: 'ai-operations' });
   await nextTick();
   if (selectedId)
     document
-      .querySelector<HTMLElement>(
-        `[data-operation-id="${selectedId}"] .operation-link`,
-      )
+      .querySelector<HTMLElement>(`[data-operation-id="${selectedId}"] .operation-link`)
       ?.focus();
 }
 
 async function focusDetail(): Promise<void> {
   await nextTick();
-  document
-    .querySelector<HTMLElement>('[data-testid="ai-operation-detail"]')
-    ?.focus();
+  document.querySelector<HTMLElement>('[data-testid="ai-operation-detail"]')?.focus();
 }
 
 function resetProtectedState(): void {
@@ -494,7 +423,7 @@ function resetProtectedState(): void {
   usageLoading.value = false;
   subjectsLoading.value = false;
   accessLoading.value = false;
-  detailError.value = "";
+  detailError.value = '';
   detailGeneration += 1;
   timelineGeneration += 1;
   usageGeneration += 1;
@@ -552,17 +481,17 @@ watch(canReadOperations, async (allowed) => {
   items.value = [];
   summary.value = null;
   pageInfo.value = { hasMore: false, nextCursor: null };
-  listError.value = "";
+  listError.value = '';
   listLoading.value = false;
   loadingMore.value = false;
   summaryLoading.value = false;
   resetProtectedState();
-  await router.push({ name: "overview" });
+  await router.push({ name: 'overview' });
 });
 
 onMounted(async () => {
   if (!canReadOperations.value) {
-    await router.push({ name: "overview" });
+    await router.push({ name: 'overview' });
     return;
   }
   await refresh();
@@ -578,9 +507,7 @@ onBeforeUnmount(() => {
   accessGeneration += 1;
 });
 
-function withBoundedDefaultPeriod(
-  value: AIOperationFiltersModel,
-): AIOperationFiltersModel {
+function withBoundedDefaultPeriod(value: AIOperationFiltersModel): AIOperationFiltersModel {
   if (value.occurredFrom && value.occurredTo) return value;
   const defaultTo = new Date();
   const defaultFrom = new Date(defaultTo.getTime() - 30 * 24 * 60 * 60 * 1_000);
@@ -589,10 +516,7 @@ function withBoundedDefaultPeriod(
     return {
       ...value,
       occurredTo: new Date(
-        Math.min(
-          defaultTo.getTime(),
-          from.getTime() + 30 * 24 * 60 * 60 * 1_000,
-        ),
+        Math.min(defaultTo.getTime(), from.getTime() + 30 * 24 * 60 * 60 * 1_000),
       ).toISOString(),
     };
   }
@@ -600,9 +524,7 @@ function withBoundedDefaultPeriod(
     const to = new Date(value.occurredTo);
     return {
       ...value,
-      occurredFrom: new Date(
-        to.getTime() - 30 * 24 * 60 * 60 * 1_000,
-      ).toISOString(),
+      occurredFrom: new Date(to.getTime() - 30 * 24 * 60 * 60 * 1_000).toISOString(),
     };
   }
   return {
@@ -620,8 +542,8 @@ function withBoundedDefaultPeriod(
         <div class="eyebrow">Контроль работы AI</div>
         <h1>Журнал AI-операций</h1>
         <p class="subtitle">
-          Кто запустил операцию, что было сделано, чем она завершилась и сколько
-          ресурсов потребовала.
+          Кто запустил операцию, что было сделано, чем она завершилась и сколько ресурсов
+          потребовала.
         </p>
       </div>
       <Button
@@ -629,22 +551,12 @@ function withBoundedDefaultPeriod(
         icon="pi pi-refresh"
         severity="secondary"
         outlined
-        :loading="
-          listLoading ||
-          summaryLoading ||
-          detailLoading ||
-          timelineLoading ||
-          usageLoading
-        "
+        :loading="listLoading || summaryLoading || detailLoading || timelineLoading || usageLoading"
         @click="refresh"
       />
     </header>
 
-    <AIOperationSummary
-      :summary="summary"
-      :loading="summaryLoading"
-      :can-read-cost="canReadCost"
-    />
+    <AIOperationSummary :summary="summary" :loading="summaryLoading" :can-read-cost="canReadCost" />
 
     <AIOperationFilters
       :model-value="filters"
@@ -677,10 +589,7 @@ function withBoundedDefaultPeriod(
         <div v-else-if="items.length === 0" class="empty-state">
           <span><i class="pi pi-history" /></span>
           <h2>Операций за выбранный период нет</h2>
-          <p>
-            Здесь появятся анализы, ответы помощника, обработка памяти и другие
-            операции AI.
-          </p>
+          <p>Здесь появятся анализы, ответы помощника, обработка памяти и другие операции AI.</p>
         </div>
         <AIOperationTable
           v-else-if="items.length"

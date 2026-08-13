@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type {
   TelegramChannelHealthStatus,
   TelegramChannelInstallationResponseDto,
   TelegramChannelSetupStatus,
   TelegramChannelTestResponseDto,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
-import { formatAuditActor } from "@/shared/lib/format";
-import { telegramProductInstallationsApi } from "./telegram-product-installations.api";
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
+import { formatAuditActor } from '@/shared/lib/format';
+import { telegramProductInstallationsApi } from './telegram-product-installations.api';
 
 const props = defineProps<{
   projectId: string;
@@ -16,17 +16,17 @@ const props = defineProps<{
   canManage: boolean;
 }>();
 const emit = defineEmits<{
-  "fresh-login-requested": [];
+  'fresh-login-requested': [];
 }>();
 
 const installation = ref<TelegramChannelInstallationResponseDto | null>(null);
 const loading = ref(true);
 const pending = ref(false);
-const loadError = ref("");
-const actionError = ref("");
-const success = ref("");
-const botToken = ref("");
-const createRetryKey = ref("");
+const loadError = ref('');
+const actionError = ref('');
+const success = ref('');
+const botToken = ref('');
+const createRetryKey = ref('');
 const testRetry = ref<{ signature: string; key: string } | null>(null);
 const broadcastsRetry = ref<{ signature: string; key: string } | null>(null);
 const freshAuthRequired = ref(false);
@@ -42,23 +42,21 @@ type Operation = { projectId: string; epoch: number };
 
 const statusView = computed(() => {
   const current = installation.value;
-  if (!current) return { label: "Не подключено", tone: "EMPTY" };
-  if (current.status === "DISABLED")
-    return { label: "Отключено", tone: "DISABLED" };
-  if (current.status === "INVALID")
-    return { label: "Требуется переподключение", tone: "INVALID" };
-  if (current.webhookSetupStatus === "FAILED")
-    return { label: "Webhook не подключён", tone: "FAILED" };
-  if (current.webhookSetupStatus !== "SUCCEEDED")
-    return { label: "Регистрируем webhook", tone: "PROCESSING" };
-  return current.status === "ACTIVE"
-    ? { label: "Подключено", tone: "ACTIVE" }
-    : { label: "Настраивается", tone: "PENDING_SETUP" };
+  if (!current) return { label: 'Не подключено', tone: 'EMPTY' };
+  if (current.status === 'DISABLED') return { label: 'Отключено', tone: 'DISABLED' };
+  if (current.status === 'INVALID') return { label: 'Требуется переподключение', tone: 'INVALID' };
+  if (current.webhookSetupStatus === 'FAILED')
+    return { label: 'Webhook не подключён', tone: 'FAILED' };
+  if (current.webhookSetupStatus !== 'SUCCEEDED')
+    return { label: 'Регистрируем webhook', tone: 'PROCESSING' };
+  return current.status === 'ACTIVE'
+    ? { label: 'Подключено', tone: 'ACTIVE' }
+    : { label: 'Настраивается', tone: 'PENDING_SETUP' };
 });
 const broadcastsReady = computed(
   () =>
-    installation.value?.status === "ACTIVE" &&
-    installation.value.webhookSetupStatus === "SUCCEEDED",
+    installation.value?.status === 'ACTIVE' &&
+    installation.value.webhookSetupStatus === 'SUCCEEDED',
 );
 
 function beginOperation(): Operation | null {
@@ -103,71 +101,69 @@ function belongsToOperation(
 }
 
 function clearFeedback(): void {
-  actionError.value = "";
-  success.value = "";
+  actionError.value = '';
+  success.value = '';
 }
 
 function formatTimestamp(value: string | null | undefined): string {
-  if (!value) return "—";
+  if (!value) return '—';
   const timestamp = new Date(value);
-  return Number.isNaN(timestamp.getTime())
-    ? "—"
-    : timestamp.toLocaleString("ru-RU");
+  return Number.isNaN(timestamp.getTime()) ? '—' : timestamp.toLocaleString('ru-RU');
 }
 
 function failureLabel(code: string | null | undefined): string {
   switch (code) {
     case null:
     case undefined:
-      return "Нет";
-    case "TELEGRAM_BOT_TOKEN_INVALID":
-      return "Token бота недействителен";
-    case "TELEGRAM_BOT_IDENTITY_CHANGED":
-      return "Telegram вернул другого бота";
-    case "TELEGRAM_CHANNEL_TEST_LEASE_EXPIRED":
-      return "Проверка не завершилась вовремя";
-    case "TELEGRAM_CHANNEL_SECRET_UNAVAILABLE":
-      return "Credential недоступен";
-    case "TELEGRAM_CHANNEL_DISABLED":
-      return "Отключено администратором";
+      return 'Нет';
+    case 'TELEGRAM_BOT_TOKEN_INVALID':
+      return 'Token бота недействителен';
+    case 'TELEGRAM_BOT_IDENTITY_CHANGED':
+      return 'Telegram вернул другого бота';
+    case 'TELEGRAM_CHANNEL_TEST_LEASE_EXPIRED':
+      return 'Проверка не завершилась вовремя';
+    case 'TELEGRAM_CHANNEL_SECRET_UNAVAILABLE':
+      return 'Credential недоступен';
+    case 'TELEGRAM_CHANNEL_DISABLED':
+      return 'Отключено администратором';
     default:
-      return "Подключение требует проверки";
+      return 'Подключение требует проверки';
   }
 }
 
 function webhookSetupLabel(status: TelegramChannelSetupStatus): string {
   switch (status) {
-    case "SUCCEEDED":
-      return "Подключён";
-    case "FAILED":
-      return "Ошибка настройки";
-    case "PENDING":
-    case "PROCESSING":
-    case "RETRY_WAIT":
-      return "Настраивается";
+    case 'SUCCEEDED':
+      return 'Подключён';
+    case 'FAILED':
+      return 'Ошибка настройки';
+    case 'PENDING':
+    case 'PROCESSING':
+    case 'RETRY_WAIT':
+      return 'Настраивается';
   }
 }
 
 function healthLabel(status: TelegramChannelHealthStatus): string {
   switch (status) {
-    case "HEALTHY":
-      return "Работает";
-    case "UNHEALTHY":
-      return "Недоступен";
-    case "NOT_TESTED":
-      return "Не проверен";
+    case 'HEALTHY':
+      return 'Работает';
+    case 'UNHEALTHY':
+      return 'Недоступен';
+    case 'NOT_TESTED':
+      return 'Не проверен';
   }
 }
 
 function terminalTest(result: TelegramChannelTestResponseDto): boolean {
-  return result.status === "SUCCEEDED" || result.status === "FAILED";
+  return result.status === 'SUCCEEDED' || result.status === 'FAILED';
 }
 
 function setupPending(value: TelegramChannelInstallationResponseDto): boolean {
   return (
-    value.webhookSetupStatus === "PENDING" ||
-    value.webhookSetupStatus === "PROCESSING" ||
-    value.webhookSetupStatus === "RETRY_WAIT"
+    value.webhookSetupStatus === 'PENDING' ||
+    value.webhookSetupStatus === 'PROCESSING' ||
+    value.webhookSetupStatus === 'RETRY_WAIT'
   );
 }
 
@@ -184,8 +180,7 @@ function durableBroadcastsKey(
   enabled: boolean,
 ): string {
   const signature = `${current.id}:${current.broadcastsVersion}:${enabled}`;
-  if (broadcastsRetry.value?.signature === signature)
-    return broadcastsRetry.value.key;
+  if (broadcastsRetry.value?.signature === signature) return broadcastsRetry.value.key;
   const key = crypto.randomUUID();
   broadcastsRetry.value = { signature, key };
   return key;
@@ -199,9 +194,7 @@ async function awaitWebhookSetup(
   for (let attempt = 0; attempt < 20 && setupPending(latest); attempt += 1) {
     await waitForPoll(500);
     if (!isCurrent(operation)) return latest;
-    const loaded = await telegramProductInstallationsApi.get(
-      operation.projectId,
-    );
+    const loaded = await telegramProductInstallationsApi.get(operation.projectId);
     if (!isCurrent(operation)) return latest;
     if (!loaded || loaded.projectId !== operation.projectId) continue;
     latest = loaded;
@@ -217,23 +210,21 @@ async function load(): Promise<void> {
     if (request === loadRequest) {
       installation.value = null;
       loading.value = false;
-      loadError.value = "";
+      loadError.value = '';
     }
     return;
   }
   loading.value = true;
-  loadError.value = "";
+  loadError.value = '';
   try {
-    const loaded = await telegramProductInstallationsApi.get(
-      operation.projectId,
-    );
+    const loaded = await telegramProductInstallationsApi.get(operation.projectId);
     if (request !== loadRequest || !isCurrent(operation)) return;
     if (loaded && loaded.projectId !== operation.projectId) return;
     installation.value = loaded;
   } catch {
     if (request === loadRequest && isCurrent(operation)) {
       installation.value = null;
-      loadError.value = "Не удалось загрузить пользовательский Telegram.";
+      loadError.value = 'Не удалось загрузить пользовательский Telegram.';
     }
   } finally {
     if (request === loadRequest && isCurrent(operation)) loading.value = false;
@@ -245,13 +236,13 @@ async function create(): Promise<void> {
   const token = botToken.value.trim();
   if (!operation || !props.canManage || pending.value) return;
   if (!token) {
-    actionError.value = "Укажите token Telegram-бота.";
+    actionError.value = 'Укажите token Telegram-бота.';
     return;
   }
   clearFeedback();
-  loadError.value = "";
+  loadError.value = '';
   pending.value = true;
-  botToken.value = "";
+  botToken.value = '';
   let needsRefresh = true;
   try {
     const key = createRetryKey.value || crypto.randomUUID();
@@ -262,25 +253,24 @@ async function create(): Promise<void> {
       key,
     );
     if (!belongsToOperation(operation, created)) return;
-    createRetryKey.value = "";
+    createRetryKey.value = '';
     installation.value = created;
     const settled = await awaitWebhookSetup(operation, created);
     if (!belongsToOperation(operation, settled)) return;
     installation.value = settled;
     needsRefresh = false;
-    if (settled.webhookSetupStatus === "FAILED") {
+    if (settled.webhookSetupStatus === 'FAILED') {
       actionError.value = failureLabel(settled.webhookSetupErrorCode);
     } else if (setupPending(settled)) {
-      success.value =
-        "Настройка webhook продолжается в фоне. Обновите статус позже.";
+      success.value = 'Настройка webhook продолжается в фоне. Обновите статус позже.';
     } else {
-      success.value = "Бот и защищённый webhook подключены.";
+      success.value = 'Бот и защищённый webhook подключены.';
     }
   } catch (cause) {
     if (isCurrent(operation)) setActionFailure(cause);
   } finally {
     if (isCurrent(operation)) {
-      botToken.value = "";
+      botToken.value = '';
       if (needsRefresh) await load();
       if (isCurrent(operation)) pending.value = false;
     }
@@ -308,13 +298,13 @@ async function rotate(): Promise<void> {
     return;
   clearFeedback();
   pending.value = true;
-  botToken.value = "";
+  botToken.value = '';
   let needsRefresh = true;
   try {
-    const rotated = await telegramProductInstallationsApi.rotate(
-      operation.projectId,
-      { botToken: token, expectedVersion: current.version },
-    );
+    const rotated = await telegramProductInstallationsApi.rotate(operation.projectId, {
+      botToken: token,
+      expectedVersion: current.version,
+    });
     if (!belongsToOperation(operation, rotated)) return;
     installation.value = rotated;
     testRetry.value = null;
@@ -322,19 +312,18 @@ async function rotate(): Promise<void> {
     if (!belongsToOperation(operation, settled)) return;
     installation.value = settled;
     needsRefresh = false;
-    if (settled.webhookSetupStatus === "FAILED") {
+    if (settled.webhookSetupStatus === 'FAILED') {
       actionError.value = failureLabel(settled.webhookSetupErrorCode);
     } else if (setupPending(settled)) {
-      success.value =
-        "Новый token сохранён. Настройка webhook продолжается в фоне.";
+      success.value = 'Новый token сохранён. Настройка webhook продолжается в фоне.';
     } else {
-      success.value = "Token и защищённый webhook обновлены.";
+      success.value = 'Token и защищённый webhook обновлены.';
     }
   } catch (cause) {
     if (isCurrent(operation)) setActionFailure(cause);
   } finally {
     if (isCurrent(operation)) {
-      botToken.value = "";
+      botToken.value = '';
       if (needsRefresh) await load();
       if (isCurrent(operation)) pending.value = false;
     }
@@ -379,22 +368,17 @@ async function testCurrent(): Promise<void> {
   clearFeedback();
   pending.value = true;
   try {
-    const result = await awaitTest(
-      operation,
-      current,
-      durableTestKey(current.id, current.version),
-    );
+    const result = await awaitTest(operation, current, durableTestKey(current.id, current.version));
     if (!isCurrent(operation)) return;
     if (terminalTest(result)) testRetry.value = null;
-    if (result.status === "SUCCEEDED") {
-      success.value = "Telegram подтвердил bot identity.";
+    if (result.status === 'SUCCEEDED') {
+      success.value = 'Telegram подтвердил bot identity.';
     } else if (
-      result.status === "PENDING" ||
-      result.status === "PROCESSING" ||
-      result.status === "RETRY_WAIT"
+      result.status === 'PENDING' ||
+      result.status === 'PROCESSING' ||
+      result.status === 'RETRY_WAIT'
     ) {
-      success.value =
-        "Проверка ещё выполняется. Повторите действие, чтобы обновить статус.";
+      success.value = 'Проверка ещё выполняется. Повторите действие, чтобы обновить статус.';
     } else {
       actionError.value = failureLabel(result.errorCode);
     }
@@ -425,14 +409,13 @@ async function disable(): Promise<void> {
   clearFeedback();
   pending.value = true;
   try {
-    const disabled = await telegramProductInstallationsApi.disable(
-      operation.projectId,
-      { expectedVersion: current.version },
-    );
+    const disabled = await telegramProductInstallationsApi.disable(operation.projectId, {
+      expectedVersion: current.version,
+    });
     if (!belongsToOperation(operation, disabled)) return;
     installation.value = disabled;
     testRetry.value = null;
-    success.value = "Пользовательский Telegram отключён.";
+    success.value = 'Пользовательский Telegram отключён.';
   } catch (cause) {
     if (isCurrent(operation)) setActionFailure(cause);
   } finally {
@@ -459,7 +442,7 @@ async function setBroadcastsEnabled(enabled: boolean): Promise<void> {
   if (
     !enabled &&
     !window.confirm(
-      "Отключить Telegram-рассылки? Неотправленные сообщения этой инсталляции будут остановлены.",
+      'Отключить Telegram-рассылки? Неотправленные сообщения этой инсталляции будут остановлены.',
     )
   )
     return;
@@ -479,32 +462,27 @@ async function setBroadcastsEnabled(enabled: boolean): Promise<void> {
     if (!belongsToOperation(operation, updated)) return;
     installation.value = updated;
     broadcastsRetry.value = null;
-    success.value = enabled
-      ? "Telegram-рассылки включены."
-      : "Telegram-рассылки выключены.";
+    success.value = enabled ? 'Telegram-рассылки включены.' : 'Telegram-рассылки выключены.';
   } catch (cause) {
     if (!isCurrent(operation)) return;
     const apiError = normalizeApiError(cause);
     freshAuthRequired.value =
       apiError.status === 428 ||
-      apiError.code === "REAUTHENTICATION_REQUIRED" ||
-      apiError.code === "MFA_REQUIRED";
+      apiError.code === 'REAUTHENTICATION_REQUIRED' ||
+      apiError.code === 'MFA_REQUIRED';
     if (freshAuthRequired.value) {
-      actionError.value =
-        "Требуется свежий вход с MFA. Действие не повторялось.";
-    } else if (apiError.code === "TELEGRAM_BROADCASTS_VERSION_CONFLICT") {
-      actionError.value =
-        "Настройки рассылок изменились в другой вкладке. Данные обновлены.";
+      actionError.value = 'Требуется свежий вход с MFA. Действие не повторялось.';
+    } else if (apiError.code === 'TELEGRAM_BROADCASTS_VERSION_CONFLICT') {
+      actionError.value = 'Настройки рассылок изменились в другой вкладке. Данные обновлены.';
       await load();
-    } else if (apiError.code === "TELEGRAM_CHANNEL_NOT_READY") {
-      actionError.value =
-        "Сначала активируйте бота и дождитесь завершения настройки webhook.";
+    } else if (apiError.code === 'TELEGRAM_CHANNEL_NOT_READY') {
+      actionError.value = 'Сначала активируйте бота и дождитесь завершения настройки webhook.';
       await load();
     } else if (apiError.status === 403) {
-      actionError.value = "Недостаточно прав для изменения интеграции.";
+      actionError.value = 'Недостаточно прав для изменения интеграции.';
     } else {
       actionError.value =
-        "Не удалось подтвердить изменение Telegram-рассылок. Актуальное состояние обновлено.";
+        'Не удалось подтвердить изменение Telegram-рассылок. Актуальное состояние обновлено.';
       await load();
     }
   } finally {
@@ -514,21 +492,19 @@ async function setBroadcastsEnabled(enabled: boolean): Promise<void> {
 
 function safeError(cause: unknown): string {
   const apiError = normalizeApiError(cause);
-  if (apiError.code === "TELEGRAM_CHANNEL_VERSION_CONFLICT") {
-    return "Настройки изменились в другой вкладке. Данные обновлены.";
+  if (apiError.code === 'TELEGRAM_CHANNEL_VERSION_CONFLICT') {
+    return 'Настройки изменились в другой вкладке. Данные обновлены.';
   }
-  if (apiError.code === "TELEGRAM_BOT_TOKEN_INVALID")
-    return "Telegram отклонил token бота.";
-  if (apiError.status === 403)
-    return "Недостаточно прав для изменения интеграции.";
-  return "Не удалось изменить пользовательский Telegram. Повторите попытку.";
+  if (apiError.code === 'TELEGRAM_BOT_TOKEN_INVALID') return 'Telegram отклонил token бота.';
+  if (apiError.status === 403) return 'Недостаточно прав для изменения интеграции.';
+  return 'Не удалось изменить пользовательский Telegram. Повторите попытку.';
 }
 
 function setActionFailure(cause: unknown): void {
   const apiError = normalizeApiError(cause);
-  if (apiError.code === "TELEGRAM_CHANNEL_DISABLED") {
-    actionError.value = "";
-    success.value = "Пользовательский Telegram уже отключён.";
+  if (apiError.code === 'TELEGRAM_CHANNEL_DISABLED') {
+    actionError.value = '';
+    success.value = 'Пользовательский Telegram уже отключён.';
     return;
   }
   actionError.value = safeError(apiError);
@@ -542,16 +518,16 @@ watch(
     installation.value = null;
     loading.value = props.canRead;
     pending.value = false;
-    botToken.value = "";
-    createRetryKey.value = "";
+    botToken.value = '';
+    createRetryKey.value = '';
     testRetry.value = null;
     broadcastsRetry.value = null;
     freshAuthRequired.value = false;
-    loadError.value = "";
+    loadError.value = '';
     clearFeedback();
     if (props.canRead) void load();
   },
-  { flush: "sync" },
+  { flush: 'sync' },
 );
 
 onMounted(load);
@@ -559,8 +535,8 @@ onBeforeUnmount(() => {
   disposed = true;
   epoch += 1;
   cancelPollWaits();
-  botToken.value = "";
-  createRetryKey.value = "";
+  botToken.value = '';
+  createRetryKey.value = '';
   testRetry.value = null;
   broadcastsRetry.value = null;
   freshAuthRequired.value = false;
@@ -593,12 +569,7 @@ onBeforeUnmount(() => {
     <p v-if="actionError" class="feedback error" role="alert">
       {{ actionError }}
     </p>
-    <p
-      v-if="freshAuthRequired"
-      class="feedback warning"
-      role="status"
-      aria-live="polite"
-    >
+    <p v-if="freshAuthRequired" class="feedback warning" role="status" aria-live="polite">
       Действие не отправлялось повторно.
       <button
         type="button"
@@ -612,9 +583,7 @@ onBeforeUnmount(() => {
     <p v-if="success" class="feedback success" role="status" aria-live="polite">
       {{ success }}
     </p>
-    <p v-if="loading" aria-live="polite">
-      Загружаем Telegram для пользователей…
-    </p>
+    <p v-if="loading" aria-live="polite">Загружаем Telegram для пользователей…</p>
 
     <template v-else-if="installation">
       <dl class="facts">
@@ -625,11 +594,7 @@ onBeforeUnmount(() => {
         <div>
           <dt>Ссылка на бота</dt>
           <dd>
-            <a
-              :href="installation.deepLinkBase"
-              target="_blank"
-              rel="noreferrer"
-            >
+            <a :href="installation.deepLinkBase" target="_blank" rel="noreferrer">
               {{ installation.deepLinkBase }}
             </a>
           </dd>
@@ -664,22 +629,14 @@ onBeforeUnmount(() => {
           <dt>Последняя ошибка</dt>
           <dd>
             {{
-              failureLabel(
-                installation.lastTestFailureCode ??
-                  installation.webhookSetupErrorCode,
-              )
+              failureLabel(installation.lastTestFailureCode ?? installation.webhookSetupErrorCode)
             }}
           </dd>
         </div>
         <div>
           <dt>Изменил</dt>
           <dd>
-            {{
-              formatAuditActor(
-                installation.updatedByActorType,
-                installation.updatedByActorId,
-              )
-            }}
+            {{ formatAuditActor(installation.updatedByActorType, installation.updatedByActorId) }}
           </dd>
         </div>
         <div>
@@ -688,25 +645,16 @@ onBeforeUnmount(() => {
         </div>
       </dl>
 
-      <section
-        class="broadcasts-settings"
-        aria-labelledby="product-telegram-broadcasts-title"
-      >
+      <section class="broadcasts-settings" aria-labelledby="product-telegram-broadcasts-title">
         <div>
-          <h3 id="product-telegram-broadcasts-title">
-            Доставка Telegram-рассылок
-          </h3>
+          <h3 id="product-telegram-broadcasts-title">Доставка Telegram-рассылок</h3>
           <p v-if="installation.broadcastsEnabled">
-            Включена. Одобренные рассылки могут отправляться пользователям с
-            явным согласием.
+            Включена. Одобренные рассылки могут отправляться пользователям с явным согласием.
           </p>
           <p v-else-if="broadcastsReady">
             Выключена. Одобренные рассылки не отправляются через этого бота.
           </p>
-          <p v-else>
-            Рассылки можно включить после активации бота и завершения настройки
-            webhook.
-          </p>
+          <p v-else>Рассылки можно включить после активации бота и завершения настройки webhook.</p>
         </div>
         <div
           v-if="canManage"
@@ -718,9 +666,7 @@ onBeforeUnmount(() => {
             type="button"
             data-action="product-telegram-broadcasts-enable"
             :aria-pressed="installation.broadcastsEnabled"
-            :disabled="
-              pending || installation.broadcastsEnabled || !broadcastsReady
-            "
+            :disabled="pending || installation.broadcastsEnabled || !broadcastsReady"
             @click="setBroadcastsEnabled(true)"
           >
             Включить
@@ -736,9 +682,7 @@ onBeforeUnmount(() => {
             Выключить
           </button>
         </div>
-        <p v-else class="read-only-note">
-          Изменение требует права управления интеграциями.
-        </p>
+        <p v-else class="read-only-note">Изменение требует права управления интеграциями.</p>
       </section>
 
       <div v-if="canManage" class="actions">
@@ -780,15 +724,9 @@ onBeforeUnmount(() => {
             :disabled="pending"
           />
         </label>
-        <small>
-          Токен очистится сразу после отправки и больше не будет отображаться.
-        </small>
+        <small> Токен очистится сразу после отправки и больше не будет отображаться. </small>
         <div class="form-actions">
-          <button
-            type="submit"
-            class="secondary"
-            :disabled="pending || !botToken.trim()"
-          >
+          <button type="submit" class="secondary" :disabled="pending || !botToken.trim()">
             Заменить токен
           </button>
         </div>
@@ -817,19 +755,16 @@ onBeforeUnmount(() => {
         />
       </label>
       <small>
-        Создайте отдельного бота через BotFather. Retenive проверит и сохранит токен
-        зашифрованным.
+        Создайте отдельного бота через BotFather. Retenive проверит и сохранит токен зашифрованным.
       </small>
       <div class="form-actions">
-        <button type="submit" :disabled="pending || !botToken.trim()">
-          Подключить бота
-        </button>
+        <button type="submit" :disabled="pending || !botToken.trim()">Подключить бота</button>
       </div>
     </form>
 
     <p v-else class="read-only-note">
-      Telegram для пользователей пока не подключён. Для настройки нужны права
-      управления интеграциями.
+      Telegram для пользователей пока не подключён. Для настройки нужны права управления
+      интеграциями.
     </p>
   </section>
 </template>

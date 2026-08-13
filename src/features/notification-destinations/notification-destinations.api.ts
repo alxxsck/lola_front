@@ -7,16 +7,16 @@ import {
   notificationDestinationTestTelegram,
   notificationDestinationUpdate,
   notificationDestinationUpdateTelegram,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   CreateSlackNotificationDestinationDto,
   CreateOperationalTelegramDestinationDto,
   UpdateOperationalTelegramDestinationDto,
   UpdateSlackNotificationDestinationDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 const idempotencyOptions = (key: string) => ({
-  headers: { "Idempotency-Key": key },
+  headers: { 'Idempotency-Key': key },
 });
 
 export const notificationDestinationsApi = {
@@ -29,11 +29,7 @@ export const notificationDestinationsApi = {
     input: CreateSlackNotificationDestinationDto,
     idempotencyKey: string = crypto.randomUUID(),
   ) {
-    return notificationDestinationCreate(
-      projectId,
-      input,
-      idempotencyOptions(idempotencyKey),
-    );
+    return notificationDestinationCreate(projectId, input, idempotencyOptions(idempotencyKey));
   },
 
   updateSlack(
@@ -75,11 +71,7 @@ export const notificationDestinationsApi = {
     destinationId: string,
     input: UpdateOperationalTelegramDestinationDto,
   ) {
-    return notificationDestinationUpdateTelegram(
-      projectId,
-      destinationId,
-      input,
-    );
+    return notificationDestinationUpdateTelegram(projectId, destinationId, input);
   },
 
   createTelegramBindingChallenge(
@@ -87,13 +79,9 @@ export const notificationDestinationsApi = {
     destinationId: string,
     expectedVersion: number,
   ) {
-    return notificationDestinationCreateTelegramBindingChallenge(
-      projectId,
-      destinationId,
-      {
-        expectedVersion,
-      },
-    );
+    return notificationDestinationCreateTelegramBindingChallenge(projectId, destinationId, {
+      expectedVersion,
+    });
   },
 
   testOperationalTelegram(

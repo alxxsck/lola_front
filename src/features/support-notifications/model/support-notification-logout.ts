@@ -1,17 +1,15 @@
-import { registerLogoutCleanup } from "@/features/auth/logout-cleanup";
+import { registerLogoutCleanup } from '@/features/auth/logout-cleanup';
 import {
   markStoredBrowserPushRegistrationForResume,
   readStoredBrowserPushRegistration,
-} from "@/features/support-notifications/model/browser-push-registration-store";
-import {
-  quarantineSupportNotificationRegistrations,
-} from "@/features/support-notifications/model/support-notification-browser-lifecycle";
+} from '@/features/support-notifications/model/browser-push-registration-store';
+import { quarantineSupportNotificationRegistrations } from '@/features/support-notifications/model/support-notification-browser-lifecycle';
 import {
   personalBrowserPushListSubscriptions,
   personalBrowserPushRegisterSubscription,
   personalBrowserPushRevokeSubscription,
-} from "@/shared/api/generated/retenive-backend";
-import { authTeardownRequestOptions } from "@/shared/api/http/axios-instance";
+} from '@/shared/api/generated/retenive-backend';
+import { authTeardownRequestOptions } from '@/shared/api/http/axios-instance';
 
 export function registerSupportNotificationLogoutCleanup(): () => void {
   return registerLogoutCleanup(async (actorId, accessToken) => {
@@ -35,7 +33,7 @@ export function registerSupportNotificationLogoutCleanup(): () => void {
             await personalBrowserPushRegisterSubscription(body, {
               ...authTeardownRequestOptions(accessToken),
               signal: controller.signal,
-              headers: { "Idempotency-Key": idempotencyKey },
+              headers: { 'Idempotency-Key': idempotencyKey },
             }),
           );
         } catch {
@@ -43,9 +41,7 @@ export function registerSupportNotificationLogoutCleanup(): () => void {
         }
       }
       const candidates = new Map(
-        receipts
-          .filter((item) => item.status === "ACTIVE")
-          .map((item) => [item.id, item]),
+        receipts.filter((item) => item.status === 'ACTIVE').map((item) => [item.id, item]),
       );
       if (stored && accessToken) {
         const devices = (
@@ -55,7 +51,7 @@ export function registerSupportNotificationLogoutCleanup(): () => void {
           })
         ).items;
         const device = devices.find(
-          (item) => item.id === stored.deviceId && item.status === "ACTIVE",
+          (item) => item.id === stored.deviceId && item.status === 'ACTIVE',
         );
         if (device) candidates.set(device.id, device);
       }
@@ -67,7 +63,7 @@ export function registerSupportNotificationLogoutCleanup(): () => void {
             {
               ...authTeardownRequestOptions(accessToken),
               signal: controller.signal,
-              headers: { "Idempotency-Key": crypto.randomUUID() },
+              headers: { 'Idempotency-Key': crypto.randomUUID() },
             },
           );
       }

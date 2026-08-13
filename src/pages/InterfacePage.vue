@@ -1,65 +1,62 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import Button from 'primevue/button'
-import Dialog from 'primevue/dialog'
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import Skeleton from 'primevue/skeleton'
-import Tag from 'primevue/tag'
-import Textarea from 'primevue/textarea'
-import ToggleSwitch from 'primevue/toggleswitch'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
-import { useAuthStore } from '@/features/auth/auth.store'
-import { hasProjectPermission } from '@/features/auth/permission-access'
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import Textarea from 'primevue/textarea';
+import ToggleSwitch from 'primevue/toggleswitch';
+import { useConfirm } from 'primevue/useconfirm';
+import { useToast } from 'primevue/usetoast';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
 import {
   buildUiActionIntegrationGuide,
   isUiElementInSection,
   type InterfaceSection,
-} from '@/features/interface/ui-action-integration'
+} from '@/features/interface/ui-action-integration';
 import {
   aiAliases,
   aiTargetBound,
   requiresUiElementAiAuditReason,
   toUiElementAiExposureUpdate,
   validateUiElementAiExposure,
-} from '@/features/interface/ui-element-ai-exposure'
-import { repository } from '@/shared/api/repository'
-import type {
-  CreateUiElement,
-  UpdateUiElement,
-} from '@/shared/api/repository/contracts'
-import { slugify } from '@/shared/lib/format'
-import { useUnsavedChangesGuard } from '@/shared/lib/use-unsaved-changes-guard'
-import type { EntityKind, UiElement } from '@/shared/types/domain'
+} from '@/features/interface/ui-element-ai-exposure';
+import { repository } from '@/shared/api/repository';
+import type { CreateUiElement, UpdateUiElement } from '@/shared/api/repository/contracts';
+import { slugify } from '@/shared/lib/format';
+import { useUnsavedChangesGuard } from '@/shared/lib/use-unsaved-changes-guard';
+import type { EntityKind, UiElement } from '@/shared/types/domain';
 
-type InterfaceKind = InterfaceSection
+type InterfaceKind = InterfaceSection;
 
 interface ElementForm {
-  id?: string
-  name: string
-  code: string
-  kind: InterfaceKind
-  persistedKind?: EntityKind
-  legacyUnboundModal: boolean
-  selector: string
-  route: string
-  modalName: string
-  handler: string
-  configText: string
-  enabled: boolean
-  aiEnabled: boolean
-  aiDescription: string
-  aiAliasesText: string
-  aiAuditReason: string
+  id?: string;
+  name: string;
+  code: string;
+  kind: InterfaceKind;
+  persistedKind?: EntityKind;
+  legacyUnboundModal: boolean;
+  selector: string;
+  route: string;
+  modalName: string;
+  handler: string;
+  configText: string;
+  enabled: boolean;
+  aiEnabled: boolean;
+  aiDescription: string;
+  aiAliasesText: string;
+  aiAuditReason: string;
 }
 
 const kindOptions: Array<{
-  value: InterfaceKind
-  label: string
-  icon: string
-  description: string
+  value: InterfaceKind;
+  label: string;
+  icon: string;
+  description: string;
 }> = [
   {
     value: 'ELEMENT',
@@ -79,58 +76,52 @@ const kindOptions: Array<{
     icon: 'pi pi-window-maximize',
     description: 'Окна, которые открывает Retenive',
   },
-]
+];
 
-const auth = useAuthStore()
-const route = useRoute()
-const router = useRouter()
-const toast = useToast()
-const confirm = useConfirm()
-const elements = ref<UiElement[]>([])
-const activeKind = ref<InterfaceKind>('ELEMENT')
-const search = ref('')
-const loading = ref(true)
-const saving = ref(false)
-const togglingId = ref<string | null>(null)
-const loadError = ref('')
-const formError = ref('')
-const dialogVisible = ref(false)
-const integrationElement = ref<UiElement | null>(null)
-const integrationVisible = ref(false)
-const codeTouched = ref(false)
-const form = ref<ElementForm>(emptyForm('ELEMENT'))
-const initialFormSnapshot = ref('')
+const auth = useAuthStore();
+const route = useRoute();
+const router = useRouter();
+const toast = useToast();
+const confirm = useConfirm();
+const elements = ref<UiElement[]>([]);
+const activeKind = ref<InterfaceKind>('ELEMENT');
+const search = ref('');
+const loading = ref(true);
+const saving = ref(false);
+const togglingId = ref<string | null>(null);
+const loadError = ref('');
+const formError = ref('');
+const dialogVisible = ref(false);
+const integrationElement = ref<UiElement | null>(null);
+const integrationVisible = ref(false);
+const codeTouched = ref(false);
+const form = ref<ElementForm>(emptyForm('ELEMENT'));
+const initialFormSnapshot = ref('');
 const isFormDirty = computed(
   () =>
     dialogVisible.value &&
     Boolean(initialFormSnapshot.value) &&
     JSON.stringify(form.value) !== initialFormSnapshot.value,
-)
+);
 const { confirmDiscard } = useUnsavedChangesGuard(
   isFormDirty,
   'Есть несохранённые изменения элемента. Закрыть форму?',
-)
+);
 
 const filteredElements = computed(() => {
-  const query = search.value.trim().toLowerCase()
+  const query = search.value.trim().toLowerCase();
   return elements.value.filter((item) => {
-    if (!isInSection(item, activeKind.value)) return false
+    if (!isInSection(item, activeKind.value)) return false;
     return (
-      !query ||
-      item.name.toLowerCase().includes(query) ||
-      item.code.toLowerCase().includes(query)
-    )
-  })
-})
+      !query || item.name.toLowerCase().includes(query) || item.code.toLowerCase().includes(query)
+    );
+  });
+});
 
-const currentKind = computed(() =>
-  kindOptions.find((item) => item.value === activeKind.value)!,
-)
+const currentKind = computed(() => kindOptions.find((item) => item.value === activeKind.value)!);
 const integrationGuide = computed(() =>
-  integrationElement.value
-    ? buildUiActionIntegrationGuide(integrationElement.value)
-    : null,
-)
+  integrationElement.value ? buildUiActionIntegrationGuide(integrationElement.value) : null,
+);
 const fieldMeta = computed(() => {
   if (form.value.kind === 'PAGE')
     return {
@@ -138,60 +129,55 @@ const fieldMeta = computed(() => {
       label: 'Путь страницы',
       placeholder: '/account',
       required: true,
-    }
+    };
   if (form.value.kind === 'MODAL')
     return {
       key: 'modalName' as const,
       label: 'Имя модального окна',
       placeholder: 'deposit',
       required: !isLegacyUnboundModal.value,
-    }
+    };
   return {
     key: 'selector' as const,
     label: 'Признак элемента',
     placeholder: "[data-retenive='deposit']",
     required: false,
-  }
-})
+  };
+});
 const isLegacyUnboundModal = computed(
   () => form.value.kind === 'MODAL' && form.value.legacyUnboundModal,
-)
+);
 const canWrite = computed(() =>
-  hasProjectPermission(
-    auth.project?.effectivePermissionCodes ?? [],
-    'project.ui_registry.write',
-  ),
-)
-const canManageAi = canWrite
+  hasProjectPermission(auth.project?.effectivePermissionCodes ?? [], 'project.ui_registry.write'),
+);
+const canManageAi = canWrite;
 const editedElement = computed(() =>
-  form.value.id
-    ? (elements.value.find((item) => item.id === form.value.id) ?? null)
-    : null,
-)
-const parsedAiAliases = computed(() => aiAliases(form.value.aiAliasesText))
+  form.value.id ? (elements.value.find((item) => item.id === form.value.id) ?? null) : null,
+);
+const parsedAiAliases = computed(() => aiAliases(form.value.aiAliasesText));
 const requiresAiAuditReason = computed(() =>
   requiresUiElementAiAuditReason(editedElement.value, form.value),
-)
-const targetBound = computed(() => aiTargetBound(form.value))
+);
+const targetBound = computed(() => aiTargetBound(form.value));
 const effectLockedByAi = computed(
   () => Boolean(editedElement.value?.aiEnabled) && !canManageAi.value,
-)
+);
 
 watch(
   () => route.params.kind,
   (value) => {
-    const candidate = String(value ?? '').toUpperCase()
+    const candidate = String(value ?? '').toUpperCase();
     if (candidate === 'BUTTON') {
-      activeKind.value = 'ELEMENT'
-      return
+      activeKind.value = 'ELEMENT';
+      return;
     }
     if (kindOptions.some((item) => item.value === candidate))
-      activeKind.value = candidate as InterfaceKind
+      activeKind.value = candidate as InterfaceKind;
   },
   { immediate: true },
-)
+);
 
-onMounted(loadElements)
+onMounted(loadElements);
 
 function emptyForm(kind: InterfaceKind): ElementForm {
   return {
@@ -209,15 +195,15 @@ function emptyForm(kind: InterfaceKind): ElementForm {
     aiDescription: '',
     aiAliasesText: '',
     aiAuditReason: '',
-  }
+  };
 }
 
 function kindCount(kind: InterfaceKind) {
-  return elements.value.filter((item) => isInSection(item, kind)).length
+  return elements.value.filter((item) => isInSection(item, kind)).length;
 }
 
 function isInSection(item: UiElement, kind: InterfaceKind) {
-  return isUiElementInSection(item.kind, kind)
+  return isUiElementInSection(item.kind, kind);
 }
 
 function elementKindLabel(kind: EntityKind): string {
@@ -229,45 +215,42 @@ function elementKindLabel(kind: EntityKind): string {
       MODAL: 'Модальное окно',
       HANDLER: 'Обработчик',
     }[kind] ?? kind
-  )
+  );
 }
 
 function selectKind(kind: InterfaceKind) {
-  activeKind.value = kind
+  activeKind.value = kind;
   void router.replace({
     name: 'interface',
     params: { kind: kind.toLowerCase() },
-  })
+  });
 }
 
 async function loadElements() {
-  const projectId = auth.project?.id
-  if (!projectId) return
-  loading.value = true
-  loadError.value = ''
+  const projectId = auth.project?.id;
+  if (!projectId) return;
+  loading.value = true;
+  loadError.value = '';
   try {
-    elements.value = await repository.getElements(projectId)
+    elements.value = await repository.getElements(projectId);
   } catch (cause) {
-    loadError.value = errorMessage(
-      cause,
-      'Не удалось загрузить элементы интерфейса',
-    )
+    loadError.value = errorMessage(cause, 'Не удалось загрузить элементы интерфейса');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function openCreate() {
-  if (!canWrite.value) return
-  form.value = emptyForm(activeKind.value)
-  codeTouched.value = false
-  formError.value = ''
-  initialFormSnapshot.value = JSON.stringify(form.value)
-  dialogVisible.value = true
+  if (!canWrite.value) return;
+  form.value = emptyForm(activeKind.value);
+  codeTouched.value = false;
+  formError.value = '';
+  initialFormSnapshot.value = JSON.stringify(form.value);
+  dialogVisible.value = true;
 }
 
 function openEdit(item: UiElement) {
-  if (!canWrite.value) return
+  if (!canWrite.value) return;
   form.value = {
     id: item.id,
     name: item.name,
@@ -285,100 +268,86 @@ function openEdit(item: UiElement) {
     aiDescription: item.aiDescription ?? '',
     aiAliasesText: item.aiAliases.join(', '),
     aiAuditReason: '',
-  }
-  codeTouched.value = true
-  formError.value = ''
-  initialFormSnapshot.value = JSON.stringify(form.value)
-  dialogVisible.value = true
+  };
+  codeTouched.value = true;
+  formError.value = '';
+  initialFormSnapshot.value = JSON.stringify(form.value);
+  dialogVisible.value = true;
 }
 
 function requestDialogVisibility(value: boolean) {
-  if (!value && !confirmDiscard()) return
-  dialogVisible.value = value
+  if (!value && !confirmDiscard()) return;
+  dialogVisible.value = value;
 }
 
 function onNameInput() {
-  if (!codeTouched.value) form.value.code = slugify(form.value.name)
+  if (!codeTouched.value) form.value.code = slugify(form.value.name);
 }
 
 function onCodeInput() {
-  codeTouched.value = true
+  codeTouched.value = true;
 }
 
 function parseConfig(): Record<string, unknown> | null {
   try {
-    const parsed = JSON.parse(form.value.configText || '{}') as unknown
-    if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object')
-      throw new Error()
-    return parsed as Record<string, unknown>
+    const parsed = JSON.parse(form.value.configText || '{}') as unknown;
+    if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') throw new Error();
+    return parsed as Record<string, unknown>;
   } catch {
-    formError.value =
-      'Проверьте дополнительные настройки: они заполнены в неверном формате.'
-    return null
+    formError.value = 'Проверьте дополнительные настройки: они заполнены в неверном формате.';
+    return null;
   }
 }
 
 async function saveElement() {
-  if (!canWrite.value) return
-  const projectId = auth.project?.id
-  const name = form.value.name.trim()
-  const code = form.value.code.trim()
-  formError.value = ''
-  if (!projectId) return
+  if (!canWrite.value) return;
+  const projectId = auth.project?.id;
+  const name = form.value.name.trim();
+  const code = form.value.code.trim();
+  formError.value = '';
+  if (!projectId) return;
   if (!name) {
-    formError.value = 'Укажите название элемента.'
-    return
+    formError.value = 'Укажите название элемента.';
+    return;
   }
   if (name.length > 100) {
-    formError.value = 'Название не должно превышать 100 символов.'
-    return
+    formError.value = 'Название не должно превышать 100 символов.';
+    return;
   }
   if (!/^[a-z][a-z0-9_.-]*$/.test(code)) {
     formError.value =
-      'Код должен начинаться с буквы и содержать только a–z, 0–9, точку, дефис или подчёркивание.'
-    return
+      'Код должен начинаться с буквы и содержать только a–z, 0–9, точку, дефис или подчёркивание.';
+    return;
   }
   if (code.length > 200) {
-    formError.value = 'Код не должен превышать 200 символов.'
-    return
+    formError.value = 'Код не должен превышать 200 символов.';
+    return;
   }
-  if (
-    elements.value.some(
-      (item) => item.code === code && item.id !== form.value.id,
-    )
-  ) {
-    formError.value = 'Элемент с таким кодом уже существует.'
-    return
+  if (elements.value.some((item) => item.code === code && item.id !== form.value.id)) {
+    formError.value = 'Элемент с таким кодом уже существует.';
+    return;
   }
   if (form.value.kind === 'PAGE' && !form.value.route.trim()) {
-    formError.value = 'Укажите путь страницы.'
-    return
+    formError.value = 'Укажите путь страницы.';
+    return;
   }
-  if (
-    form.value.kind === 'MODAL' &&
-    !form.value.modalName.trim() &&
-    !isLegacyUnboundModal.value
-  ) {
-    formError.value = 'Укажите имя модального окна.'
-    return
+  if (form.value.kind === 'MODAL' && !form.value.modalName.trim() && !isLegacyUnboundModal.value) {
+    formError.value = 'Укажите имя модального окна.';
+    return;
   }
-  const aiDescription = form.value.aiDescription.trim()
-  const aiAuditReason = form.value.aiAuditReason.trim()
-  const aiIssues = validateUiElementAiExposure(
-    editedElement.value,
-    form.value,
-    canManageAi.value,
-  )
+  const aiDescription = form.value.aiDescription.trim();
+  const aiAuditReason = form.value.aiAuditReason.trim();
+  const aiIssues = validateUiElementAiExposure(editedElement.value, form.value, canManageAi.value);
   if (aiIssues.length) {
-    formError.value = aiIssues[0]!
-    return
+    formError.value = aiIssues[0]!;
+    return;
   }
-  const config = parseConfig()
-  if (!config) return
+  const config = parseConfig();
+  if (!config) return;
 
-  saving.value = true
+  saving.value = true;
   try {
-    let saved: UiElement
+    let saved: UiElement;
     if (!form.value.id) {
       const common = {
         name,
@@ -393,110 +362,94 @@ async function saveElement() {
               auditReason: aiAuditReason,
             }
           : {}),
-      }
-      let value: CreateUiElement
+      };
+      let value: CreateUiElement;
       if (form.value.kind === 'PAGE')
-        value = { ...common, kind: 'PAGE', route: form.value.route.trim() }
+        value = { ...common, kind: 'PAGE', route: form.value.route.trim() };
       else if (form.value.kind === 'MODAL')
         value = {
           ...common,
           kind: 'MODAL',
           modalName: form.value.modalName.trim(),
-        }
+        };
       else
         value = {
           ...common,
           kind: 'ELEMENT',
           selector: form.value.selector.trim(),
-        }
-      saved = await repository.createElement(projectId, value)
+        };
+      saved = await repository.createElement(projectId, value);
     } else {
-      const current = elements.value.find((item) => item.id === form.value.id)
-      if (!current)
-        throw new Error('Элемент больше не существует. Обновите список.')
+      const current = elements.value.find((item) => item.id === form.value.id);
+      if (!current) throw new Error('Элемент больше не существует. Обновите список.');
       const kind =
         form.value.kind === 'ELEMENT' && form.value.persistedKind === 'BUTTON'
           ? 'BUTTON'
-          : form.value.kind
-      const value: UpdateUiElement = {}
-      if (name !== current.name) value.name = name
-      if (code !== current.code) value.code = code
-      if (kind !== current.kind) value.kind = kind
-      if (JSON.stringify(config) !== JSON.stringify(current.config))
-        value.config = config
-      if (form.value.enabled !== current.enabled)
-        value.enabled = form.value.enabled
-      if (
-        form.value.kind === 'ELEMENT' &&
-        form.value.selector.trim() !== (current.selector ?? '')
-      )
-        value.selector = form.value.selector.trim()
-      if (
-        form.value.kind === 'PAGE' &&
-        form.value.route.trim() !== (current.route ?? '')
-      )
-        value.route = form.value.route.trim()
-      if (
-        form.value.kind === 'MODAL' &&
-        form.value.modalName.trim() !== (current.modalName ?? '')
-      )
-        value.modalName = form.value.modalName.trim()
-      Object.assign(
-        value,
-        toUiElementAiExposureUpdate(current, form.value, canManageAi.value),
-      )
+          : form.value.kind;
+      const value: UpdateUiElement = {};
+      if (name !== current.name) value.name = name;
+      if (code !== current.code) value.code = code;
+      if (kind !== current.kind) value.kind = kind;
+      if (JSON.stringify(config) !== JSON.stringify(current.config)) value.config = config;
+      if (form.value.enabled !== current.enabled) value.enabled = form.value.enabled;
+      if (form.value.kind === 'ELEMENT' && form.value.selector.trim() !== (current.selector ?? ''))
+        value.selector = form.value.selector.trim();
+      if (form.value.kind === 'PAGE' && form.value.route.trim() !== (current.route ?? ''))
+        value.route = form.value.route.trim();
+      if (form.value.kind === 'MODAL' && form.value.modalName.trim() !== (current.modalName ?? ''))
+        value.modalName = form.value.modalName.trim();
+      Object.assign(value, toUiElementAiExposureUpdate(current, form.value, canManageAi.value));
       saved = Object.keys(value).length
         ? await repository.updateElement(projectId, current.id, value)
-        : current
+        : current;
     }
-    const index = elements.value.findIndex((item) => item.id === saved.id)
-    if (index >= 0) elements.value.splice(index, 1, saved)
-    else elements.value.push(saved)
-    activeKind.value =
-      saved.kind === 'BUTTON' ? 'ELEMENT' : (saved.kind as InterfaceKind)
-    initialFormSnapshot.value = ''
-    dialogVisible.value = false
+    const index = elements.value.findIndex((item) => item.id === saved.id);
+    if (index >= 0) elements.value.splice(index, 1, saved);
+    else elements.value.push(saved);
+    activeKind.value = saved.kind === 'BUTTON' ? 'ELEMENT' : (saved.kind as InterfaceKind);
+    initialFormSnapshot.value = '';
+    dialogVisible.value = false;
     toast.add({
       severity: 'success',
       summary: form.value.id ? 'Элемент обновлён' : 'Элемент добавлен',
       detail: saved.name,
       life: 2800,
-    })
+    });
   } catch (cause) {
-    formError.value = errorMessage(cause, 'Не удалось сохранить элемент')
+    formError.value = errorMessage(cause, 'Не удалось сохранить элемент');
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 async function toggleElement(item: UiElement, enabled: boolean) {
-  if (!canWrite.value) return
-  const projectId = auth.project?.id
-  if (!projectId) return
-  togglingId.value = item.id
+  if (!canWrite.value) return;
+  const projectId = auth.project?.id;
+  if (!projectId) return;
+  togglingId.value = item.id;
   try {
     const saved = await repository.updateElement(projectId, item.id, {
       enabled,
-    })
-    Object.assign(item, saved)
+    });
+    Object.assign(item, saved);
   } catch (cause) {
     toast.add({
       severity: 'error',
       summary: 'Статус не изменён',
       detail: errorMessage(cause),
       life: 3500,
-    })
+    });
   } finally {
-    togglingId.value = null
+    togglingId.value = null;
   }
 }
 
 function aiExposureToggleDisabled(item: UiElement): boolean {
-  return togglingId.value === item.id || item.aiEnabled
+  return togglingId.value === item.id || item.aiEnabled;
 }
 
 function askDelete(item: UiElement) {
-  if (!canWrite.value) return
+  if (!canWrite.value) return;
   confirm.require({
     header: 'Удалить элемент?',
     message: `«${item.name}» станет недоступен в новых сценариях.`,
@@ -505,59 +458,59 @@ function askDelete(item: UiElement) {
     acceptLabel: 'Удалить',
     acceptProps: { severity: 'danger' },
     accept: () => deleteElement(item),
-  })
+  });
 }
 
 function openIntegration(item: UiElement) {
-  integrationElement.value = item
-  integrationVisible.value = true
+  integrationElement.value = item;
+  integrationVisible.value = true;
 }
 
 async function copyIntegrationGuide() {
-  if (!integrationGuide.value) return
+  if (!integrationGuide.value) return;
   try {
-    await navigator.clipboard.writeText(integrationGuide.value)
+    await navigator.clipboard.writeText(integrationGuide.value);
     toast.add({
       severity: 'success',
       summary: 'Инструкция скопирована',
       detail: integrationElement.value?.name,
       life: 2400,
-    })
+    });
   } catch {
     toast.add({
       severity: 'error',
       summary: 'Не удалось скопировать',
       detail: 'Выделите и скопируйте инструкцию вручную.',
       life: 3500,
-    })
+    });
   }
 }
 
 async function deleteElement(item: UiElement) {
-  if (!canWrite.value) return
-  const projectId = auth.project?.id
-  if (!projectId) return
+  if (!canWrite.value) return;
+  const projectId = auth.project?.id;
+  if (!projectId) return;
   try {
-    await repository.deleteElement(projectId, item.id)
-    elements.value = elements.value.filter((value) => value.id !== item.id)
+    await repository.deleteElement(projectId, item.id);
+    elements.value = elements.value.filter((value) => value.id !== item.id);
     toast.add({
       severity: 'success',
       summary: 'Элемент удалён',
       detail: item.name,
       life: 2500,
-    })
+    });
   } catch (cause) {
     toast.add({
       severity: 'error',
       summary: 'Не удалось удалить',
       detail: errorMessage(cause),
       life: 4000,
-    })
+    });
   }
 }
 
 function errorMessage(_cause: unknown, fallback = 'Произошла ошибка') {
-  return fallback
+  return fallback;
 }
 </script>
 
@@ -568,8 +521,7 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
         <div class="eyebrow">Доступные элементы</div>
         <h1>Интерфейс продукта</h1>
         <p class="subtitle">
-          Зарегистрируйте безопасные цели, с которыми сценарии Retenive могут
-          взаимодействовать.
+          Зарегистрируйте безопасные цели, с которыми сценарии Retenive могут взаимодействовать.
         </p>
       </div>
       <Button v-if="canWrite" label="Добавить элемент" icon="pi pi-plus" @click="openCreate" />
@@ -600,20 +552,13 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
           v-model="search"
           :placeholder="`Найти в разделе «${currentKind.label}»`"
       /></span>
-      <span class="result-count"
-        >{{ filteredElements.length }} из {{ kindCount(activeKind) }}</span
-      >
+      <span class="result-count">{{ filteredElements.length }} из {{ kindCount(activeKind) }}</span>
     </div>
 
     <Message v-if="loadError" severity="error" :closable="false"
       ><div class="message-content">
         <span>{{ loadError }}</span
-        ><Button
-          label="Повторить"
-          size="small"
-          text
-          @click="loadElements"
-        /></div
+        ><Button label="Повторить" size="small" text @click="loadElements" /></div
     ></Message>
 
     <div v-if="loading" class="elements-grid">
@@ -646,20 +591,15 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
         <div class="element-target surface-soft">
           <span>Подключение к приложению</span>
           <strong>{{
-            item.selector || item.route || item.modalName
-              ? 'Подключено'
-              : 'Нужно настроить'
+            item.selector || item.route || item.modalName ? 'Подключено' : 'Нужно настроить'
           }}</strong>
           <small v-if="item.kind === 'MODAL' && item.handler"
-            ><i class="pi pi-history" /> Используется старое подключение.
-            Передайте карточку разработчику для обновления.</small
+            ><i class="pi pi-history" /> Используется старое подключение. Передайте карточку
+            разработчику для обновления.</small
           >
         </div>
         <div class="element-meta">
-          <Tag
-            :value="elementKindLabel(item.kind)"
-            severity="secondary"
-          />
+          <Tag :value="elementKindLabel(item.kind)" severity="secondary" />
           <Tag
             :value="item.aiEnabled ? 'Доступно Retenive' : 'Для Retenive выключено'"
             :severity="item.aiEnabled ? 'success' : 'secondary'"
@@ -703,9 +643,7 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
     <div v-else class="empty card">
       <i :class="search ? 'pi pi-search' : currentKind.icon" />
       <strong>{{
-        search
-          ? 'Ничего не найдено'
-          : `Пока нет элементов типа «${currentKind.label}»`
+        search ? 'Ничего не найдено' : `Пока нет элементов типа «${currentKind.label}»`
       }}</strong>
       <p>
         {{
@@ -758,19 +696,14 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
             </button>
           </div>
         </div>
-        <details
-          class="developer-settings"
-          :open="!targetBound || form.configText.trim() !== '{}'"
-        >
+        <details class="developer-settings" :open="!targetBound || form.configText.trim() !== '{}'">
           <summary>Подключение — заполняет разработчик</summary>
           <Message severity="info" size="small" :closable="false"
-            >Чтобы сценарий или Retenive могли открыть этот элемент, передайте
-            разработчику название карточки и попросите заполнить поля в этом
-            блоке.</Message
+            >Чтобы сценарий или Retenive могли открыть этот элемент, передайте разработчику название
+            карточки и попросите заполнить поля в этом блоке.</Message
           >
           <div class="field">
-            <label for="element-code"
-              >Служебный код <span>создаётся автоматически</span></label
+            <label for="element-code">Служебный код <span>создаётся автоматически</span></label
             ><InputText
               id="element-code"
               v-model="form.code"
@@ -784,49 +717,35 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
           <div class="field">
             <label :for="`element-${fieldMeta.key}`"
               >{{ fieldMeta.label }}
-              <span>{{
-                fieldMeta.required ? 'обязательно' : 'необязательно'
-              }}</span></label
+              <span>{{ fieldMeta.required ? 'обязательно' : 'необязательно' }}</span></label
             ><InputText
               :id="`element-${fieldMeta.key}`"
               v-model="form[fieldMeta.key]"
               class="mono"
               :placeholder="fieldMeta.placeholder"
-              :maxlength="
-                form.kind === 'PAGE' ? 1000 : form.kind === 'MODAL' ? 200 : 500
-              "
+              :maxlength="form.kind === 'PAGE' ? 1000 : form.kind === 'MODAL' ? 200 : 500"
               :disabled="effectLockedByAi"
             />
           </div>
-          <Message
-            v-if="isLegacyUnboundModal"
-            severity="warn"
-            size="small"
-            :closable="false"
-            >У этого старого окна пока не задано имя. Новые действия начнут
-            работать только после заполнения поля «Имя модального
-            окна».</Message
+          <Message v-if="isLegacyUnboundModal" severity="warn" size="small" :closable="false"
+            >У этого старого окна пока не задано имя. Новые действия начнут работать только после
+            заполнения поля «Имя модального окна».</Message
           >
-          <div
-            v-if="form.kind === 'MODAL' && form.handler"
-            class="field legacy-field"
-          >
-            <label for="element-handler"
-              >Старый обработчик <span>только для сверки</span></label
+          <div v-if="form.kind === 'MODAL' && form.handler" class="field legacy-field">
+            <label for="element-handler">Старый обработчик <span>только для сверки</span></label
             ><InputText
               id="element-handler"
               :model-value="form.handler"
               class="mono"
               disabled
             /><small
-              >Это поле оставлено для совместимости. Заполните поле «Имя
-              модального окна» выше.</small
+              >Это поле оставлено для совместимости. Заполните поле «Имя модального окна»
+              выше.</small
             >
           </div>
           <div class="field">
             <label for="element-config"
-              >Параметры подключения
-              <span>не меняйте без инструкции разработчика</span></label
+              >Параметры подключения <span>не меняйте без инструкции разработчика</span></label
             ><Textarea
               id="element-config"
               v-model="form.configText"
@@ -840,8 +759,7 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
           <div>
             <strong>Элемент активен</strong
             ><span
-              >Неактивные элементы остаются в реестре, но не предлагаются для
-              новых действий.</span
+              >Неактивные элементы остаются в реестре, но не предлагаются для новых действий.</span
             >
           </div>
           <ToggleSwitch
@@ -855,9 +773,8 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
             <div>
               <strong><i class="pi pi-sparkles" /> Разрешить Retenive</strong
               ><span
-                >Retenive сможет выбирать этот элемент только по названию и
-                описанию. Адреса страницы и служебные настройки ей не
-                передаются.</span
+                >Retenive сможет выбирать этот элемент только по названию и описанию. Адреса
+                страницы и служебные настройки ей не передаются.</span
               >
             </div>
             <ToggleSwitch
@@ -866,25 +783,15 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
               :disabled="!canManageAi || !form.enabled || !targetBound"
             />
           </div>
-          <Message
-            v-if="!canManageAi"
-            severity="info"
-            size="small"
-            :closable="false"
-            >Для изменения доступных Retenive элементов требуется разрешение
-            управления интерфейсом.</Message
+          <Message v-if="!canManageAi" severity="info" size="small" :closable="false"
+            >Для изменения доступных Retenive элементов требуется разрешение управления
+            интерфейсом.</Message
           >
-          <Message
-            v-else-if="!targetBound"
-            severity="warn"
-            size="small"
-            :closable="false"
-            >Сначала заполните адрес страницы, имя окна или признак элемента и
-            включите его.</Message
+          <Message v-else-if="!targetBound" severity="warn" size="small" :closable="false"
+            >Сначала заполните адрес страницы, имя окна или признак элемента и включите
+            его.</Message
           >
-          <template
-            v-if="form.aiEnabled || form.aiDescription || form.aiAliasesText"
-          >
+          <template v-if="form.aiEnabled || form.aiDescription || form.aiAliasesText">
             <div class="field">
               <label for="ai-target-description"
                 >Описание для Retenive <span>20–1000 символов</span></label
@@ -907,9 +814,8 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
                 :disabled="!canManageAi"
                 placeholder="награды, бонусы"
               /><small
-                >Укажите только слова, которыми пользователь может назвать этот
-                элемент. Не добавляйте адреса, программный код или
-                инструкции.</small
+                >Укажите только слова, которыми пользователь может назвать этот элемент. Не
+                добавляйте адреса, программный код или инструкции.</small
               >
             </div>
             <div v-if="requiresAiAuditReason" class="field">
@@ -922,20 +828,13 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
                 maxlength="500"
                 :disabled="!canManageAi"
                 placeholder="Например: пользователи часто просят открыть эту страницу"
-              /><small
-                >Причина сохранится в истории изменений для
-                администраторов.</small
-              >
+              /><small>Причина сохранится в истории изменений для администраторов.</small>
             </div>
           </template>
         </section>
-        <Message
-          v-if="formError"
-          severity="error"
-          size="small"
-          :closable="false"
-          >{{ formError }}</Message
-        >
+        <Message v-if="formError" severity="error" size="small" :closable="false">{{
+          formError
+        }}</Message>
       </form>
       <template #footer
         ><Button
@@ -958,17 +857,14 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
       class="entity-dialog"
       :style="{ width: 'min(720px, calc(100vw - 28px))' }"
     >
-      <div
-        v-if="integrationElement && integrationGuide"
-        class="integration-guide"
-      >
+      <div v-if="integrationElement && integrationGuide" class="integration-guide">
         <div class="integration-summary surface-soft">
           <i class="pi pi-code" />
           <div>
             <strong>{{ integrationElement.name }}</strong
             ><span
-              >Передайте эту инструкцию разработчику. Она нужна, чтобы
-              приложение могло найти и открыть выбранный элемент.</span
+              >Передайте эту инструкцию разработчику. Она нужна, чтобы приложение могло найти и
+              открыть выбранный элемент.</span
             >
           </div>
         </div>
@@ -1018,11 +914,7 @@ function errorMessage(_cause: unknown, fallback = 'Произошла ошибк
 }
 .kind-tabs > button.active {
   border-color: var(--status-accent);
-  background: linear-gradient(
-    145deg,
-    var(--surface-card) 20%,
-    var(--status-accent-soft)
-  );
+  background: linear-gradient(145deg, var(--surface-card) 20%, var(--status-accent-soft));
 }
 .tab-icon,
 .element-icon {

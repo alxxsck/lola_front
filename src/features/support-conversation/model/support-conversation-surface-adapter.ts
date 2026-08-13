@@ -1,8 +1,8 @@
-import type { RequestedMessageTranslation } from "@/features/conversation-translation/model/translation-presentation";
-import { adaptConversationSurfaceMessages } from "@/features/conversation-surface/model/conversation-surface-message-adapter";
-import type { ConversationSurfaceMessage } from "@/features/conversation-surface/model/conversation-surface-contract";
-import type { ConversationMessage } from "@/shared/types/domain";
-import type { SupportMessageDeliveryAction } from "@/features/conversation-delivery/model/use-support-message-delivery";
+import type { RequestedMessageTranslation } from '@/features/conversation-translation/model/translation-presentation';
+import { adaptConversationSurfaceMessages } from '@/features/conversation-surface/model/conversation-surface-message-adapter';
+import type { ConversationSurfaceMessage } from '@/features/conversation-surface/model/conversation-surface-contract';
+import type { ConversationMessage } from '@/shared/types/domain';
+import type { SupportMessageDeliveryAction } from '@/features/conversation-delivery/model/use-support-message-delivery';
 
 interface SupportConversationSurfaceAdapterOptions {
   assistantLabel: string;
@@ -24,11 +24,11 @@ export function adaptSupportConversationMessages(
       ...message,
       delivery: {
         ...message.delivery,
-        detail: action.error ?? "Сообщение точно не доставлено.",
+        detail: action.error ?? 'Сообщение точно не доставлено.',
         action: {
-          label: "Повторить",
+          label: 'Повторить',
           busy: action.busy,
-          disabled: action.visibility !== "ENABLED",
+          disabled: action.visibility !== 'ENABLED',
         },
       },
     };

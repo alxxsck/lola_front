@@ -1,76 +1,70 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { Panel, PanelPosition, useVueFlow } from '@vue-flow/core'
-import { scenarioGraphViewportDuration } from './model/scenario-graph-navigation'
+import { computed } from 'vue';
+import { Panel, PanelPosition, useVueFlow } from '@vue-flow/core';
+import { scenarioGraphViewportDuration } from './model/scenario-graph-navigation';
 
-const props = withDefaults(defineProps<{
-  selectedNodeId?: string | null
-  branchNodeIds?: string[]
-  largeGraph?: boolean
-  minimapVisible?: boolean
-}>(), {
-  selectedNodeId: null,
-  branchNodeIds: () => [],
-  largeGraph: false,
-  minimapVisible: false,
-})
+const props = withDefaults(
+  defineProps<{
+    selectedNodeId?: string | null;
+    branchNodeIds?: string[];
+    largeGraph?: boolean;
+    minimapVisible?: boolean;
+  }>(),
+  {
+    selectedNodeId: null,
+    branchNodeIds: () => [],
+    largeGraph: false,
+    minimapVisible: false,
+  },
+);
 
 const emit = defineEmits<{
-  'toggle-minimap': []
-}>()
+  'toggle-minimap': [];
+}>();
 
-const {
-  findNode,
-  fitView,
-  maxZoom,
-  minZoom,
-  setCenter,
-  viewport,
-  zoomIn,
-  zoomOut,
-  zoomTo,
-} = useVueFlow()
+const { findNode, fitView, maxZoom, minZoom, setCenter, viewport, zoomIn, zoomOut, zoomTo } =
+  useVueFlow();
 
-const zoomInDisabled = computed(() => viewport.value.zoom >= maxZoom.value)
-const zoomOutDisabled = computed(() => viewport.value.zoom <= minZoom.value)
-const zoomPercentage = computed(() => Math.round(viewport.value.zoom * 100))
-const selectionUnavailable = computed(() => !props.selectedNodeId)
-const branchUnavailable = computed(() => !props.branchNodeIds.length)
+const zoomInDisabled = computed(() => viewport.value.zoom >= maxZoom.value);
+const zoomOutDisabled = computed(() => viewport.value.zoom <= minZoom.value);
+const zoomPercentage = computed(() => Math.round(viewport.value.zoom * 100));
+const selectionUnavailable = computed(() => !props.selectedNodeId);
+const branchUnavailable = computed(() => !props.branchNodeIds.length);
 
 function handleZoomIn() {
-  void zoomIn({ duration: scenarioGraphViewportDuration() })
+  void zoomIn({ duration: scenarioGraphViewportDuration() });
 }
 
 function handleZoomOut() {
-  void zoomOut({ duration: scenarioGraphViewportDuration() })
+  void zoomOut({ duration: scenarioGraphViewportDuration() });
 }
 
 function resetZoom() {
-  void zoomTo(1, { duration: scenarioGraphViewportDuration() })
+  void zoomTo(1, { duration: scenarioGraphViewportDuration() });
 }
 
 function fitGraph() {
-  void fitView({ padding: 0.16, duration: scenarioGraphViewportDuration() })
+  void fitView({ padding: 0.16, duration: scenarioGraphViewportDuration() });
 }
 
 function fitBranch() {
-  if (branchUnavailable.value) return
+  if (branchUnavailable.value) return;
   void fitView({
     nodes: props.branchNodeIds,
     padding: 0.22,
     duration: scenarioGraphViewportDuration(),
-  })
+  });
 }
 
 function centerSelected() {
-  if (!props.selectedNodeId) return
-  const node = findNode(props.selectedNodeId)
-  if (!node) return
+  if (!props.selectedNodeId) return;
+  const node = findNode(props.selectedNodeId);
+  if (!node) return;
   void setCenter(
     node.computedPosition.x + node.dimensions.width / 2,
     node.computedPosition.y + node.dimensions.height / 2,
     { zoom: viewport.value.zoom, duration: scenarioGraphViewportDuration() },
-  )
+  );
 }
 </script>
 
@@ -82,19 +76,25 @@ function centerSelected() {
         aria-label="Уменьшить схему"
         :disabled="zoomOutDisabled"
         @click="handleZoomOut"
-      ><i class="pi pi-minus" aria-hidden="true" /></button>
+      >
+        <i class="pi pi-minus" aria-hidden="true" />
+      </button>
       <button
         type="button"
         class="scenario-flow-controls__zoom"
         :aria-label="`Текущий масштаб ${zoomPercentage}%. Сбросить до 100%`"
         @click="resetZoom"
-      >{{ zoomPercentage }}%</button>
+      >
+        {{ zoomPercentage }}%
+      </button>
       <button
         type="button"
         aria-label="Увеличить схему"
         :disabled="zoomInDisabled"
         @click="handleZoomIn"
-      ><i class="pi pi-plus" aria-hidden="true" /></button>
+      >
+        <i class="pi pi-plus" aria-hidden="true" />
+      </button>
     </div>
     <div class="scenario-flow-controls__group" role="group" aria-label="Навигация по схеме">
       <button type="button" aria-label="Показать всю схему" @click="fitGraph">
@@ -105,13 +105,17 @@ function centerSelected() {
         aria-label="Показать выбранную ветку"
         :disabled="branchUnavailable"
         @click="fitBranch"
-      ><i class="pi pi-share-alt" aria-hidden="true" /></button>
+      >
+        <i class="pi pi-share-alt" aria-hidden="true" />
+      </button>
       <button
         type="button"
         aria-label="Центрировать выбранное действие"
         :disabled="selectionUnavailable"
         @click="centerSelected"
-      ><i class="pi pi-crosshairs" aria-hidden="true" /></button>
+      >
+        <i class="pi pi-crosshairs" aria-hidden="true" />
+      </button>
       <button
         v-if="largeGraph"
         type="button"
@@ -119,7 +123,9 @@ function centerSelected() {
         aria-controls="scenario-graph-minimap"
         :aria-expanded="minimapVisible"
         @click="emit('toggle-minimap')"
-      ><i class="pi pi-map" aria-hidden="true" /></button>
+      >
+        <i class="pi pi-map" aria-hidden="true" />
+      </button>
     </div>
   </Panel>
 </template>

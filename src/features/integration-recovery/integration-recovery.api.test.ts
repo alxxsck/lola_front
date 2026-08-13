@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import * as generated from "@/shared/api/generated/retenive-backend";
-import { integrationRecoveryApi } from "./integration-recovery.api";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as generated from '@/shared/api/generated/retenive-backend';
+import { integrationRecoveryApi } from './integration-recovery.api';
 
-vi.mock("@/shared/api/generated/retenive-backend", () => ({
+vi.mock('@/shared/api/generated/retenive-backend', () => ({
   integrationConnectionList: vi.fn(),
   integrationRecoveryOperationsCancelDispatch: vi.fn(),
   integrationRecoveryOperationsDetail: vi.fn(),
@@ -14,79 +14,76 @@ vi.mock("@/shared/api/generated/retenive-backend", () => ({
   integrationRecoveryOperationsResumeDirection: vi.fn(),
 }));
 
-describe("integrationRecoveryApi", () => {
+describe('integrationRecoveryApi', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("passes idempotency key to replay commands", async () => {
+  it('passes idempotency key to replay commands', async () => {
     const input = {
       acknowledgeDuplicateRisk: false,
       expectedOperationsVersion: 2,
-      expectedState: "FAILED_PERMANENT" as const,
-      reason: "Operator retry",
+      expectedState: 'FAILED_PERMANENT' as const,
+      reason: 'Operator retry',
     };
-    await integrationRecoveryApi.replayDispatch(
-      "project-1",
-      "dispatch-1",
-      input,
-      "key-12345678",
-    );
+    await integrationRecoveryApi.replayDispatch('project-1', 'dispatch-1', input, 'key-12345678');
 
-    expect(
-      generated.integrationRecoveryOperationsReplayDispatch,
-    ).toHaveBeenCalledWith("project-1", "dispatch-1", input, {
-      headers: { "Idempotency-Key": "key-12345678" },
-    });
+    expect(generated.integrationRecoveryOperationsReplayDispatch).toHaveBeenCalledWith(
+      'project-1',
+      'dispatch-1',
+      input,
+      {
+        headers: { 'Idempotency-Key': 'key-12345678' },
+      },
+    );
   });
 
-  it("passes OCC state and idempotency key to manual ingress quarantine", async () => {
+  it('passes OCC state and idempotency key to manual ingress quarantine', async () => {
     const input = {
       expectedOperationsVersion: 5,
-      expectedStatus: "RETRY_WAIT" as const,
-      reason: "Operator quarantine",
+      expectedStatus: 'RETRY_WAIT' as const,
+      reason: 'Operator quarantine',
     };
 
     await integrationRecoveryApi.quarantineIngress(
-      "project-1",
-      "ingress-1",
+      'project-1',
+      'ingress-1',
       input,
-      "quarantine-key",
+      'quarantine-key',
     );
 
-    expect(
-      generated.integrationRecoveryOperationsQuarantineIngress,
-    ).toHaveBeenCalledWith("project-1", "ingress-1", input, {
-      headers: { "Idempotency-Key": "quarantine-key" },
-    });
+    expect(generated.integrationRecoveryOperationsQuarantineIngress).toHaveBeenCalledWith(
+      'project-1',
+      'ingress-1',
+      input,
+      {
+        headers: { 'Idempotency-Key': 'quarantine-key' },
+      },
+    );
   });
 
-  it("uses the matching pause and resume endpoints", async () => {
+  it('uses the matching pause and resume endpoints', async () => {
     const input = {
       expectedPaused: false,
       expectedVersion: 4,
-      reason: "Maintenance",
+      reason: 'Maintenance',
     };
     await integrationRecoveryApi.changeDirectionPause(
-      "project-1",
-      "connection-1",
-      "OUTBOUND",
+      'project-1',
+      'connection-1',
+      'OUTBOUND',
       true,
       input,
-      "pause-key",
+      'pause-key',
     );
     await integrationRecoveryApi.changeDirectionPause(
-      "project-1",
-      "connection-1",
-      "OUTBOUND",
+      'project-1',
+      'connection-1',
+      'OUTBOUND',
       false,
       { ...input, expectedPaused: true },
-      "resume-key",
+      'resume-key',
     );
 
-    expect(
-      generated.integrationRecoveryOperationsPauseDirection,
-    ).toHaveBeenCalledOnce();
-    expect(
-      generated.integrationRecoveryOperationsResumeDirection,
-    ).toHaveBeenCalledOnce();
+    expect(generated.integrationRecoveryOperationsPauseDirection).toHaveBeenCalledOnce();
+    expect(generated.integrationRecoveryOperationsResumeDirection).toHaveBeenCalledOnce();
   });
 });

@@ -1,4 +1,4 @@
-import { computed, ref } from "vue";
+import { computed, ref } from 'vue';
 import {
   broadcastActionAvailability,
   safeBroadcastError,
@@ -13,7 +13,7 @@ import {
   type TelegramBroadcastPermissions,
   type TelegramBroadcastPreview,
   type TelegramBroadcastSafeError,
-} from "./telegram-broadcast";
+} from './telegram-broadcast';
 
 export interface TelegramBroadcastPage<T> {
   items: T[];
@@ -22,30 +22,30 @@ export interface TelegramBroadcastPage<T> {
 }
 
 export type TelegramBroadcastDeliveryStatus =
-  | "PENDING"
-  | "SENDING"
-  | "RETRY_WAIT"
-  | "SENT"
-  | "FAILED_PERMANENT"
-  | "OUTCOME_UNKNOWN"
-  | "SUPPRESSED_LINK"
-  | "SUPPRESSED_CONSENT"
-  | "SUPPRESSED_INSTALLATION"
-  | "CANCELLED";
+  | 'PENDING'
+  | 'SENDING'
+  | 'RETRY_WAIT'
+  | 'SENT'
+  | 'FAILED_PERMANENT'
+  | 'OUTCOME_UNKNOWN'
+  | 'SUPPRESSED_LINK'
+  | 'SUPPRESSED_CONSENT'
+  | 'SUPPRESSED_INSTALLATION'
+  | 'CANCELLED';
 
 export interface TelegramBroadcastDelivery {
   id: string;
   status: TelegramBroadcastDeliveryStatus;
   safeFailureCategory:
-    | "AMBIGUOUS_PROVIDER_RESULT"
-    | "RECIPIENT_UNAVAILABLE"
-    | "PAYLOAD_REJECTED"
-    | "RATE_LIMIT_EXHAUSTED"
-    | "LINK_NOT_ACTIVE"
-    | "CONSENT_REVOKED"
-    | "INSTALLATION_UNAVAILABLE"
-    | "INTERNAL_FAILURE"
-    | "CANCELLED"
+    | 'AMBIGUOUS_PROVIDER_RESULT'
+    | 'RECIPIENT_UNAVAILABLE'
+    | 'PAYLOAD_REJECTED'
+    | 'RATE_LIMIT_EXHAUSTED'
+    | 'LINK_NOT_ACTIVE'
+    | 'CONSENT_REVOKED'
+    | 'INSTALLATION_UNAVAILABLE'
+    | 'INTERNAL_FAILURE'
+    | 'CANCELLED'
     | null;
   createdAt: string;
   finishedAt: string | null;
@@ -54,13 +54,13 @@ export interface TelegramBroadcastDelivery {
 export interface TelegramBroadcastTestSend {
   id: string;
   status:
-    | "PENDING"
-    | "SENDING"
-    | "RETRY_WAIT"
-    | "SENT"
-    | "FAILED_PERMANENT"
-    | "OUTCOME_UNKNOWN"
-    | "CANCELLED";
+    | 'PENDING'
+    | 'SENDING'
+    | 'RETRY_WAIT'
+    | 'SENT'
+    | 'FAILED_PERMANENT'
+    | 'OUTCOME_UNKNOWN'
+    | 'CANCELLED';
   label: string;
   revisionId: string;
   currentRevision: boolean;
@@ -183,19 +183,19 @@ const EMPTY_PERMISSIONS: TelegramBroadcastPermissions = {
 
 const EMPTY_CONTEXT: TelegramBroadcastsContext = {
   visible: false,
-  projectId: "",
+  projectId: '',
   permissions: EMPTY_PERMISSIONS,
 };
 
 const ACTIVE_POLLING_LIFECYCLES: readonly TelegramBroadcastLifecycle[] = [
-  "SCHEDULED",
-  "RUNNING",
-  "PAUSED",
+  'SCHEDULED',
+  'RUNNING',
+  'PAUSED',
 ];
-const ACTIVE_TEST_STATUSES: readonly TelegramBroadcastTestSend["status"][] = [
-  "PENDING",
-  "SENDING",
-  "RETRY_WAIT",
+const ACTIVE_TEST_STATUSES: readonly TelegramBroadcastTestSend['status'][] = [
+  'PENDING',
+  'SENDING',
+  'RETRY_WAIT',
 ];
 
 export function createTelegramBroadcastsController(options: {
@@ -241,10 +241,7 @@ export function createTelegramBroadcastsController(options: {
 
   function readable(snapshot = context): boolean {
     return (
-      !disposed &&
-      snapshot.visible &&
-      Boolean(snapshot.projectId) &&
-      snapshot.permissions.read
+      !disposed && snapshot.visible && Boolean(snapshot.projectId) && snapshot.permissions.read
     );
   }
 
@@ -260,10 +257,7 @@ export function createTelegramBroadcastsController(options: {
     );
   }
 
-  function current(
-    snapshot: TelegramBroadcastsContext,
-    operationGeneration: number,
-  ): boolean {
+  function current(snapshot: TelegramBroadcastsContext, operationGeneration: number): boolean {
     return (
       operationGeneration === generation &&
       snapshot.projectId === context.projectId &&
@@ -276,11 +270,9 @@ export function createTelegramBroadcastsController(options: {
   function requestController(): AbortController {
     const controller = new AbortController();
     controllers.add(controller);
-    controller.signal.addEventListener(
-      "abort",
-      () => controllers.delete(controller),
-      { once: true },
-    );
+    controller.signal.addEventListener('abort', () => controllers.delete(controller), {
+      once: true,
+    });
     return controller;
   }
 
@@ -367,20 +359,16 @@ export function createTelegramBroadcastsController(options: {
     items.value =
       index < 0
         ? [value, ...items.value]
-        : items.value.map((item, itemIndex) =>
-            itemIndex === index ? value : item,
-          );
-    if (selected.value?.id === value.id || selected.value === null)
-      selected.value = value;
+        : items.value.map((item, itemIndex) => (itemIndex === index ? value : item));
+    if (selected.value?.id === value.id || selected.value === null) selected.value = value;
   }
 
   function canPoll(value: TelegramBroadcast | null): value is TelegramBroadcast {
     return Boolean(
       value &&
-        readable() &&
-        (ACTIVE_POLLING_LIFECYCLES.includes(value.status) ||
-          (latestTestSend.value &&
-            ACTIVE_TEST_STATUSES.includes(latestTestSend.value.status))),
+      readable() &&
+      (ACTIVE_POLLING_LIFECYCLES.includes(value.status) ||
+        (latestTestSend.value && ACTIVE_TEST_STATUSES.includes(latestTestSend.value.status))),
     );
   }
 
@@ -389,8 +377,7 @@ export function createTelegramBroadcastsController(options: {
     pollTimer = null;
     if (!canPoll(selected.value)) return;
     polling.value = true;
-    const delay =
-      pollDelays[Math.min(pollAttempt, pollDelays.length - 1)] ?? 10_000;
+    const delay = pollDelays[Math.min(pollAttempt, pollDelays.length - 1)] ?? 10_000;
     pollTimer = window.setTimeout(async () => {
       pollTimer = null;
       const id = selected.value?.id;
@@ -419,9 +406,7 @@ export function createTelegramBroadcastsController(options: {
         snapshot.projectId,
         {
           limit: 25,
-          ...(append && nextListCursor.value
-            ? { cursor: nextListCursor.value }
-            : {}),
+          ...(append && nextListCursor.value ? { cursor: nextListCursor.value } : {}),
         },
         { signal: controller.signal },
       );
@@ -433,7 +418,7 @@ export function createTelegramBroadcastsController(options: {
     } catch (cause) {
       if (!current(snapshot, operationGeneration)) return false;
       const safeError = safeBroadcastError(cause);
-      if (safeError.kind === "FORBIDDEN") scrubProtectedState(safeError);
+      if (safeError.kind === 'FORBIDDEN') scrubProtectedState(safeError);
       else error.value = safeError;
       return false;
     } finally {
@@ -480,7 +465,7 @@ export function createTelegramBroadcastsController(options: {
       )
         return false;
       const safeError = safeBroadcastError(cause);
-      if (safeError.kind === "FORBIDDEN") scrubProtectedState(safeError);
+      if (safeError.kind === 'FORBIDDEN') scrubProtectedState(safeError);
       else if (!loadOptions.preserveError) error.value = safeError;
       return false;
     } finally {
@@ -544,12 +529,12 @@ export function createTelegramBroadcastsController(options: {
     } catch (cause) {
       if (!intent.valid()) return false;
       const safeError = safeBroadcastError(cause);
-      if (safeError.kind === "FORBIDDEN") {
+      if (safeError.kind === 'FORBIDDEN') {
         scrubProtectedState(safeError);
         return false;
       }
       error.value = safeError;
-      if (safeError.kind === "AMBIGUOUS") {
+      if (safeError.kind === 'AMBIGUOUS') {
         mutationIntent = intent;
         transportRetryAvailable.value = true;
       } else if (mutationIntent === intent) mutationIntent = null;
@@ -562,9 +547,7 @@ export function createTelegramBroadcastsController(options: {
     }
   }
 
-  function createIntent(
-    run: (idempotencyKey: string) => Promise<boolean>,
-  ): MutationIntent {
+  function createIntent(run: (idempotencyKey: string) => Promise<boolean>): MutationIntent {
     const snapshot = context;
     const operationGeneration = generation;
     return {
@@ -580,8 +563,7 @@ export function createTelegramBroadcastsController(options: {
     broadcastId?: string,
   ): boolean {
     return (
-      current(snapshot, operationGeneration) &&
-      (!broadcastId || selected.value?.id === broadcastId)
+      current(snapshot, operationGeneration) && (!broadcastId || selected.value?.id === broadcastId)
     );
   }
 
@@ -633,8 +615,7 @@ export function createTelegramBroadcastsController(options: {
           { expectedVersion, draft },
           { idempotencyKey, signal: controller.signal },
         );
-        if (!mutationCurrent(snapshot, operationGeneration, broadcastId))
-          return false;
+        if (!mutationCurrent(snapshot, operationGeneration, broadcastId)) return false;
         upsert(updated);
         currentPreview.value = null;
         latestTestSend.value = null;
@@ -663,8 +644,7 @@ export function createTelegramBroadcastsController(options: {
           { expectedVersion },
           { idempotencyKey, signal: controller.signal },
         );
-        if (!mutationCurrent(snapshot, operationGeneration, broadcastId))
-          return false;
+        if (!mutationCurrent(snapshot, operationGeneration, broadcastId)) return false;
         currentPreview.value = generated;
         latestTestSend.value = null;
         return true;
@@ -676,10 +656,7 @@ export function createTelegramBroadcastsController(options: {
     return executeIntent(intent);
   }
 
-  async function testSend(
-    endUserExternalId: string,
-    label: string,
-  ): Promise<boolean> {
+  async function testSend(endUserExternalId: string, label: string): Promise<boolean> {
     const value = selected.value;
     const generated = currentPreview.value;
     if (
@@ -709,8 +686,7 @@ export function createTelegramBroadcastsController(options: {
           },
           { idempotencyKey, signal: controller.signal },
         );
-        if (!mutationCurrent(snapshot, operationGeneration, broadcastId))
-          return false;
+        if (!mutationCurrent(snapshot, operationGeneration, broadcastId)) return false;
         latestTestSend.value = sent;
         if (ACTIVE_TEST_STATUSES.includes(sent.status)) {
           pollAttempt = 0;
@@ -735,7 +711,7 @@ export function createTelegramBroadcastsController(options: {
       !value ||
       !generated ||
       !successfulTest ||
-      successfulTest.status !== "SENT" ||
+      successfulTest.status !== 'SENT' ||
       !successfulTest.currentRevision ||
       successfulTest.revisionId !== value.revision.id ||
       generated.version !== value.version ||
@@ -744,37 +720,25 @@ export function createTelegramBroadcastsController(options: {
       !actionAvailability.value.approve
     )
       return false;
-    return recordCommand(
-      "approve",
-      value,
-      (idempotencyKey, signal) =>
-        options.api.approve(
-          context.projectId,
-          value.id,
-          {
-            expectedVersion: value.version,
-            expectedContentHash: generated.contentHash,
-            expectedRecipientCount: generated.eligibleRecipientCount,
-            successfulTestId: successfulTest.id,
-          },
-          { idempotencyKey, signal },
-        ),
+    return recordCommand('approve', value, (idempotencyKey, signal) =>
+      options.api.approve(
+        context.projectId,
+        value.id,
+        {
+          expectedVersion: value.version,
+          expectedContentHash: generated.contentHash,
+          expectedRecipientCount: generated.eligibleRecipientCount,
+          successfulTestId: successfulTest.id,
+        },
+        { idempotencyKey, signal },
+      ),
     );
   }
 
   async function recordCommand(
-    permission:
-      | "approve"
-      | "start"
-      | "schedule"
-      | "pause"
-      | "resume"
-      | "cancel",
+    permission: 'approve' | 'start' | 'schedule' | 'pause' | 'resume' | 'cancel',
     value: TelegramBroadcast,
-    request: (
-      idempotencyKey: string,
-      signal: AbortSignal,
-    ) => Promise<TelegramBroadcast>,
+    request: (idempotencyKey: string, signal: AbortSignal) => Promise<TelegramBroadcast>,
   ): Promise<boolean> {
     if (!actionAvailability.value[permission]) return false;
     const snapshot = context;
@@ -784,17 +748,16 @@ export function createTelegramBroadcastsController(options: {
       const controller = requestController();
       try {
         const updated = await request(idempotencyKey, controller.signal);
-        if (!mutationCurrent(snapshot, operationGeneration, broadcastId))
-          return false;
+        if (!mutationCurrent(snapshot, operationGeneration, broadcastId)) return false;
         upsert(updated);
-        if (updated.status !== "DRAFT") currentPreview.value = null;
+        if (updated.status !== 'DRAFT') currentPreview.value = null;
         pollAttempt = 0;
         schedulePoll();
         return true;
       } catch (cause) {
         const safeError = safeBroadcastError(cause);
         if (
-          safeError.kind === "CONFLICT" &&
+          safeError.kind === 'CONFLICT' &&
           mutationCurrent(snapshot, operationGeneration, broadcastId)
         ) {
           error.value = safeError;
@@ -813,7 +776,7 @@ export function createTelegramBroadcastsController(options: {
     const value = selected.value;
     if (!value) return false;
     const projectId = context.projectId;
-    return recordCommand("start", value, (idempotencyKey, signal) =>
+    return recordCommand('start', value, (idempotencyKey, signal) =>
       options.api.start(
         projectId,
         value.id,
@@ -827,7 +790,7 @@ export function createTelegramBroadcastsController(options: {
     const value = selected.value;
     if (!value || !scheduledAt) return false;
     const projectId = context.projectId;
-    return recordCommand("schedule", value, (idempotencyKey, signal) =>
+    return recordCommand('schedule', value, (idempotencyKey, signal) =>
       options.api.schedule(
         projectId,
         value.id,
@@ -841,7 +804,7 @@ export function createTelegramBroadcastsController(options: {
     const value = selected.value;
     if (!value) return false;
     const projectId = context.projectId;
-    return recordCommand("pause", value, (idempotencyKey, signal) =>
+    return recordCommand('pause', value, (idempotencyKey, signal) =>
       options.api.pause(
         projectId,
         value.id,
@@ -855,7 +818,7 @@ export function createTelegramBroadcastsController(options: {
     const value = selected.value;
     if (!value) return false;
     const projectId = context.projectId;
-    return recordCommand("resume", value, (idempotencyKey, signal) =>
+    return recordCommand('resume', value, (idempotencyKey, signal) =>
       options.api.resume(
         projectId,
         value.id,
@@ -869,7 +832,7 @@ export function createTelegramBroadcastsController(options: {
     const value = selected.value;
     if (!value) return false;
     const projectId = context.projectId;
-    return recordCommand("cancel", value, (idempotencyKey, signal) =>
+    return recordCommand('cancel', value, (idempotencyKey, signal) =>
       options.api.cancel(
         projectId,
         value.id,
@@ -893,31 +856,25 @@ export function createTelegramBroadcastsController(options: {
         value.id,
         {
           limit: 50,
-          ...(append && nextDeliveryCursor.value
-            ? { cursor: nextDeliveryCursor.value }
-            : {}),
+          ...(append && nextDeliveryCursor.value ? { cursor: nextDeliveryCursor.value } : {}),
         },
         { signal: controller.signal },
       );
-      if (!mutationCurrent(snapshot, operationGeneration, value.id))
-        return false;
-      deliveries.value = append
-        ? [...deliveries.value, ...page.items]
-        : page.items;
+      if (!mutationCurrent(snapshot, operationGeneration, value.id)) return false;
+      deliveries.value = append ? [...deliveries.value, ...page.items] : page.items;
       nextDeliveryCursor.value = page.nextCursor;
       deliveryTotal.value = page.total;
       return true;
     } catch (cause) {
       if (mutationCurrent(snapshot, operationGeneration, value.id)) {
         const safeError = safeBroadcastError(cause);
-        if (safeError.kind === "FORBIDDEN") scrubProtectedState(safeError);
+        if (safeError.kind === 'FORBIDDEN') scrubProtectedState(safeError);
         else error.value = safeError;
       }
       return false;
     } finally {
       finishController(controller);
-      if (current(snapshot, operationGeneration))
-        deliveriesLoading.value = false;
+      if (current(snapshot, operationGeneration)) deliveriesLoading.value = false;
     }
   }
 

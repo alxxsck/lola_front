@@ -1,37 +1,37 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import { compareDecimalStrings } from "@/shared/lib/decimal-money";
-import { aiAllowanceRepository } from "../api/ai-allowance-repository";
-import { parseAllowanceUsd } from "../model/ai-allowance";
-import { isAllowanceReauthenticationRequired } from "../model/allowance-reauthentication";
-import AiAllowanceReauthenticationAction from "./AiAllowanceReauthenticationAction.vue";
+import { ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import { compareDecimalStrings } from '@/shared/lib/decimal-money';
+import { aiAllowanceRepository } from '../api/ai-allowance-repository';
+import { parseAllowanceUsd } from '../model/ai-allowance';
+import { isAllowanceReauthenticationRequired } from '../model/allowance-reauthentication';
+import AiAllowanceReauthenticationAction from './AiAllowanceReauthenticationAction.vue';
 
 const props = defineProps<{ projectId: string }>();
-const emit = defineEmits<{ "fresh-login": [] }>();
-const endUserId = ref("");
-const amount = ref("");
+const emit = defineEmits<{ 'fresh-login': [] }>();
+const endUserId = ref('');
+const amount = ref('');
 const validFrom = ref(localInput(new Date()));
 const expiresAt = ref(localInput(new Date(Date.now() + 86_400_000)));
-const reason = ref("");
+const reason = ref('');
 const saving = ref(false);
-const error = ref("");
-const notice = ref("");
+const error = ref('');
+const notice = ref('');
 const reauthenticationRequired = ref(false);
-const commandFingerprint = ref("");
-const commandIdempotencyKey = ref("");
+const commandFingerprint = ref('');
+const commandIdempotencyKey = ref('');
 let generation = 0;
 
 watch(
   () => props.projectId,
   () => {
     generation += 1;
-    endUserId.value = "";
-    amount.value = "";
-    reason.value = "";
-    error.value = "";
-    notice.value = "";
+    endUserId.value = '';
+    amount.value = '';
+    reason.value = '';
+    error.value = '';
+    notice.value = '';
     reauthenticationRequired.value = false;
     saving.value = false;
     resetCommand();
@@ -49,13 +49,12 @@ async function submit(): Promise<void> {
   const from = instant(validFrom.value);
   const until = instant(expiresAt.value);
   if (!requestEndUserId || requestEndUserId.length > 160)
-    return fail("Укажите корректный ID пользователя.");
-  if (!amountUsd || compareDecimalStrings(amountUsd, "0") <= 0)
-    return fail("Сумма должна быть больше нуля.");
-  if (!from || !until || from >= until)
-    return fail("Проверьте период действия начисления.");
+    return fail('Укажите корректный ID пользователя.');
+  if (!amountUsd || compareDecimalStrings(amountUsd, '0') <= 0)
+    return fail('Сумма должна быть больше нуля.');
+  if (!from || !until || from >= until) return fail('Проверьте период действия начисления.');
   if (reason.value.trim().length < 3 || reason.value.trim().length > 500)
-    return fail("Причина должна содержать от 3 до 500 символов.");
+    return fail('Причина должна содержать от 3 до 500 символов.');
   const command = {
     amountUsd,
     validFrom: from,
@@ -75,8 +74,8 @@ async function submit(): Promise<void> {
     commandIdempotencyKey.value = newIdempotencyKey();
   }
   saving.value = true;
-  error.value = "";
-  notice.value = "";
+  error.value = '';
+  notice.value = '';
   reauthenticationRequired.value = false;
   try {
     await aiAllowanceRepository.createGrant(
@@ -85,33 +84,22 @@ async function submit(): Promise<void> {
       command,
       commandIdempotencyKey.value,
     );
-    if (
-      requestGeneration !== generation ||
-      requestProjectId !== props.projectId
-    )
-      return;
-    notice.value = "Дополнительный лимит начислен и сохранён в истории.";
-    amount.value = "";
-    reason.value = "";
+    if (requestGeneration !== generation || requestProjectId !== props.projectId) return;
+    notice.value = 'Дополнительный лимит начислен и сохранён в истории.';
+    amount.value = '';
+    reason.value = '';
     resetCommand();
   } catch (cause) {
-    if (
-      requestGeneration === generation &&
-      requestProjectId === props.projectId
-    ) {
-      reauthenticationRequired.value =
-        isAllowanceReauthenticationRequired(cause);
+    if (requestGeneration === generation && requestProjectId === props.projectId) {
+      reauthenticationRequired.value = isAllowanceReauthenticationRequired(cause);
       error.value = reauthenticationRequired.value
-        ? ""
+        ? ''
         : cause instanceof Error
           ? cause.message
-          : "Не удалось создать начисление";
+          : 'Не удалось создать начисление';
     }
   } finally {
-    if (
-      requestGeneration === generation &&
-      requestProjectId === props.projectId
-    )
+    if (requestGeneration === generation && requestProjectId === props.projectId)
       saving.value = false;
   }
 }
@@ -119,22 +107,18 @@ function fail(message: string): void {
   error.value = message;
 }
 function resetCommand(): void {
-  commandFingerprint.value = "";
-  commandIdempotencyKey.value = "";
+  commandFingerprint.value = '';
+  commandIdempotencyKey.value = '';
 }
 function newIdempotencyKey(): string {
   return globalThis.crypto?.randomUUID?.() ?? `grant-${Date.now()}`;
 }
 function instant(value: string): string | undefined {
   const parsed = new Date(value);
-  return value && Number.isFinite(parsed.valueOf())
-    ? parsed.toISOString()
-    : undefined;
+  return value && Number.isFinite(parsed.valueOf()) ? parsed.toISOString() : undefined;
 }
 function localInput(value: Date): string {
-  return new Date(value.getTime() - value.getTimezoneOffset() * 60_000)
-    .toISOString()
-    .slice(0, 16);
+  return new Date(value.getTime() - value.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 }
 </script>
 
@@ -144,8 +128,8 @@ function localInput(value: Date): string {
       <div>
         <h3>Начислить дополнительный лимит</h3>
         <p>
-          Добавляет пользователю временную сумму сверх обычного лимита. Операция
-          сохраняется в истории.
+          Добавляет пользователю временную сумму сверх обычного лимита. Операция сохраняется в
+          истории.
         </p>
       </div>
     </header>
@@ -171,12 +155,10 @@ function localInput(value: Date): string {
           ></label
         >
         <label
-          ><span>Начало действия</span
-          ><input v-model="validFrom" type="datetime-local"
+          ><span>Начало действия</span><input v-model="validFrom" type="datetime-local"
         /></label>
         <label
-          ><span>Дата окончания</span
-          ><input v-model="expiresAt" type="datetime-local"
+          ><span>Дата окончания</span><input v-model="expiresAt" type="datetime-local"
         /></label>
       </div>
       <label class="reason"
@@ -192,16 +174,12 @@ function localInput(value: Date): string {
         <Button label="Начислить лимит" type="submit" :loading="saving" />
       </div>
     </form>
-    <Message v-if="error" severity="error" :closable="false">{{
-      error
-    }}</Message>
+    <Message v-if="error" severity="error" :closable="false">{{ error }}</Message>
     <AiAllowanceReauthenticationAction
       :required="reauthenticationRequired"
       @fresh-login="emit('fresh-login')"
     />
-    <Message v-if="notice" severity="success" :closable="false">{{
-      notice
-    }}</Message>
+    <Message v-if="notice" severity="success" :closable="false">{{ notice }}</Message>
   </section>
 </template>
 

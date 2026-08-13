@@ -1,20 +1,17 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, ref, watch } from "vue";
-import {
-  acquireRootScrollLock,
-  releaseRootScrollLock,
-} from "./root-scroll-lock";
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { acquireRootScrollLock, releaseRootScrollLock } from './root-scroll-lock';
 
 defineOptions({ inheritAttrs: false });
 
 const props = defineProps<{
-  mode: "windowed" | "full-tab";
+  mode: 'windowed' | 'full-tab';
   measureSelector?: string;
   portalWindowed?: boolean;
 }>();
 const emit = defineEmits<{
   transitioning: [value: boolean];
-  presented: [mode: "windowed" | "full-tab"];
+  presented: [mode: 'windowed' | 'full-tab'];
 }>();
 
 let ownsRootLock = false;
@@ -24,17 +21,15 @@ let lastWindowedRect: DOMRect | null = null;
 let lastWindowedViewport = { width: 0, height: 0 };
 const shellElement = ref<HTMLElement | null>(null);
 const renderedMode = ref(props.mode);
-const transitionPhase = ref<"idle" | "entering" | "leaving">("idle");
-const enterTransform = ref("translateY(6px) scale(0.992)");
-const exitTransform = ref("translateY(6px) scale(0.992)");
+const transitionPhase = ref<'idle' | 'entering' | 'leaving'>('idle');
+const enterTransform = ref('translateY(6px) scale(0.992)');
+const exitTransform = ref('translateY(6px) scale(0.992)');
 
 function viewportSize(): { width: number; height: number } {
   return {
     width: document.documentElement.clientWidth || window.innerWidth,
     height:
-      window.visualViewport?.height ||
-      document.documentElement.clientHeight ||
-      window.innerHeight,
+      window.visualViewport?.height || document.documentElement.clientHeight || window.innerHeight,
   };
 }
 
@@ -44,9 +39,7 @@ function measuredWorkspace(): HTMLElement | null {
   if (props.measureSelector) {
     return shell.querySelector<HTMLElement>(props.measureSelector);
   }
-  return shell.firstElementChild instanceof HTMLElement
-    ? shell.firstElementChild
-    : shell;
+  return shell.firstElementChild instanceof HTMLElement ? shell.firstElementChild : shell;
 }
 
 function usableRect(rect: DOMRect): boolean {
@@ -79,9 +72,7 @@ function currentWindowedTarget(): DOMRect | null {
 }
 
 function prefersReducedMotion(): boolean {
-  return (
-    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
-  );
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
 function acquireLock(): void {
@@ -97,13 +88,13 @@ function releaseLock(): void {
 }
 
 function finishTransition(): void {
-  transitionPhase.value = "idle";
-  emit("transitioning", false);
+  transitionPhase.value = 'idle';
+  emit('transitioning', false);
 }
 
 async function finishWindowedTransition(): Promise<void> {
-  renderedMode.value = "windowed";
-  emit("presented", "windowed");
+  renderedMode.value = 'windowed';
+  emit('presented', 'windowed');
   await nextTick();
   releaseLock();
   finishTransition();
@@ -116,43 +107,43 @@ watch(
     if (!initialized) {
       initialized = true;
       renderedMode.value = mode;
-      if (mode === "full-tab") acquireLock();
+      if (mode === 'full-tab') acquireLock();
       return;
     }
 
-    if (mode === "full-tab") {
+    if (mode === 'full-tab') {
       const sourceRect = measuredWorkspace()?.getBoundingClientRect();
       if (sourceRect && usableRect(sourceRect)) {
         lastWindowedRect = sourceRect;
         lastWindowedViewport = viewportSize();
         enterTransform.value = inverseTransform(sourceRect);
       }
-      emit("presented", "full-tab");
-      renderedMode.value = "full-tab";
+      emit('presented', 'full-tab');
+      renderedMode.value = 'full-tab';
       acquireLock();
       if (prefersReducedMotion()) {
         finishTransition();
         return;
       }
-      transitionPhase.value = "entering";
-      emit("transitioning", true);
+      transitionPhase.value = 'entering';
+      emit('transitioning', true);
       transitionTimer = setTimeout(finishTransition, 240);
       return;
     }
 
-    if (prefersReducedMotion() || renderedMode.value !== "full-tab") {
+    if (prefersReducedMotion() || renderedMode.value !== 'full-tab') {
       void finishWindowedTransition();
       return;
     }
     const targetRect = currentWindowedTarget();
     if (targetRect) exitTransform.value = inverseTransform(targetRect);
-    transitionPhase.value = "leaving";
-    emit("transitioning", true);
+    transitionPhase.value = 'leaving';
+    emit('transitioning', true);
     transitionTimer = setTimeout(() => {
       void finishWindowedTransition();
     }, 180);
   },
-  { immediate: true, flush: "sync" },
+  { immediate: true, flush: 'sync' },
 );
 
 onBeforeUnmount(() => {
@@ -162,10 +153,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <Teleport
-    to="body"
-    :disabled="renderedMode !== 'full-tab' && !portalWindowed"
-  >
+  <Teleport to="body" :disabled="renderedMode !== 'full-tab' && !portalWindowed">
     <div
       ref="shellElement"
       v-bind="$attrs"
@@ -203,8 +191,8 @@ onBeforeUnmount(() => {
   min-width: 0;
   min-height: 0;
   margin: 0;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right)
-    env(safe-area-inset-bottom) env(safe-area-inset-left);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
   overflow: hidden;
   overscroll-behavior: none;
   border: 0;
@@ -221,10 +209,7 @@ onBeforeUnmount(() => {
 @keyframes workspace-present-in {
   from {
     opacity: 0.82;
-    transform: var(
-      --workspace-flip-enter-transform,
-      translateY(6px) scale(0.992)
-    );
+    transform: var(--workspace-flip-enter-transform, translateY(6px) scale(0.992));
   }
   to {
     opacity: 1;
@@ -239,10 +224,7 @@ onBeforeUnmount(() => {
   }
   to {
     opacity: 0.82;
-    transform: var(
-      --workspace-flip-exit-transform,
-      translateY(6px) scale(0.992)
-    );
+    transform: var(--workspace-flip-exit-transform, translateY(6px) scale(0.992));
   }
 }
 

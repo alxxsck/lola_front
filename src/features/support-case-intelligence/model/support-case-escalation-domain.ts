@@ -1,7 +1,6 @@
-export type EscalationAction = "OFFER" | "ASK_REASON_ONCE" | "ESCALATE";
-export type EscalationUrgency = "LOW" | "MEDIUM" | "HIGH" | "IMMEDIATE";
-export type TrustedOutcome =
-  "NO_ANSWER" | "KNOWLEDGE_INSUFFICIENT" | "TOOL_FAILED" | "UNRESOLVED";
+export type EscalationAction = 'OFFER' | 'ASK_REASON_ONCE' | 'ESCALATE';
+export type EscalationUrgency = 'LOW' | 'MEDIUM' | 'HIGH' | 'IMMEDIATE';
+export type TrustedOutcome = 'NO_ANSWER' | 'KNOWLEDGE_INSUFFICIENT' | 'TOOL_FAILED' | 'UNRESOLVED';
 
 export interface EscalationPhraseRule {
   code: string;
@@ -40,7 +39,7 @@ export interface EscalationRevision {
   id: string;
   projectId: string;
   version: number;
-  status: "DRAFT" | "PUBLISHED" | "SUPERSEDED";
+  status: 'DRAFT' | 'PUBLISHED' | 'SUPERSEDED';
   definition: EscalationPolicy;
   publishedAt?: string | null;
 }
@@ -78,21 +77,21 @@ export interface EscalationSafetyPolicy {
 }
 
 export type EscalationSimulationStepKind =
-  | "EXPLICIT_HUMAN_REQUEST"
-  | "AMBIGUOUS_HUMAN_TERM"
-  | "SCENARIO"
-  | "TRUSTED_OUTCOME"
-  | "CLARIFICATION"
-  | "NO_MATCH"
-  | "REPEAT"
-  | "OFFER_ACCEPTED"
-  | "OFFER_DECLINED"
-  | "OFFER_TIMEOUT"
-  | "VERIFIED_RESOLUTION"
-  | "NEW_CASE_OR_TOPIC"
-  | "CASE_TERMINAL"
-  | "ESCALATION_COMMITTED"
-  | "POLICY_SWITCH";
+  | 'EXPLICIT_HUMAN_REQUEST'
+  | 'AMBIGUOUS_HUMAN_TERM'
+  | 'SCENARIO'
+  | 'TRUSTED_OUTCOME'
+  | 'CLARIFICATION'
+  | 'NO_MATCH'
+  | 'REPEAT'
+  | 'OFFER_ACCEPTED'
+  | 'OFFER_DECLINED'
+  | 'OFFER_TIMEOUT'
+  | 'VERIFIED_RESOLUTION'
+  | 'NEW_CASE_OR_TOPIC'
+  | 'CASE_TERMINAL'
+  | 'ESCALATION_COMMITTED'
+  | 'POLICY_SWITCH';
 
 export interface EscalationSimulationStep {
   stepId: string;
@@ -104,17 +103,12 @@ export interface EscalationSimulationStep {
   outcome?: TrustedOutcome;
   ruleCode?: string;
   scenarioCode?: string;
-  safetyState: "CLEAR" | "PENDING" | "FAILED" | "SUSPECTED" | "URGENT";
+  safetyState: 'CLEAR' | 'PENDING' | 'FAILED' | 'SUSPECTED' | 'URGENT';
   safetyRiskClass?: string | null;
   routing: {
     currentAssignment: boolean;
-    businessState: "OPEN" | "CLOSED" | "RUNTIME_MISMATCH";
-    queueState:
-      | "WINNER"
-      | "NO_ELIGIBLE_OPERATOR"
-      | "NO_ACTIVATION"
-      | "MISSING"
-      | "UNKNOWN";
+    businessState: 'OPEN' | 'CLOSED' | 'RUNTIME_MISMATCH';
+    queueState: 'WINNER' | 'NO_ELIGIBLE_OPERATOR' | 'NO_ACTIVATION' | 'MISSING' | 'UNKNOWN';
   };
 }
 
@@ -141,7 +135,7 @@ export interface EscalationSimulationResult {
     outcomeId: string;
     observedAt: string;
     kind: EscalationSimulationStepKind;
-    action: "NONE" | EscalationAction;
+    action: 'NONE' | EscalationAction;
     before: EscalationSimulationState;
     after: EscalationSimulationState;
     disposition: string;

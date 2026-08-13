@@ -2,25 +2,22 @@ import {
   adminEndUserProfilesHistory,
   adminEndUserProfilesList,
   adminEndUserProfilesProfile,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   AdminEndUserProfilesHistoryParams,
   AdminEndUserProfilesListParams,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
-import { repository } from "@/shared/api/repository";
-import { isMockMode } from "@/shared/config/data-mode";
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
+import { repository } from '@/shared/api/repository';
+import { isMockMode } from '@/shared/config/data-mode';
 
 export interface ResolvedEndUserIdentity {
   endUserId: string;
 }
 
-const uuidPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-async function call<Response>(
-  request: () => Promise<Response>,
-): Promise<Response> {
+async function call<Response>(request: () => Promise<Response>): Promise<Response> {
   try {
     return await request();
   } catch (cause) {
@@ -33,11 +30,8 @@ export const endUserProfileRepository = {
     call(() => adminEndUserProfilesList(projectId, params)),
   profile: (projectId: string, endUserId: string) =>
     call(() => adminEndUserProfilesProfile(projectId, endUserId)),
-  history: (
-    projectId: string,
-    endUserId: string,
-    params?: AdminEndUserProfilesHistoryParams,
-  ) => call(() => adminEndUserProfilesHistory(projectId, endUserId, params)),
+  history: (projectId: string, endUserId: string, params?: AdminEndUserProfilesHistoryParams) =>
+    call(() => adminEndUserProfilesHistory(projectId, endUserId, params)),
   async resolveIdentity(
     projectId: string,
     identity: string,
@@ -50,9 +44,7 @@ export const endUserProfileRepository = {
 
     if (isMockMode) {
       const page = await repository.getUsersPage(projectId, { limit: 100 });
-      const user = page.items.find(
-        (candidate) => candidate.externalId === normalized,
-      );
+      const user = page.items.find((candidate) => candidate.externalId === normalized);
       return user ? { endUserId: user.id } : null;
     }
 

@@ -1,22 +1,22 @@
-import { flushPromises, mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import IntegrationEventRoutesCard from "./IntegrationEventRoutesCard.vue";
+import { flushPromises, mount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import IntegrationEventRoutesCard from './IntegrationEventRoutesCard.vue';
 
-vi.mock("primevue/select", () => ({
+vi.mock('primevue/select', () => ({
   default: {
-    props: ["modelValue", "options", "optionLabel", "optionValue", "name"],
-    emits: ["update:modelValue"],
+    props: ['modelValue', 'options', 'optionLabel', 'optionValue', 'name'],
+    emits: ['update:modelValue'],
     template: `<select :name="name" :value="modelValue" @change="$emit('update:modelValue', $event.target.value)">
       <option v-for="option in options" :key="option[optionValue]" :value="option[optionValue]">{{ option[optionLabel] }}</option>
     </select>`,
   },
 }));
 
-vi.mock("@/features/events/EventDefinitionSelect.vue", () => ({
+vi.mock('@/features/events/EventDefinitionSelect.vue', () => ({
   default: {
-    name: "EventDefinitionSelect",
-    props: ["modelValue"],
-    emits: ["update:modelValue"],
+    name: 'EventDefinitionSelect',
+    props: ['modelValue'],
+    emits: ['update:modelValue'],
     template: `<select name="eventDefinition" :value="modelValue" @change="$emit('update:modelValue', $event.target.value)">
       <option value="event-key-1">Депозит завершён</option>
     </select>`,
@@ -36,7 +36,7 @@ const mocks = vi.hoisted(() => ({
   listConnections: vi.fn(),
 }));
 
-vi.mock("./integration-event-routes.api", () => ({
+vi.mock('./integration-event-routes.api', () => ({
   integrationEventRoutesApi: {
     list: mocks.listRoutes,
     listEventDefinitions: mocks.listDefinitions,
@@ -50,140 +50,135 @@ vi.mock("./integration-event-routes.api", () => ({
   },
 }));
 
-vi.mock(
-  "@/features/integration-connections/integration-connections.api",
-  () => ({
-    integrationConnectionsApi: { list: mocks.listConnections },
-  }),
-);
+vi.mock('@/features/integration-connections/integration-connections.api', () => ({
+  integrationConnectionsApi: { list: mocks.listConnections },
+}));
 
 const route = (overrides: Record<string, unknown> = {}) => ({
-  id: "route-1",
-  projectId: "project-1",
-  connectionId: "connection-1",
-  direction: "OUTBOUND",
-  name: "Депозиты",
+  id: 'route-1',
+  projectId: 'project-1',
+  connectionId: 'connection-1',
+  direction: 'OUTBOUND',
+  name: 'Депозиты',
   description: null,
-  lifecycle: "DRAFT",
+  lifecycle: 'DRAFT',
   enabled: false,
   enablementVersion: 1,
   version: 1,
   draftRevision: {
-    id: "revision-1",
+    id: 'revision-1',
     revision: 1,
-    state: "DRAFT",
-    provider: "AMPLITUDE",
-    region: "EU",
-    eventDefinitionKeyId: "event-key-1",
-    eventDefinitionRevisionId: "event-revision-1",
-    providerEventName: "deposit",
-    propertyBindings: [
-      { sourcePath: ["amount"], targetKey: "amount", required: true },
-    ],
-    compiledHash: "hash",
-    compilerVersion: "integration-route-compiler.v1",
-    createdAt: "2026-08-03T12:00:00.000Z",
+    state: 'DRAFT',
+    provider: 'AMPLITUDE',
+    region: 'EU',
+    eventDefinitionKeyId: 'event-key-1',
+    eventDefinitionRevisionId: 'event-revision-1',
+    providerEventName: 'deposit',
+    propertyBindings: [{ sourcePath: ['amount'], targetKey: 'amount', required: true }],
+    compiledHash: 'hash',
+    compilerVersion: 'integration-route-compiler.v1',
+    createdAt: '2026-08-03T12:00:00.000Z',
     publishedAt: null,
   },
   publishedRevision: null,
-  updatedAt: "2026-08-03T12:00:00.000Z",
+  updatedAt: '2026-08-03T12:00:00.000Z',
   ...overrides,
 });
 
-describe("IntegrationEventRoutesCard", () => {
+describe('IntegrationEventRoutesCard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.sessionStorage.clear();
-    vi.stubGlobal("crypto", { randomUUID: vi.fn(() => "command-key") });
+    vi.stubGlobal('crypto', { randomUUID: vi.fn(() => 'command-key') });
     mocks.listRoutes.mockResolvedValue({ items: [route()] });
     mocks.listConnections.mockResolvedValue({
       items: [
         {
-          id: "connection-1",
-          projectId: "project-1",
-          provider: "AMPLITUDE",
-          displayName: "Amplitude production",
-          region: "EU",
+          id: 'connection-1',
+          projectId: 'project-1',
+          provider: 'AMPLITUDE',
+          displayName: 'Amplitude production',
+          region: 'EU',
           remoteProjectLabel: null,
           inboundEnabled: false,
           outboundEnabled: true,
-          lifecycle: "ACTIVE",
-          health: "HEALTHY",
+          lifecycle: 'ACTIVE',
+          health: 'HEALTHY',
           credential: {
-            fingerprint: "1234567890abcdef",
+            fingerprint: '1234567890abcdef',
             revision: 1,
             testedRevision: 1,
-            rotatedAt: "2026-08-03T12:00:00.000Z",
+            rotatedAt: '2026-08-03T12:00:00.000Z',
           },
-          lastSuccessfulTestAt: "2026-08-03T12:00:00.000Z",
+          lastSuccessfulTestAt: '2026-08-03T12:00:00.000Z',
           lastTestErrorCode: null,
           version: 1,
-          updatedAt: "2026-08-03T12:00:00.000Z",
+          updatedAt: '2026-08-03T12:00:00.000Z',
         },
       ],
     });
     mocks.listDefinitions.mockResolvedValue([
       {
-        id: "event-key-1",
-        projectId: "project-1",
-        code: "deposit_completed",
-        name: "Депозит завершён",
+        id: 'event-key-1',
+        projectId: 'project-1',
+        code: 'deposit_completed',
+        name: 'Депозит завершён',
         description: null,
-        lifecycle: "ACTIVE",
+        lifecycle: 'ACTIVE',
         lifecycleVersion: 1,
-        lifecycleUpdatedAt: "2026-08-03T12:00:00.000Z",
-        metadataUpdatedAt: "2026-08-03T12:00:00.000Z",
-        origin: "CUSTOM",
+        lifecycleUpdatedAt: '2026-08-03T12:00:00.000Z',
+        metadataUpdatedAt: '2026-08-03T12:00:00.000Z',
+        origin: 'CUSTOM',
         readOnly: false,
         policy: { enabled: true },
         currentRevision: {
-          id: "event-revision-1",
+          id: 'event-revision-1',
           number: 1,
-          publishedAt: "2026-08-03T12:00:00.000Z",
+          publishedAt: '2026-08-03T12:00:00.000Z',
           payloadSchema: {
-            type: "object",
+            type: 'object',
             properties: {
-              amount: { type: "number" },
-              internalNote: { type: "string", "x-retenive-sensitive": true },
-              payment_currency: { type: "string" },
-              user_id: { type: "string" },
-              constructor: { type: "string" },
-              prototype: { type: "string" },
-              "bad.segment": { type: "string" },
-              "9invalid": { type: "string" },
-              toString: { type: "string" },
+              amount: { type: 'number' },
+              internalNote: { type: 'string', 'x-retenive-sensitive': true },
+              payment_currency: { type: 'string' },
+              user_id: { type: 'string' },
+              constructor: { type: 'string' },
+              prototype: { type: 'string' },
+              'bad.segment': { type: 'string' },
+              '9invalid': { type: 'string' },
+              toString: { type: 'string' },
               payment: {
-                type: "object",
+                type: 'object',
                 properties: {
-                  currency: { type: "string" },
-                  metadata: { type: "object" },
+                  currency: { type: 'string' },
+                  metadata: { type: 'object' },
                 },
               },
               level1: {
-                type: "object",
+                type: 'object',
                 properties: {
                   level2: {
-                    type: "object",
+                    type: 'object',
                     properties: {
                       level3: {
-                        type: "object",
+                        type: 'object',
                         properties: {
                           level4: {
-                            type: "object",
+                            type: 'object',
                             properties: {
                               level5: {
-                                type: "object",
+                                type: 'object',
                                 properties: {
                                   level6: {
-                                    type: "object",
+                                    type: 'object',
                                     properties: {
                                       level7: {
-                                        type: "object",
+                                        type: 'object',
                                         properties: {
                                           level8: {
-                                            type: "object",
+                                            type: 'object',
                                             properties: {
-                                              tooDeep: { type: "string" },
+                                              tooDeep: { type: 'string' },
                                             },
                                           },
                                         },
@@ -208,34 +203,34 @@ describe("IntegrationEventRoutesCard", () => {
     mocks.listActivity.mockResolvedValue({
       items: [
         {
-          id: "dispatch-1",
-          connectionId: "connection-1",
-          routeId: "route-1",
-          routeRevisionId: "revision-1",
-          eventId: "event-1",
-          provider: "AMPLITUDE",
-          providerEventName: "deposit",
-          providerIdempotencyId: "retenive:event-1",
-          occurredAt: "2026-08-03T12:00:00.000Z",
-          status: "DELIVERED",
+          id: 'dispatch-1',
+          connectionId: 'connection-1',
+          routeId: 'route-1',
+          routeRevisionId: 'revision-1',
+          eventId: 'event-1',
+          provider: 'AMPLITUDE',
+          providerEventName: 'deposit',
+          providerIdempotencyId: 'retenive:event-1',
+          occurredAt: '2026-08-03T12:00:00.000Z',
+          status: 'DELIVERED',
           attemptCount: 1,
           errorCode: null,
-          createdAt: "2026-08-03T12:00:00.000Z",
-          finishedAt: "2026-08-03T12:00:01.000Z",
+          createdAt: '2026-08-03T12:00:00.000Z',
+          finishedAt: '2026-08-03T12:00:01.000Z',
         },
       ],
     });
     mocks.create.mockResolvedValue(route());
     mocks.editDraft.mockResolvedValue(route({ version: 2 }));
     mocks.publish.mockResolvedValue(
-      route({ draftRevision: null, lifecycle: "ACTIVE", version: 2 }),
+      route({ draftRevision: null, lifecycle: 'ACTIVE', version: 2 }),
     );
   });
 
-  it("refreshes connection options when a connection is created above", async () => {
+  it('refreshes connection options when a connection is created above', async () => {
     const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
-        projectId: "project-1",
+        projectId: 'project-1',
         canRead: true,
         canManage: true,
         canReadActivity: false,
@@ -246,15 +241,15 @@ describe("IntegrationEventRoutesCard", () => {
     mocks.listConnections.mockResolvedValue({
       items: [
         {
-          id: "connection-2",
-          projectId: "project-1",
-          provider: "AMPLITUDE",
-          displayName: "Только что созданный проект",
-          region: "EU",
+          id: 'connection-2',
+          projectId: 'project-1',
+          provider: 'AMPLITUDE',
+          displayName: 'Только что созданный проект',
+          region: 'EU',
           inboundEnabled: false,
           outboundEnabled: true,
-          lifecycle: "ACTIVE",
-          health: "HEALTHY",
+          lifecycle: 'ACTIVE',
+          health: 'HEALTHY',
           credential: { revision: 1 },
         },
       ],
@@ -263,19 +258,17 @@ describe("IntegrationEventRoutesCard", () => {
     await wrapper.setProps({ connectionsRevision: 1 });
     await flushPromises();
     await wrapper
-      .findAll("button")
-      .find((button) => button.text() === "Добавить правило")!
-      .trigger("click");
+      .findAll('button')
+      .find((button) => button.text() === 'Добавить правило')!
+      .trigger('click');
 
-    expect(wrapper.findAll("select")[0]!.text()).toContain(
-      "Только что созданный проект",
-    );
+    expect(wrapper.findAll('select')[0]!.text()).toContain('Только что созданный проект');
   });
 
-  it("shows safe delivery activity but no mutation controls to a reader", async () => {
+  it('shows safe delivery activity but no mutation controls to a reader', async () => {
     const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
-        projectId: "project-1",
+        projectId: 'project-1',
         canRead: true,
         canManage: false,
         canReadActivity: true,
@@ -283,27 +276,27 @@ describe("IntegrationEventRoutesCard", () => {
     });
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Депозиты");
-    expect(wrapper.text()).toContain("Доставлено");
-    expect(wrapper.text()).not.toContain("Создать маршрут");
-    expect(wrapper.text()).not.toContain("Опубликовать");
+    expect(wrapper.text()).toContain('Депозиты');
+    expect(wrapper.text()).toContain('Доставлено');
+    expect(wrapper.text()).not.toContain('Создать маршрут');
+    expect(wrapper.text()).not.toContain('Опубликовать');
   });
 
-  it("keeps inbound routes out of the outbound route card", async () => {
+  it('keeps inbound routes out of the outbound route card', async () => {
     mocks.listRoutes.mockResolvedValue({
       items: [
-        route({ id: "outbound-route" }),
+        route({ id: 'outbound-route' }),
         route({
-          id: "inbound-route",
-          direction: "INBOUND",
-          name: "Inbound deposit",
+          id: 'inbound-route',
+          direction: 'INBOUND',
+          name: 'Inbound deposit',
         }),
       ],
     });
 
     const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
-        projectId: "project-1",
+        projectId: 'project-1',
         canRead: true,
         canManage: false,
         canReadActivity: false,
@@ -311,24 +304,24 @@ describe("IntegrationEventRoutesCard", () => {
     });
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Депозиты");
-    expect(wrapper.text()).not.toContain("Inbound deposit");
+    expect(wrapper.text()).toContain('Депозиты');
+    expect(wrapper.text()).not.toContain('Inbound deposit');
   });
 
-  it("shows only Customer.io routes and activity and ignores Amplitude retry receipts", async () => {
+  it('shows only Customer.io routes and activity and ignores Amplitude retry receipts', async () => {
     const customerRevision = {
       ...route().draftRevision,
-      id: "customer-revision-1",
-      provider: "CUSTOMER_IO",
-      providerEventName: "customer_deposit",
+      id: 'customer-revision-1',
+      provider: 'CUSTOMER_IO',
+      providerEventName: 'customer_deposit',
     };
     mocks.listRoutes.mockResolvedValue({
       items: [
         route(),
         route({
-          id: "customer-route-1",
-          name: "Customer deposits",
-          connectionId: "customer-connection-1",
+          id: 'customer-route-1',
+          name: 'Customer deposits',
+          connectionId: 'customer-connection-1',
           draftRevision: customerRevision,
         }),
       ],
@@ -336,84 +329,84 @@ describe("IntegrationEventRoutesCard", () => {
     mocks.listConnections.mockResolvedValue({
       items: [
         {
-          id: "customer-connection-1",
-          projectId: "project-1",
-          provider: "CUSTOMER_IO",
-          displayName: "Customer journeys",
-          region: "EU",
+          id: 'customer-connection-1',
+          projectId: 'project-1',
+          provider: 'CUSTOMER_IO',
+          displayName: 'Customer journeys',
+          region: 'EU',
           remoteProjectLabel: null,
           inboundEnabled: false,
           outboundEnabled: true,
-          lifecycle: "ACTIVE",
-          health: "HEALTHY",
+          lifecycle: 'ACTIVE',
+          health: 'HEALTHY',
           credential: {
-            fingerprint: "fedcba0987654321",
+            fingerprint: 'fedcba0987654321',
             revision: 1,
             testedRevision: 1,
-            rotatedAt: "2026-08-03T12:00:00.000Z",
+            rotatedAt: '2026-08-03T12:00:00.000Z',
           },
-          lastSuccessfulTestAt: "2026-08-03T12:00:00.000Z",
+          lastSuccessfulTestAt: '2026-08-03T12:00:00.000Z',
           lastTestErrorCode: null,
           version: 1,
-          updatedAt: "2026-08-03T12:00:00.000Z",
+          updatedAt: '2026-08-03T12:00:00.000Z',
         },
       ],
     });
     mocks.listActivity.mockResolvedValue({
       items: [
         {
-          id: "customer-dispatch",
-          provider: "CUSTOMER_IO",
-          providerEventName: "customer_deposit",
-          status: "DELIVERED",
+          id: 'customer-dispatch',
+          provider: 'CUSTOMER_IO',
+          providerEventName: 'customer_deposit',
+          status: 'DELIVERED',
           attemptCount: 1,
-          createdAt: "2026-08-03T12:00:00.000Z",
+          createdAt: '2026-08-03T12:00:00.000Z',
         },
       ],
     });
     window.sessionStorage.setItem(
-      "retenive:amplitude-pending-route-create:project-1",
+      'retenive:amplitude-pending-route-create:project-1',
       JSON.stringify({
-        projectId: "project-1",
-        idempotencyKey: "amplitude-route-command",
+        projectId: 'project-1',
+        idempotencyKey: 'amplitude-route-command',
         input: {},
       }),
     );
 
     const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
-        projectId: "project-1",
+        projectId: 'project-1',
         canRead: true,
         canManage: true,
         canReadActivity: true,
-        provider: "CUSTOMER_IO",
+        provider: 'CUSTOMER_IO',
       },
     });
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Передача событий в Customer.io");
-    expect(wrapper.text()).toContain("Customer deposits");
-    expect(wrapper.text()).toContain("customer_deposit");
-    expect(wrapper.text()).toContain("Принято Pipelines");
-    expect(wrapper.text()).not.toContain("Доставлено");
-    expect(wrapper.text()).not.toContain("Депозиты");
-    expect(wrapper.text()).not.toContain("amplitude_deposit");
-    expect(mocks.listActivity).toHaveBeenCalledWith("project-1", "CUSTOMER_IO");
+    expect(wrapper.text()).toContain('Передача событий в Customer.io');
+    expect(wrapper.text()).toContain('Customer deposits');
+    expect(wrapper.text()).toContain('customer_deposit');
+    expect(wrapper.text()).toContain('Принято Pipelines');
+    expect(wrapper.text()).not.toContain('Доставлено');
+    expect(wrapper.text()).not.toContain('Депозиты');
+    expect(wrapper.text()).not.toContain('amplitude_deposit');
+    expect(mocks.listActivity).toHaveBeenCalledWith('project-1', 'CUSTOMER_IO');
     expect(mocks.createCustomerIo).not.toHaveBeenCalled();
   });
 
-  it("requires a Customer.io workspace canary acknowledgement before route activation", async () => {
+  it('requires a Customer.io workspace canary acknowledgement before route activation', async () => {
     const published = {
       ...route().draftRevision,
-      state: "PUBLISHED",
-      provider: "CUSTOMER_IO",
-      publishedAt: "2026-08-03T12:01:00.000Z",
+      state: 'PUBLISHED',
+      provider: 'CUSTOMER_IO',
+      publishedAt: '2026-08-03T12:01:00.000Z',
     };
     mocks.listRoutes.mockResolvedValue({
       items: [
         route({
-          id: "customer-route-1",
-          connectionId: "customer-connection-1",
+          id: 'customer-route-1',
+          connectionId: 'customer-connection-1',
           draftRevision: null,
           publishedRevision: published,
         }),
@@ -421,35 +414,35 @@ describe("IntegrationEventRoutesCard", () => {
     });
     mocks.listConnections.mockResolvedValue({ items: [] });
     vi.stubGlobal(
-      "confirm",
+      'confirm',
       vi.fn(() => false),
     );
     const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
-        projectId: "project-1",
+        projectId: 'project-1',
         canRead: true,
         canManage: true,
         canReadActivity: false,
-        provider: "CUSTOMER_IO",
+        provider: 'CUSTOMER_IO',
       },
     });
     await flushPromises();
 
     await wrapper
-      .findAll(".route-actions button")
-      .find((button) => button.text() === "Включить")!
-      .trigger("click");
+      .findAll('.route-actions button')
+      .find((button) => button.text() === 'Включить')!
+      .trigger('click');
 
     expect(window.confirm).toHaveBeenCalledWith(
-      expect.stringContaining("нужном проекте Customer.io"),
+      expect.stringContaining('нужном проекте Customer.io'),
     );
     expect(mocks.enable).not.toHaveBeenCalled();
   });
 
-  it("creates an explicit allowlist mapping and publishes a draft", async () => {
+  it('creates an explicit allowlist mapping and publishes a draft', async () => {
     const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
-        projectId: "project-1",
+        projectId: 'project-1',
         canRead: true,
         canManage: true,
         canReadActivity: false,
@@ -457,107 +450,99 @@ describe("IntegrationEventRoutesCard", () => {
     });
     await flushPromises();
 
-    await wrapper.get("button").trigger("click");
-    const selects = wrapper.findAll("select");
-    await selects[1]!.setValue("event-key-1");
+    await wrapper.get('button').trigger('click');
+    const selects = wrapper.findAll('select');
+    await selects[1]!.setValue('event-key-1');
     await flushPromises();
     const textInputs = wrapper.findAll('input:not([type="checkbox"])');
-    await textInputs[0]!.setValue("deposit_completed");
+    await textInputs[0]!.setValue('deposit_completed');
     const checkboxes = wrapper.findAll('input[type="checkbox"]');
-    expect(checkboxes[1]!.attributes("disabled")).toBeDefined();
-    expect(wrapper.text()).toContain("Не экспортируется");
-    expect(wrapper.text()).toContain("payment.currency");
-    expect(wrapper.text()).not.toContain("payment.metadata");
-    expect(wrapper.text()).not.toContain("constructor");
-    expect(wrapper.text()).not.toContain("prototype");
-    expect(wrapper.text()).not.toContain("bad.segment");
-    expect(wrapper.text()).not.toContain("9invalid");
-    expect(wrapper.text()).toContain("toString");
+    expect(checkboxes[1]!.attributes('disabled')).toBeDefined();
+    expect(wrapper.text()).toContain('Не экспортируется');
+    expect(wrapper.text()).toContain('payment.currency');
+    expect(wrapper.text()).not.toContain('payment.metadata');
+    expect(wrapper.text()).not.toContain('constructor');
+    expect(wrapper.text()).not.toContain('prototype');
+    expect(wrapper.text()).not.toContain('bad.segment');
+    expect(wrapper.text()).not.toContain('9invalid');
+    expect(wrapper.text()).toContain('toString');
     expect(wrapper.text()).not.toContain(
-      "level1.level2.level3.level4.level5.level6.level7.level8.tooDeep",
+      'level1.level2.level3.level4.level5.level6.level7.level8.tooDeep',
     );
-    expect(wrapper.find('input[placeholder="event_user_id"]').exists()).toBe(
-      true,
-    );
+    expect(wrapper.find('input[placeholder="event_user_id"]').exists()).toBe(true);
     const collidingDefaults = wrapper
-      .findAll(".mapping-row")
+      .findAll('.mapping-row')
       .filter(
-        (row) =>
-          row.text().includes("payment.currency") ||
-          row.text().includes("payment_currency"),
+        (row) => row.text().includes('payment.currency') || row.text().includes('payment_currency'),
       )
-      .map((row) =>
-        row.get('input:not([type="checkbox"])').attributes("placeholder"),
-      );
+      .map((row) => row.get('input:not([type="checkbox"])').attributes('placeholder'));
     expect(new Set(collidingDefaults).size).toBe(2);
-    expect(collidingDefaults).toContain("payment_currency");
+    expect(collidingDefaults).toContain('payment_currency');
     expect(collidingDefaults).toContainEqual(
       expect.stringMatching(/^payment_currency_[a-z0-9]{7}$/),
     );
     await checkboxes[0]!.setValue(true);
     const nestedRow = wrapper
-      .findAll(".mapping-row")
-      .find((row) => row.text().includes("payment.currency"));
+      .findAll('.mapping-row')
+      .find((row) => row.text().includes('payment.currency'));
     expect(nestedRow).toBeDefined();
     await nestedRow!.get('input[type="checkbox"]').setValue(true);
     await flushPromises();
-    await wrapper.get("form").trigger("submit");
+    await wrapper.get('form').trigger('submit');
     await flushPromises();
 
     expect(mocks.create).toHaveBeenCalledWith(
-      "project-1",
+      'project-1',
       {
-        connectionId: "connection-1",
-        name: "Депозит завершён → Amplitude",
-        eventDefinitionKeyId: "event-key-1",
-        eventDefinitionRevisionId: "event-revision-1",
-        providerEventName: "deposit_completed",
+        connectionId: 'connection-1',
+        name: 'Депозит завершён → Amplitude',
+        eventDefinitionKeyId: 'event-key-1',
+        eventDefinitionRevisionId: 'event-revision-1',
+        providerEventName: 'deposit_completed',
         propertyBindings: [
-          { sourcePath: ["amount"], targetKey: "amount", required: false },
+          { sourcePath: ['amount'], targetKey: 'amount', required: false },
           {
-            sourcePath: ["payment", "currency"],
-            targetKey: expect.stringMatching(
-              /^payment_currency(?:_[a-z0-9]{7})?$/,
-            ),
+            sourcePath: ['payment', 'currency'],
+            targetKey: expect.stringMatching(/^payment_currency(?:_[a-z0-9]{7})?$/),
             required: false,
           },
         ],
       },
-      "command-key",
+      'command-key',
     );
 
     const publishButton = wrapper
-      .findAll("button")
-      .find((button) => button.text() === "Опубликовать");
+      .findAll('button')
+      .find((button) => button.text() === 'Опубликовать');
     expect(publishButton).toBeDefined();
-    await publishButton!.trigger("click");
+    await publishButton!.trigger('click');
     await flushPromises();
     expect(mocks.publish).toHaveBeenCalledWith(
-      "project-1",
-      "route-1",
-      { expectedVersion: 1, reason: "Публикация через CMS" },
-      "command-key",
+      'project-1',
+      'route-1',
+      { expectedVersion: 1, reason: 'Публикация через CMS' },
+      'command-key',
     );
   });
 
-  it("creates a Customer.io allowlist through the Customer.io adapter", async () => {
+  it('creates a Customer.io allowlist through the Customer.io adapter', async () => {
     mocks.listRoutes.mockResolvedValue({ items: [] });
     mocks.listConnections.mockResolvedValue({
       items: [
         {
-          id: "customer-connection-1",
-          projectId: "project-1",
-          provider: "CUSTOMER_IO",
-          displayName: "Customer journeys",
-          region: "EU",
+          id: 'customer-connection-1',
+          projectId: 'project-1',
+          provider: 'CUSTOMER_IO',
+          displayName: 'Customer journeys',
+          region: 'EU',
           outboundEnabled: true,
-          lifecycle: "ACTIVE",
-          health: "HEALTHY",
+          lifecycle: 'ACTIVE',
+          health: 'HEALTHY',
           credential: {
-            fingerprint: "fedcba0987654321",
+            fingerprint: 'fedcba0987654321',
             revision: 1,
             testedRevision: 1,
-            rotatedAt: "2026-08-03T12:00:00.000Z",
+            rotatedAt: '2026-08-03T12:00:00.000Z',
           },
           version: 1,
         },
@@ -565,55 +550,53 @@ describe("IntegrationEventRoutesCard", () => {
     });
     mocks.createCustomerIo.mockResolvedValue(
       route({
-        id: "customer-route-1",
-        connectionId: "customer-connection-1",
+        id: 'customer-route-1',
+        connectionId: 'customer-connection-1',
       }),
     );
     const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
-        projectId: "project-1",
+        projectId: 'project-1',
         canRead: true,
         canManage: true,
         canReadActivity: false,
-        provider: "CUSTOMER_IO",
+        provider: 'CUSTOMER_IO',
       },
     });
     await flushPromises();
 
-    await wrapper.get("button").trigger("click");
-    await wrapper.findAll("select")[1]!.setValue("event-key-1");
+    await wrapper.get('button').trigger('click');
+    await wrapper.findAll('select')[1]!.setValue('event-key-1');
     await flushPromises();
     const textInputs = wrapper.findAll('input:not([type="checkbox"])');
-    await textInputs[0]!.setValue("deposit_completed");
+    await textInputs[0]!.setValue('deposit_completed');
     await wrapper.findAll('input[type="checkbox"]')[0]!.setValue(true);
-    await wrapper.get("form").trigger("submit");
+    await wrapper.get('form').trigger('submit');
     await flushPromises();
 
     expect(mocks.createCustomerIo).toHaveBeenCalledWith(
-      "project-1",
+      'project-1',
       expect.objectContaining({
-        connectionId: "customer-connection-1",
-        name: "Депозит завершён → Customer.io",
-        providerEventName: "deposit_completed",
-        propertyBindings: [
-          { sourcePath: ["amount"], targetKey: "amount", required: false },
-        ],
+        connectionId: 'customer-connection-1',
+        name: 'Депозит завершён → Customer.io',
+        providerEventName: 'deposit_completed',
+        propertyBindings: [{ sourcePath: ['amount'], targetKey: 'amount', required: false }],
       }),
-      "command-key",
+      'command-key',
     );
     expect(mocks.create).not.toHaveBeenCalled();
   });
 
-  it("edits the Customer.io event name and mappings as a new draft", async () => {
+  it('edits the Customer.io event name and mappings as a new draft', async () => {
     mocks.listRoutes.mockResolvedValue({
       items: [
         route({
-          name: "Депозит → Customer.io",
-          connectionId: "customer-connection-1",
+          name: 'Депозит → Customer.io',
+          connectionId: 'customer-connection-1',
           draftRevision: {
             ...route().draftRevision,
-            provider: "CUSTOMER_IO",
-            providerEventName: "Deposit Made",
+            provider: 'CUSTOMER_IO',
+            providerEventName: 'Deposit Made',
           },
           version: 4,
         }),
@@ -622,100 +605,94 @@ describe("IntegrationEventRoutesCard", () => {
     mocks.listConnections.mockResolvedValue({
       items: [
         {
-          id: "customer-connection-1",
-          projectId: "project-1",
-          provider: "CUSTOMER_IO",
-          displayName: "Customer journeys",
-          region: "EU",
+          id: 'customer-connection-1',
+          projectId: 'project-1',
+          provider: 'CUSTOMER_IO',
+          displayName: 'Customer journeys',
+          region: 'EU',
           outboundEnabled: true,
-          lifecycle: "ACTIVE",
-          health: "HEALTHY",
+          lifecycle: 'ACTIVE',
+          health: 'HEALTHY',
           credential: { revision: 1 },
         },
       ],
     });
     const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
-        projectId: "project-1",
+        projectId: 'project-1',
         canRead: true,
         canManage: true,
         canReadActivity: false,
-        provider: "CUSTOMER_IO",
+        provider: 'CUSTOMER_IO',
       },
     });
     await flushPromises();
 
     await wrapper
-      .findAll("button")
-      .find((button) => button.text() === "Изменить")!
-      .trigger("click");
+      .findAll('button')
+      .find((button) => button.text() === 'Изменить')!
+      .trigger('click');
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Изменить правило передачи");
-    expect(
-      wrapper.get('input[aria-label="Поле Customer.io для amount"]').element,
-    ).toMatchObject({
-      value: "amount",
+    expect(wrapper.text()).toContain('Изменить правило передачи');
+    expect(wrapper.get('input[aria-label="Поле Customer.io для amount"]').element).toMatchObject({
+      value: 'amount',
     });
     const eventName = wrapper.get('input[maxlength="120"]');
-    expect((eventName.element as HTMLInputElement).value).toBe("Deposit Made");
-    await eventName.setValue("Deposit Completed");
-    await wrapper.get("form").trigger("submit");
+    expect((eventName.element as HTMLInputElement).value).toBe('Deposit Made');
+    await eventName.setValue('Deposit Completed');
+    await wrapper.get('form').trigger('submit');
     await flushPromises();
 
     expect(mocks.editDraft).toHaveBeenCalledWith(
-      "project-1",
-      "route-1",
+      'project-1',
+      'route-1',
       {
         expectedVersion: 4,
-        reason: "Редактирование правила Customer.io через CMS",
-        name: "Депозит → Customer.io",
-        eventDefinitionKeyId: "event-key-1",
-        eventDefinitionRevisionId: "event-revision-1",
-        providerEventName: "Deposit Completed",
-        propertyBindings: [
-          { sourcePath: ["amount"], targetKey: "amount", required: true },
-        ],
+        reason: 'Редактирование правила Customer.io через CMS',
+        name: 'Депозит → Customer.io',
+        eventDefinitionKeyId: 'event-key-1',
+        eventDefinitionRevisionId: 'event-revision-1',
+        providerEventName: 'Deposit Completed',
+        propertyBindings: [{ sourcePath: ['amount'], targetKey: 'amount', required: true }],
       },
-      "command-key",
+      'command-key',
     );
-    expect(wrapper.text()).toContain(
-      "Изменения сохранены в новой черновой версии",
-    );
+    expect(wrapper.text()).toContain('Изменения сохранены в новой черновой версии');
   });
 
-  it("caps the property allowlist at the API limit of 32 bindings", async () => {
+  it('caps the property allowlist at the API limit of 32 bindings', async () => {
     const properties = Object.fromEntries(
       Array.from({ length: 33 }, (_, index) => [
-        `field_${String(index + 1).padStart(2, "0")}`,
-        { type: "string" },
+        `field_${String(index + 1).padStart(2, '0')}`,
+        { type: 'string' },
       ]),
     );
     mocks.listDefinitions.mockResolvedValueOnce([
       {
-        id: "event-key-1",
-        projectId: "project-1",
-        code: "large_event",
-        name: "Большое событие",
+        id: 'event-key-1',
+        projectId: 'project-1',
+        code: 'large_event',
+        name: 'Большое событие',
         description: null,
-        lifecycle: "ACTIVE",
+        lifecycle: 'ACTIVE',
         lifecycleVersion: 1,
-        lifecycleUpdatedAt: "2026-08-03T12:00:00.000Z",
-        metadataUpdatedAt: "2026-08-03T12:00:00.000Z",
-        origin: "CUSTOM",
+        lifecycleUpdatedAt: '2026-08-03T12:00:00.000Z',
+        metadataUpdatedAt: '2026-08-03T12:00:00.000Z',
+        origin: 'CUSTOM',
         readOnly: false,
         policy: { enabled: true },
         currentRevision: {
-          id: "event-revision-1",
+          id: 'event-revision-1',
           number: 1,
-          publishedAt: "2026-08-03T12:00:00.000Z",
-          payloadSchema: { type: "object", properties },
+          publishedAt: '2026-08-03T12:00:00.000Z',
+          payloadSchema: { type: 'object', properties },
         },
       },
     ]);
     const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
-        projectId: "project-1",
+        projectId: 'project-1',
         canRead: true,
         canManage: true,
         canReadActivity: false,
@@ -723,37 +700,37 @@ describe("IntegrationEventRoutesCard", () => {
     });
     await flushPromises();
 
-    await wrapper.get("button").trigger("click");
-    await wrapper.findAll("select")[1]!.setValue("event-key-1");
+    await wrapper.get('button').trigger('click');
+    await wrapper.findAll('select')[1]!.setValue('event-key-1');
     await flushPromises();
     const toggles = wrapper.findAll('.mapping-toggle input[type="checkbox"]');
     expect(toggles).toHaveLength(33);
     for (const toggle of toggles.slice(0, 32)) await toggle.setValue(true);
     await flushPromises();
 
-    expect(toggles[0]!.attributes("disabled")).toBeUndefined();
-    expect(toggles[31]!.attributes("disabled")).toBeUndefined();
-    expect(toggles[32]!.attributes("disabled")).toBeDefined();
+    expect(toggles[0]!.attributes('disabled')).toBeUndefined();
+    expect(toggles[31]!.attributes('disabled')).toBeUndefined();
+    expect(toggles[32]!.attributes('disabled')).toBeDefined();
     expect(
       wrapper
-        .findAll("button")
-        .find((button) => button.text() === "Создать черновик")
-        ?.attributes("disabled"),
+        .findAll('button')
+        .find((button) => button.text() === 'Создать черновик')
+        ?.attributes('disabled'),
     ).toBeUndefined();
   });
 
-  it("clears Project data before a tenant switch finishes loading", async () => {
+  it('clears Project data before a tenant switch finishes loading', async () => {
     let resolveRoutes: ((value: { items: unknown[] }) => void) | undefined;
     const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
-        projectId: "project-1",
+        projectId: 'project-1',
         canRead: true,
         canManage: false,
         canReadActivity: true,
       },
     });
     await flushPromises();
-    expect(wrapper.text()).toContain("Депозиты");
+    expect(wrapper.text()).toContain('Депозиты');
     mocks.listRoutes.mockImplementationOnce(
       () =>
         new Promise((resolve) => {
@@ -761,45 +738,43 @@ describe("IntegrationEventRoutesCard", () => {
         }),
     );
 
-    await wrapper.setProps({ projectId: "project-2" });
+    await wrapper.setProps({ projectId: 'project-2' });
     await Promise.resolve();
-    expect(wrapper.text()).not.toContain("Депозиты");
-    expect(wrapper.text()).not.toContain("Доставлено");
+    expect(wrapper.text()).not.toContain('Депозиты');
+    expect(wrapper.text()).not.toContain('Доставлено');
     resolveRoutes?.({ items: [] });
     await flushPromises();
   });
 
-  it("retries an ambiguous create after remount with the same durable key", async () => {
-    mocks.create.mockRejectedValueOnce(new Error("network unavailable"));
+  it('retries an ambiguous create after remount with the same durable key', async () => {
+    mocks.create.mockRejectedValueOnce(new Error('network unavailable'));
     const first = mount(IntegrationEventRoutesCard, {
       props: {
-        projectId: "project-1",
+        projectId: 'project-1',
         canRead: true,
         canManage: true,
         canReadActivity: false,
       },
     });
     await flushPromises();
-    await first.get("button").trigger("click");
-    const selects = first.findAll("select");
-    await selects[1]!.setValue("event-key-1");
+    await first.get('button').trigger('click');
+    const selects = first.findAll('select');
+    await selects[1]!.setValue('event-key-1');
     await flushPromises();
     const textInputs = first.findAll('input:not([type="checkbox"])');
-    await textInputs[0]!.setValue("deposit_completed");
+    await textInputs[0]!.setValue('deposit_completed');
     await first.findAll('input[type="checkbox"]')[0]!.setValue(true);
-    await first.get("form").trigger("submit");
+    await first.get('form').trigger('submit');
     await flushPromises();
     expect(
-      window.sessionStorage.getItem(
-        "retenive:amplitude-pending-route-create:project-1",
-      ),
-    ).toContain("command-key");
+      window.sessionStorage.getItem('retenive:amplitude-pending-route-create:project-1'),
+    ).toContain('command-key');
     first.unmount();
 
     mocks.create.mockResolvedValueOnce(route());
     const second = mount(IntegrationEventRoutesCard, {
       props: {
-        projectId: "project-1",
+        projectId: 'project-1',
         canRead: true,
         canManage: true,
         canReadActivity: false,
@@ -807,19 +782,17 @@ describe("IntegrationEventRoutesCard", () => {
     });
     await flushPromises();
     expect(mocks.create).toHaveBeenLastCalledWith(
-      "project-1",
-      expect.objectContaining({ name: "Депозит завершён → Amplitude" }),
-      "command-key",
+      'project-1',
+      expect.objectContaining({ name: 'Депозит завершён → Amplitude' }),
+      'command-key',
     );
     expect(
-      window.sessionStorage.getItem(
-        "retenive:amplitude-pending-route-create:project-1",
-      ),
+      window.sessionStorage.getItem('retenive:amplitude-pending-route-create:project-1'),
     ).toBeNull();
     second.unmount();
   });
 
-  it("shows routes and delivery activity in separate ten-row pages", async () => {
+  it('shows routes and delivery activity in separate ten-row pages', async () => {
     mocks.listRoutes.mockResolvedValue({
       items: Array.from({ length: 24 }, (_, index) =>
         route({ id: `route-${index + 1}`, name: `Правило ${index + 1}` }),
@@ -829,15 +802,15 @@ describe("IntegrationEventRoutesCard", () => {
       items: Array.from({ length: 23 }, (_, index) => ({
         id: `dispatch-${index + 1}`,
         providerEventName: `event_${index + 1}`,
-        status: "DELIVERED",
+        status: 'DELIVERED',
         attemptCount: 1,
-        createdAt: "2026-08-03T12:00:00.000Z",
+        createdAt: '2026-08-03T12:00:00.000Z',
       })),
     });
 
     const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
-        projectId: "project-1",
+        projectId: 'project-1',
         canRead: true,
         canManage: false,
         canReadActivity: true,
@@ -845,31 +818,27 @@ describe("IntegrationEventRoutesCard", () => {
     });
     await flushPromises();
 
-    expect(wrapper.findAll("[data-route-row]")).toHaveLength(10);
-    expect(wrapper.findAll("[data-activity-row]")).toHaveLength(10);
-    expect(
-      wrapper.get('input[aria-label="Поиск по правилам передачи"]'),
-    ).toBeTruthy();
-    expect(wrapper.text()).toContain("1–10 из 24");
-    expect(wrapper.text()).toContain("1–10 из 23");
+    expect(wrapper.findAll('[data-route-row]')).toHaveLength(10);
+    expect(wrapper.findAll('[data-activity-row]')).toHaveLength(10);
+    expect(wrapper.get('input[aria-label="Поиск по правилам передачи"]')).toBeTruthy();
+    expect(wrapper.text()).toContain('1–10 из 24');
+    expect(wrapper.text()).toContain('1–10 из 23');
 
-    await wrapper
-      .get('button[aria-label="Следующая страница правил"]')
-      .trigger("click");
-    expect(wrapper.text()).toContain("Правило 11");
-    expect(wrapper.text()).not.toContain("Правило 1\n");
+    await wrapper.get('button[aria-label="Следующая страница правил"]').trigger('click');
+    expect(wrapper.text()).toContain('Правило 11');
+    expect(wrapper.text()).not.toContain('Правило 1\n');
   });
 
-  it("filters routes by rule and provider event name", async () => {
+  it('filters routes by rule and provider event name', async () => {
     mocks.listRoutes.mockResolvedValue({
       items: [
-        route({ id: "route-a", name: "Регистрация" }),
+        route({ id: 'route-a', name: 'Регистрация' }),
         route({
-          id: "route-b",
-          name: "Первый депозит",
+          id: 'route-b',
+          name: 'Первый депозит',
           draftRevision: {
             ...route().draftRevision,
-            providerEventName: "first_deposit",
+            providerEventName: 'first_deposit',
           },
         }),
         ...Array.from({ length: 9 }, (_, index) =>
@@ -883,24 +852,24 @@ describe("IntegrationEventRoutesCard", () => {
 
     const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
-        projectId: "project-1",
+        projectId: 'project-1',
         canRead: true,
         canManage: false,
         canReadActivity: false,
       },
     });
     await flushPromises();
-    await wrapper.get('input[type="search"]').setValue("first_deposit");
+    await wrapper.get('input[type="search"]').setValue('first_deposit');
 
-    expect(wrapper.findAll("[data-route-row]")).toHaveLength(1);
-    expect(wrapper.text()).toContain("Первый депозит");
-    expect(wrapper.text()).not.toContain("Регистрация");
+    expect(wrapper.findAll('[data-route-row]')).toHaveLength(1);
+    expect(wrapper.text()).toContain('Первый депозит');
+    expect(wrapper.text()).not.toContain('Регистрация');
   });
 
-  it("keeps small rule lists compact and pagination outside the table scroll", async () => {
+  it('keeps small rule lists compact and pagination outside the table scroll', async () => {
     const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
-        projectId: "project-1",
+        projectId: 'project-1',
         canRead: true,
         canManage: false,
         canReadActivity: true,
@@ -908,16 +877,13 @@ describe("IntegrationEventRoutesCard", () => {
     });
     await flushPromises();
 
+    expect(wrapper.find('input[aria-label="Поиск по правилам передачи"]').exists()).toBe(false);
     expect(
-      wrapper.find('input[aria-label="Поиск по правилам передачи"]').exists(),
-    ).toBe(false);
-    expect(
-      wrapper.get(".delivery-activity .table-pagination").element.parentElement
-        ?.classList,
-    ).toContain("delivery-activity");
+      wrapper.get('.delivery-activity .table-pagination').element.parentElement?.classList,
+    ).toContain('delivery-activity');
   });
 
-  it("does not show an empty delivery journal while routes are still loading", async () => {
+  it('does not show an empty delivery journal while routes are still loading', async () => {
     let resolveRoutes!: (value: { items: unknown[] }) => void;
     mocks.listRoutes.mockReturnValue(
       new Promise((resolve) => {
@@ -926,7 +892,7 @@ describe("IntegrationEventRoutesCard", () => {
     );
     const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
-        projectId: "project-1",
+        projectId: 'project-1',
         canRead: true,
         canManage: true,
         canReadActivity: true,
@@ -935,21 +901,21 @@ describe("IntegrationEventRoutesCard", () => {
     await Promise.resolve();
 
     expect(wrapper.get('[data-testid="routes-loading"]').text()).toContain(
-      "Загружаем правила и доставки",
+      'Загружаем правила и доставки',
     );
-    expect(wrapper.text()).not.toContain("Последние доставки");
+    expect(wrapper.text()).not.toContain('Последние доставки');
 
     resolveRoutes({ items: [] });
     await flushPromises();
     expect(wrapper.find('[data-testid="routes-loading"]').exists()).toBe(false);
-    expect(wrapper.text()).toContain("Последние доставки");
+    expect(wrapper.text()).toContain('Последние доставки');
   });
 
-  it("does not promise delivery data while the journal is unavailable", async () => {
+  it('does not promise delivery data while the journal is unavailable', async () => {
     mocks.listRoutes.mockReturnValue(new Promise(() => undefined));
     const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
-        projectId: "project-1",
+        projectId: 'project-1',
         canRead: true,
         canManage: true,
         canReadActivity: false,
@@ -957,31 +923,25 @@ describe("IntegrationEventRoutesCard", () => {
     });
     await Promise.resolve();
 
-    expect(wrapper.get('[data-testid="routes-loading"]').text()).toContain(
-      "Загружаем правила",
-    );
-    expect(wrapper.get('[data-testid="routes-loading"]').text()).not.toContain(
-      "доставки",
-    );
+    expect(wrapper.get('[data-testid="routes-loading"]').text()).toContain('Загружаем правила');
+    expect(wrapper.get('[data-testid="routes-loading"]').text()).not.toContain('доставки');
   });
 
-  it("exposes the rule form state while it opens", async () => {
+  it('exposes the rule form state while it opens', async () => {
     const wrapper = mount(IntegrationEventRoutesCard, {
       props: {
-        projectId: "project-1",
+        projectId: 'project-1',
         canRead: true,
         canManage: true,
         canReadActivity: false,
       },
     });
     await flushPromises();
-    const toggle = wrapper.get(
-      'button[aria-controls="amplitude-route-editor"]',
-    );
+    const toggle = wrapper.get('button[aria-controls="amplitude-route-editor"]');
 
-    expect(toggle.attributes("aria-expanded")).toBe("false");
-    await toggle.trigger("click");
-    expect(toggle.attributes("aria-expanded")).toBe("true");
-    expect(wrapper.get("#amplitude-route-editor").isVisible()).toBe(true);
+    expect(toggle.attributes('aria-expanded')).toBe('false');
+    await toggle.trigger('click');
+    expect(toggle.attributes('aria-expanded')).toBe('true');
+    expect(wrapper.get('#amplitude-route-editor').isVisible()).toBe(true);
   });
 });

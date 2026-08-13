@@ -1,34 +1,28 @@
-import { computed, ref, shallowRef, watch, type Ref } from "vue";
+import { computed, ref, shallowRef, watch, type Ref } from 'vue';
 import type {
   ProfileProjectionResponseDto,
   SupportActivityResponseDto as GeneratedSupportActivityResponseDto,
   SupportInspectorEventPageResponseDto,
   SupportInspectorEventsListParams,
   SupportLeadActivityParams,
-} from "@/shared/api/generated/models";
-import { ApiError } from "@/shared/api/http/api-error";
+} from '@/shared/api/generated/models';
+import { ApiError } from '@/shared/api/http/api-error';
 
 export type SupportInspectorTab =
-  | "CASE"
-  | "USER"
-  | "KNOWLEDGE"
-  | "INTEGRATIONS"
-  | "DATA"
-  | "EVENTS"
-  | "ACTIVITY";
+  'CASE' | 'USER' | 'KNOWLEDGE' | 'INTEGRATIONS' | 'DATA' | 'EVENTS' | 'ACTIVITY';
 
 export type SupportActivitySnapshot = Pick<
   GeneratedSupportActivityResponseDto,
-  | "capabilities"
-  | "checkpoint"
-  | "computedAt"
-  | "data"
-  | "effectiveWindow"
-  | "freshnessState"
-  | "kind"
-  | "nextCursor"
-  | "projectionGeneration"
-  | "sourceHighWater"
+  | 'capabilities'
+  | 'checkpoint'
+  | 'computedAt'
+  | 'data'
+  | 'effectiveWindow'
+  | 'freshnessState'
+  | 'kind'
+  | 'nextCursor'
+  | 'projectionGeneration'
+  | 'sourceHighWater'
 >;
 
 export interface SupportInspectorTabItem {
@@ -85,25 +79,25 @@ interface ResourceController<T> extends SupportInspectorResource<T> {
   abort: AbortController | null;
 }
 
-const TAB_STORAGE_PREFIX = "retenive:support-inspector-tab:";
+const TAB_STORAGE_PREFIX = 'retenive:support-inspector-tab:';
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1_000;
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1_000;
 
 const tabCatalog: readonly SupportInspectorTabItem[] = [
-  { id: "CASE", label: "Обращение", icon: "pi pi-briefcase" },
-  { id: "USER", label: "Пользователь", icon: "pi pi-user" },
-  { id: "KNOWLEDGE", label: "Материалы", icon: "pi pi-book" },
-  { id: "INTEGRATIONS", label: "Интеграции", icon: "pi pi-link" },
-  { id: "DATA", label: "Профиль", icon: "pi pi-id-card" },
-  { id: "EVENTS", label: "События", icon: "pi pi-bolt" },
-  { id: "ACTIVITY", label: "Активность", icon: "pi pi-history" },
+  { id: 'CASE', label: 'Обращение', icon: 'pi pi-briefcase' },
+  { id: 'USER', label: 'Пользователь', icon: 'pi pi-user' },
+  { id: 'KNOWLEDGE', label: 'Материалы', icon: 'pi pi-book' },
+  { id: 'INTEGRATIONS', label: 'Интеграции', icon: 'pi pi-link' },
+  { id: 'DATA', label: 'Профиль', icon: 'pi pi-id-card' },
+  { id: 'EVENTS', label: 'События', icon: 'pi pi-bolt' },
+  { id: 'ACTIVITY', label: 'Активность', icon: 'pi pi-history' },
 ];
 
 function resource<T>(): ResourceController<T> {
   return {
     data: shallowRef<T | null>(null),
     loading: ref(false),
-    error: ref(""),
+    error: ref(''),
     loaded: ref(false),
     generation: 0,
     abort: null,
@@ -116,7 +110,7 @@ function resetResource<T>(state: ResourceController<T>): void {
   state.abort = null;
   state.data.value = null;
   state.loading.value = false;
-  state.error.value = "";
+  state.error.value = '';
   state.loaded.value = false;
 }
 
@@ -124,25 +118,18 @@ function storageKey(operatorId: string | undefined): string | null {
   return operatorId ? `${TAB_STORAGE_PREFIX}${operatorId}` : null;
 }
 
-function readStoredTab(
-  operatorId: string | undefined,
-): SupportInspectorTab | null {
+function readStoredTab(operatorId: string | undefined): SupportInspectorTab | null {
   const key = storageKey(operatorId);
   if (!key) return null;
   try {
     const value = globalThis.sessionStorage?.getItem(key);
-    return tabCatalog.some((tab) => tab.id === value)
-      ? (value as SupportInspectorTab)
-      : null;
+    return tabCatalog.some((tab) => tab.id === value) ? (value as SupportInspectorTab) : null;
   } catch {
     return null;
   }
 }
 
-function persistTab(
-  operatorId: string | undefined,
-  tab: SupportInspectorTab,
-): void {
+function persistTab(operatorId: string | undefined, tab: SupportInspectorTab): void {
   const key = storageKey(operatorId);
   if (!key) return;
   try {
@@ -154,9 +141,9 @@ function persistTab(
 
 function resourceError(cause: unknown, label: string): string {
   if (cause instanceof ApiError && cause.status === 429)
-    return "Слишком много запросов. Подождите немного и повторите.";
+    return 'Слишком много запросов. Подождите немного и повторите.';
   if (cause instanceof ApiError && cause.status === 503)
-    return "Данные ещё готовятся. Повторите загрузку через несколько секунд.";
+    return 'Данные ещё готовятся. Повторите загрузку через несколько секунд.';
   return `Не удалось загрузить ${label.toLowerCase()}.`;
 }
 
@@ -178,17 +165,16 @@ export function createSupportInspectorController(
     const permissions = context.permissions();
     const hasCase = Boolean(context.caseId());
     return tabCatalog.filter((tab) => {
-      if (tab.id === "CASE") return hasCase;
-      if (tab.id === "KNOWLEDGE") return hasCase && permissions.knowledge;
-      if (tab.id === "INTEGRATIONS") return hasCase && permissions.externalWork;
-      if (tab.id === "DATA") return permissions.profile;
-      if (tab.id === "EVENTS") return hasCase && permissions.events;
-      if (tab.id === "ACTIVITY") return hasCase && permissions.activity;
+      if (tab.id === 'CASE') return hasCase;
+      if (tab.id === 'KNOWLEDGE') return hasCase && permissions.knowledge;
+      if (tab.id === 'INTEGRATIONS') return hasCase && permissions.externalWork;
+      if (tab.id === 'DATA') return permissions.profile;
+      if (tab.id === 'EVENTS') return hasCase && permissions.events;
+      if (tab.id === 'ACTIVITY') return hasCase && permissions.activity;
       return true;
     });
   });
-  const defaultTab = (): SupportInspectorTab =>
-    context.caseId() ? "CASE" : "USER";
+  const defaultTab = (): SupportInspectorTab => (context.caseId() ? 'CASE' : 'USER');
   const activeTab = ref<SupportInspectorTab>(defaultTab());
   let eventsWindow: { from: string; to: string } | null = null;
   let activityWindow: { from: string; to: string } | null = null;
@@ -209,12 +195,7 @@ export function createSupportInspectorController(
     const endUserId = context.endUserId();
     const operatorId = context.operatorId();
     if (!projectId || !endUserId || !operatorId) return;
-    const scopeKey = [
-      operatorId,
-      projectId,
-      endUserId,
-      context.caseId() ?? "",
-    ].join(":");
+    const scopeKey = [operatorId, projectId, endUserId, context.caseId() ?? ''].join(':');
     if (scopeKey === restoredScopeKey) return;
     restoredScopeKey = scopeKey;
     const stored = readStoredTab(operatorId);
@@ -234,9 +215,9 @@ export function createSupportInspectorController(
   restoreStoredTabForScope();
 
   async function forbidden(tab: SupportInspectorTab): Promise<void> {
-    if (tab === "DATA") resetResource(profile);
-    if (tab === "EVENTS") resetResource(events);
-    if (tab === "ACTIVITY") resetResource(activity);
+    if (tab === 'DATA') resetResource(profile);
+    if (tab === 'EVENTS') resetResource(events);
+    if (tab === 'ACTIVITY') resetResource(activity);
     await context.onForbidden?.(tab);
   }
 
@@ -252,13 +233,9 @@ export function createSupportInspectorController(
     const generation = ++profile.generation;
     profile.abort = abort;
     profile.loading.value = true;
-    profile.error.value = "";
+    profile.error.value = '';
     try {
-      const result = await source.readProfile(
-        projectId,
-        endUserId,
-        abort.signal,
-      );
+      const result = await source.readProfile(projectId, endUserId, abort.signal);
       if (
         generation !== profile.generation ||
         context.projectId() !== projectId ||
@@ -268,20 +245,17 @@ export function createSupportInspectorController(
       )
         return;
       if (result.endUserId !== endUserId)
-        throw new Error("Inspector profile belongs to another End User");
+        throw new Error('Inspector profile belongs to another End User');
       profile.data.value = result;
       profile.loaded.value = true;
     } catch (cause) {
       if (generation !== profile.generation || abort.signal.aborted) return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
-        await forbidden("DATA");
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+        await forbidden('DATA');
         return;
       }
       profile.data.value = null;
-      profile.error.value = resourceError(cause, "данные пользователя");
+      profile.error.value = resourceError(cause, 'данные пользователя');
       profile.loaded.value = true;
     } finally {
       if (generation === profile.generation) {
@@ -311,7 +285,7 @@ export function createSupportInspectorController(
     const generation = ++events.generation;
     events.abort = abort;
     events.loading.value = true;
-    events.error.value = "";
+    events.error.value = '';
     eventsWindow = boundedWindow(THIRTY_DAYS_MS);
     try {
       const result = await source.readEvents(
@@ -328,21 +302,17 @@ export function createSupportInspectorController(
         !context.permissions().events
       )
         return;
-      if (result.caseId !== caseId)
-        throw new Error("Inspector Events belong to another Case");
+      if (result.caseId !== caseId) throw new Error('Inspector Events belong to another Case');
       events.data.value = result;
       events.loaded.value = true;
     } catch (cause) {
       if (generation !== events.generation || abort.signal.aborted) return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
-        await forbidden("EVENTS");
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+        await forbidden('EVENTS');
         return;
       }
       events.data.value = null;
-      events.error.value = resourceError(cause, "события");
+      events.error.value = resourceError(cause, 'события');
       events.loaded.value = true;
     } finally {
       if (generation === events.generation) {
@@ -367,7 +337,7 @@ export function createSupportInspectorController(
       return;
     const generation = events.generation;
     events.loading.value = true;
-    events.error.value = "";
+    events.error.value = '';
     try {
       const next = await source.readEvents(projectId, caseId, {
         ...eventsWindow,
@@ -383,21 +353,18 @@ export function createSupportInspectorController(
       )
         return;
       if (next.caseId !== caseId || next.snapshotAt !== current.snapshotAt)
-        throw new Error("Inspector Events pagination changed snapshot");
+        throw new Error('Inspector Events pagination changed snapshot');
       events.data.value = {
         ...next,
         items: [...current.items, ...next.items],
       };
     } catch (cause) {
       if (generation !== events.generation) return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
-        await forbidden("EVENTS");
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+        await forbidden('EVENTS');
         return;
       }
-      events.error.value = resourceError(cause, "следующую страницу событий");
+      events.error.value = resourceError(cause, 'следующую страницу событий');
     } finally {
       if (generation === events.generation) events.loading.value = false;
     }
@@ -415,7 +382,7 @@ export function createSupportInspectorController(
     const generation = ++activity.generation;
     activity.abort = abort;
     activity.loading.value = true;
-    activity.error.value = "";
+    activity.error.value = '';
     activityWindow = boundedWindow(SEVEN_DAYS_MS);
     try {
       const result = await source.readActivity(
@@ -431,23 +398,18 @@ export function createSupportInspectorController(
         !context.permissions().activity
       )
         return;
-      if (
-        result.data.facts.some((fact) => fact.caseId && fact.caseId !== caseId)
-      )
-        throw new Error("Support Activity contains another Case");
+      if (result.data.facts.some((fact) => fact.caseId && fact.caseId !== caseId))
+        throw new Error('Support Activity contains another Case');
       activity.data.value = result;
       activity.loaded.value = true;
     } catch (cause) {
       if (generation !== activity.generation || abort.signal.aborted) return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
-        await forbidden("ACTIVITY");
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+        await forbidden('ACTIVITY');
         return;
       }
       activity.data.value = null;
-      activity.error.value = resourceError(cause, "активность поддержки");
+      activity.error.value = resourceError(cause, 'активность поддержки');
       activity.loaded.value = true;
     } finally {
       if (generation === activity.generation) {
@@ -472,7 +434,7 @@ export function createSupportInspectorController(
       return;
     const generation = activity.generation;
     activity.loading.value = true;
-    activity.error.value = "";
+    activity.error.value = '';
     try {
       const next = await source.readActivity(projectId, {
         caseId,
@@ -492,33 +454,27 @@ export function createSupportInspectorController(
         next.projectionGeneration !== current.projectionGeneration ||
         next.data.facts.some((fact) => fact.caseId && fact.caseId !== caseId)
       )
-        throw new Error("Support Activity pagination changed snapshot");
+        throw new Error('Support Activity pagination changed snapshot');
       activity.data.value = {
         ...next,
         data: { facts: [...current.data.facts, ...next.data.facts] },
       };
     } catch (cause) {
       if (generation !== activity.generation) return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
-        await forbidden("ACTIVITY");
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
+        await forbidden('ACTIVITY');
         return;
       }
-      activity.error.value = resourceError(
-        cause,
-        "следующую страницу активности",
-      );
+      activity.error.value = resourceError(cause, 'следующую страницу активности');
     } finally {
       if (generation === activity.generation) activity.loading.value = false;
     }
   }
 
   async function loadActiveTab(force = false): Promise<void> {
-    if (activeTab.value === "DATA") await loadProfile(force);
-    if (activeTab.value === "EVENTS") await loadEvents(force);
-    if (activeTab.value === "ACTIVITY") await loadActivity(force);
+    if (activeTab.value === 'DATA') await loadProfile(force);
+    if (activeTab.value === 'EVENTS') await loadEvents(force);
+    if (activeTab.value === 'ACTIVITY') await loadActivity(force);
   }
 
   async function open(tab: SupportInspectorTab): Promise<void> {
@@ -568,7 +524,7 @@ export function createSupportInspectorController(
       ensureSafeTab();
       void loadActiveTab();
     },
-    { flush: "sync" },
+    { flush: 'sync' },
   );
 
   return {

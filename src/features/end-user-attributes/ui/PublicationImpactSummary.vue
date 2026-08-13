@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import type { AttributePublicationChangesResponseDto } from "@/shared/api/generated/models";
-import { publicationImpact } from "../model/publication-domain";
+import { computed } from 'vue';
+import type { AttributePublicationChangesResponseDto } from '@/shared/api/generated/models';
+import { publicationImpact } from '../model/publication-domain';
 
 const props = defineProps<{
   changes: AttributePublicationChangesResponseDto;
@@ -35,18 +35,18 @@ const impact = computed(() => publicationImpact(props.changes));
       <ul>
         <li>
           <strong>Изменится интеграция продукта:</strong>
-          {{ changes.contractChanged ? "да" : "нет" }}.
+          {{ changes.contractChanged ? 'да' : 'нет' }}.
         </li>
         <li>
           {{
             changes.contractChanged
-              ? "Появится новая версия контракта."
-              : "Версия контракта останется прежней."
+              ? 'Появится новая версия контракта.'
+              : 'Версия контракта останется прежней.'
           }}
         </li>
         <li>
           <strong>Потребуется повторная синхронизация:</strong>
-          {{ profileResyncRequired ? "да" : "нет" }}.
+          {{ profileResyncRequired ? 'да' : 'нет' }}.
         </li>
       </ul>
     </div>

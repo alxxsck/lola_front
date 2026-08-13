@@ -23,7 +23,7 @@ import {
   endUserCasesTransferEscalation,
   endUserCasesUnlinkMessage,
   endUserCasesWorkflow,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   CancelEndUserCaseEscalationDto,
   ClassifyEndUserCaseDto,
@@ -51,17 +51,17 @@ import type {
   UnlinkEndUserCaseMessageDto,
   UpdateEndUserCaseWorkflowDto,
   VersionedEndUserCaseEscalationDto,
-} from "@/shared/api/generated/models";
-import { ApiError } from "@/shared/api/http/api-error";
+} from '@/shared/api/generated/models';
+import { ApiError } from '@/shared/api/http/api-error';
 import {
   endUserCaseListParams,
   type EndUserCaseFilters,
   type EndUserCaseMessages,
   type EndUserCaseSummary,
   type EndUserCaseTimeline,
-} from "../model/end-user-case";
-import { isMockMode } from "@/shared/config/data-mode";
-import { mockEndUserCasesRepository } from "./mock-end-user-cases-repository";
+} from '../model/end-user-case';
+import { isMockMode } from '@/shared/config/data-mode';
+import { mockEndUserCasesRepository } from './mock-end-user-cases-repository';
 
 export interface EndUserCaseDetailBundle {
   case: EndUserCaseDetailResponseDto;
@@ -85,11 +85,7 @@ export interface EndUserCasesRepository {
   ): Promise<EndUserCasesPageResponseDto>;
   summary(projectId: string): Promise<EndUserCaseSummary>;
   assignees(projectId: string): Promise<EndUserCaseAssigneesResponseDto>;
-  messages(
-    projectId: string,
-    caseId: string,
-    cursor?: string,
-  ): Promise<EndUserCaseMessages>;
+  messages(projectId: string, caseId: string, cursor?: string): Promise<EndUserCaseMessages>;
   detail(projectId: string, caseId: string): Promise<EndUserCaseDetailBundle>;
   workflow(
     projectId: string,
@@ -211,10 +207,10 @@ const apiEndUserCasesRepository: EndUserCasesRepository = {
   async assign() {
     throw new ApiError(
       410,
-      "Назначение перенесено в рабочее место поддержки",
+      'Назначение перенесено в рабочее место поддержки',
       undefined,
       undefined,
-      "END_USER_CASE_ASSIGNMENT_RETIRED",
+      'END_USER_CASE_ASSIGNMENT_RETIRED',
     );
   },
   classify: endUserCasesClassification,
@@ -224,53 +220,33 @@ const apiEndUserCasesRepository: EndUserCasesRepository = {
   split: endUserCasesSplit,
   requestEscalation(projectId, caseId, command, idempotencyKey) {
     return endUserCasesRequestEscalation(projectId, caseId, command, {
-      headers: { "Idempotency-Key": idempotencyKey },
+      headers: { 'Idempotency-Key': idempotencyKey },
     });
   },
   claimEscalation(projectId, caseId, escalationId, command, idempotencyKey) {
-    return endUserCasesClaimEscalation(
-      projectId,
-      caseId,
-      escalationId,
-      command,
-      { headers: { "Idempotency-Key": idempotencyKey } },
-    );
+    return endUserCasesClaimEscalation(projectId, caseId, escalationId, command, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
   },
   releaseEscalation(projectId, caseId, escalationId, command, idempotencyKey) {
-    return endUserCasesReleaseEscalation(
-      projectId,
-      caseId,
-      escalationId,
-      command,
-      { headers: { "Idempotency-Key": idempotencyKey } },
-    );
+    return endUserCasesReleaseEscalation(projectId, caseId, escalationId, command, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
   },
   transferEscalation(projectId, caseId, escalationId, command, idempotencyKey) {
-    return endUserCasesTransferEscalation(
-      projectId,
-      caseId,
-      escalationId,
-      command,
-      { headers: { "Idempotency-Key": idempotencyKey } },
-    );
+    return endUserCasesTransferEscalation(projectId, caseId, escalationId, command, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
   },
   closeEscalation(projectId, caseId, escalationId, command, idempotencyKey) {
-    return endUserCasesCloseEscalation(
-      projectId,
-      caseId,
-      escalationId,
-      command,
-      { headers: { "Idempotency-Key": idempotencyKey } },
-    );
+    return endUserCasesCloseEscalation(projectId, caseId, escalationId, command, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
   },
   cancelEscalation(projectId, caseId, escalationId, command, idempotencyKey) {
-    return endUserCasesCancelEscalation(
-      projectId,
-      caseId,
-      escalationId,
-      command,
-      { headers: { "Idempotency-Key": idempotencyKey } },
-    );
+    return endUserCasesCancelEscalation(projectId, caseId, escalationId, command, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
   },
   cost: endUserCasesCostSummary,
   policy: endUserCasePolicyGet,

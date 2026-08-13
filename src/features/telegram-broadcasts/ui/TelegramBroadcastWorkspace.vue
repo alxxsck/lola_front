@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref } from 'vue';
 import {
   TELEGRAM_BROADCAST_AUDIENCE_CAP,
   type TelegramBroadcast,
@@ -7,17 +7,17 @@ import {
   type TelegramBroadcastLifecycle,
   type TelegramBroadcastPreview,
   type TelegramBroadcastSafeError,
-} from "@/features/telegram-broadcasts/model/telegram-broadcast";
+} from '@/features/telegram-broadcasts/model/telegram-broadcast';
 import type {
   TelegramBroadcastDelivery,
   TelegramBroadcastTestSend,
-} from "@/features/telegram-broadcasts/model/use-telegram-broadcasts";
-import TelegramBroadcastActionDialog from "@/features/telegram-broadcasts/ui/TelegramBroadcastActionDialog.vue";
-import TelegramBroadcastDraftForm from "@/features/telegram-broadcasts/ui/TelegramBroadcastDraftForm.vue";
-import TelegramBroadcastPreviewPanel from "@/features/telegram-broadcasts/ui/TelegramBroadcastPreview.vue";
-import TelegramBroadcastProgressPanel from "@/features/telegram-broadcasts/ui/TelegramBroadcastProgress.vue";
+} from '@/features/telegram-broadcasts/model/use-telegram-broadcasts';
+import TelegramBroadcastActionDialog from '@/features/telegram-broadcasts/ui/TelegramBroadcastActionDialog.vue';
+import TelegramBroadcastDraftForm from '@/features/telegram-broadcasts/ui/TelegramBroadcastDraftForm.vue';
+import TelegramBroadcastPreviewPanel from '@/features/telegram-broadcasts/ui/TelegramBroadcastPreview.vue';
+import TelegramBroadcastProgressPanel from '@/features/telegram-broadcasts/ui/TelegramBroadcastProgress.vue';
 
-defineOptions({ name: "TelegramBroadcastWorkspace" });
+defineOptions({ name: 'TelegramBroadcastWorkspace' });
 
 const props = defineProps<{
   broadcast: TelegramBroadcast;
@@ -39,7 +39,7 @@ const emit = defineEmits<{
     draft: {
       title: string;
       content: { text: string };
-      audience: { kind: "ALL_EXPLICITLY_OPTED_IN" };
+      audience: { kind: 'ALL_EXPLICITLY_OPTED_IN' };
     },
   ];
   generatePreview: [];
@@ -57,36 +57,32 @@ const emit = defineEmits<{
   dirtyChange: [dirty: boolean];
 }>();
 
-type Confirmation = "APPROVE" | "CANCEL" | null;
+type Confirmation = 'APPROVE' | 'CANCEL' | null;
 
 const confirmation = ref<Confirmation>(null);
-const scheduledFor = ref("");
+const scheduledFor = ref('');
 const busy = computed(() => props.loading || props.mutating);
 const approvalTestEvidence = computed(() => {
   const test = props.latestTestSend;
-  return test?.status === "SENT" &&
+  return test?.status === 'SENT' &&
     test.currentRevision &&
     test.revisionId === props.broadcast.revision.id
     ? test
     : null;
 });
 const audienceWithinCap = computed(
-  () =>
-    !props.preview ||
-    props.preview.eligibleRecipientCount <= TELEGRAM_BROADCAST_AUDIENCE_CAP,
+  () => !props.preview || props.preview.eligibleRecipientCount <= TELEGRAM_BROADCAST_AUDIENCE_CAP,
 );
 const approvalReady = computed(
   () =>
-    props.availability.approve &&
-    Boolean(approvalTestEvidence.value) &&
-    audienceWithinCap.value,
+    props.availability.approve && Boolean(approvalTestEvidence.value) && audienceWithinCap.value,
 );
 const approvedTestEvidence = computed(() => {
   const approval = props.broadcast.approval;
   const test = props.broadcast.latestTest ?? props.latestTestSend;
   return approval &&
     test?.id === approval.successfulTestId &&
-    test.status === "SENT" &&
+    test.status === 'SENT' &&
     test.currentRevision &&
     test.revisionId === approval.revisionId
     ? test
@@ -98,30 +94,30 @@ const draft = computed(() => ({
   audience: props.broadcast.audience,
 }));
 const lifecycleLabels: Record<TelegramBroadcastLifecycle, string> = {
-  DRAFT: "Черновик",
-  APPROVED: "Одобрена",
-  SCHEDULED: "Запланирована",
-  RUNNING: "Отправляется",
-  PAUSED: "Приостановлена",
-  COMPLETED: "Завершена",
-  COMPLETED_WITH_FAILURES: "Завершена с ошибками",
-  CANCELLED: "Отменена",
+  DRAFT: 'Черновик',
+  APPROVED: 'Одобрена',
+  SCHEDULED: 'Запланирована',
+  RUNNING: 'Отправляется',
+  PAUSED: 'Приостановлена',
+  COMPLETED: 'Завершена',
+  COMPLETED_WITH_FAILURES: 'Завершена с ошибками',
+  CANCELLED: 'Отменена',
 };
 
 const confirmationTitle = computed(() =>
-  confirmation.value === "APPROVE"
+  confirmation.value === 'APPROVE'
     ? `Подтвердить рассылку «${props.broadcast.title}»`
     : `Отменить рассылку «${props.broadcast.title}»`,
 );
 const confirmationDescription = computed(() =>
-  confirmation.value === "APPROVE"
+  confirmation.value === 'APPROVE'
     ? `Будет зафиксирован снимок из ${props.preview?.eligibleRecipientCount ?? 0} получателей с явным согласием. После подтверждения черновик нельзя изменить.`
-    : "Уже отправленные сообщения нельзя отозвать. Необработанные доставки будут отменены, а аудит сохранится.",
+    : 'Уже отправленные сообщения нельзя отозвать. Необработанные доставки будут отменены, а аудит сохранится.',
 );
 
 function confirmAction(): void {
-  if (confirmation.value === "APPROVE" && approvalReady.value) emit("approve");
-  if (confirmation.value === "CANCEL") emit("cancel");
+  if (confirmation.value === 'APPROVE' && approvalReady.value) emit('approve');
+  if (confirmation.value === 'CANCEL') emit('cancel');
   confirmation.value = null;
 }
 
@@ -129,11 +125,11 @@ function emitSchedule(): void {
   if (!scheduledFor.value) return;
   const date = new Date(scheduledFor.value);
   if (Number.isNaN(date.valueOf())) return;
-  emit("schedule", date.toISOString());
+  emit('schedule', date.toISOString());
 }
 
 function forwardTestSend(endUserExternalId: string, label: string): void {
-  emit("testSend", endUserExternalId, label);
+  emit('testSend', endUserExternalId, label);
 }
 </script>
 
@@ -158,12 +154,7 @@ function forwardTestSend(endUserExternalId: string, label: string): void {
           <i class="pi pi-circle-fill" aria-hidden="true" />
           {{ lifecycleLabels[broadcast.status] }}
         </span>
-        <button
-          type="button"
-          class="secondary-button"
-          :disabled="busy"
-          @click="emit('refresh')"
-        >
+        <button type="button" class="secondary-button" :disabled="busy" @click="emit('refresh')">
           Обновить
         </button>
       </div>
@@ -171,12 +162,7 @@ function forwardTestSend(endUserExternalId: string, label: string): void {
 
     <p v-if="error" class="error-banner" role="alert">
       {{ error.message }}
-      <button
-        v-if="retryAvailable"
-        type="button"
-        class="link-button"
-        @click="emit('retry')"
-      >
+      <button v-if="retryAvailable" type="button" class="link-button" @click="emit('retry')">
         Повторить
       </button>
       <button
@@ -232,8 +218,8 @@ function forwardTestSend(endUserExternalId: string, label: string): void {
         <h2 id="broadcast-review-title">Проверка и подтверждение</h2>
       </div>
       <p>
-        Проверьте точный текст, ревизию предпросмотра и количество получателей.
-        Подтверждение создаст неизменяемый снимок аудитории.
+        Проверьте точный текст, ревизию предпросмотра и количество получателей. Подтверждение
+        создаст неизменяемый снимок аудитории.
       </p>
       <dl class="approval-evidence">
         <div>
@@ -246,7 +232,9 @@ function forwardTestSend(endUserExternalId: string, label: string): void {
         </div>
         <div>
           <dt>Хеш содержания</dt>
-          <dd><code>{{ preview.contentHash }}</code></dd>
+          <dd>
+            <code>{{ preview.contentHash }}</code>
+          </dd>
         </div>
         <div>
           <dt>Последний успешный тест</dt>
@@ -256,13 +244,9 @@ function forwardTestSend(endUserExternalId: string, label: string): void {
           <dd v-else>Нет успешного SENT-теста текущей ревизии</dd>
         </div>
       </dl>
-      <p
-        v-if="!audienceWithinCap"
-        class="approval-warning"
-        role="alert"
-      >
-        Получателей больше {{ TELEGRAM_BROADCAST_AUDIENCE_CAP }}. Уменьшите
-        аудиторию до лимита перед подтверждением.
+      <p v-if="!audienceWithinCap" class="approval-warning" role="alert">
+        Получателей больше {{ TELEGRAM_BROADCAST_AUDIENCE_CAP }}. Уменьшите аудиторию до лимита
+        перед подтверждением.
       </p>
       <button
         type="button"
@@ -282,9 +266,7 @@ function forwardTestSend(endUserExternalId: string, label: string): void {
     >
       <div class="section-heading">
         <span>Зафиксировано</span>
-        <h2 id="broadcast-approved-evidence-title">
-          Доказательства подтверждения
-        </h2>
+        <h2 id="broadcast-approved-evidence-title">Доказательства подтверждения</h2>
       </div>
       <dl class="approval-evidence">
         <div>
@@ -293,7 +275,9 @@ function forwardTestSend(endUserExternalId: string, label: string): void {
         </div>
         <div>
           <dt>Хеш содержания</dt>
-          <dd><code>{{ broadcast.approval.contentHash }}</code></dd>
+          <dd>
+            <code>{{ broadcast.approval.contentHash }}</code>
+          </dd>
         </div>
         <div>
           <dt>Успешный тест</dt>
@@ -367,7 +351,7 @@ function forwardTestSend(endUserExternalId: string, label: string): void {
       <p v-if="broadcast.scheduledAt">
         Запуск:
         <time :datetime="broadcast.scheduledAt">
-          {{ new Date(broadcast.scheduledAt).toLocaleString("ru-RU") }}
+          {{ new Date(broadcast.scheduledAt).toLocaleString('ru-RU') }}
         </time>
       </p>
     </section>
@@ -404,9 +388,7 @@ function forwardTestSend(endUserExternalId: string, label: string): void {
       :title="confirmationTitle"
       :description="confirmationDescription"
       :confirm-label="
-        confirmation === 'APPROVE'
-          ? 'Подтвердить и зафиксировать'
-          : 'Отменить рассылку'
+        confirmation === 'APPROVE' ? 'Подтвердить и зафиксировать' : 'Отменить рассылку'
       "
       :destructive="confirmation === 'CANCEL'"
       @confirm="confirmAction"
@@ -423,13 +405,13 @@ function forwardTestSend(endUserExternalId: string, label: string): void {
         </div>
         <div>
           <dt>Хеш содержания</dt>
-          <dd><code>{{ preview.contentHash }}</code></dd>
+          <dd>
+            <code>{{ preview.contentHash }}</code>
+          </dd>
         </div>
         <div v-if="approvalTestEvidence">
           <dt>Успешный тест</dt>
-          <dd>
-            {{ approvalTestEvidence.label }} · SENT · текущая ревизия
-          </dd>
+          <dd>{{ approvalTestEvidence.label }} · SENT · текущая ревизия</dd>
         </div>
       </dl>
     </TelegramBroadcastActionDialog>

@@ -1,22 +1,16 @@
-import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import process from "node:process";
-import { spawn } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { createHash } from 'node:crypto';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import process from 'node:process';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
-const repositoryRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-);
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 function parseArguments(argv) {
-  let snapshot = path.join(repositoryRoot, "openapi/retenive-backend.json");
-  let metadata = path.join(
-    repositoryRoot,
-    "openapi/retenive-backend.contract.json",
-  );
+  let snapshot = path.join(repositoryRoot, 'openapi/retenive-backend.json');
+  let metadata = path.join(repositoryRoot, 'openapi/retenive-backend.contract.json');
   let backendDocument;
   let backendDirectory = process.env.RETENIVE_BACKEND_DIR
     ? path.resolve(process.env.RETENIVE_BACKEND_DIR)
@@ -26,40 +20,37 @@ function parseArguments(argv) {
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
-    if (argument === "--write") write = true;
-    else if (argument === "--snapshot") {
-      snapshot = requiredPath(argv, ++index, "--snapshot");
-    } else if (argument === "--metadata") {
-      metadata = requiredPath(argv, ++index, "--metadata");
-    } else if (argument === "--backend-document") {
-      backendDocument = requiredPath(argv, ++index, "--backend-document");
-    } else if (argument === "--backend-directory") {
-      backendDirectory = requiredPath(argv, ++index, "--backend-directory");
-    } else if (argument === "--backend-ref") {
+    if (argument === '--write') write = true;
+    else if (argument === '--snapshot') {
+      snapshot = requiredPath(argv, ++index, '--snapshot');
+    } else if (argument === '--metadata') {
+      metadata = requiredPath(argv, ++index, '--metadata');
+    } else if (argument === '--backend-document') {
+      backendDocument = requiredPath(argv, ++index, '--backend-document');
+    } else if (argument === '--backend-directory') {
+      backendDirectory = requiredPath(argv, ++index, '--backend-directory');
+    } else if (argument === '--backend-ref') {
       backendRef = argv[++index];
-      if (!backendRef?.trim())
-        throw new Error("--backend-ref requires a value");
+      if (!backendRef?.trim()) throw new Error('--backend-ref requires a value');
     } else throw new Error(`Unknown argument: ${argument}`);
   }
 
   if (backendDocument && backendDirectory) {
     throw new Error(
-      "Use either --backend-document or --backend-directory/RETENIVE_BACKEND_DIR, not both",
+      'Use either --backend-document or --backend-directory/RETENIVE_BACKEND_DIR, not both',
     );
   }
   if (write && !backendDocument && !backendDirectory) {
     throw new Error(
-      "--write requires an explicit --backend-document or --backend-directory/RETENIVE_BACKEND_DIR",
+      '--write requires an explicit --backend-document or --backend-directory/RETENIVE_BACKEND_DIR',
     );
   }
   if (backendRef && !/^[0-9a-f]{40}$/u.test(backendRef)) {
-    throw new Error(
-      "--backend-ref must be a lowercase 40-character commit SHA",
-    );
+    throw new Error('--backend-ref must be a lowercase 40-character commit SHA');
   }
   if (backendRef && !backendDirectory) {
     throw new Error(
-      "--backend-ref requires --backend-directory/RETENIVE_BACKEND_DIR so the commit SHA can be verified",
+      '--backend-ref requires --backend-directory/RETENIVE_BACKEND_DIR so the commit SHA can be verified',
     );
   }
   return {
@@ -80,7 +71,7 @@ function requiredPath(argv, index, option) {
 
 function canonicalize(value) {
   if (Array.isArray(value)) return value.map(canonicalize);
-  if (!value || typeof value !== "object") return value;
+  if (!value || typeof value !== 'object') return value;
   return Object.fromEntries(
     Object.entries(value)
       .sort(([left], [right]) => left.localeCompare(right))
@@ -99,26 +90,26 @@ function assertContractMetadata(metadata, snapshot) {
   const composedValid =
     composed === undefined ||
     (composed &&
-      typeof composed === "object" &&
-      /^[0-9a-f]{40}$/u.test(composed.base ?? "") &&
-      /^[0-9a-f]{40}$/u.test(composed.caseIntelligence ?? ""));
+      typeof composed === 'object' &&
+      /^[0-9a-f]{40}$/u.test(composed.base ?? '') &&
+      /^[0-9a-f]{40}$/u.test(composed.caseIntelligence ?? ''));
   if (
     metadata?.schemaVersion !== 1 ||
-    metadata.backend?.repository !== "alxxsck/lola_back" ||
+    metadata.backend?.repository !== 'alxxsck/lola_back' ||
     metadata.artifact !== path.basename(snapshot) ||
-    !/^[0-9a-f]{64}$/u.test(metadata.sha256 ?? "") ||
+    !/^[0-9a-f]{64}$/u.test(metadata.sha256 ?? '') ||
     metadata.contractRevision !== `sha256:${metadata.sha256}` ||
     (metadata.backendSourceRevision !== undefined &&
       !/^[0-9a-f]{40}$/u.test(metadata.backendSourceRevision)) ||
     !composedValid ||
     (metadata.backendSourceRevision !== undefined && composed !== undefined)
   ) {
-    throw new Error("Backend OpenAPI contract metadata is invalid");
+    throw new Error('Backend OpenAPI contract metadata is invalid');
   }
 }
 
 function sha256(content) {
-  return createHash("sha256").update(content).digest("hex");
+  return createHash('sha256').update(content).digest('hex');
 }
 
 function run(command, args, cwd, failureLabel) {
@@ -126,10 +117,10 @@ function run(command, args, cwd, failureLabel) {
     const child = spawn(command, args, {
       cwd,
       env: process.env,
-      stdio: "inherit",
+      stdio: 'inherit',
     });
-    child.on("error", reject);
-    child.on("exit", (code) => {
+    child.on('error', reject);
+    child.on('exit', (code) => {
       if (code === 0) resolve();
       else reject(new Error(`${failureLabel} failed with exit code ${code}`));
     });
@@ -141,25 +132,20 @@ function capture(command, args, cwd, failureLabel) {
     const child = spawn(command, args, {
       cwd,
       env: process.env,
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
-    let stdout = "";
-    let stderr = "";
-    child.stdout.on("data", (chunk) => {
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (chunk) => {
       stdout += chunk;
     });
-    child.stderr.on("data", (chunk) => {
+    child.stderr.on('data', (chunk) => {
       stderr += chunk;
     });
-    child.on("error", reject);
-    child.on("exit", (code) => {
+    child.on('error', reject);
+    child.on('exit', (code) => {
       if (code === 0) resolve(stdout.trim());
-      else
-        reject(
-          new Error(
-            `${failureLabel} failed with exit code ${code}: ${stderr.trim()}`,
-          ),
-        );
+      else reject(new Error(`${failureLabel} failed with exit code ${code}: ${stderr.trim()}`));
     });
   });
 }
@@ -168,10 +154,10 @@ async function assertPinnedBackendRevision(backendDirectory, metadata) {
   const expected = metadata.backendSourceRevision;
   if (!expected) return;
   const actual = await capture(
-    "git",
-    ["rev-parse", "HEAD"],
+    'git',
+    ['rev-parse', 'HEAD'],
     backendDirectory,
-    "Backend revision resolution",
+    'Backend revision resolution',
   );
   if (actual !== expected) {
     throw new Error(
@@ -182,10 +168,10 @@ async function assertPinnedBackendRevision(backendDirectory, metadata) {
 
 async function assertRequestedBackendRevision(backendDirectory, expected) {
   const actual = await capture(
-    "git",
-    ["rev-parse", "HEAD"],
+    'git',
+    ['rev-parse', 'HEAD'],
     backendDirectory,
-    "Backend revision resolution",
+    'Backend revision resolution',
   );
   if (expected && actual !== expected) {
     throw new Error(
@@ -197,41 +183,36 @@ async function assertRequestedBackendRevision(backendDirectory, expected) {
 
 async function assertCleanBackendCheckout(backendDirectory) {
   const changes = await capture(
-    "git",
-    ["status", "--porcelain=v1", "--untracked-files=normal"],
+    'git',
+    ['status', '--porcelain=v1', '--untracked-files=normal'],
     backendDirectory,
-    "Backend worktree status",
+    'Backend worktree status',
   );
   if (changes) {
     throw new Error(
-      "Explicit Backend checkout has tracked or untracked changes; commit, remove, or use a clean worktree before exporting OpenAPI",
+      'Explicit Backend checkout has tracked or untracked changes; commit, remove, or use a clean worktree before exporting OpenAPI',
     );
   }
 }
 
 async function exportBackendOpenApi(backendDirectory, target) {
-  const npm = process.platform === "win32" ? "npm.cmd" : "npm";
-  await run(
-    npm,
-    ["run", "prisma:generate"],
-    backendDirectory,
-    "Backend Prisma Client generation",
-  );
-  await run(npm, ["run", "build"], backendDirectory, "Backend build");
+  const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  await run(npm, ['run', 'prisma:generate'], backendDirectory, 'Backend Prisma Client generation');
+  await run(npm, ['run', 'build'], backendDirectory, 'Backend build');
   await run(
     process.execPath,
     [
-      path.join(repositoryRoot, "scripts/export-current-backend-openapi.mjs"),
+      path.join(repositoryRoot, 'scripts/export-current-backend-openapi.mjs'),
       backendDirectory,
       target,
     ],
     backendDirectory,
-    "Backend OpenAPI export",
+    'Backend OpenAPI export',
   );
 }
 
 async function readDocument(file, source) {
-  const document = JSON.parse(await readFile(file, "utf8"));
+  const document = JSON.parse(await readFile(file, 'utf8'));
   assertOpenApiDocument(document, source);
   return document;
 }
@@ -239,7 +220,7 @@ async function readDocument(file, source) {
 async function readMetadata(file, snapshot) {
   let metadata;
   try {
-    metadata = JSON.parse(await readFile(file, "utf8"));
+    metadata = JSON.parse(await readFile(file, 'utf8'));
   } catch (cause) {
     throw new Error(
       `Backend OpenAPI contract metadata is required at ${file}: ${cause instanceof Error ? cause.message : cause}`,
@@ -254,7 +235,7 @@ async function assertArtifactDigest(snapshot, metadata) {
   const actual = sha256(content);
   if (actual !== metadata.sha256) {
     throw new Error(
-      "Committed Backend OpenAPI artifact digest does not match its metadata. Run npm run api:sync:local and commit both files.",
+      'Committed Backend OpenAPI artifact digest does not match its metadata. Run npm run api:sync:local and commit both files.',
     );
   }
 }
@@ -264,12 +245,9 @@ async function main() {
   const metadata = await readMetadata(options.metadata, options.snapshot);
   await assertArtifactDigest(options.snapshot, metadata);
 
-  const temporaryDirectory = await mkdtemp(
-    path.join(tmpdir(), "retenive-current-openapi-"),
-  );
+  const temporaryDirectory = await mkdtemp(path.join(tmpdir(), 'retenive-current-openapi-'));
   const exportedDocumentPath =
-    options.backendDocument ??
-    path.join(temporaryDirectory, "retenive-backend.json");
+    options.backendDocument ?? path.join(temporaryDirectory, 'retenive-backend.json');
   let backendSourceRevision;
 
   try {
@@ -283,62 +261,47 @@ async function main() {
         await assertPinnedBackendRevision(options.backendDirectory, metadata);
       }
       await assertCleanBackendCheckout(options.backendDirectory);
-      await exportBackendOpenApi(
-        options.backendDirectory,
-        exportedDocumentPath,
-      );
+      await exportBackendOpenApi(options.backendDirectory, exportedDocumentPath);
     }
 
     if (!options.backendDocument && !options.backendDirectory) {
-      await readDocument(options.snapshot, "Committed frontend artifact");
-      console.log(
-        `Verified immutable Backend OpenAPI contract ${metadata.contractRevision}`,
-      );
+      await readDocument(options.snapshot, 'Committed frontend artifact');
+      console.log(`Verified immutable Backend OpenAPI contract ${metadata.contractRevision}`);
       return;
     }
 
-    const current = await readDocument(exportedDocumentPath, "Backend export");
+    const current = await readDocument(exportedDocumentPath, 'Backend export');
     if (options.write) {
       const content = `${JSON.stringify(canonicalize(current), null, 2)}\n`;
       const baseMetadata = { ...metadata };
       delete baseMetadata.backendSourceRevision;
       delete baseMetadata.composedBackendSources;
-      await writeFile(options.snapshot, content, "utf8");
+      await writeFile(options.snapshot, content, 'utf8');
       await writeFile(
         options.metadata,
         `${JSON.stringify(
           {
             ...baseMetadata,
-            ...(backendSourceRevision
-              ? { backendSourceRevision }
-              : {}),
+            ...(backendSourceRevision ? { backendSourceRevision } : {}),
             contractRevision: `sha256:${sha256(content)}`,
             sha256: sha256(content),
           },
           null,
           2,
         )}\n`,
-        "utf8",
+        'utf8',
       );
-      console.log(
-        `Updated ${options.snapshot} and contract metadata from explicit Backend input`,
-      );
+      console.log(`Updated ${options.snapshot} and contract metadata from explicit Backend input`);
       return;
     }
 
-    const committed = await readDocument(
-      options.snapshot,
-      "Committed frontend artifact",
-    );
-    if (
-      JSON.stringify(canonicalize(committed)) !==
-      JSON.stringify(canonicalize(current))
-    ) {
+    const committed = await readDocument(options.snapshot, 'Committed frontend artifact');
+    if (JSON.stringify(canonicalize(committed)) !== JSON.stringify(canonicalize(current))) {
       throw new Error(
-        "Committed frontend OpenAPI artifact does not match the explicit Backend input. Run npm run api:sync:local and commit the artifact, metadata and generated client.",
+        'Committed frontend OpenAPI artifact does not match the explicit Backend input. Run npm run api:sync:local and commit the artifact, metadata and generated client.',
       );
     }
-    console.log("Committed frontend artifact matches explicit Backend input");
+    console.log('Committed frontend artifact matches explicit Backend input');
   } finally {
     await rm(temporaryDirectory, { recursive: true, force: true });
   }

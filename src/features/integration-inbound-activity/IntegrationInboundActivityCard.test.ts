@@ -1,21 +1,21 @@
-import { flushPromises, mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import IntegrationInboundActivityCard from "./IntegrationInboundActivityCard.vue";
+import { flushPromises, mount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import IntegrationInboundActivityCard from './IntegrationInboundActivityCard.vue';
 
 const api = vi.hoisted(() => ({ list: vi.fn(), health: vi.fn() }));
-vi.mock("./integration-inbound-activity.api", () => ({
+vi.mock('./integration-inbound-activity.api', () => ({
   integrationInboundActivityApi: api,
 }));
 
-describe("IntegrationInboundActivityCard", () => {
+describe('IntegrationInboundActivityCard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     api.health.mockResolvedValue({
-      provider: "CUSTOMER_IO",
-      direction: "INBOUND",
-      health: "DEGRADED",
-      reasons: ["BACKLOG_SLO_BREACHED"],
-      observedAt: "2026-08-04T10:00:00.000Z",
+      provider: 'CUSTOMER_IO',
+      direction: 'INBOUND',
+      health: 'DEGRADED',
+      reasons: ['BACKLOG_SLO_BREACHED'],
+      observedAt: '2026-08-04T10:00:00.000Z',
       connections: {
         total: 1,
         active: 1,
@@ -60,23 +60,23 @@ describe("IntegrationInboundActivityCard", () => {
     api.list.mockResolvedValue({
       items: [
         {
-          id: "item-1",
-          connectionId: "connection-1",
-          provider: "CUSTOMER_IO",
-          providerCallType: "TRACK",
-          providerEventName: "deposit",
-          status: "ACCEPTED",
-          routeId: "route-1",
-          routeRevisionId: "revision-1",
+          id: 'item-1',
+          connectionId: 'connection-1',
+          provider: 'CUSTOMER_IO',
+          providerCallType: 'TRACK',
+          providerEventName: 'deposit',
+          status: 'ACCEPTED',
+          routeId: 'route-1',
+          routeRevisionId: 'revision-1',
           identityPolicyRevision: 1,
-          acceptedEventId: "event-1",
+          acceptedEventId: 'event-1',
           suppressedDispatchId: null,
           failureCode: null,
           attemptCount: 1,
           duplicateCount: 0,
-          occurredAt: "2026-08-04T09:59:00.000Z",
-          receivedAt: "2026-08-04T10:00:00.000Z",
-          processedAt: "2026-08-04T10:00:01.000Z",
+          occurredAt: '2026-08-04T09:59:00.000Z',
+          receivedAt: '2026-08-04T10:00:00.000Z',
+          processedAt: '2026-08-04T10:00:01.000Z',
           nextAttemptAt: null,
           deliveryIdConflict: null,
         },
@@ -84,52 +84,50 @@ describe("IntegrationInboundActivityCard", () => {
     });
   });
 
-  it("renders provider-filtered safe health and activity without payloads or secrets", async () => {
+  it('renders provider-filtered safe health and activity without payloads or secrets', async () => {
     const wrapper = mount(IntegrationInboundActivityCard, {
       props: {
-        projectId: "project-1",
-        provider: "CUSTOMER_IO",
+        projectId: 'project-1',
+        provider: 'CUSTOMER_IO',
         canReadActivity: true,
       },
     });
     await flushPromises();
 
-    expect(api.list).toHaveBeenCalledWith("project-1", "CUSTOMER_IO");
-    expect(api.health).toHaveBeenCalledWith("project-1", "CUSTOMER_IO");
-    expect(wrapper.text()).toContain("Требует внимания");
-    expect(wrapper.text()).toContain("Очередь обрабатывается дольше нормы");
-    expect(wrapper.text()).toContain("deposit");
-    expect(wrapper.text()).toContain("Принято");
-    expect(wrapper.html()).not.toContain("rawBody");
+    expect(api.list).toHaveBeenCalledWith('project-1', 'CUSTOMER_IO');
+    expect(api.health).toHaveBeenCalledWith('project-1', 'CUSTOMER_IO');
+    expect(wrapper.text()).toContain('Требует внимания');
+    expect(wrapper.text()).toContain('Очередь обрабатывается дольше нормы');
+    expect(wrapper.text()).toContain('deposit');
+    expect(wrapper.text()).toContain('Принято');
+    expect(wrapper.html()).not.toContain('rawBody');
   });
 
-  it("limits the visible inbound journal to ten rows per page", async () => {
+  it('limits the visible inbound journal to ten rows per page', async () => {
     api.list.mockResolvedValue({
       items: Array.from({ length: 21 }, (_, index) => ({
         id: `item-${index + 1}`,
         providerEventName: `event_${index + 1}`,
-        status: "ACCEPTED",
+        status: 'ACCEPTED',
         failureCode: null,
         attemptCount: 1,
         duplicateCount: 0,
-        receivedAt: "2026-08-04T10:00:00.000Z",
+        receivedAt: '2026-08-04T10:00:00.000Z',
       })),
     });
 
     const wrapper = mount(IntegrationInboundActivityCard, {
       props: {
-        projectId: "project-1",
-        provider: "CUSTOMER_IO",
+        projectId: 'project-1',
+        provider: 'CUSTOMER_IO',
         canReadActivity: true,
       },
     });
     await flushPromises();
 
-    expect(wrapper.findAll("[data-activity-row]")).toHaveLength(10);
-    expect(wrapper.text()).toContain("1–10 из 21");
-    await wrapper
-      .get('button[aria-label="Следующая страница входящих событий"]')
-      .trigger("click");
-    expect(wrapper.text()).toContain("event_11");
+    expect(wrapper.findAll('[data-activity-row]')).toHaveLength(10);
+    expect(wrapper.text()).toContain('1–10 из 21');
+    await wrapper.get('button[aria-label="Следующая страница входящих событий"]').trigger('click');
+    expect(wrapper.text()).toContain('event_11');
   });
 });

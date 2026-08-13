@@ -1,11 +1,11 @@
 import type {
   EventQueryPolicyItemStateResponseDto,
   EventQueryPolicyStateResponseDto,
-} from "@/shared/api/generated/models";
-import { ApiError } from "@/shared/api/http/api-error";
+} from '@/shared/api/generated/models';
+import { ApiError } from '@/shared/api/http/api-error';
 
 function record(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
 }
@@ -20,7 +20,7 @@ export function projectPolicyConflictState(
 ): EventQueryPolicyStateResponseDto | null {
   const current = conflictCurrent(cause);
   return current &&
-    typeof current.concurrencyToken === "string" &&
+    typeof current.concurrencyToken === 'string' &&
     record(current.configured) &&
     record(current.effective) &&
     Array.isArray(current.diagnostics)
@@ -33,9 +33,9 @@ export function eventPolicyConflictState(
 ): EventQueryPolicyItemStateResponseDto | null {
   const current = conflictCurrent(cause);
   return current &&
-    typeof current.concurrencyToken === "string" &&
-    typeof current.definitionKeyId === "string" &&
-    typeof current.eventCode === "string" &&
+    typeof current.concurrencyToken === 'string' &&
+    typeof current.definitionKeyId === 'string' &&
+    typeof current.eventCode === 'string' &&
     record(current.configured) &&
     record(current.effective) &&
     record(current.lifecycleRestrictions) &&

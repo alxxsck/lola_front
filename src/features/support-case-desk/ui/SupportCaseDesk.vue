@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Textarea from "primevue/textarea";
+import { computed, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Textarea from 'primevue/textarea';
 import type {
   ClassifyEndUserCaseDto,
   EndUserCaseDetailResponseDto,
   EndUserCaseClassificationEvidenceResponseDtoKind,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 import {
   createSupportCaseDeskController,
   type SupportCaseClassificationInput,
   type SupportCasePriority,
   type SupportCaseStatus,
-} from "../model/use-support-case-desk";
-import SupportCaseBrief from "./SupportCaseBrief.vue";
+} from '../model/use-support-case-desk';
+import SupportCaseBrief from './SupportCaseBrief.vue';
 
 type Controller = ReturnType<typeof createSupportCaseDeskController>;
 type CaseDetail = EndUserCaseDetailResponseDto;
@@ -31,69 +31,67 @@ const classificationVisible = ref(false);
 const workflowVisible = ref(false);
 const escalationVisible = ref(false);
 const selectedStatus = ref<SupportCaseStatus | null>(null);
-const workflowReason = ref("");
-const escalationReasonCode = ref("");
-const escalationSummary = ref("");
-const groupCode = ref("");
-const type = ref<ClassifyEndUserCaseDto["type"]>();
-const impact = ref<ClassifyEndUserCaseDto["impact"]>();
-const urgency = ref<ClassifyEndUserCaseDto["urgency"]>();
-const priority = ref<ClassifyEndUserCaseDto["priority"]>();
-const classificationReason = ref("");
+const workflowReason = ref('');
+const escalationReasonCode = ref('');
+const escalationSummary = ref('');
+const groupCode = ref('');
+const type = ref<ClassifyEndUserCaseDto['type']>();
+const impact = ref<ClassifyEndUserCaseDto['impact']>();
+const urgency = ref<ClassifyEndUserCaseDto['urgency']>();
+const priority = ref<ClassifyEndUserCaseDto['priority']>();
+const classificationReason = ref('');
 const classificationBaseline = ref<{
-  groupCode: CaseDetail["groupCode"];
-  type: CaseDetail["type"];
-  impact: CaseDetail["impact"];
-  urgency: CaseDetail["urgency"];
-  priority: CaseDetail["priority"];
+  groupCode: CaseDetail['groupCode'];
+  type: CaseDetail['type'];
+  impact: CaseDetail['impact'];
+  urgency: CaseDetail['urgency'];
+  priority: CaseDetail['priority'];
 } | null>(null);
 
 const value = computed(() => props.controller.exactCase.value);
-const allowedActions = computed(
-  () => new Set(value.value?.allowedActions ?? []),
-);
+const allowedActions = computed(() => new Set(value.value?.allowedActions ?? []));
 
 const statusLabels: Record<string, string> = {
-  OPEN: "Открыт",
-  IN_PROGRESS: "В работе",
-  WAITING_END_USER: "Ожидает пользователя",
-  WAITING_SYSTEM: "Ожидает системы",
-  WAITING_ADMIN: "Ожидает оператора",
-  RESOLVED: "Решён",
-  UNRESOLVED: "Не решён",
-  CANCELLED: "Отменён",
+  OPEN: 'Открыт',
+  IN_PROGRESS: 'В работе',
+  WAITING_END_USER: 'Ожидает пользователя',
+  WAITING_SYSTEM: 'Ожидает системы',
+  WAITING_ADMIN: 'Ожидает оператора',
+  RESOLVED: 'Решён',
+  UNRESOLVED: 'Не решён',
+  CANCELLED: 'Отменён',
 };
 const priorityLabels: Record<string, string> = {
-  LOW: "Низкий",
-  NORMAL: "Обычный",
-  HIGH: "Высокий",
-  URGENT: "Срочный",
-  CRITICAL: "Критический",
+  LOW: 'Низкий',
+  NORMAL: 'Обычный',
+  HIGH: 'Высокий',
+  URGENT: 'Срочный',
+  CRITICAL: 'Критический',
 };
 const evidenceKindLabels = {
-  MESSAGE: "сообщение",
-  CASE_EVIDENCE: "данные обращения",
-  CMS_ACTION: "действие оператора",
+  MESSAGE: 'сообщение',
+  CASE_EVIDENCE: 'данные обращения',
+  CMS_ACTION: 'действие оператора',
 } satisfies Record<EndUserCaseClassificationEvidenceResponseDtoKind, string>;
 const typeOptions = [
-  { value: "INFORMATION_REQUEST", label: "Информационный запрос" },
-  { value: "PROBLEM_RESOLUTION", label: "Решение проблемы" },
-  { value: "DECISION_SUPPORT", label: "Помощь с решением" },
-  { value: "ACTION_REQUEST", label: "Запрос действия" },
-  { value: "FEEDBACK", label: "Обратная связь" },
-  { value: "OTHER", label: "Другое" },
+  { value: 'INFORMATION_REQUEST', label: 'Информационный запрос' },
+  { value: 'PROBLEM_RESOLUTION', label: 'Решение проблемы' },
+  { value: 'DECISION_SUPPORT', label: 'Помощь с решением' },
+  { value: 'ACTION_REQUEST', label: 'Запрос действия' },
+  { value: 'FEEDBACK', label: 'Обратная связь' },
+  { value: 'OTHER', label: 'Другое' },
 ];
 const impactOptions = [
-  { value: "LOW", label: "Низкое" },
-  { value: "MEDIUM", label: "Среднее" },
-  { value: "HIGH", label: "Высокое" },
-  { value: "CRITICAL", label: "Критическое" },
+  { value: 'LOW', label: 'Низкое' },
+  { value: 'MEDIUM', label: 'Среднее' },
+  { value: 'HIGH', label: 'Высокое' },
+  { value: 'CRITICAL', label: 'Критическое' },
 ];
 const urgencyOptions = [
-  { value: "LOW", label: "Низкая" },
-  { value: "MEDIUM", label: "Средняя" },
-  { value: "HIGH", label: "Высокая" },
-  { value: "IMMEDIATE", label: "Немедленная" },
+  { value: 'LOW', label: 'Низкая' },
+  { value: 'MEDIUM', label: 'Средняя' },
+  { value: 'HIGH', label: 'Высокая' },
+  { value: 'IMMEDIATE', label: 'Немедленная' },
 ];
 const priorityWeight: Record<SupportCasePriority, number> = {
   LOW: 0,
@@ -103,13 +101,13 @@ const priorityWeight: Record<SupportCasePriority, number> = {
   CRITICAL: 4,
 };
 const statusAction: Partial<Record<SupportCaseStatus, string>> = {
-  OPEN: "SET_STATUS_OPEN",
-  IN_PROGRESS: "SET_STATUS_IN_PROGRESS",
-  WAITING_END_USER: "SET_STATUS_WAITING_END_USER",
-  WAITING_SYSTEM: "SET_STATUS_WAITING_SYSTEM",
-  RESOLVED: "SET_STATUS_RESOLVED",
-  UNRESOLVED: "SET_STATUS_UNRESOLVED",
-  CANCELLED: "SET_STATUS_CANCELLED",
+  OPEN: 'SET_STATUS_OPEN',
+  IN_PROGRESS: 'SET_STATUS_IN_PROGRESS',
+  WAITING_END_USER: 'SET_STATUS_WAITING_END_USER',
+  WAITING_SYSTEM: 'SET_STATUS_WAITING_SYSTEM',
+  RESOLVED: 'SET_STATUS_RESOLVED',
+  UNRESOLVED: 'SET_STATUS_UNRESOLVED',
+  CANCELLED: 'SET_STATUS_CANCELLED',
 };
 
 const categoryOptions = computed(() => {
@@ -127,7 +125,7 @@ const statusOptions = computed(() =>
     })
     .map((status) => ({
       value: status,
-      label: statusLabels[status] ?? "Состояние не распознано",
+      label: statusLabels[status] ?? 'Состояние не распознано',
     })),
 );
 const priorityOptions = computed(() => {
@@ -135,9 +133,9 @@ const priorityOptions = computed(() => {
   if (!current) return [];
   const currentWeight = priorityWeight[current.priority];
   const floorWeight = priorityWeight[current.priorityPolicy.effectiveFloor];
-  const canRaise = allowedActions.value.has("RAISE_PRIORITY");
-  const canLower = allowedActions.value.has("LOWER_PRIORITY_TO_FLOOR");
-  const canOverride = allowedActions.value.has("OVERRIDE_PRIORITY_FLOOR");
+  const canRaise = allowedActions.value.has('RAISE_PRIORITY');
+  const canLower = allowedActions.value.has('LOWER_PRIORITY_TO_FLOOR');
+  const canOverride = allowedActions.value.has('OVERRIDE_PRIORITY_FLOOR');
   return (Object.keys(priorityWeight) as SupportCasePriority[])
     .filter((item) => {
       const target = priorityWeight[item];
@@ -148,54 +146,37 @@ const priorityOptions = computed(() => {
     })
     .map((item) => ({ value: item, label: priorityLabels[item] }));
 });
-const canChangeClassification = computed(() =>
-  allowedActions.value.has("CHANGE_CLASSIFICATION"),
-);
+const canChangeClassification = computed(() => allowedActions.value.has('CHANGE_CLASSIFICATION'));
 const canChangePriority = computed(
   () =>
-    allowedActions.value.has("RAISE_PRIORITY") ||
-    allowedActions.value.has("LOWER_PRIORITY_TO_FLOOR") ||
-    allowedActions.value.has("OVERRIDE_PRIORITY_FLOOR"),
+    allowedActions.value.has('RAISE_PRIORITY') ||
+    allowedActions.value.has('LOWER_PRIORITY_TO_FLOOR') ||
+    allowedActions.value.has('OVERRIDE_PRIORITY_FLOOR'),
 );
-const canClassify = computed(
-  () => canChangeClassification.value || canChangePriority.value,
-);
+const canClassify = computed(() => canChangeClassification.value || canChangePriority.value);
 const classificationActionLabel = computed(() => {
-  return canChangeClassification.value
-    ? "Изменить классификацию"
-    : "Изменить приоритет";
+  return canChangeClassification.value ? 'Изменить классификацию' : 'Изменить приоритет';
 });
 const classificationDialogTitle = computed(() =>
   canChangeClassification.value && canChangePriority.value
-    ? "Классификация и приоритет"
+    ? 'Классификация и приоритет'
     : classificationActionLabel.value,
 );
-const canEscalate = computed(() =>
-  allowedActions.value.has("REQUEST_ESCALATION"),
-);
+const canEscalate = computed(() => allowedActions.value.has('REQUEST_ESCALATION'));
 const confidence = computed(() => {
   const raw = value.value?.classification.confidence;
-  return raw === null || raw === undefined
-    ? "Не определена"
-    : `${Math.round(raw * 100)}%`;
+  return raw === null || raw === undefined ? 'Не определена' : `${Math.round(raw * 100)}%`;
 });
 const classificationSource = computed(() =>
-  value.value?.classification.source === "AI"
-    ? "AI-классификация"
-    : "Уточнено оператором",
+  value.value?.classification.source === 'AI' ? 'AI-классификация' : 'Уточнено оператором',
 );
-const optionLabel = (
-  options: Array<{ value: string; label: string }>,
-  current: string,
-): string =>
-  options.find((item) => item.value === current)?.label ??
-  "Значение не распознано";
+const optionLabel = (options: Array<{ value: string; label: string }>, current: string): string =>
+  options.find((item) => item.value === current)?.label ?? 'Значение не распознано';
 const categoryLabel = computed(
   () =>
-    categoryOptions.value.find((item) => item.code === value.value?.groupCode)
-      ?.label ??
+    categoryOptions.value.find((item) => item.code === value.value?.groupCode)?.label ??
     value.value?.groupCode ??
-    "—",
+    '—',
 );
 const hasConflict = computed(() => Boolean(props.controller.conflict.value));
 const classificationDraftChanged = computed(() => {
@@ -224,7 +205,7 @@ function resetClassificationDraft(current: CaseDetail): void {
   impact.value = current.impact;
   urgency.value = current.urgency;
   priority.value = current.priority;
-  classificationReason.value = "";
+  classificationReason.value = '';
 }
 
 function requestClassification(): void {
@@ -236,13 +217,13 @@ function requestClassification(): void {
 
 function requestWorkflow(): void {
   selectedStatus.value = statusOptions.value[0]?.value ?? null;
-  workflowReason.value = "";
+  workflowReason.value = '';
   workflowVisible.value = true;
 }
 
 function requestEscalation(): void {
-  escalationReasonCode.value = "";
-  escalationSummary.value = "";
+  escalationReasonCode.value = '';
+  escalationSummary.value = '';
   escalationVisible.value = true;
 }
 
@@ -254,9 +235,7 @@ async function submitClassification(): Promise<void> {
     ...(canChangeClassification.value && groupCode.value !== current.groupCode
       ? { groupCode: groupCode.value }
       : {}),
-    ...(canChangeClassification.value && type.value !== current.type
-      ? { type: type.value }
-      : {}),
+    ...(canChangeClassification.value && type.value !== current.type ? { type: type.value } : {}),
     ...(canChangeClassification.value && impact.value !== current.impact
       ? { impact: impact.value }
       : {}),
@@ -278,10 +257,7 @@ async function submitClassification(): Promise<void> {
 async function submitWorkflow(): Promise<void> {
   if (!selectedStatus.value) return;
   try {
-    await props.controller.transition(
-      selectedStatus.value,
-      workflowReason.value,
-    );
+    await props.controller.transition(selectedStatus.value, workflowReason.value);
     workflowVisible.value = false;
   } catch {
     // Keep the draft open so the operator can reconcile a conflict.
@@ -290,10 +266,7 @@ async function submitWorkflow(): Promise<void> {
 
 async function submitEscalation(): Promise<void> {
   try {
-    await props.controller.escalate(
-      escalationReasonCode.value,
-      escalationSummary.value,
-    );
+    await props.controller.escalate(escalationReasonCode.value, escalationSummary.value);
     escalationVisible.value = false;
   } catch {
     // Keep the draft open so the operator can correct it.
@@ -323,8 +296,8 @@ defineExpose({ requestClassification });
       {{ controller.error.value }}
     </Message>
     <Message v-if="hasConflict" severity="warn" :closable="false">
-      Обращение уже изменилось. Показано актуальное состояние сервера; ваш
-      черновик сохранён в открытом окне.
+      Обращение уже изменилось. Показано актуальное состояние сервера; ваш черновик сохранён в
+      открытом окне.
     </Message>
     <Message
       v-if="controller.reconciling.value"
@@ -336,16 +309,11 @@ defineExpose({ requestClassification });
         <strong v-if="controller.reconciliationReason.value === 'ACCEPTED'">
           Команда принята, но актуальное состояние ещё не получено.
         </strong>
-        <strong
-          v-else-if="controller.reconciliationReason.value === 'CONFLICT'"
-        >
+        <strong v-else-if="controller.reconciliationReason.value === 'CONFLICT'">
           Состояние обращения изменилось параллельно.
         </strong>
         <strong v-else>Результат команды пока неизвестен.</strong>
-        <span
-          >Новые действия временно недоступны, чтобы не повторить
-          операцию.</span
-        >
+        <span>Новые действия временно недоступны, чтобы не повторить операцию.</span>
       </div>
       <Button
         label="Обновить состояние"
@@ -362,18 +330,12 @@ defineExpose({ requestClassification });
     </div>
     <template v-else-if="value">
       <header class="case-desk-header">
-        <span class="case-desk-kicker"
-          >Обращение #{{ value.projectSequence }}</span
-        >
+        <span class="case-desk-kicker">Обращение #{{ value.projectSequence }}</span>
         <h3>{{ value.title }}</h3>
         <div class="case-desk-state-line">
-          <span>{{
-            statusLabels[value.status] ?? "Состояние не распознано"
-          }}</span>
+          <span>{{ statusLabels[value.status] ?? 'Состояние не распознано' }}</span>
           <i aria-hidden="true" />
-          <strong>{{
-            priorityLabels[value.priority] ?? "Приоритет не распознан"
-          }}</strong>
+          <strong>{{ priorityLabels[value.priority] ?? 'Приоритет не распознан' }}</strong>
           <small>v{{ value.version }}</small>
         </div>
       </header>
@@ -387,10 +349,7 @@ defineExpose({ requestClassification });
         :limitations="value.workSummary?.limitations"
       />
 
-      <section
-        class="case-desk-classification"
-        aria-labelledby="case-classification-title"
-      >
+      <section class="case-desk-classification" aria-labelledby="case-classification-title">
         <div class="case-desk-section-heading">
           <div>
             <span class="case-desk-kicker">Классификация</span>
@@ -419,10 +378,7 @@ defineExpose({ requestClassification });
         <div class="case-desk-evidence">
           <span>Основания</span>
           <ul v-if="value.classification.evidence.length">
-            <li
-              v-for="item in value.classification.evidence"
-              :key="`${item.kind}:${item.id}`"
-            >
+            <li v-for="item in value.classification.evidence" :key="`${item.kind}:${item.id}`">
               {{ evidenceKindLabels[item.kind] }} · {{ item.id }}
             </li>
           </ul>
@@ -436,12 +392,10 @@ defineExpose({ requestClassification });
           <span class="case-desk-kicker">Порог приоритета</span>
           <h4 id="case-policy-title">
             Не ниже {{ priorityLabels[value.priorityPolicy.effectiveFloor] }}
-            <small
-              >правила · версия {{ value.priorityPolicy.policyVersion }}</small
-            >
+            <small>правила · версия {{ value.priorityPolicy.policyVersion }}</small>
           </h4>
           <p>
-            {{ value.priorityPolicy.reasons.join(" · ") || "Ограничений нет" }}
+            {{ value.priorityPolicy.reasons.join(' · ') || 'Ограничений нет' }}
           </p>
         </div>
       </section>
@@ -542,40 +496,23 @@ defineExpose({ requestClassification });
           />
           <small
             >Серверный порог:
-            {{
-              priorityLabels[value?.priorityPolicy.effectiveFloor ?? ""]
-            }}</small
+            {{ priorityLabels[value?.priorityPolicy.effectiveFloor ?? ''] }}</small
           >
         </label>
         <label class="form-wide">
           <span>Причина изменения</span>
-          <Textarea
-            v-model="classificationReason"
-            rows="3"
-            maxlength="2000"
-            fluid
-          />
-          <small
-            >Попадёт в журнал действий и будет видна следующему
-            оператору.</small
-          >
+          <Textarea v-model="classificationReason" rows="3" maxlength="2000" fluid />
+          <small>Попадёт в журнал действий и будет видна следующему оператору.</small>
         </label>
       </div>
       <template #footer>
-        <Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="classificationVisible = false"
-        />
+        <Button label="Отмена" severity="secondary" text @click="classificationVisible = false" />
         <Button
           class="classification-submit"
           label="Сохранить изменение"
           icon="pi pi-check"
           :loading="controller.mutating.value"
-          :disabled="
-            !classificationReason.trim() || !classificationDraftChanged
-          "
+          :disabled="!classificationReason.trim() || !classificationDraftChanged"
           @click="submitClassification"
         />
       </template>
@@ -608,20 +545,11 @@ defineExpose({ requestClassification });
         </label>
       </div>
       <template #footer>
-        <Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="workflowVisible = false"
-        />
+        <Button label="Отмена" severity="secondary" text @click="workflowVisible = false" />
         <Button
           label="Изменить статус"
           :loading="controller.mutating.value"
-          :disabled="
-            controller.reconciling.value ||
-            !selectedStatus ||
-            !workflowReason.trim()
-          "
+          :disabled="controller.reconciling.value || !selectedStatus || !workflowReason.trim()"
           @click="submitWorkflow"
         />
       </template>
@@ -647,21 +575,11 @@ defineExpose({ requestClassification });
         </label>
         <label>
           <span>Что должен проверить специалист</span>
-          <Textarea
-            v-model="escalationSummary"
-            rows="4"
-            maxlength="1000"
-            fluid
-          />
+          <Textarea v-model="escalationSummary" rows="4" maxlength="1000" fluid />
         </label>
       </div>
       <template #footer>
-        <Button
-          label="Отмена"
-          severity="secondary"
-          text
-          @click="escalationVisible = false"
-        />
+        <Button label="Отмена" severity="secondary" text @click="escalationVisible = false" />
         <Button
           label="Передать специалисту"
           icon="pi pi-arrow-up-right"

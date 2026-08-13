@@ -1,24 +1,24 @@
 import {
   aiPricingRevisionGet,
   aiPricingRevisionPublish,
-} from "@/shared/api/generated/retenive-backend";
-import type { PublishAiPricingRevisionDto } from "@/shared/api/generated/models";
+} from '@/shared/api/generated/retenive-backend';
+import type { PublishAiPricingRevisionDto } from '@/shared/api/generated/models';
 
 const REVISION_LIMIT = 100;
 const RATE_PATTERN = /^\d+(?:\.\d{1,12})?$/u;
-const ACTOR_TYPES = new Set(["CMS_USER", "BREAK_GLASS", "SYSTEM"]);
+const ACTOR_TYPES = new Set(['CMS_USER', 'BREAK_GLASS', 'SYSTEM']);
 
 export interface TextToSpeechPricingRevision {
   id: string;
-  provider: "xai";
-  operation: "speech";
-  currency: "usd";
-  unit: "per_million_input_characters";
+  provider: 'xai';
+  operation: 'speech';
+  currency: 'usd';
+  unit: 'per_million_input_characters';
   rate: string;
   effectiveFrom: string;
   sourceUrl: string;
   changeReason: string;
-  createdBy: { type: "CMS_USER" | "BREAK_GLASS" | "SYSTEM"; id: string };
+  createdBy: { type: 'CMS_USER' | 'BREAK_GLASS' | 'SYSTEM'; id: string };
   createdAt: string;
 }
 
@@ -31,12 +31,12 @@ export interface TextToSpeechPricingState {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function boundedText(value: unknown, maximum: number): value is string {
   return (
-    typeof value === "string" &&
+    typeof value === 'string' &&
     value.length > 0 &&
     value.length <= maximum &&
     value.trim() === value
@@ -47,11 +47,7 @@ function safeHttpsUrl(value: unknown): value is string {
   if (!boundedText(value, 2_048)) return false;
   try {
     const url = new URL(value);
-    return (
-      url.protocol === "https:" &&
-      url.username.length === 0 &&
-      url.password.length === 0
-    );
+    return url.protocol === 'https:' && url.username.length === 0 && url.password.length === 0;
   } catch {
     return false;
   }
@@ -65,16 +61,14 @@ function isoDate(value: unknown): value is string {
   );
 }
 
-function parseRevision(
-  value: unknown,
-): TextToSpeechPricingRevision | undefined {
+function parseRevision(value: unknown): TextToSpeechPricingRevision | undefined {
   if (
     !isRecord(value) ||
     !boundedText(value.id, 64) ||
-    value.provider !== "xai" ||
-    value.operation !== "speech" ||
-    value.currency !== "usd" ||
-    value.unit !== "per_million_input_characters" ||
+    value.provider !== 'xai' ||
+    value.operation !== 'speech' ||
+    value.currency !== 'usd' ||
+    value.unit !== 'per_million_input_characters' ||
     !boundedText(value.rate, 64) ||
     !RATE_PATTERN.test(value.rate) ||
     Number(value.rate) <= 0 ||
@@ -82,7 +76,7 @@ function parseRevision(
     !safeHttpsUrl(value.sourceUrl) ||
     !boundedText(value.changeReason, 500) ||
     !isRecord(value.createdBy) ||
-    typeof value.createdBy.type !== "string" ||
+    typeof value.createdBy.type !== 'string' ||
     !ACTOR_TYPES.has(value.createdBy.type) ||
     !boundedText(value.createdBy.id, 200) ||
     !isoDate(value.createdAt)
@@ -92,14 +86,12 @@ function parseRevision(
   return value as unknown as TextToSpeechPricingRevision;
 }
 
-export function parseTextToSpeechPricing(
-  value: unknown,
-): TextToSpeechPricingState | undefined {
+export function parseTextToSpeechPricing(value: unknown): TextToSpeechPricingState | undefined {
   if (
     !isRecord(value) ||
     !Array.isArray(value.history) ||
     value.history.length > REVISION_LIMIT ||
-    typeof value.hasMore !== "boolean" ||
+    typeof value.hasMore !== 'boolean' ||
     (value.nextCursor !== null && !boundedText(value.nextCursor, 64)) ||
     !safeHttpsUrl(value.sourceUrl)
   ) {
@@ -127,7 +119,7 @@ export function parseTextToSpeechPricing(
 function requirePricingState(value: unknown): TextToSpeechPricingState {
   const state = parseTextToSpeechPricing(value);
   if (!state) {
-    throw new Error("Сервер вернул некорректные данные тарифа xAI");
+    throw new Error('Сервер вернул некорректные данные тарифа xAI');
   }
   return state;
 }

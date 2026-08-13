@@ -3,7 +3,7 @@ import {
   canReplayNotificationDelivery,
   type NotificationOperationsDelivery,
   type NotificationOperationsPermissions,
-} from "../model/notification-operations";
+} from '../model/notification-operations';
 
 defineProps<{
   items: NotificationOperationsDelivery[];
@@ -18,33 +18,31 @@ defineEmits<{
 }>();
 
 const statusLabels: Record<string, string> = {
-  REJECTED: "Отклонена",
-  OUTCOME_UNKNOWN: "Результат неизвестен",
-  DEAD_LETTER: "Dead letter",
-  CANCELLED: "Отменена",
-  SUPPRESSED: "Подавлена",
-  OTHER: "Другое",
+  REJECTED: 'Отклонена',
+  OUTCOME_UNKNOWN: 'Результат неизвестен',
+  DEAD_LETTER: 'Dead letter',
+  CANCELLED: 'Отменена',
+  SUPPRESSED: 'Подавлена',
+  OTHER: 'Другое',
 };
 
 const eligibilityLabels = {
-  ELIGIBLE_KNOWN_NOT_ACCEPTED: "Можно вернуть в очередь",
-  INELIGIBLE_AMBIGUOUS: "Нельзя: результат неоднозначен",
-  INELIGIBLE_ACCEPTED: "Нельзя: provider мог принять",
-  INELIGIBLE_CHANNEL: "Нельзя: канал не поддерживает replay",
-  INELIGIBLE_DESTINATION_CHANGED: "Нельзя: routing или secret изменён",
-  INELIGIBLE_STATE: "Нельзя: состояние не соответствует policy",
+  ELIGIBLE_KNOWN_NOT_ACCEPTED: 'Можно вернуть в очередь',
+  INELIGIBLE_AMBIGUOUS: 'Нельзя: результат неоднозначен',
+  INELIGIBLE_ACCEPTED: 'Нельзя: provider мог принять',
+  INELIGIBLE_CHANNEL: 'Нельзя: канал не поддерживает replay',
+  INELIGIBLE_DESTINATION_CHANGED: 'Нельзя: routing или secret изменён',
+  INELIGIBLE_STATE: 'Нельзя: состояние не соответствует policy',
 } as const;
 
 const channelLabels = {
-  SLACK_WEBHOOK: "Slack",
-  TELEGRAM_OPERATIONAL: "Telegram operational",
+  SLACK_WEBHOOK: 'Slack',
+  TELEGRAM_OPERATIONAL: 'Telegram operational',
 } as const;
 
 function formatDate(value: string): string {
   const date = new Date(value);
-  return Number.isFinite(date.getTime())
-    ? date.toLocaleString("ru-RU")
-    : "Недоступно";
+  return Number.isFinite(date.getTime()) ? date.toLocaleString('ru-RU') : 'Недоступно';
 }
 </script>
 
@@ -53,19 +51,11 @@ function formatDate(value: string): string {
     <div>
       <h2 id="exceptional-deliveries-title">Исключительные доставки</h2>
       <p>
-        Replay доступен только когда Retenive доказала, что provider не принял
-        operational delivery.
+        Replay доступен только когда Retenive доказала, что provider не принял operational delivery.
       </p>
     </div>
-    <p v-if="loading && !items.length" role="status" aria-live="polite">
-      Загружаем доставки…
-    </p>
-    <div
-      v-else
-      class="table-scroll"
-      tabindex="0"
-      aria-label="Таблица исключительных доставок"
-    >
+    <p v-if="loading && !items.length" role="status" aria-live="polite">Загружаем доставки…</p>
+    <div v-else class="table-scroll" tabindex="0" aria-label="Таблица исключительных доставок">
       <table>
         <thead>
           <tr>

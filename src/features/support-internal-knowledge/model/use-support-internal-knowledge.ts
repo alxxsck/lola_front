@@ -1,12 +1,15 @@
-import { computed, ref, shallowRef } from "vue";
-import type { SupportKnowledgeCitationDraftResponseDto, SupportKnowledgeSearchItemResponseDto } from "@/shared/api/generated/models";
-import { ApiError } from "@/shared/api/http/api-error";
+import { computed, ref, shallowRef } from 'vue';
+import type {
+  SupportKnowledgeCitationDraftResponseDto,
+  SupportKnowledgeSearchItemResponseDto,
+} from '@/shared/api/generated/models';
+import { ApiError } from '@/shared/api/http/api-error';
 import type {
   SupportInternalKnowledgeSource,
   SupportKnowledgeFreshness,
   SupportKnowledgeScope,
   SupportKnowledgeTextDocument,
-} from "../api/support-internal-knowledge-source";
+} from '../api/support-internal-knowledge-source';
 
 export interface SupportInternalKnowledgeContext {
   scope(): SupportKnowledgeScope | null;
@@ -17,17 +20,27 @@ export interface SupportInternalKnowledgeContext {
 }
 
 function message(cause: unknown): string {
-  if (cause instanceof ApiError && cause.status === 429) return "Слишком много запросов. Попробуйте через несколько секунд.";
-  if (cause instanceof ApiError && cause.status === 503) return "Внутренняя база временно недоступна. Черновик ответа не изменён.";
-  return "Не удалось загрузить внутреннюю базу знаний.";
+  if (cause instanceof ApiError && cause.status === 429)
+    return 'Слишком много запросов. Попробуйте через несколько секунд.';
+  if (cause instanceof ApiError && cause.status === 503)
+    return 'Внутренняя база временно недоступна. Черновик ответа не изменён.';
+  return 'Не удалось загрузить внутреннюю базу знаний.';
 }
 
 function sameScope(left: SupportKnowledgeScope | null, right: SupportKnowledgeScope): boolean {
-  return Boolean(left && left.projectId === right.projectId && left.caseId === right.caseId && left.conversationId === right.conversationId);
+  return Boolean(
+    left &&
+    left.projectId === right.projectId &&
+    left.caseId === right.caseId &&
+    left.conversationId === right.conversationId,
+  );
 }
 
-export function createSupportInternalKnowledgeController(context: SupportInternalKnowledgeContext, source: SupportInternalKnowledgeSource) {
-  const query = ref("");
+export function createSupportInternalKnowledgeController(
+  context: SupportInternalKnowledgeContext,
+  source: SupportInternalKnowledgeSource,
+) {
+  const query = ref('');
   const items = shallowRef<SupportKnowledgeSearchItemResponseDto[]>([]);
   const nextCursor = ref<string | null>(null);
   const freshness = shallowRef<SupportKnowledgeFreshness | null>(null);
@@ -38,7 +51,7 @@ export function createSupportInternalKnowledgeController(context: SupportInterna
   const inserting = ref(false);
   const preparing = ref(false);
   const downloadingId = ref<string | null>(null);
-  const error = ref("");
+  const error = ref('');
   const recoveryRequired = ref(false);
   let generation = 0;
   let openGeneration = 0;
@@ -46,13 +59,12 @@ export function createSupportInternalKnowledgeController(context: SupportInterna
   let prepareToken: symbol | null = null;
   let abort: AbortController | null = null;
 
-  const canSearch = computed(() => context.allowed() && query.value.trim().length > 0 && !loading.value);
+  const canSearch = computed(
+    () => context.allowed() && query.value.trim().length > 0 && !loading.value,
+  );
   const canInsert = computed(
     () =>
-      context.allowed() &&
-      context.canInsert() &&
-      !activeCitation.value &&
-      !recoveryRequired.value,
+      context.allowed() && context.canInsert() && !activeCitation.value && !recoveryRequired.value,
   );
 
   function purge(options: { keepQuery?: boolean } = {}): void {
@@ -72,9 +84,9 @@ export function createSupportInternalKnowledgeController(context: SupportInterna
     insertToken = null;
     prepareToken = null;
     downloadingId.value = null;
-    error.value = "";
+    error.value = '';
     recoveryRequired.value = false;
-    if (!options.keepQuery) query.value = "";
+    if (!options.keepQuery) query.value = '';
   }
 
   async function forbidden(): Promise<void> {
@@ -91,10 +103,15 @@ export function createSupportInternalKnowledgeController(context: SupportInterna
     abort = requestAbort;
     const requestGeneration = ++generation;
     loading.value = true;
-    error.value = "";
+    error.value = '';
     try {
       const page = await source.search(scope, q, cursor, requestAbort.signal);
-      if (requestGeneration !== generation || !sameScope(context.scope(), scope) || !context.allowed()) return;
+      if (
+        requestGeneration !== generation ||
+        !sameScope(context.scope(), scope) ||
+        !context.allowed()
+      )
+        return;
       items.value = cursor ? [...items.value, ...page.items] : page.items;
       nextCursor.value = page.nextCursor ?? null;
       freshness.value = page.freshness;
@@ -105,7 +122,8 @@ export function createSupportInternalKnowledgeController(context: SupportInterna
         !sameScope(context.scope(), scope)
       )
         return;
-      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) return forbidden();
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404))
+        return forbidden();
       if (cause instanceof ApiError && cause.status === 409 && cursor) {
         nextCursor.value = null;
         return search();
@@ -118,11 +136,11 @@ export function createSupportInternalKnowledgeController(context: SupportInterna
 
   async function open(item: SupportKnowledgeSearchItemResponseDto): Promise<void> {
     const scope = context.scope();
-    if (!scope || !context.allowed() || !item.allowedActions.includes("OPEN")) return;
+    if (!scope || !context.allowed() || !item.allowedActions.includes('OPEN')) return;
     const requestGeneration = generation;
     const requestOpenGeneration = ++openGeneration;
     openingId.value = item.documentId;
-    error.value = "";
+    error.value = '';
     try {
       const document = await source.open(scope, item);
       if (
@@ -132,7 +150,8 @@ export function createSupportInternalKnowledgeController(context: SupportInterna
         !context.allowed()
       )
         return;
-      if (document.documentId !== item.documentId || document.revisionId !== item.revisionId) throw new Error("Knowledge source changed identity");
+      if (document.documentId !== item.documentId || document.revisionId !== item.revisionId)
+        throw new Error('Knowledge source changed identity');
       selected.value = document;
     } catch (cause) {
       if (
@@ -141,32 +160,35 @@ export function createSupportInternalKnowledgeController(context: SupportInterna
         !sameScope(context.scope(), scope)
       )
         return;
-      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) return forbidden();
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404))
+        return forbidden();
       if (cause instanceof ApiError && cause.status === 409) {
         selected.value = null;
-        error.value = "Материал обновился. Выполните поиск ещё раз.";
+        error.value = 'Материал обновился. Выполните поиск ещё раз.';
         return search();
       }
       error.value = message(cause);
     } finally {
-      if (
-        requestGeneration === generation &&
-        requestOpenGeneration === openGeneration
-      )
+      if (requestGeneration === generation && requestOpenGeneration === openGeneration)
         openingId.value = null;
     }
   }
 
-  async function insert(item: SupportKnowledgeSearchItemResponseDto, mode: "QUOTE" | "LINK", selectedText?: string): Promise<void> {
+  async function insert(
+    item: SupportKnowledgeSearchItemResponseDto,
+    mode: 'QUOTE' | 'LINK',
+    selectedText?: string,
+  ): Promise<void> {
     const scope = context.scope();
     if (!scope || !canInsert.value || inserting.value) return;
-    const action = mode === "QUOTE" ? "INSERT_QUOTE" : "INSERT_LINK";
-    if (!item.allowedActions.includes(action) || (mode === "QUOTE" && !selectedText?.trim())) return;
+    const action = mode === 'QUOTE' ? 'INSERT_QUOTE' : 'INSERT_LINK';
+    if (!item.allowedActions.includes(action) || (mode === 'QUOTE' && !selectedText?.trim()))
+      return;
     const requestGeneration = generation;
-    const requestToken = Symbol("knowledge-insert");
+    const requestToken = Symbol('knowledge-insert');
     insertToken = requestToken;
     inserting.value = true;
-    error.value = "";
+    error.value = '';
     try {
       const draft = await source.createCitation(scope, item, mode, selectedText?.trim());
       if (
@@ -177,7 +199,13 @@ export function createSupportInternalKnowledgeController(context: SupportInterna
         !context.canInsert()
       )
         return;
-      if (draft.documentId !== item.documentId || draft.revisionId !== item.revisionId || draft.state !== "READY" || !draft.text) throw new Error("Knowledge citation draft is not ready");
+      if (
+        draft.documentId !== item.documentId ||
+        draft.revisionId !== item.revisionId ||
+        draft.state !== 'READY' ||
+        !draft.text
+      )
+        throw new Error('Knowledge citation draft is not ready');
       activeCitation.value = draft;
       recoveryRequired.value = false;
       context.onInsert(draft.text);
@@ -188,8 +216,9 @@ export function createSupportInternalKnowledgeController(context: SupportInterna
         !sameScope(context.scope(), scope)
       )
         return;
-      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) return forbidden();
-      error.value = "Не удалось вставить материал. Черновик ответа не изменён.";
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404))
+        return forbidden();
+      error.value = 'Не удалось вставить материал. Черновик ответа не изменён.';
     } finally {
       if (requestGeneration === generation && insertToken === requestToken) {
         insertToken = null;
@@ -210,9 +239,9 @@ export function createSupportInternalKnowledgeController(context: SupportInterna
       preparing.value
     )
       return undefined;
-    if (draft.state === "READY" && draft.text === text) return draft.id;
+    if (draft.state === 'READY' && draft.text === text) return draft.id;
     const requestGeneration = generation;
-    const requestToken = Symbol("knowledge-prepare");
+    const requestToken = Symbol('knowledge-prepare');
     prepareToken = requestToken;
     preparing.value = true;
     try {
@@ -230,10 +259,10 @@ export function createSupportInternalKnowledgeController(context: SupportInterna
         updated.documentId !== draft.documentId ||
         updated.revisionId !== draft.revisionId ||
         updated.mode !== draft.mode ||
-        updated.state !== "READY" ||
+        updated.state !== 'READY' ||
         updated.text !== text
       )
-        throw new Error("Knowledge citation edit did not converge");
+        throw new Error('Knowledge citation edit did not converge');
       activeCitation.value = updated;
       return updated.id;
     } catch (cause) {
@@ -243,18 +272,17 @@ export function createSupportInternalKnowledgeController(context: SupportInterna
         !sameScope(context.scope(), scope)
       )
         return undefined;
-      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) await forbidden();
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404))
+        await forbidden();
       else {
         activeCitation.value = null;
         recoveryRequired.value = true;
-        error.value = "Источник изменился или больше недоступен. Текст сохранён — выберите материал заново.";
+        error.value =
+          'Источник изменился или больше недоступен. Текст сохранён — выберите материал заново.';
       }
       return undefined;
     } finally {
-      if (
-        requestGeneration === generation &&
-        prepareToken === requestToken
-      ) {
+      if (requestGeneration === generation && prepareToken === requestToken) {
         prepareToken = null;
         preparing.value = false;
       }
@@ -263,9 +291,9 @@ export function createSupportInternalKnowledgeController(context: SupportInterna
 
   async function download(item: SupportKnowledgeSearchItemResponseDto): Promise<void> {
     const scope = context.scope();
-    if (!scope || !context.allowed() || !item.allowedActions.includes("DOWNLOAD")) return;
+    if (!scope || !context.allowed() || !item.allowedActions.includes('DOWNLOAD')) return;
     const requestGeneration = generation;
-    const pendingWindow = globalThis.open?.("about:blank", "_blank");
+    const pendingWindow = globalThis.open?.('about:blank', '_blank');
     if (pendingWindow) pendingWindow.opener = null;
     downloadingId.value = item.documentId;
     try {
@@ -278,24 +306,18 @@ export function createSupportInternalKnowledgeController(context: SupportInterna
         pendingWindow?.close();
         return;
       }
-      if (
-        result.documentId !== item.documentId ||
-        result.revisionId !== item.revisionId
-      )
-        throw new Error("Knowledge download changed identity");
+      if (result.documentId !== item.documentId || result.revisionId !== item.revisionId)
+        throw new Error('Knowledge download changed identity');
       const url = new URL(result.url);
-      if (url.protocol !== "https:") throw new Error("Unsafe Knowledge download URL");
-      if (!pendingWindow) throw new Error("Knowledge download popup was blocked");
+      if (url.protocol !== 'https:') throw new Error('Unsafe Knowledge download URL');
+      if (!pendingWindow) throw new Error('Knowledge download popup was blocked');
       pendingWindow.location.replace(url.toString());
     } catch (cause) {
       pendingWindow?.close();
-      if (
-        requestGeneration !== generation ||
-        !sameScope(context.scope(), scope)
-      )
-        return;
-      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) return forbidden();
-      error.value = "Не удалось получить безопасную ссылку на файл.";
+      if (requestGeneration !== generation || !sameScope(context.scope(), scope)) return;
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404))
+        return forbidden();
+      error.value = 'Не удалось получить безопасную ссылку на файл.';
     } finally {
       if (requestGeneration === generation) downloadingId.value = null;
     }
@@ -325,7 +347,7 @@ export function createSupportInternalKnowledgeController(context: SupportInterna
     freshness.value = null;
     recoveryRequired.value = true;
     error.value =
-      "Источник изменился или больше недоступен. Удалите его вместе с производным текстом и выберите материал заново.";
+      'Источник изменился или больше недоступен. Удалите его вместе с производным текстом и выберите материал заново.';
   }
 
   function setQuery(value: string): void {
@@ -336,5 +358,31 @@ export function createSupportInternalKnowledgeController(context: SupportInterna
     selected.value = null;
   }
 
-  return { query, items, nextCursor, freshness, selected, activeCitation, loading, openingId, inserting, preparing, downloadingId, error, recoveryRequired, canSearch, canInsert, setQuery, closeDocument, search, open, insert, download, prepareForSend, accepted, requireRecovery, purge };
+  return {
+    query,
+    items,
+    nextCursor,
+    freshness,
+    selected,
+    activeCitation,
+    loading,
+    openingId,
+    inserting,
+    preparing,
+    downloadingId,
+    error,
+    recoveryRequired,
+    canSearch,
+    canInsert,
+    setQuery,
+    closeDocument,
+    search,
+    open,
+    insert,
+    download,
+    prepareForSend,
+    accepted,
+    requireRecovery,
+    purge,
+  };
 }

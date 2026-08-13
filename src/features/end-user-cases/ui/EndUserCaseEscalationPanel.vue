@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import Button from "primevue/button";
-import type { EndUserCaseEscalationResponseDto } from "@/shared/api/generated/models";
-import { formatDate } from "@/shared/lib/format";
+import { computed } from 'vue';
+import Button from 'primevue/button';
+import type { EndUserCaseEscalationResponseDto } from '@/shared/api/generated/models';
+import { formatDate } from '@/shared/lib/format';
 import {
   activeEndUserCaseEscalation,
   endUserCaseEscalationReasonLabel,
   endUserCaseEscalationSourceLabel,
   endUserCaseEscalationStatusLabel,
   type EndUserCaseEscalationAction,
-} from "../model/end-user-case-escalation";
+} from '../model/end-user-case-escalation';
 
 const props = defineProps<{
   items: EndUserCaseEscalationResponseDto[];
@@ -26,14 +26,10 @@ defineEmits<{
 }>();
 
 const active = computed(() => activeEndUserCaseEscalation(props.items));
-const isClaimant = computed(
-  () => active.value?.claimant?.id === props.currentCmsUserId,
-);
+const isClaimant = computed(() => active.value?.claimant?.id === props.currentCmsUserId);
 const canRelease = computed(() => props.canAssign === true || isClaimant.value);
 const canClose = computed(() => props.canManage === true || isClaimant.value);
-const history = computed(() =>
-  props.items.filter(({ id }) => id !== active.value?.id),
-);
+const history = computed(() => props.items.filter(({ id }) => id !== active.value?.id));
 </script>
 
 <template>
@@ -46,20 +42,12 @@ const history = computed(() =>
       <div>
         <span class="eyebrow">Помощь специалиста</span>
         <h3 id="case-escalation-title">
-          {{
-            active
-              ? endUserCaseEscalationStatusLabel(active.status)
-              : "Эскалация не требуется"
-          }}
+          {{ active ? endUserCaseEscalationStatusLabel(active.status) : 'Эскалация не требуется' }}
         </h3>
       </div>
       <span v-if="active" class="signal">
         <i class="pi pi-exclamation-circle" />
-        {{
-          active.status === "REQUESTED"
-            ? "Нужно забрать"
-            : "Специалист подключён"
-        }}
+        {{ active.status === 'REQUESTED' ? 'Нужно забрать' : 'Специалист подключён' }}
       </span>
     </div>
 
@@ -68,9 +56,7 @@ const history = computed(() =>
       <div class="escalation-meta">
         <div>
           <span>Основание</span>
-          <strong>{{
-            endUserCaseEscalationReasonLabel(active.reasonCode)
-          }}</strong>
+          <strong>{{ endUserCaseEscalationReasonLabel(active.reasonCode) }}</strong>
         </div>
         <div>
           <span>Источник</span>
@@ -82,9 +68,7 @@ const history = computed(() =>
         </div>
         <div>
           <span>Специалист</span>
-          <strong>{{
-            active.claimant?.displayName ?? "Ещё не назначен"
-          }}</strong>
+          <strong>{{ active.claimant?.displayName ?? 'Ещё не назначен' }}</strong>
         </div>
       </div>
 
@@ -134,8 +118,8 @@ const history = computed(() =>
 
     <template v-else>
       <p class="summary">
-        Обращение остаётся в обычном workflow. Запрашивайте специалиста только
-        когда требуется реальное вмешательство человека.
+        Обращение остаётся в обычном workflow. Запрашивайте специалиста только когда требуется
+        реальное вмешательство человека.
       </p>
       <Button
         v-if="canEscalate && !terminal"
@@ -177,8 +161,7 @@ const history = computed(() =>
 .escalation-card.active {
   border-color: color-mix(in srgb, var(--brand) 38%, var(--border-default));
   background:
-    radial-gradient(circle at 100% 0, var(--brand-soft), transparent 45%),
-    var(--surface-card);
+    radial-gradient(circle at 100% 0, var(--brand-soft), transparent 45%), var(--surface-card);
   box-shadow: var(--shadow-raised);
 }
 .escalation-heading,

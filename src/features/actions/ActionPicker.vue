@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed } from 'vue';
 
 import CatalogPicker, {
   type CatalogPickerFilter,
   type CatalogPickerOption,
-} from "@/shared/ui/CatalogPicker.vue";
+} from '@/shared/ui/CatalogPicker.vue';
 import {
   actionPickerCategory,
   actionPickerCategoryIcon,
@@ -12,9 +12,9 @@ import {
   createLocalActionPickerLoader,
   toActionPickerOption,
   type ActionPickerItem,
-} from "./action-picker-loader";
+} from './action-picker-loader';
 
-defineOptions({ name: "ActionPicker" });
+defineOptions({ name: 'ActionPicker' });
 
 const props = withDefaults(
   defineProps<{
@@ -35,12 +35,12 @@ const props = withDefaults(
     required: false,
     hideLabel: false,
     allowEmpty: false,
-    applyLabel: "Выбрать действие",
+    applyLabel: 'Выбрать действие',
   },
 );
 
 const emit = defineEmits<{
-  "update:modelValue": [value: string];
+  'update:modelValue': [value: string];
   select: [action: ActionPickerItem];
   closed: [];
 }>();
@@ -51,11 +51,11 @@ const availableCatalog = computed(() => {
     (action) => action.enabled && (!allowed.size || allowed.has(action.type)),
   );
 });
-const categories = computed(() =>
-  new Set(availableCatalog.value.map((action) => actionPickerCategory(action.type))),
+const categories = computed(
+  () => new Set(availableCatalog.value.map((action) => actionPickerCategory(action.type))),
 );
 const filters = computed<CatalogPickerFilter[]>(() =>
-  (["logic", "wait", "action"] as const)
+  (['logic', 'wait', 'action'] as const)
     .filter((category) => categories.value.has(category))
     .map((category) => ({
       value: category,
@@ -70,11 +70,9 @@ const selectedOption = computed(() => {
 });
 const scopeKey = computed(() =>
   [
-    props.allowedTypes.join(","),
-    ...props.catalog.map(
-      (action) => `${action.id}:${action.type}:${action.enabled}`,
-    ),
-  ].join("|"),
+    props.allowedTypes.join(','),
+    ...props.catalog.map((action) => `${action.id}:${action.type}:${action.enabled}`),
+  ].join('|'),
 );
 const load = createLocalActionPickerLoader(
   () => props.catalog,
@@ -83,7 +81,7 @@ const load = createLocalActionPickerLoader(
 
 function select(option: CatalogPickerOption | CatalogPickerOption[]): void {
   if (Array.isArray(option) || !option.data) return;
-  emit("select", option.data as ActionPickerItem);
+  emit('select', option.data as ActionPickerItem);
 }
 </script>
 
@@ -112,9 +110,7 @@ function select(option: CatalogPickerOption | CatalogPickerOption[]): void {
     icon="pi pi-bolt"
     layout="grid"
     test-id-prefix="action-picker"
-    @update:model-value="
-      !Array.isArray($event) && emit('update:modelValue', $event)
-    "
+    @update:model-value="!Array.isArray($event) && emit('update:modelValue', $event)"
     @select="select"
     @closed="emit('closed')"
   />

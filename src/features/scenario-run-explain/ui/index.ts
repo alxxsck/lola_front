@@ -1,1 +1,1 @@
-export { default as RunExplainInspector } from './RunExplainInspector.vue'
+export { default as RunExplainInspector } from './RunExplainInspector.vue';

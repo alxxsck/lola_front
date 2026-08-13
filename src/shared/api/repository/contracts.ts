@@ -27,7 +27,7 @@ import type {
   UiElement,
   ActivitySettings,
   UpdateActivitySettings,
-} from "@/shared/types/domain";
+} from '@/shared/types/domain';
 import type {
   ArchiveEventDefinitionDto,
   ArchiveScenarioAuthoringDto,
@@ -35,9 +35,9 @@ import type {
   ExtendConversationAISuspensionDto,
   ResumeConversationAIDto,
   StartConversationAISuspensionDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
-export type RepositoryMode = "mock" | "api";
+export type RepositoryMode = 'mock' | 'api';
 
 export interface RepositoryCapabilities {
   projectSettings: boolean;
@@ -56,53 +56,53 @@ export interface RepositoryCapabilities {
   userAttributes: boolean;
 }
 
-type UiElementCreateBase = Pick<UiElement, "name" | "code"> &
-  Partial<Pick<UiElement, "config" | "enabled" | "aiEnabled" | "aiAliases">> & {
+type UiElementCreateBase = Pick<UiElement, 'name' | 'code'> &
+  Partial<Pick<UiElement, 'config' | 'enabled' | 'aiEnabled' | 'aiAliases'>> & {
     aiDescription?: string;
     auditReason?: string;
   };
 export type CreateUiElement = UiElementCreateBase &
   (
-    | { kind: "ELEMENT" | "BUTTON"; selector?: string }
-    | { kind: "PAGE"; route: string }
-    | { kind: "MODAL"; modalName: string }
+    | { kind: 'ELEMENT' | 'BUTTON'; selector?: string }
+    | { kind: 'PAGE'; route: string }
+    | { kind: 'MODAL'; modalName: string }
   );
 export type UpdateUiElement = Partial<
   Pick<
     UiElement,
-    | "name"
-    | "code"
-    | "kind"
-    | "selector"
-    | "route"
-    | "modalName"
-    | "config"
-    | "enabled"
-    | "aiEnabled"
-    | "aiDescription"
-    | "aiAliases"
+    | 'name'
+    | 'code'
+    | 'kind'
+    | 'selector'
+    | 'route'
+    | 'modalName'
+    | 'config'
+    | 'enabled'
+    | 'aiEnabled'
+    | 'aiDescription'
+    | 'aiAliases'
   >
 > & { auditReason?: string };
 export type SaveEventDefinition = Partial<EventDefinition> &
-  Pick<EventDefinition, "name" | "code" | "payloadSchema">;
+  Pick<EventDefinition, 'name' | 'code' | 'payloadSchema'>;
 export type UpdateScenarioMetadata = Partial<
   Pick<
     Scenario,
-    | "name"
-    | "description"
-    | "eventDefinitionId"
-    | "conversationPolicy"
-    | "priority"
-    | "importanceClass"
-    | "respectsQuietHours"
-    | "cooldownSeconds"
-    | "maxRunsPerUser"
-    | "activeFrom"
-    | "activeTo"
+    | 'name'
+    | 'description'
+    | 'eventDefinitionId'
+    | 'conversationPolicy'
+    | 'priority'
+    | 'importanceClass'
+    | 'respectsQuietHours'
+    | 'cooldownSeconds'
+    | 'maxRunsPerUser'
+    | 'activeFrom'
+    | 'activeTo'
   >
-> & { status?: Exclude<Scenario["status"], "ARCHIVED"> } & Pick<
+> & { status?: Exclude<Scenario['status'], 'ARCHIVED'> } & Pick<
     ArchiveScenarioAuthoringDto,
-    "expectedUpdatedAt" | "reason"
+    'expectedUpdatedAt' | 'reason'
   >;
 export type ArchiveEventDefinitionCommand = ArchiveEventDefinitionDto;
 export type ArchiveScenarioCommand = ArchiveScenarioAuthoringDto;
@@ -121,7 +121,7 @@ export interface ConversationAISuspensionMutationResult {
   state: ConversationAISuspensionDetail;
   replayed: boolean;
   inFlightCancellation?: {
-    status?: "NOT_REQUIRED" | "REQUESTED";
+    status?: 'NOT_REQUIRED' | 'REQUESTED';
     messageIds?: string[];
     voiceSessionIds?: string[];
   };
@@ -155,7 +155,7 @@ export interface AuditEventPageRequest {
   cursor?: string;
   limit?: number;
   search?: string;
-  outcome?: AuditEvent["outcome"];
+  outcome?: AuditEvent['outcome'];
 }
 
 export interface ProductApiRequestLogPageRequest {
@@ -164,7 +164,7 @@ export interface ProductApiRequestLogPageRequest {
   method?: string;
   path?: string;
   externalUserId?: string;
-  outcome?: ProductApiRequestLog["outcome"];
+  outcome?: ProductApiRequestLog['outcome'];
   receivedFrom?: string;
   receivedTo?: string;
 }
@@ -182,13 +182,13 @@ export interface UserAttributeDefinitionInput {
 }
 
 export type UpdateUserAttributeDefinitionInput = Partial<
-  Omit<UserAttributeDefinitionInput, "key" | "type" | "description">
+  Omit<UserAttributeDefinitionInput, 'key' | 'type' | 'description'>
 > & { description?: string | null };
 
 export interface EventLogFilters extends CursorPageRequest {
   eventCode?: string[];
   externalUserId?: string;
-  source?: EventLog["source"][];
+  source?: EventLog['source'][];
   status?: EventLogStatus[];
   receivedFrom?: string;
   receivedTo?: string;
@@ -202,15 +202,11 @@ export interface ReteniveRepository {
   getProject(projectId: string): Promise<Project>;
   updateProject(
     projectId: string,
-    patch: Partial<Project> & Pick<Project, "version">,
+    patch: Partial<Project> & Pick<Project, 'version'>,
   ): Promise<Project>;
   getElements(projectId: string): Promise<UiElement[]>;
   createElement(projectId: string, value: CreateUiElement): Promise<UiElement>;
-  updateElement(
-    projectId: string,
-    id: string,
-    value: UpdateUiElement,
-  ): Promise<UiElement>;
+  updateElement(projectId: string, id: string, value: UpdateUiElement): Promise<UiElement>;
   deleteElement(projectId: string, id: string): Promise<void>;
   getEvents(projectId: string): Promise<EventDefinition[]>;
   getEventDefinitionRevisions(
@@ -223,15 +219,8 @@ export interface ReteniveRepository {
     definitionKeyId: string,
     revisionId: string,
   ): Promise<EventDefinitionRevision>;
-  saveEvent(
-    projectId: string,
-    value: SaveEventDefinition,
-  ): Promise<EventDefinition>;
-  deleteEvent(
-    projectId: string,
-    id: string,
-    command: ArchiveEventDefinitionCommand,
-  ): Promise<void>;
+  saveEvent(projectId: string, value: SaveEventDefinition): Promise<EventDefinition>;
+  deleteEvent(projectId: string, id: string, command: ArchiveEventDefinitionCommand): Promise<void>;
   getUserAttributeSchema(projectId: string): Promise<UserAttributeSchema>;
   createUserAttributeDefinition(
     projectId: string,
@@ -242,26 +231,16 @@ export interface ReteniveRepository {
     id: string,
     value: UpdateUserAttributeDefinitionInput,
   ): Promise<UserAttributeMutation>;
-  deleteUserAttributeDefinition(
-    projectId: string,
-    id: string,
-  ): Promise<UserAttributeMutation>;
+  deleteUserAttributeDefinition(projectId: string, id: string): Promise<UserAttributeMutation>;
   getScenarios(projectId: string): Promise<Scenario[]>;
   updateScenarioMetadata(
     projectId: string,
     scenarioId: string,
     value: UpdateScenarioMetadata,
   ): Promise<Scenario>;
-  deleteScenario(
-    projectId: string,
-    id: string,
-    command: ArchiveScenarioCommand,
-  ): Promise<void>;
+  deleteScenario(projectId: string, id: string, command: ArchiveScenarioCommand): Promise<void>;
   getUsers(projectId: string): Promise<EndUser[]>;
-  getUsersPage(
-    projectId: string,
-    request?: CursorPageRequest,
-  ): Promise<CursorPage<EndUser>>;
+  getUsersPage(projectId: string, request?: CursorPageRequest): Promise<CursorPage<EndUser>>;
   getSessions(projectId: string): Promise<ActiveSession[]>;
   getActivity(userId?: string): Promise<ActivityItem[]>;
   getConversations(
@@ -273,11 +252,7 @@ export interface ReteniveRepository {
     projectId: string,
     request?: CursorPageRequest,
   ): Promise<CursorPage<SupportInboxConversation>>;
-  getConversation(
-    projectId: string,
-    userId: string,
-    conversationId: string,
-  ): Promise<Conversation>;
+  getConversation(projectId: string, userId: string, conversationId: string): Promise<Conversation>;
   getMessages(
     projectId: string,
     userId: string,
@@ -320,10 +295,7 @@ export interface ReteniveRepository {
     session: ActiveSession,
     action: ManualAction,
   ): Promise<{ commandId: string; status: string }>;
-  getEventLogPage(
-    projectId: string,
-    filters?: EventLogFilters,
-  ): Promise<CursorPage<EventLog>>;
+  getEventLogPage(projectId: string, filters?: EventLogFilters): Promise<CursorPage<EventLog>>;
   getEventLog(projectId: string, eventId: string): Promise<EventLog>;
   getScenarioRuns(projectId: string): Promise<ScenarioRun[]>;
   getScenarioRunsPage(
@@ -366,6 +338,6 @@ export interface ReteniveRepository {
 export class UnsupportedRepositoryCapabilityError extends Error {
   constructor(capability: keyof RepositoryCapabilities) {
     super(`Backend capability "${capability}" is not available`);
-    this.name = "UnsupportedRepositoryCapabilityError";
+    this.name = 'UnsupportedRepositoryCapabilityError';
   }
 }

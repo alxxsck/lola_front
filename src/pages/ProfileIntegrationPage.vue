@@ -1,30 +1,26 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { attributeContractRepository } from "@/features/end-user-attributes/api/attribute-contract-repository";
-import CodeBlock from "@/shared/ui/CodeBlock.vue";
-import { repository } from "@/shared/api/repository";
+import { computed, onMounted, ref } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { attributeContractRepository } from '@/features/end-user-attributes/api/attribute-contract-repository';
+import CodeBlock from '@/shared/ui/CodeBlock.vue';
+import { repository } from '@/shared/api/repository';
 import type {
   AttributeContractWorkspaceResponseDto,
   ProfileHealthResponseDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 const auth = useAuthStore();
 const loading = ref(true);
-const error = ref("");
+const error = ref('');
 const workspace = ref<AttributeContractWorkspaceResponseDto | null>(null);
 const health = ref<ProfileHealthResponseDto | null>(null);
-const method = ref<"direct" | "session">("session");
+const method = ref<'direct' | 'session'>('session');
 
-const revision = computed(
-  () => workspace.value?.currentContractRevision?.version ?? 1,
-);
-const published = computed(() =>
-  Boolean(workspace.value?.currentContractRevision),
-);
+const revision = computed(() => workspace.value?.currentContractRevision?.version ?? 1);
+const published = computed(() => Boolean(workspace.value?.currentContractRevision));
 type ExampleValue = string | number | boolean;
 
 function exampleValue(
@@ -34,16 +30,16 @@ function exampleValue(
 ): ExampleValue {
   if (allowedValues?.length) return allowedValues[0]!;
   const normalizedKey = key.toLowerCase();
-  if (normalizedKey.includes("email")) return "anna@example.com";
-  if (normalizedKey.includes("name")) return "Анна";
-  if (valueType === "BOOLEAN" || valueType === "boolean") return true;
-  if (valueType === "INTEGER" || valueType === "integer") return 1;
-  if (valueType === "DECIMAL" || valueType === "number") return "1.00";
-  if (valueType === "DATE") return "2026-07-19";
-  if (valueType === "DATETIME") return "2026-07-19T08:30:00Z";
-  if (valueType === "COUNTRY_CODE") return "ES";
-  if (valueType === "CURRENCY_CODE") return "EUR";
-  return "пример значения";
+  if (normalizedKey.includes('email')) return 'anna@example.com';
+  if (normalizedKey.includes('name')) return 'Анна';
+  if (valueType === 'BOOLEAN' || valueType === 'boolean') return true;
+  if (valueType === 'INTEGER' || valueType === 'integer') return 1;
+  if (valueType === 'DECIMAL' || valueType === 'number') return '1.00';
+  if (valueType === 'DATE') return '2026-07-19';
+  if (valueType === 'DATETIME') return '2026-07-19T08:30:00Z';
+  if (valueType === 'COUNTRY_CODE') return 'ES';
+  if (valueType === 'CURRENCY_CODE') return 'EUR';
+  return 'пример значения';
 }
 
 const exampleProfile = computed<{
@@ -51,7 +47,7 @@ const exampleProfile = computed<{
   usesPublishedFields: boolean;
 }>(() => {
   const fields = (workspace.value?.currentContractRevision?.fields ?? []).filter(
-    (field) => field.lifecycle !== "ARCHIVED",
+    (field) => field.lifecycle !== 'ARCHIVED',
   );
   if (fields.length) {
     return {
@@ -64,17 +60,15 @@ const exampleProfile = computed<{
       usesPublishedFields: true,
     };
   }
-  const properties =
-    workspace.value?.currentContractRevision?.schema.properties ?? {};
+  const properties = workspace.value?.currentContractRevision?.schema.properties ?? {};
   const fromSchema = Object.entries(properties).map(([key, property]) => [
     key,
     exampleValue(
       key,
-      typeof property.type === "string" ? property.type : "string",
+      typeof property.type === 'string' ? property.type : 'string',
       Array.isArray(property.enum)
-        ? (property.enum.filter(
-            (value): value is ExampleValue =>
-              ["string", "number", "boolean"].includes(typeof value),
+        ? (property.enum.filter((value): value is ExampleValue =>
+            ['string', 'number', 'boolean'].includes(typeof value),
           ) as ExampleValue[])
         : undefined,
     ),
@@ -82,24 +76,22 @@ const exampleProfile = computed<{
   return fromSchema.length
     ? { attributes: Object.fromEntries(fromSchema), usesPublishedFields: true }
     : {
-        attributes: { displayName: "Анна", loyaltyTier: "gold" },
+        attributes: { displayName: 'Анна', loyaltyTier: 'gold' },
         usesPublishedFields: false,
       };
 });
 const exampleAttributes = computed(() => exampleProfile.value.attributes);
-const exampleUsesPublishedFields = computed(
-  () => exampleProfile.value.usesPublishedFields,
-);
+const exampleUsesPublishedFields = computed(() => exampleProfile.value.usesPublishedFields);
 const directExample = computed(
   () => `curl -X PUT "$RETENIVE_URL/api/v1/end-user-profile-snapshots" \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
   --data '${JSON.stringify(
     {
-      externalUserId: "user-123",
+      externalUserId: 'user-123',
       contractRevision: revision.value,
-      observedAt: "2026-07-19T08:30:00Z",
-      sourceSequence: "42",
+      observedAt: '2026-07-19T08:30:00Z',
+      sourceSequence: '42',
       attributes: exampleAttributes.value,
     },
     null,
@@ -112,12 +104,12 @@ const token = "YOUR_SERVER_TOKEN";
 
 const body = ${JSON.stringify(
     {
-      externalUserId: "user-123",
+      externalUserId: 'user-123',
       profileSnapshot: {
         contractRevision: revision.value,
-        idempotencyKey: "session:user-123:42",
-        observedAt: "2026-07-19T08:30:00Z",
-        sourceSequence: "42",
+        idempotencyKey: 'session:user-123:42',
+        observedAt: '2026-07-19T08:30:00Z',
+        sourceSequence: '42',
         attributes: exampleAttributes.value,
       },
     },
@@ -125,11 +117,11 @@ const body = ${JSON.stringify(
     2,
   )};
 
-await fetch(\`${"${reteniveUrl}"}/api/v1/interaction-sessions\`, {
+await fetch(\`${'${reteniveUrl}'}/api/v1/interaction-sessions\`, {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    Authorization: \`Bearer ${"${token}"}\`
+    Authorization: \`Bearer ${'${token}'}\`
   },
   body: JSON.stringify(body)
 });`,
@@ -138,7 +130,7 @@ const schemaJson = computed(() =>
   JSON.stringify(
     workspace.value?.validation.artifact.schema ??
       workspace.value?.currentContractRevision?.schema ?? {
-        type: "object",
+        type: 'object',
         properties: {},
         additionalProperties: false,
       },
@@ -154,10 +146,10 @@ async function load() {
   if (!projectId) return;
   loading.value = true;
   try {
-    if (repository.mode === "mock") {
+    if (repository.mode === 'mock') {
       const changes = {
         contractChanged: false,
-        contractCompatibility: "UNCHANGED" as const,
+        contractCompatibility: 'UNCHANGED' as const,
         lifecycleChanged: false,
         metadataChanged: false,
         policyChanged: false,
@@ -165,11 +157,11 @@ async function load() {
       workspace.value = {
         currentPublication: null,
         currentContractRevision: {
-          id: "demo-revision",
+          id: 'demo-revision',
           projectId,
           version: 3,
-          canonicalHash: "demo",
-          validationHash: "demo",
+          canonicalHash: 'demo',
+          validationHash: 'demo',
           acceptances: [],
           compatibilityReport: {
             valid: true,
@@ -183,14 +175,14 @@ async function load() {
             },
           },
           schema: {
-            $schema: "https://json-schema.org/draft/2020-12/schema",
-            type: "object",
+            $schema: 'https://json-schema.org/draft/2020-12/schema',
+            type: 'object',
             additionalProperties: false,
             properties: {
-              displayName: { type: "string" },
+              displayName: { type: 'string' },
               loyaltyTier: {
-                type: "string",
-                enum: ["basic", "silver", "gold"],
+                type: 'string',
+                enum: ['basic', 'silver', 'gold'],
               },
             },
             required: [],
@@ -198,7 +190,7 @@ async function load() {
           fields: [],
           publishedAt: new Date().toISOString(),
           publishedById: null,
-          publishReason: "Демонстрационная версия",
+          publishReason: 'Демонстрационная версия',
         },
         changes,
         draft: {
@@ -211,19 +203,19 @@ async function load() {
         validation: {
           valid: true,
           draftVersion: 3,
-          validationHash: "demo",
+          validationHash: 'demo',
           issues: [],
           artifact: {
             fields: [],
             schema: {
-              $schema: "https://json-schema.org/draft/2020-12/schema",
-              type: "object",
+              $schema: 'https://json-schema.org/draft/2020-12/schema',
+              type: 'object',
               additionalProperties: false,
               properties: {
-                displayName: { type: "string" },
+                displayName: { type: 'string' },
                 loyaltyTier: {
-                  type: "string",
-                  enum: ["basic", "silver", "gold"],
+                  type: 'string',
+                  enum: ['basic', 'silver', 'gold'],
                 },
               },
               required: [],
@@ -262,14 +254,12 @@ async function load() {
     } else {
       [workspace.value, health.value] = await Promise.all([
         attributeContractRepository.workspace(projectId),
-        attributeContractRepository.health(projectId, { window: "24h" }),
+        attributeContractRepository.health(projectId, { window: '24h' }),
       ]);
     }
   } catch (cause) {
     error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить инструкцию подключения.";
+      cause instanceof Error ? cause.message : 'Не удалось загрузить инструкцию подключения.';
   } finally {
     loading.value = false;
   }
@@ -286,26 +276,33 @@ async function load() {
         <div class="eyebrow">Поля профиля пользователей</div>
         <h1>Как передавать данные</h1>
         <p class="subtitle">
-          Подключите сервер вашего продукта к Retenive и проверьте первый профиль
-          пользователя.
+          Подключите сервер вашего продукта к Retenive и проверьте первый профиль пользователя.
         </p>
       </div>
       <div class="header-actions">
-        <Button label="Руководство по полям" icon="pi pi-book" severity="secondary" text as="router-link" :to="{ name: 'profile-fields-guide' }" />
-        <Button class="profiles-link" label="Открыть профили пользователей" icon="pi pi-users" severity="secondary" outlined as="router-link" to="/users" />
+        <Button
+          label="Руководство по полям"
+          icon="pi pi-book"
+          severity="secondary"
+          text
+          as="router-link"
+          :to="{ name: 'profile-fields-guide' }"
+        />
+        <Button
+          class="profiles-link"
+          label="Открыть профили пользователей"
+          icon="pi pi-users"
+          severity="secondary"
+          outlined
+          as="router-link"
+          to="/users"
+        />
       </div>
     </header>
 
-    <Message v-if="error" severity="error" :closable="false">{{
-      error
-    }}</Message>
+    <Message v-if="error" severity="error" :closable="false">{{ error }}</Message>
     <div v-if="loading" class="loading-steps">
-      <Skeleton
-        v-for="item in 4"
-        :key="item"
-        height="180px"
-        border-radius="18px"
-      />
+      <Skeleton v-for="item in 4" :key="item" height="180px" border-radius="18px" />
     </div>
     <div v-else-if="workspace" class="integration-layout">
       <nav class="step-index card" aria-label="Шаги подключения">
@@ -321,30 +318,21 @@ async function load() {
           <div class="step-content">
             <h2>Подготовьте поля профиля</h2>
             <p>
-              Передавайте только опубликованные поля. Черновик не влияет на
-              работающую интеграцию.
+              Передавайте только опубликованные поля. Черновик не влияет на работающую интеграцию.
             </p>
             <div class="readiness" :class="{ ready: published }">
-              <i
-                :class="
-                  published ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'
-                "
-              />
+              <i :class="published ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'" />
               <span
                 ><strong>{{
-                  published
-                    ? `Опубликована версия ${revision}`
-                    : "Поля ещё не опубликованы"
+                  published ? `Опубликована версия ${revision}` : 'Поля ещё не опубликованы'
                 }}</strong
                 ><small>{{
                   published
-                    ? "Можно переходить к подключению."
-                    : "Вернитесь к полям, проверьте черновик и опубликуйте его."
+                    ? 'Можно переходить к подключению.'
+                    : 'Вернитесь к полям, проверьте черновик и опубликуйте его.'
                 }}</small></span
               >
-              <RouterLink v-if="!published" to="/profile-fields"
-                >Открыть поля</RouterLink
-              >
+              <RouterLink v-if="!published" to="/profile-fields">Открыть поля</RouterLink>
             </div>
           </div>
         </section>
@@ -354,8 +342,8 @@ async function load() {
           <div class="step-content">
             <h2>Выберите способ передачи</h2>
             <p>
-              Оба способа отправляют полный профиль. Новый запрос заменяет
-              предыдущие данные пользователя.
+              Оба способа отправляют полный профиль. Новый запрос заменяет предыдущие данные
+              пользователя.
             </p>
             <div class="method-grid">
               <button
@@ -367,15 +355,10 @@ async function load() {
                 <span
                   ><strong>Передавать профиль при запуске сессии</strong
                   ><small
-                    >Выберите, если данные формируются прямо перед общением с
-                    пользователем.</small
+                    >Выберите, если данные формируются прямо перед общением с пользователем.</small
                   ></span
                 >
-                <i
-                  :class="
-                    method === 'session' ? 'pi pi-check-circle' : 'pi pi-circle'
-                  "
-                />
+                <i :class="method === 'session' ? 'pi pi-check-circle' : 'pi pi-circle'" />
               </button>
               <button
                 type="button"
@@ -386,15 +369,10 @@ async function load() {
                 <span
                   ><strong>Обновлять профиль при изменении</strong
                   ><small
-                    >Подходит для синхронизации из CRM или сервера вашего
-                    продукта.</small
+                    >Подходит для синхронизации из CRM или сервера вашего продукта.</small
                   ></span
                 >
-                <i
-                  :class="
-                    method === 'direct' ? 'pi pi-check-circle' : 'pi pi-circle'
-                  "
-                />
+                <i :class="method === 'direct' ? 'pi pi-check-circle' : 'pi pi-circle'" />
               </button>
             </div>
           </div>
@@ -405,18 +383,20 @@ async function load() {
           <div class="step-content">
             <h2>Отправьте тестовый профиль</h2>
             <p v-if="method === 'direct'">
-              Скопируйте команду, подставьте адрес Retenive и серверный токен, затем
-              выполните её на сервере вашего продукта.
+              Скопируйте команду, подставьте адрес Retenive и серверный токен, затем выполните её на
+              сервере вашего продукта.
             </p>
             <p v-else>
-              Добавьте объект <code>profileSnapshot</code> при создании сессии
-              на сервере вашего продукта.
+              Добавьте объект <code>profileSnapshot</code> при создании сессии на сервере вашего
+              продукта.
             </p>
             <aside class="example-note" aria-label="О примере запроса">
               <strong>В примере нет реальных данных пользователя.</strong>
-              {{ exampleUsesPublishedFields
-                ? "Ключи взяты из опубликованной структуры вашего проекта — замените только значения."
-                : "Опубликованных полей пока нет, поэтому показаны демонстрационные ключи и значения." }}
+              {{
+                exampleUsesPublishedFields
+                  ? 'Ключи взяты из опубликованной структуры вашего проекта — замените только значения.'
+                  : 'Опубликованных полей пока нет, поэтому показаны демонстрационные ключи и значения.'
+              }}
             </aside>
             <CodeBlock
               v-if="method === 'direct'"
@@ -432,27 +412,57 @@ async function load() {
             />
             <div class="replace-list">
               <div>
-                <code>{{ method === "session" ? "reteniveUrl" : "$RETENIVE_URL" }}</code
+                <code>{{ method === 'session' ? 'reteniveUrl' : '$RETENIVE_URL' }}</code
                 ><span>Адрес API вашего проекта Retenive</span>
               </div>
               <div>
-                <code>{{ method === "session" ? "token" : "$TOKEN" }}</code
+                <code>{{ method === 'session' ? 'token' : '$TOKEN' }}</code
                 ><span>Серверный токен с доступом к записи профилей</span>
               </div>
-              <div>
-                <code>user-123</code
-                ><span>ID пользователя в вашем продукте</span>
-              </div>
+              <div><code>user-123</code><span>ID пользователя в вашем продукте</span></div>
             </div>
             <section class="parameter-guide" aria-labelledby="parameter-guide-title">
               <h3 id="parameter-guide-title">Что передать в запросе</h3>
               <dl>
-                <div><dt><code>externalUserId</code> · обязательно</dt><dd>Постоянный ID пользователя в вашем продукте. Не создавайте новый ID при каждом запросе.</dd></div>
-                <div><dt><code>contractRevision</code> · обязательно</dt><dd>Версия опубликованной структуры полей. На этой странице уже подставлена версия {{ revision }}.</dd></div>
-                <div v-if="method === 'session'"><dt><code>idempotencyKey</code> · обязательно</dt><dd>Уникальный ключ запроса. При повторной отправке того же запроса используйте тот же ключ.</dd></div>
-                <div><dt><code>observedAt</code> · обязательно</dt><dd>Время, на которое данные были актуальны в вашем продукте, в формате UTC.</dd></div>
-                <div><dt><code>sourceSequence</code> · рекомендуется</dt><dd>Порядковый номер обновления для этого пользователя. Каждый следующий номер должен быть больше предыдущего.</dd></div>
-                <div><dt><code>attributes</code> · обязательно</dt><dd>Все актуальные опубликованные поля профиля. Новый запрос заменяет предыдущий профиль целиком.</dd></div>
+                <div>
+                  <dt><code>externalUserId</code> · обязательно</dt>
+                  <dd>
+                    Постоянный ID пользователя в вашем продукте. Не создавайте новый ID при каждом
+                    запросе.
+                  </dd>
+                </div>
+                <div>
+                  <dt><code>contractRevision</code> · обязательно</dt>
+                  <dd>
+                    Версия опубликованной структуры полей. На этой странице уже подставлена версия
+                    {{ revision }}.
+                  </dd>
+                </div>
+                <div v-if="method === 'session'">
+                  <dt><code>idempotencyKey</code> · обязательно</dt>
+                  <dd>
+                    Уникальный ключ запроса. При повторной отправке того же запроса используйте тот
+                    же ключ.
+                  </dd>
+                </div>
+                <div>
+                  <dt><code>observedAt</code> · обязательно</dt>
+                  <dd>Время, на которое данные были актуальны в вашем продукте, в формате UTC.</dd>
+                </div>
+                <div>
+                  <dt><code>sourceSequence</code> · рекомендуется</dt>
+                  <dd>
+                    Порядковый номер обновления для этого пользователя. Каждый следующий номер
+                    должен быть больше предыдущего.
+                  </dd>
+                </div>
+                <div>
+                  <dt><code>attributes</code> · обязательно</dt>
+                  <dd>
+                    Все актуальные опубликованные поля профиля. Новый запрос заменяет предыдущий
+                    профиль целиком.
+                  </dd>
+                </div>
               </dl>
             </section>
             <details class="technical-details">
@@ -464,10 +474,7 @@ async function load() {
                 </div>
                 <div>
                   <dt>Порядок обновлений</dt>
-                  <dd>
-                    <code>sourceSequence</code> должен расти для каждого
-                    пользователя
-                  </dd>
+                  <dd><code>sourceSequence</code> должен расти для каждого пользователя</dd>
                 </div>
                 <div>
                   <dt>Повтор запроса</dt>
@@ -475,10 +482,7 @@ async function load() {
                 </div>
                 <div>
                   <dt>Полная отправка</dt>
-                  <dd>
-                    Передавайте все актуальные поля пользователя в каждом
-                    запросе
-                  </dd>
+                  <dd>Передавайте все актуальные поля пользователя в каждом запросе</dd>
                 </div>
               </dl>
             </details>
@@ -490,28 +494,21 @@ async function load() {
           <div class="step-content">
             <h2>Проверьте результат</h2>
             <p>
-              После успешного запроса откройте пользователя и убедитесь, что
-              новые значения появились в профиле.
+              После успешного запроса откройте пользователя и убедитесь, что новые значения
+              появились в профиле.
             </p>
             <div class="verification-card">
               <span class="verification-icon"><i class="pi pi-check" /></span>
               <span
                 ><strong>{{
                   health?.lastSuccessfulSnapshotAt
-                    ? "Retenive уже получает профили"
-                    : "Первый профиль пока не получен"
+                    ? 'Retenive уже получает профили'
+                    : 'Первый профиль пока не получен'
                 }}</strong
                 ><small v-if="health?.lastSuccessfulSnapshotAt"
                   >Последнее успешное обновление:
-                  {{
-                    new Date(health.lastSuccessfulSnapshotAt).toLocaleString(
-                      "ru-RU",
-                    )
-                  }}</small
-                ><small v-else
-                  >Отправьте тестовый запрос, затем обновите эту
-                  страницу.</small
-                ></span
+                  {{ new Date(health.lastSuccessfulSnapshotAt).toLocaleString('ru-RU') }}</small
+                ><small v-else>Отправьте тестовый запрос, затем обновите эту страницу.</small></span
               >
               <Button
                 label="Открыть профиль пользователя"
@@ -645,11 +642,7 @@ async function load() {
   background: var(--status-warning-soft);
 }
 .readiness.ready {
-  border-color: color-mix(
-    in srgb,
-    var(--status-success) 35%,
-    var(--border-default)
-  );
+  border-color: color-mix(in srgb, var(--status-success) 35%, var(--border-default));
   background: var(--status-success-soft);
 }
 .readiness > i {
@@ -701,8 +694,7 @@ async function load() {
 .method-grid button.selected {
   border-color: var(--status-accent-text);
   background: var(--status-accent-soft);
-  box-shadow: 0 0 0 3px
-    color-mix(in srgb, var(--status-accent) 12%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-accent) 12%, transparent);
 }
 .method-icon {
   display: grid;

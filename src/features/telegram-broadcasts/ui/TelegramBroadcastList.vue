@@ -3,7 +3,7 @@ import type {
   TelegramBroadcast,
   TelegramBroadcastLifecycle,
   TelegramBroadcastPermissions,
-} from "../model/telegram-broadcast";
+} from '../model/telegram-broadcast';
 
 defineProps<{
   items: TelegramBroadcast[];
@@ -22,42 +22,41 @@ defineEmits<{
 }>();
 
 const lifecycleLabels: Record<TelegramBroadcastLifecycle, string> = {
-  DRAFT: "Черновик",
-  APPROVED: "Одобрена",
-  SCHEDULED: "Запланирована",
-  RUNNING: "Отправляется",
-  PAUSED: "Приостановлена",
-  COMPLETED: "Завершена",
-  COMPLETED_WITH_FAILURES: "Завершена с ошибками",
-  CANCELLED: "Отменена",
+  DRAFT: 'Черновик',
+  APPROVED: 'Одобрена',
+  SCHEDULED: 'Запланирована',
+  RUNNING: 'Отправляется',
+  PAUSED: 'Приостановлена',
+  COMPLETED: 'Завершена',
+  COMPLETED_WITH_FAILURES: 'Завершена с ошибками',
+  CANCELLED: 'Отменена',
 };
 
 const lifecycleIcons: Record<TelegramBroadcastLifecycle, string> = {
-  DRAFT: "pi pi-file-edit",
-  APPROVED: "pi pi-check-circle",
-  SCHEDULED: "pi pi-clock",
-  RUNNING: "pi pi-send",
-  PAUSED: "pi pi-pause-circle",
-  COMPLETED: "pi pi-check",
-  COMPLETED_WITH_FAILURES: "pi pi-exclamation-triangle",
-  CANCELLED: "pi pi-times-circle",
+  DRAFT: 'pi pi-file-edit',
+  APPROVED: 'pi pi-check-circle',
+  SCHEDULED: 'pi pi-clock',
+  RUNNING: 'pi pi-send',
+  PAUSED: 'pi pi-pause-circle',
+  COMPLETED: 'pi pi-check',
+  COMPLETED_WITH_FAILURES: 'pi pi-exclamation-triangle',
+  CANCELLED: 'pi pi-times-circle',
 };
 
 const SNAPSHOT_LIFECYCLES: readonly TelegramBroadcastLifecycle[] = [
-  "APPROVED",
-  "SCHEDULED",
-  "RUNNING",
-  "PAUSED",
-  "COMPLETED",
-  "COMPLETED_WITH_FAILURES",
+  'APPROVED',
+  'SCHEDULED',
+  'RUNNING',
+  'PAUSED',
+  'COMPLETED',
+  'COMPLETED_WITH_FAILURES',
 ];
 
 function audienceSummary(item: TelegramBroadcast): string {
   if (SNAPSHOT_LIFECYCLES.includes(item.status))
     return `Зафиксированная аудитория: ${item.recipientCount}`;
-  if (item.status === "CANCELLED")
-    return `Получателей: ${item.recipientCount}`;
-  return "Снимок аудитории ещё не зафиксирован";
+  if (item.status === 'CANCELLED') return `Получателей: ${item.recipientCount}`;
+  return 'Снимок аудитории ещё не зафиксирован';
 }
 </script>
 
@@ -68,8 +67,7 @@ function audienceSummary(item: TelegramBroadcast): string {
         <div class="eyebrow">Telegram</div>
         <h1 id="broadcast-list-title">Рассылки</h1>
         <p>
-          Сообщения получают только пользователи с явным согласием и активной
-          привязкой Telegram.
+          Сообщения получают только пользователи с явным согласием и активной привязкой Telegram.
         </p>
       </div>
       <div class="list-actions">
@@ -97,21 +95,12 @@ function audienceSummary(item: TelegramBroadcast): string {
     </header>
 
     <p v-if="error" class="state error" role="alert">{{ error }}</p>
-    <p
-      v-if="loading && !items.length"
-      class="state"
-      role="status"
-      aria-live="polite"
-    >
+    <p v-if="loading && !items.length" class="state" role="status" aria-live="polite">
       Загружаем рассылки…
     </p>
-    <p v-else-if="!items.length" class="state">
-      Рассылок пока нет.
-    </p>
+    <p v-else-if="!items.length" class="state">Рассылок пока нет.</p>
     <template v-else>
-      <p class="list-summary" aria-live="polite">
-        Показано {{ items.length }} из {{ total }}
-      </p>
+      <p class="list-summary" aria-live="polite">Показано {{ items.length }} из {{ total }}</p>
       <ul class="broadcast-items" aria-label="Список Telegram-рассылок">
         <li v-for="item in items" :key="item.id">
           <button

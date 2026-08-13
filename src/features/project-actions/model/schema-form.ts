@@ -1,13 +1,7 @@
-import type { EntityKind, JsonValue } from "@/shared/types/domain";
+import type { EntityKind, JsonValue } from '@/shared/types/domain';
 
 export type ProjectActionFormFieldKind =
-  | "text"
-  | "textarea"
-  | "number"
-  | "boolean"
-  | "select"
-  | "multi-select"
-  | "target";
+  'text' | 'textarea' | 'number' | 'boolean' | 'select' | 'multi-select' | 'target';
 
 export interface ProjectActionFormField {
   key: string;
@@ -28,10 +22,10 @@ export interface ProjectActionFormField {
 
 export interface ProjectActionFormIssue {
   code:
-    | "SCHEMA_ROOT_UNSUPPORTED"
-    | "SCHEMA_ADDITIONAL_PROPERTIES_UNSUPPORTED"
-    | "SCHEMA_FIELD_FORBIDDEN"
-    | "SCHEMA_CONTROL_UNSUPPORTED";
+    | 'SCHEMA_ROOT_UNSUPPORTED'
+    | 'SCHEMA_ADDITIONAL_PROPERTIES_UNSUPPORTED'
+    | 'SCHEMA_FIELD_FORBIDDEN'
+    | 'SCHEMA_CONTROL_UNSUPPORTED';
   field?: string;
   message: string;
 }
@@ -45,17 +39,17 @@ export interface ProjectActionForm {
 export interface ProjectActionConfigurationIssue {
   field: string;
   code:
-    | "CONFIGURATION_REQUIRED"
-    | "CONFIGURATION_TYPE"
-    | "CONFIGURATION_INTEGER"
-    | "CONFIGURATION_MINIMUM"
-    | "CONFIGURATION_MAXIMUM"
-    | "CONFIGURATION_MIN_LENGTH"
-    | "CONFIGURATION_MAX_LENGTH"
-    | "CONFIGURATION_MIN_ITEMS"
-    | "CONFIGURATION_MAX_ITEMS"
-    | "CONFIGURATION_ENUM"
-    | "CONFIGURATION_UNKNOWN_FIELD";
+    | 'CONFIGURATION_REQUIRED'
+    | 'CONFIGURATION_TYPE'
+    | 'CONFIGURATION_INTEGER'
+    | 'CONFIGURATION_MINIMUM'
+    | 'CONFIGURATION_MAXIMUM'
+    | 'CONFIGURATION_MIN_LENGTH'
+    | 'CONFIGURATION_MAX_LENGTH'
+    | 'CONFIGURATION_MIN_ITEMS'
+    | 'CONFIGURATION_MAX_ITEMS'
+    | 'CONFIGURATION_ENUM'
+    | 'CONFIGURATION_UNKNOWN_FIELD';
   message: string;
 }
 
@@ -70,16 +64,16 @@ export function buildProjectActionForm(
   const fields: ProjectActionFormField[] = [];
   if (
     !isRecord(schemaValue) ||
-    schemaValue.type !== "object" ||
+    schemaValue.type !== 'object' ||
     !isRecord(schemaValue.properties)
   ) {
     return {
       fields,
       issues: [
         {
-          code: "SCHEMA_ROOT_UNSUPPORTED",
+          code: 'SCHEMA_ROOT_UNSUPPORTED',
           message:
-            "Эти настройки пока нельзя изменить в Retenive. Обратитесь к разработчику проекта.",
+            'Эти настройки пока нельзя изменить в Retenive. Обратитесь к разработчику проекта.',
         },
       ],
       blocked: true,
@@ -87,36 +81,28 @@ export function buildProjectActionForm(
   }
   if (schemaValue.additionalProperties !== false) {
     issues.push({
-      code: "SCHEMA_ADDITIONAL_PROPERTIES_UNSUPPORTED",
-      message:
-        "Набор доступных настроек должен быть заранее определён разработчиком проекта.",
+      code: 'SCHEMA_ADDITIONAL_PROPERTIES_UNSUPPORTED',
+      message: 'Набор доступных настроек должен быть заранее определён разработчиком проекта.',
     });
   }
 
   const required = new Set(
-    Array.isArray(schemaValue.required)
-      ? schemaValue.required.filter(isString)
-      : [],
+    Array.isArray(schemaValue.required) ? schemaValue.required.filter(isString) : [],
   );
   const uiFields = uiFieldMap(uiSchemaValue);
   for (const [key, property] of Object.entries(schemaValue.properties)) {
     if (FORBIDDEN_FIELD.test(normalizeFieldKey(key))) {
       issues.push({
-        code: "SCHEMA_FIELD_FORBIDDEN",
+        code: 'SCHEMA_FIELD_FORBIDDEN',
         field: key,
         message: `Поле «${humanize(key)}» содержит служебные данные и недоступно для изменения.`,
       });
       continue;
     }
-    const field = toFormField(
-      key,
-      property,
-      uiFields.get(key),
-      required.has(key),
-    );
+    const field = toFormField(key, property, uiFields.get(key), required.has(key));
     if (!field) {
       issues.push({
-        code: "SCHEMA_CONTROL_UNSUPPORTED",
+        code: 'SCHEMA_CONTROL_UNSUPPORTED',
         field: key,
         message: `Поле «${humanize(key)}» пока нельзя безопасно изменить в Retenive.`,
       });
@@ -137,55 +123,49 @@ function toFormField(
   if (!isRecord(value)) return null;
   const common = {
     key,
-    label: isString(ui?.label)
-      ? ui.label
-      : isString(value.title)
-        ? value.title
-        : humanize(key),
+    label: isString(ui?.label) ? ui.label : isString(value.title) ? value.title : humanize(key),
     ...(isString(value.description) ? { description: value.description } : {}),
     required,
   };
   const options = stringValues(value.enum);
 
-  if (value.type === "string") {
+  if (value.type === 'string') {
     if (value.enum !== undefined && !options) return null;
-    if (options) return { ...common, kind: "select", options };
-    if (ui?.control === "target") {
-      const targetKinds = Array.isArray(ui.targetKinds)
-        ? ui.targetKinds.filter(isEntityKind)
-        : [];
+    if (options) return { ...common, kind: 'select', options };
+    if (ui?.control === 'target') {
+      const targetKinds = Array.isArray(ui.targetKinds) ? ui.targetKinds.filter(isEntityKind) : [];
       if (!targetKinds.length) return null;
       return {
         ...common,
-        kind: "target",
+        kind: 'target',
         targetKinds,
-        ...numberBounds(value, ["minLength", "maxLength"]),
+        ...numberBounds(value, ['minLength', 'maxLength']),
       };
     }
     return {
       ...common,
-      kind: ui?.control === "textarea" ? "textarea" : "text",
-      ...numberBounds(value, ["minLength", "maxLength"]),
+      kind: ui?.control === 'textarea' ? 'textarea' : 'text',
+      ...numberBounds(value, ['minLength', 'maxLength']),
     };
   }
-  if (value.type === "number" || value.type === "integer") {
+  if (value.type === 'number' || value.type === 'integer') {
     return {
       ...common,
-      kind: "number",
-      integer: value.type === "integer",
-      ...numberBounds(value, ["minimum", "maximum"]),
+      kind: 'number',
+      integer: value.type === 'integer',
+      ...numberBounds(value, ['minimum', 'maximum']),
     };
   }
-  if (value.type === "boolean") return { ...common, kind: "boolean" };
-  if (value.type === "array" && isRecord(value.items)) {
+  if (value.type === 'boolean') return { ...common, kind: 'boolean' };
+  if (value.type === 'array' && isRecord(value.items)) {
     const itemOptions = stringValues(value.items.enum);
     if (value.items.enum !== undefined && !itemOptions) return null;
-    if (!itemOptions || value.items.type !== "string") return null;
+    if (!itemOptions || value.items.type !== 'string') return null;
     return {
       ...common,
-      kind: "multi-select",
+      kind: 'multi-select',
       options: itemOptions,
-      ...numberBounds(value, ["minItems", "maxItems"]),
+      ...numberBounds(value, ['minItems', 'maxItems']),
     };
   }
   return null;
@@ -207,28 +187,20 @@ export function validateProjectActionConfiguration(
     if (!present) {
       if (field.required)
         issues.push(
-          valueIssue(
-            field.key,
-            "CONFIGURATION_REQUIRED",
-            `Заполните поле «${field.label}».`,
-          ),
+          valueIssue(field.key, 'CONFIGURATION_REQUIRED', `Заполните поле «${field.label}».`),
         );
       continue;
     }
     const value = configuration[field.key];
     if (
-      field.kind === "text" ||
-      field.kind === "textarea" ||
-      field.kind === "select" ||
-      field.kind === "target"
+      field.kind === 'text' ||
+      field.kind === 'textarea' ||
+      field.kind === 'select' ||
+      field.kind === 'target'
     ) {
-      if (typeof value !== "string") {
+      if (typeof value !== 'string') {
         issues.push(
-          valueIssue(
-            field.key,
-            "CONFIGURATION_TYPE",
-            `Поле «${field.label}» должно быть строкой.`,
-          ),
+          valueIssue(field.key, 'CONFIGURATION_TYPE', `Поле «${field.label}» должно быть строкой.`),
         );
         continue;
       }
@@ -236,7 +208,7 @@ export function validateProjectActionConfiguration(
         issues.push(
           valueIssue(
             field.key,
-            "CONFIGURATION_MIN_LENGTH",
+            'CONFIGURATION_MIN_LENGTH',
             `Поле «${field.label}» короче допустимого.`,
           ),
         );
@@ -244,7 +216,7 @@ export function validateProjectActionConfiguration(
         issues.push(
           valueIssue(
             field.key,
-            "CONFIGURATION_MAX_LENGTH",
+            'CONFIGURATION_MAX_LENGTH',
             `Поле «${field.label}» длиннее допустимого.`,
           ),
         );
@@ -252,20 +224,16 @@ export function validateProjectActionConfiguration(
         issues.push(
           valueIssue(
             field.key,
-            "CONFIGURATION_ENUM",
+            'CONFIGURATION_ENUM',
             `Выберите разрешённое значение поля «${field.label}».`,
           ),
         );
       continue;
     }
-    if (field.kind === "number") {
-      if (typeof value !== "number" || !Number.isFinite(value)) {
+    if (field.kind === 'number') {
+      if (typeof value !== 'number' || !Number.isFinite(value)) {
         issues.push(
-          valueIssue(
-            field.key,
-            "CONFIGURATION_TYPE",
-            `Поле «${field.label}» должно быть числом.`,
-          ),
+          valueIssue(field.key, 'CONFIGURATION_TYPE', `Поле «${field.label}» должно быть числом.`),
         );
         continue;
       }
@@ -273,7 +241,7 @@ export function validateProjectActionConfiguration(
         issues.push(
           valueIssue(
             field.key,
-            "CONFIGURATION_INTEGER",
+            'CONFIGURATION_INTEGER',
             `Поле «${field.label}» должно быть целым числом.`,
           ),
         );
@@ -281,7 +249,7 @@ export function validateProjectActionConfiguration(
         issues.push(
           valueIssue(
             field.key,
-            "CONFIGURATION_MINIMUM",
+            'CONFIGURATION_MINIMUM',
             `Поле «${field.label}» меньше допустимого.`,
           ),
         );
@@ -289,18 +257,18 @@ export function validateProjectActionConfiguration(
         issues.push(
           valueIssue(
             field.key,
-            "CONFIGURATION_MAXIMUM",
+            'CONFIGURATION_MAXIMUM',
             `Поле «${field.label}» больше допустимого.`,
           ),
         );
       continue;
     }
-    if (field.kind === "boolean") {
-      if (typeof value !== "boolean")
+    if (field.kind === 'boolean') {
+      if (typeof value !== 'boolean')
         issues.push(
           valueIssue(
             field.key,
-            "CONFIGURATION_TYPE",
+            'CONFIGURATION_TYPE',
             `Поле «${field.label}» должно быть логическим значением.`,
           ),
         );
@@ -310,7 +278,7 @@ export function validateProjectActionConfiguration(
       issues.push(
         valueIssue(
           field.key,
-          "CONFIGURATION_TYPE",
+          'CONFIGURATION_TYPE',
           `Поле «${field.label}» должно быть списком строк.`,
         ),
       );
@@ -320,7 +288,7 @@ export function validateProjectActionConfiguration(
       issues.push(
         valueIssue(
           field.key,
-          "CONFIGURATION_MIN_ITEMS",
+          'CONFIGURATION_MIN_ITEMS',
           `В поле «${field.label}» выбрано слишком мало значений.`,
         ),
       );
@@ -328,7 +296,7 @@ export function validateProjectActionConfiguration(
       issues.push(
         valueIssue(
           field.key,
-          "CONFIGURATION_MAX_ITEMS",
+          'CONFIGURATION_MAX_ITEMS',
           `В поле «${field.label}» выбрано слишком много значений.`,
         ),
       );
@@ -336,7 +304,7 @@ export function validateProjectActionConfiguration(
       issues.push(
         valueIssue(
           field.key,
-          "CONFIGURATION_ENUM",
+          'CONFIGURATION_ENUM',
           `Поле «${field.label}» содержит неразрешённое значение.`,
         ),
       );
@@ -347,7 +315,7 @@ export function validateProjectActionConfiguration(
       issues.push(
         valueIssue(
           key,
-          "CONFIGURATION_UNKNOWN_FIELD",
+          'CONFIGURATION_UNKNOWN_FIELD',
           `Настройка «${humanize(key)}» больше недоступна. Обновите страницу и заполните форму заново.`,
         ),
       );
@@ -357,7 +325,7 @@ export function validateProjectActionConfiguration(
 
 function valueIssue(
   field: string,
-  code: ProjectActionConfigurationIssue["code"],
+  code: ProjectActionConfigurationIssue['code'],
   message: string,
 ): ProjectActionConfigurationIssue {
   return { field, code, message };
@@ -367,9 +335,7 @@ function uiFieldMap(value: unknown): Map<string, Record<string, unknown>> {
   if (!isRecord(value) || !Array.isArray(value.fields)) return new Map();
   return new Map(
     value.fields.flatMap((field) =>
-      isRecord(field) && isString(field.key)
-        ? [[field.key, field] as const]
-        : [],
+      isRecord(field) && isString(field.key) ? [[field.key, field] as const] : [],
     ),
   );
 }
@@ -384,37 +350,35 @@ function numberBounds<T extends readonly string[]>(
   keys: T,
 ): Partial<Record<T[number], number>> {
   return Object.fromEntries(
-    keys.flatMap((key) =>
-      typeof value[key] === "number" ? [[key, value[key]]] : [],
-    ),
+    keys.flatMap((key) => (typeof value[key] === 'number' ? [[key, value[key]]] : [])),
   ) as Partial<Record<T[number], number>>;
 }
 
 function normalizeFieldKey(value: string): string {
-  return value.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
+  return value.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
 }
 
 function humanize(value: string): string {
   return value
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/[_-]+/g, " ")
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
     .replace(/^./, (character) => character.toUpperCase());
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 function isString(value: unknown): value is string {
-  return typeof value === "string";
+  return typeof value === 'string';
 }
 
 function isEntityKind(value: unknown): value is EntityKind {
   return (
-    value === "BUTTON" ||
-    value === "MODAL" ||
-    value === "PAGE" ||
-    value === "ELEMENT" ||
-    value === "HANDLER"
+    value === 'BUTTON' ||
+    value === 'MODAL' ||
+    value === 'PAGE' ||
+    value === 'ELEMENT' ||
+    value === 'HANDLER'
   );
 }

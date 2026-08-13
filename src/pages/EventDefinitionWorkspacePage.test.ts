@@ -1,13 +1,13 @@
-import { flushPromises, mount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { flushPromises, mount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ApiError } from "@/shared/api/http/api-error";
-import EventDefinitionWorkspacePage from "./EventDefinitionWorkspacePage.vue";
+import { ApiError } from '@/shared/api/http/api-error';
+import EventDefinitionWorkspacePage from './EventDefinitionWorkspacePage.vue';
 
 const mocks = vi.hoisted(() => ({
   auth: null as null | {
     project: { id: string; effectivePermissionCodes: string[] } | null;
-    user: { role: "OWNER" | "ADMIN" } | null;
+    user: { role: 'OWNER' | 'ADMIN' } | null;
   },
   route: null as null | { params: { definitionKeyId: string } },
   getDefinition: vi.fn(),
@@ -21,22 +21,20 @@ const mocks = vi.hoisted(() => ({
   push: vi.fn(),
 }));
 
-vi.mock("@/features/auth/auth.store", async () => {
-  const { reactive } = await import("vue");
+vi.mock('@/features/auth/auth.store', async () => {
+  const { reactive } = await import('vue');
   mocks.auth ??= reactive({
     project: {
-      id: "project-1",
-      effectivePermissionCodes: ["project.event_catalog.write"],
+      id: 'project-1',
+      effectivePermissionCodes: ['project.event_catalog.write'],
     },
-    user: { role: "OWNER" as const },
+    user: { role: 'OWNER' as const },
   });
   return { useAuthStore: () => mocks.auth };
 });
 
-vi.mock("@/shared/api/repository/event-catalog", async (importOriginal) => ({
-  ...(await importOriginal<
-    typeof import("@/shared/api/repository/event-catalog")
-  >()),
+vi.mock('@/shared/api/repository/event-catalog', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/api/repository/event-catalog')>()),
   eventCatalogRepository: {
     getDefinition: mocks.getDefinition,
     getUsage: mocks.getUsage,
@@ -49,9 +47,9 @@ vi.mock("@/shared/api/repository/event-catalog", async (importOriginal) => ({
   },
 }));
 
-vi.mock("vue-router", async () => {
-  const { reactive } = await import("vue");
-  mocks.route ??= reactive({ params: { definitionKeyId: "event-key-1" } });
+vi.mock('vue-router', async () => {
+  const { reactive } = await import('vue');
+  mocks.route ??= reactive({ params: { definitionKeyId: 'event-key-1' } });
   return {
     useRoute: () => mocks.route,
     useRouter: () => ({ push: mocks.push }),
@@ -59,34 +57,34 @@ vi.mock("vue-router", async () => {
 });
 
 const workspace = {
-  definitionKeyId: "event-key-1",
-  projectId: "project-1",
-  code: "deposit.succeeded",
-  lifecycle: "ACTIVE" as const,
+  definitionKeyId: 'event-key-1',
+  projectId: 'project-1',
+  code: 'deposit.succeeded',
+  lifecycle: 'ACTIVE' as const,
   lifecycleVersion: 2,
-  lifecycleUpdatedAt: "2026-07-20T10:00:00.000Z",
+  lifecycleUpdatedAt: '2026-07-20T10:00:00.000Z',
   metadata: {
-    name: "Успешный депозит",
-    description: "Деньги зачислены на счёт",
-    concurrencyToken: "2026-07-20T10:00:00.000Z",
+    name: 'Успешный депозит',
+    description: 'Деньги зачислены на счёт',
+    concurrencyToken: '2026-07-20T10:00:00.000Z',
   },
   policy: {
     version: 3,
-    updatedAt: "2026-07-19T10:00:00.000Z",
+    updatedAt: '2026-07-19T10:00:00.000Z',
     enabled: true,
     clientIngestible: false,
     countsAsActivity: true,
   },
   currentSchema: {
-    revisionId: "revision-4",
+    revisionId: 'revision-4',
     revisionNumber: 4,
     payloadSchema: {
-      type: "object",
-      properties: { amount: { type: "integer" } },
+      type: 'object',
+      properties: { amount: { type: 'integer' } },
     },
-    publishedAt: "2026-07-20T09:00:00.000Z",
+    publishedAt: '2026-07-20T09:00:00.000Z',
   },
-  origin: "CUSTOM" as const,
+  origin: 'CUSTOM' as const,
   readOnly: false,
 };
 
@@ -94,9 +92,9 @@ function mountWorkspace() {
   return mount(EventDefinitionWorkspacePage, {
     global: {
       stubs: {
-        RouterLink: { template: "<a><slot /></a>" },
+        RouterLink: { template: '<a><slot /></a>' },
         Dialog: {
-          props: ["visible", "header"],
+          props: ['visible', 'header'],
           template:
             '<section v-if="visible" class="dialog-stub"><h2>{{ header }}</h2><slot /><footer><slot name="footer" /></footer></section>',
         },
@@ -104,17 +102,17 @@ function mountWorkspace() {
           template: '<button type="button">История</button>',
         },
         EventSchemaAuthoring: {
-          props: ["canEdit", "canPublish"],
+          props: ['canEdit', 'canPublish'],
           template:
             '<div data-test="schema-authoring-stub" :data-can-edit="canEdit" :data-can-publish="canPublish" />',
         },
         EventQueryEventAccess: {
-          props: ["definition"],
+          props: ['definition'],
           template:
             '<div data-test="event-query-access-section" :data-event-code="definition.code" />',
         },
         IntegrationEventSummary: {
-          props: ["projectId", "eventDefinitionKeyId", "canRead"],
+          props: ['projectId', 'eventDefinitionKeyId', 'canRead'],
           template:
             '<section data-test="integration-event-summary-stub" :data-project-id="projectId" :data-definition-id="eventDefinitionKeyId" :data-can-read="String(canRead)" />',
         },
@@ -123,14 +121,8 @@ function mountWorkspace() {
   });
 }
 
-function button(
-  wrapper: ReturnType<typeof mountWorkspace>,
-  label: string,
-  last = false,
-) {
-  const matches = wrapper
-    .findAll("button")
-    .filter((item) => item.text() === label);
+function button(wrapper: ReturnType<typeof mountWorkspace>, label: string, last = false) {
+  const matches = wrapper.findAll('button').filter((item) => item.text() === label);
   const found = last ? matches.at(-1) : matches[0];
   if (!found) throw new Error(`Button not found: ${label}`);
   return found;
@@ -144,22 +136,19 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-describe("EventDefinitionWorkspacePage Overview", () => {
+describe('EventDefinitionWorkspacePage Overview', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.auth!.project = {
-      id: "project-1",
-      effectivePermissionCodes: [
-        "project.event_catalog.write",
-        "project.event_catalog.publish",
-      ],
+      id: 'project-1',
+      effectivePermissionCodes: ['project.event_catalog.write', 'project.event_catalog.publish'],
     };
-    mocks.auth!.user = { role: "OWNER" };
-    mocks.route!.params.definitionKeyId = "event-key-1";
+    mocks.auth!.user = { role: 'OWNER' };
+    mocks.route!.params.definitionKeyId = 'event-key-1';
     mocks.getDefinition.mockResolvedValue(workspace);
     mocks.getUsage.mockResolvedValue({
-      definitionKeyId: "event-key-1",
-      evaluatedAt: "2026-07-20T10:00:00.000Z",
+      definitionKeyId: 'event-key-1',
+      evaluatedAt: '2026-07-20T10:00:00.000Z',
       lifecycleVersion: 2,
       policyVersion: 3,
       eventLogs: { exists: false },
@@ -173,35 +162,35 @@ describe("EventDefinitionWorkspacePage Overview", () => {
       deleteBlockers: [],
     });
     mocks.updateMetadata.mockResolvedValue({
-      definitionKeyId: "event-key-1",
-      code: "deposit.succeeded",
+      definitionKeyId: 'event-key-1',
+      code: 'deposit.succeeded',
       metadata: {
-        name: "Депозит завершён",
+        name: 'Депозит завершён',
         description: null,
-        concurrencyToken: "2026-07-20T11:00:00.000Z",
+        concurrencyToken: '2026-07-20T11:00:00.000Z',
       },
-      currentRevisionId: "revision-4",
+      currentRevisionId: 'revision-4',
       metadataChanged: true,
       schemaRevisionUnchanged: true,
     });
     mocks.updatePolicy.mockResolvedValue(workspace);
     mocks.archive.mockResolvedValue({
       ...workspace,
-      lifecycle: "ARCHIVED",
+      lifecycle: 'ARCHIVED',
       policy: { ...workspace.policy, enabled: false },
     });
     mocks.restore.mockResolvedValue({
       ...workspace,
-      lifecycle: "ACTIVE",
+      lifecycle: 'ACTIVE',
       policy: { ...workspace.policy, enabled: false },
     });
     mocks.listDefinitions.mockImplementation(
-      async (_projectId: string, lifecycle: "ACTIVE" | "ARCHIVED") =>
-        lifecycle === "ARCHIVED"
+      async (_projectId: string, lifecycle: 'ACTIVE' | 'ARCHIVED') =>
+        lifecycle === 'ARCHIVED'
           ? [
               {
                 ...workspace,
-                lifecycle: "ARCHIVED",
+                lifecycle: 'ARCHIVED',
                 policy: { ...workspace.policy, enabled: false },
               },
             ]
@@ -209,21 +198,16 @@ describe("EventDefinitionWorkspacePage Overview", () => {
     );
   });
 
-  it("shows stable producer identity separately from read-only Retenive revision metadata", async () => {
+  it('shows stable producer identity separately from read-only Retenive revision metadata', async () => {
     const wrapper = mountWorkspace();
     await flushPromises();
 
-    expect(mocks.getDefinition).toHaveBeenCalledWith(
-      "project-1",
-      "event-key-1",
+    expect(mocks.getDefinition).toHaveBeenCalledWith('project-1', 'event-key-1');
+    expect(wrapper.get('[data-test="event-code"]').text()).toBe('deposit.succeeded');
+    expect(wrapper.get('[data-test="schema-revision"]').text()).toContain('v4');
+    expect(wrapper.get('[data-test="producer-contract-hint"]').text()).toContain(
+      'eventCode + payload',
     );
-    expect(wrapper.get('[data-test="event-code"]').text()).toBe(
-      "deposit.succeeded",
-    );
-    expect(wrapper.get('[data-test="schema-revision"]').text()).toContain("v4");
-    expect(
-      wrapper.get('[data-test="producer-contract-hint"]').text(),
-    ).toContain("eventCode + payload");
     expect(wrapper.get('[data-test="producer-contract-hint"]').text()).toMatch(
       /номер версии схемы передавать не нужно/i,
     );
@@ -231,173 +215,138 @@ describe("EventDefinitionWorkspacePage Overview", () => {
     expect(wrapper.find('input[name="revision"]').exists()).toBe(false);
   });
 
-  it("shows the read-only integration summary only with both required permissions", async () => {
+  it('shows the read-only integration summary only with both required permissions', async () => {
     mocks.auth!.project = {
-      id: "project-1",
-      effectivePermissionCodes: [
-        "project.event_catalog.read",
-        "project.integrations.read",
-      ],
+      id: 'project-1',
+      effectivePermissionCodes: ['project.event_catalog.read', 'project.integrations.read'],
     };
     const wrapper = mountWorkspace();
     await flushPromises();
 
-    expect(
-      wrapper.get('[data-test="integration-event-summary-stub"]').attributes(),
-    ).toMatchObject({
-      "data-project-id": "project-1",
-      "data-definition-id": "event-key-1",
-      "data-can-read": "true",
+    expect(wrapper.get('[data-test="integration-event-summary-stub"]').attributes()).toMatchObject({
+      'data-project-id': 'project-1',
+      'data-definition-id': 'event-key-1',
+      'data-can-read': 'true',
     });
 
-    mocks.auth!.project.effectivePermissionCodes = [
-      "project.event_catalog.read",
-    ];
+    mocks.auth!.project.effectivePermissionCodes = ['project.event_catalog.read'];
     await wrapper.vm.$nextTick();
-    expect(
-      wrapper.find('[data-test="integration-event-summary-stub"]').exists(),
-    ).toBe(false);
+    expect(wrapper.find('[data-test="integration-event-summary-stub"]').exists()).toBe(false);
   });
 
-  it("uses Russian product copy and switches every visible workspace tab", async () => {
+  it('uses Russian product copy and switches every visible workspace tab', async () => {
     const wrapper = mountWorkspace();
     await flushPromises();
 
     expect(wrapper.text()).not.toMatch(
       /Event Definition|Overview|Ingestion Policy|Schema Revisions|Usage \/ Health|Display metadata|Current published schema|Stable event code|Product backend|payload schema|producer contract/,
     );
-    expect(wrapper.get('[data-test="overview-section"]').isVisible()).toBe(
-      true,
-    );
+    expect(wrapper.get('[data-test="overview-section"]').isVisible()).toBe(true);
 
-    const overviewTab = wrapper.get(
-      'button[role="tab"][data-section="overview"]',
-    );
-    expect(overviewTab.attributes("aria-controls")).toBe(
-      "event-panel-overview",
-    );
-    await overviewTab.trigger("keydown", { key: "ArrowRight" });
+    const overviewTab = wrapper.get('button[role="tab"][data-section="overview"]');
+    expect(overviewTab.attributes('aria-controls')).toBe('event-panel-overview');
+    await overviewTab.trigger('keydown', { key: 'ArrowRight' });
     await flushPromises();
     expect(wrapper.get('[data-test="policy-section"]').isVisible()).toBe(true);
-    expect(
-      wrapper
-        .get('button[role="tab"][data-section="policy"]')
-        .attributes("tabindex"),
-    ).toBe("0");
+    expect(wrapper.get('button[role="tab"][data-section="policy"]').attributes('tabindex')).toBe(
+      '0',
+    );
 
-    await wrapper
-      .get('button[role="tab"][data-section="policy"]')
-      .trigger("click");
+    await wrapper.get('button[role="tab"][data-section="policy"]').trigger('click');
     expect(wrapper.get('[data-test="policy-section"]').isVisible()).toBe(true);
 
-    await wrapper
-      .get('button[role="tab"][data-section="schema"]')
-      .trigger("click");
+    await wrapper.get('button[role="tab"][data-section="schema"]').trigger('click');
     expect(wrapper.get('[data-test="schema-section"]').isVisible()).toBe(true);
 
-    await wrapper
-      .get('button[role="tab"][data-section="usage"]')
-      .trigger("click");
+    await wrapper.get('button[role="tab"][data-section="usage"]').trigger('click');
     await flushPromises();
     expect(wrapper.get('[data-test="usage-section"]').isVisible()).toBe(true);
-    expect(mocks.getUsage).toHaveBeenCalledWith("project-1", "event-key-1");
+    expect(mocks.getUsage).toHaveBeenCalledWith('project-1', 'event-key-1');
   });
 
-  it("configures AI access inside the current event instead of a project-wide event list", async () => {
+  it('configures AI access inside the current event instead of a project-wide event list', async () => {
     mocks.auth!.project = {
-      id: "project-1",
+      id: 'project-1',
       effectivePermissionCodes: [
-        "project.event_catalog.read",
-        "project.event_catalog.write",
-        "project.event_query_policy.manage",
-        "project.event_query_policy.preview",
+        'project.event_catalog.read',
+        'project.event_catalog.write',
+        'project.event_query_policy.manage',
+        'project.event_query_policy.preview',
       ],
     };
     const wrapper = mountWorkspace();
     await flushPromises();
 
     const tab = wrapper.get('button[role="tab"][data-section="ai-access"]');
-    await tab.trigger("click");
+    await tab.trigger('click');
 
     const section = wrapper.get('[data-test="event-query-access-section"]');
     expect(section.isVisible()).toBe(true);
-    expect(section.attributes("data-event-code")).toBe("deposit.succeeded");
+    expect(section.attributes('data-event-code')).toBe('deposit.succeeded');
   });
 
-  it("saves rename and description through metadata command without changing the schema revision", async () => {
+  it('saves rename and description through metadata command without changing the schema revision', async () => {
     const wrapper = mountWorkspace();
     await flushPromises();
 
-    await wrapper.get("#event-overview-name").setValue("Депозит завершён");
-    await wrapper.get("#event-overview-description").setValue("");
-    await wrapper.get("form").trigger("submit");
+    await wrapper.get('#event-overview-name').setValue('Депозит завершён');
+    await wrapper.get('#event-overview-description').setValue('');
+    await wrapper.get('form').trigger('submit');
     await flushPromises();
 
-    expect(mocks.updateMetadata).toHaveBeenCalledWith(
-      "project-1",
-      "event-key-1",
-      {
-        name: "Депозит завершён",
-        description: null,
-        expectedUpdatedAt: "2026-07-20T10:00:00.000Z",
-      },
-    );
-    expect(wrapper.get('[role="status"]').text()).toContain(
-      "Ревизия схемы не изменилась",
-    );
-    expect(wrapper.get('[data-test="schema-revision"]').text()).toContain("v4");
+    expect(mocks.updateMetadata).toHaveBeenCalledWith('project-1', 'event-key-1', {
+      name: 'Депозит завершён',
+      description: null,
+      expectedUpdatedAt: '2026-07-20T10:00:00.000Z',
+    });
+    expect(wrapper.get('[role="status"]').text()).toContain('Ревизия схемы не изменилась');
+    expect(wrapper.get('[data-test="schema-revision"]').text()).toContain('v4');
   });
 
-  it("keeps unsaved metadata visible and never shows success when the mutation fails", async () => {
-    mocks.updateMetadata.mockRejectedValue(
-      new Error("Конфликт: данные уже изменены"),
-    );
+  it('keeps unsaved metadata visible and never shows success when the mutation fails', async () => {
+    mocks.updateMetadata.mockRejectedValue(new Error('Конфликт: данные уже изменены'));
     const wrapper = mountWorkspace();
     await flushPromises();
 
-    await wrapper
-      .get("#event-overview-name")
-      .setValue("Моё локальное название");
-    await wrapper.get("form").trigger("submit");
+    await wrapper.get('#event-overview-name').setValue('Моё локальное название');
+    await wrapper.get('form').trigger('submit');
     await flushPromises();
 
-    expect(wrapper.get("#event-overview-name").element).toHaveProperty(
-      "value",
-      "Моё локальное название",
+    expect(wrapper.get('#event-overview-name').element).toHaveProperty(
+      'value',
+      'Моё локальное название',
     );
-    expect(wrapper.get('[role="alert"]').text()).toContain(
-      "Конфликт: данные уже изменены",
-    );
+    expect(wrapper.get('[role="alert"]').text()).toContain('Конфликт: данные уже изменены');
     expect(wrapper.find('[role="status"]').exists()).toBe(false);
   });
 
-  it("rejects an inconsistent mutation response instead of showing generic success", async () => {
+  it('rejects an inconsistent mutation response instead of showing generic success', async () => {
     mocks.updateMetadata.mockResolvedValue({
-      definitionKeyId: "event-key-1",
-      code: "deposit.succeeded",
+      definitionKeyId: 'event-key-1',
+      code: 'deposit.succeeded',
       metadata: {
-        name: "Unexpected response",
+        name: 'Unexpected response',
         description: null,
-        concurrencyToken: "2026-07-20T11:00:00.000Z",
+        concurrencyToken: '2026-07-20T11:00:00.000Z',
       },
-      currentRevisionId: "revision-5",
+      currentRevisionId: 'revision-5',
       metadataChanged: true,
       schemaRevisionUnchanged: false,
     });
     const wrapper = mountWorkspace();
     await flushPromises();
 
-    await wrapper.get("#event-overview-name").setValue("Локальное название");
-    await wrapper.get("form").trigger("submit");
+    await wrapper.get('#event-overview-name').setValue('Локальное название');
+    await wrapper.get('form').trigger('submit');
     await flushPromises();
 
     expect(wrapper.get('[role="alert"]').text()).toContain(
-      "нарушает правило сохранения без новой версии схемы",
+      'нарушает правило сохранения без новой версии схемы',
     );
     expect(wrapper.find('[role="status"]').exists()).toBe(false);
   });
 
-  it("does not send an unsafe mutation when the read contract omits metadata concurrency evidence", async () => {
+  it('does not send an unsafe mutation when the read contract omits metadata concurrency evidence', async () => {
     mocks.getDefinition.mockResolvedValue({
       ...workspace,
       metadata: { ...workspace.metadata, concurrencyToken: null },
@@ -405,107 +354,99 @@ describe("EventDefinitionWorkspacePage Overview", () => {
     const wrapper = mountWorkspace();
     await flushPromises();
 
-    expect(wrapper.get('[role="alert"]').text()).toContain(
-      "Сервер не предоставил данные",
-    );
-    expect(wrapper.get("#event-overview-name").attributes("readonly")).toBe("");
-    expect(
-      wrapper.get("#event-overview-description").attributes("readonly"),
-    ).toBe("");
-    await wrapper.get("form").trigger("submit");
+    expect(wrapper.get('[role="alert"]').text()).toContain('Сервер не предоставил данные');
+    expect(wrapper.get('#event-overview-name').attributes('readonly')).toBe('');
+    expect(wrapper.get('#event-overview-description').attributes('readonly')).toBe('');
+    await wrapper.get('form').trigger('submit');
     await flushPromises();
 
     expect(mocks.updateMetadata).not.toHaveBeenCalled();
-    expect(wrapper.get("button[type=submit]").attributes("disabled")).toBe("");
+    expect(wrapper.get('button[type=submit]').attributes('disabled')).toBe('');
   });
 
-  it("ignores a stale definition response after the route changes", async () => {
+  it('ignores a stale definition response after the route changes', async () => {
     let resolveFirst!: (value: typeof workspace) => void;
     const first = new Promise<typeof workspace>((resolve) => {
       resolveFirst = resolve;
     });
     const secondWorkspace = {
       ...workspace,
-      definitionKeyId: "event-key-2",
-      code: "withdrawal.succeeded",
-      metadata: { ...workspace.metadata, name: "Успешный вывод" },
+      definitionKeyId: 'event-key-2',
+      code: 'withdrawal.succeeded',
+      metadata: { ...workspace.metadata, name: 'Успешный вывод' },
     };
     mocks.getDefinition
       .mockReset()
       .mockImplementation((_projectId, key) =>
-        key === "event-key-1" ? first : Promise.resolve(secondWorkspace),
+        key === 'event-key-1' ? first : Promise.resolve(secondWorkspace),
       );
     const wrapper = mountWorkspace();
     await flushPromises();
 
-    mocks.route!.params.definitionKeyId = "event-key-2";
+    mocks.route!.params.definitionKeyId = 'event-key-2';
     await flushPromises();
     resolveFirst(workspace);
     await flushPromises();
 
-    expect(wrapper.get('[data-test="event-code"]').text()).toBe(
-      "withdrawal.succeeded",
-    );
-    expect(wrapper.text()).not.toContain("Успешный депозит");
+    expect(wrapper.get('[data-test="event-code"]').text()).toBe('withdrawal.succeeded');
+    expect(wrapper.text()).not.toContain('Успешный депозит');
   });
 
-  it("archives only after fresh usage and proves both catalog projections before navigating", async () => {
+  it('archives only after fresh usage and proves both catalog projections before navigating', async () => {
     const wrapper = mountWorkspace();
     await flushPromises();
 
-    await button(wrapper, "Архивировать").trigger("click");
+    await button(wrapper, 'Архивировать').trigger('click');
     await flushPromises();
-    expect(mocks.getUsage).toHaveBeenCalledWith("project-1", "event-key-1");
-    await button(wrapper, "Архивировать", true).trigger("click");
+    expect(mocks.getUsage).toHaveBeenCalledWith('project-1', 'event-key-1');
+    await button(wrapper, 'Архивировать', true).trigger('click');
     await flushPromises();
 
-    expect(mocks.archive).toHaveBeenCalledWith("project-1", "event-key-1", {
+    expect(mocks.archive).toHaveBeenCalledWith('project-1', 'event-key-1', {
       expectedLifecycleVersion: 2,
       expectedPolicyVersion: 3,
       reason: undefined,
     });
-    expect(mocks.listDefinitions).toHaveBeenCalledWith("project-1", "ACTIVE");
-    expect(mocks.listDefinitions).toHaveBeenCalledWith("project-1", "ARCHIVED");
+    expect(mocks.listDefinitions).toHaveBeenCalledWith('project-1', 'ACTIVE');
+    expect(mocks.listDefinitions).toHaveBeenCalledWith('project-1', 'ARCHIVED');
     expect(mocks.push).toHaveBeenCalledWith({
-      name: "events",
-      query: { lifecycle: "ARCHIVED" },
+      name: 'events',
+      query: { lifecycle: 'ARCHIVED' },
     });
   });
 
-  it("discards a completed archive mutation after the route changes", async () => {
+  it('discards a completed archive mutation after the route changes', async () => {
     let resolveArchive!: () => void;
     const pendingArchive = new Promise<void>((resolve) => {
       resolveArchive = resolve;
     });
     const secondWorkspace = {
       ...workspace,
-      definitionKeyId: "event-key-2",
-      code: "withdrawal.succeeded",
-      metadata: { ...workspace.metadata, name: "Успешный вывод" },
+      definitionKeyId: 'event-key-2',
+      code: 'withdrawal.succeeded',
+      metadata: { ...workspace.metadata, name: 'Успешный вывод' },
     };
     mocks.archive.mockReturnValue(pendingArchive);
     mocks.getDefinition.mockImplementation((_projectId, key) =>
-      Promise.resolve(key === "event-key-2" ? secondWorkspace : workspace),
+      Promise.resolve(key === 'event-key-2' ? secondWorkspace : workspace),
     );
     const wrapper = mountWorkspace();
     await flushPromises();
 
-    await button(wrapper, "Архивировать").trigger("click");
+    await button(wrapper, 'Архивировать').trigger('click');
     await flushPromises();
-    await button(wrapper, "Архивировать", true).trigger("click");
-    mocks.route!.params.definitionKeyId = "event-key-2";
+    await button(wrapper, 'Архивировать', true).trigger('click');
+    mocks.route!.params.definitionKeyId = 'event-key-2';
     await flushPromises();
     resolveArchive();
     await flushPromises();
 
-    expect(wrapper.get('[data-test="event-code"]').text()).toBe(
-      "withdrawal.succeeded",
-    );
+    expect(wrapper.get('[data-test="event-code"]').text()).toBe('withdrawal.succeeded');
     expect(mocks.listDefinitions).not.toHaveBeenCalled();
     expect(mocks.push).not.toHaveBeenCalled();
   });
 
-  it("warns about Scenario impact before disabling and verifies a newer policy version", async () => {
+  it('warns about Scenario impact before disabling and verifies a newer policy version', async () => {
     mocks.getUsage.mockResolvedValue({
       ...(await mocks.getUsage()),
       scenarios: { total: 2, items: [], truncated: false },
@@ -519,51 +460,39 @@ describe("EventDefinitionWorkspacePage Overview", () => {
       });
     const wrapper = mountWorkspace();
     await flushPromises();
-    await wrapper
-      .get('button[role="tab"][data-section="policy"]')
-      .trigger("click");
-    await wrapper.get("#event-policy-enabled").setValue(false);
-    await wrapper
-      .get("#event-policy-reason")
-      .setValue("Остановка producer на время миграции");
-    await button(wrapper, "Сохранить правила приёма").trigger("click");
+    await wrapper.get('button[role="tab"][data-section="policy"]').trigger('click');
+    await wrapper.get('#event-policy-enabled').setValue(false);
+    await wrapper.get('#event-policy-reason').setValue('Остановка producer на время миграции');
+    await button(wrapper, 'Сохранить правила приёма').trigger('click');
     await flushPromises();
 
-    expect(wrapper.get(".dialog-stub").text()).toContain(
-      "Связано сценариев: 2",
-    );
-    expect(wrapper.get(".dialog-stub").text()).toContain("deposit.succeeded");
-    await button(wrapper, "Выключить приём", true).trigger("click");
+    expect(wrapper.get('.dialog-stub').text()).toContain('Связано сценариев: 2');
+    expect(wrapper.get('.dialog-stub').text()).toContain('deposit.succeeded');
+    await button(wrapper, 'Выключить приём', true).trigger('click');
     await flushPromises();
     expect(mocks.updatePolicy).toHaveBeenCalledWith(
-      "project-1",
-      "event-key-1",
+      'project-1',
+      'event-key-1',
       expect.objectContaining({ enabled: false, expectedVersion: 3 }),
     );
-    expect(wrapper.get('[role="status"]').text()).toContain(
-      "обновлены без новой версии схемы",
-    );
+    expect(wrapper.get('[role="status"]').text()).toContain('обновлены без новой версии схемы');
   });
 
-  it("always confirms disabling ingestion even when no dependency exists", async () => {
+  it('always confirms disabling ingestion even when no dependency exists', async () => {
     const wrapper = mountWorkspace();
     await flushPromises();
-    await wrapper
-      .get('button[role="tab"][data-section="policy"]')
-      .trigger("click");
-    await wrapper.get("#event-policy-enabled").setValue(false);
-    await wrapper
-      .get("#event-policy-reason")
-      .setValue("Плановая остановка producer");
-    await button(wrapper, "Сохранить правила приёма").trigger("click");
+    await wrapper.get('button[role="tab"][data-section="policy"]').trigger('click');
+    await wrapper.get('#event-policy-enabled').setValue(false);
+    await wrapper.get('#event-policy-reason').setValue('Плановая остановка producer');
+    await button(wrapper, 'Сохранить правила приёма').trigger('click');
     await flushPromises();
 
-    expect(wrapper.get(".dialog-stub").text()).toContain("deposit.succeeded");
-    expect(wrapper.get(".dialog-stub").text()).toContain("будущий приём");
+    expect(wrapper.get('.dialog-stub').text()).toContain('deposit.succeeded');
+    expect(wrapper.get('.dialog-stub').text()).toContain('будущий приём');
     expect(mocks.updatePolicy).not.toHaveBeenCalled();
   });
 
-  it("applies the immutable policy snapshot reviewed by the disable dialog", async () => {
+  it('applies the immutable policy snapshot reviewed by the disable dialog', async () => {
     const initialUsage = await mocks.getUsage();
     const pendingUsage = deferred<typeof initialUsage>();
     mocks.getUsage
@@ -579,43 +508,31 @@ describe("EventDefinitionWorkspacePage Overview", () => {
       });
     const wrapper = mountWorkspace();
     await flushPromises();
-    await wrapper
-      .get('button[role="tab"][data-section="policy"]')
-      .trigger("click");
-    await wrapper.get("#event-policy-enabled").setValue(false);
-    await wrapper
-      .get("#event-policy-reason")
-      .setValue("Подтверждённая остановка");
-    await button(wrapper, "Сохранить правила приёма").trigger("click");
+    await wrapper.get('button[role="tab"][data-section="policy"]').trigger('click');
+    await wrapper.get('#event-policy-enabled').setValue(false);
+    await wrapper.get('#event-policy-reason').setValue('Подтверждённая остановка');
+    await button(wrapper, 'Сохранить правила приёма').trigger('click');
     await wrapper.vm.$nextTick();
-    expect(
-      wrapper.get("#event-policy-client-ingestible").attributes("disabled"),
-    ).toBeDefined();
+    expect(wrapper.get('#event-policy-client-ingestible').attributes('disabled')).toBeDefined();
     pendingUsage.resolve(initialUsage);
     await flushPromises();
 
-    await wrapper.get("#event-policy-client-ingestible").setValue(true);
-    await wrapper.get("#event-policy-counts-as-activity").setValue(false);
-    await wrapper
-      .get("#event-policy-reason")
-      .setValue("Не подтверждённая подмена");
-    await button(wrapper, "Выключить приём", true).trigger("click");
+    await wrapper.get('#event-policy-client-ingestible').setValue(true);
+    await wrapper.get('#event-policy-counts-as-activity').setValue(false);
+    await wrapper.get('#event-policy-reason').setValue('Не подтверждённая подмена');
+    await button(wrapper, 'Выключить приём', true).trigger('click');
     await flushPromises();
 
-    expect(mocks.updatePolicy).toHaveBeenCalledWith(
-      "project-1",
-      "event-key-1",
-      {
-        enabled: false,
-        clientIngestible: false,
-        countsAsActivity: true,
-        expectedVersion: 3,
-        reason: "Подтверждённая остановка",
-      },
-    );
+    expect(mocks.updatePolicy).toHaveBeenCalledWith('project-1', 'event-key-1', {
+      enabled: false,
+      clientIngestible: false,
+      countsAsActivity: true,
+      expectedVersion: 3,
+      reason: 'Подтверждённая остановка',
+    });
   });
 
-  it("edits every ingestion policy field without changing the schema revision", async () => {
+  it('edits every ingestion policy field without changing the schema revision', async () => {
     mocks.getDefinition
       .mockReset()
       .mockResolvedValueOnce(workspace)
@@ -630,40 +547,28 @@ describe("EventDefinitionWorkspacePage Overview", () => {
       });
     const wrapper = mountWorkspace();
     await flushPromises();
+    await wrapper.get('button[role="tab"][data-section="policy"]').trigger('click');
+    await wrapper.get('#event-policy-client-ingestible').setValue(true);
+    await wrapper.get('#event-policy-counts-as-activity').setValue(false);
     await wrapper
-      .get('button[role="tab"][data-section="policy"]')
-      .trigger("click");
-    await wrapper.get("#event-policy-client-ingestible").setValue(true);
-    await wrapper.get("#event-policy-counts-as-activity").setValue(false);
-    await wrapper
-      .get("#event-policy-reason")
-      .setValue("Разрешить browser producer без Activity Day");
-    await button(wrapper, "Сохранить правила приёма").trigger("click");
+      .get('#event-policy-reason')
+      .setValue('Разрешить browser producer без Activity Day');
+    await button(wrapper, 'Сохранить правила приёма').trigger('click');
     await flushPromises();
 
-    expect(mocks.updatePolicy).toHaveBeenCalledWith(
-      "project-1",
-      "event-key-1",
-      {
-        enabled: true,
-        clientIngestible: true,
-        countsAsActivity: false,
-        expectedVersion: 3,
-        reason: "Разрешить browser producer без Activity Day",
-      },
-    );
-    expect(workspace.currentSchema.revisionId).toBe("revision-4");
+    expect(mocks.updatePolicy).toHaveBeenCalledWith('project-1', 'event-key-1', {
+      enabled: true,
+      clientIngestible: true,
+      countsAsActivity: false,
+      expectedVersion: 3,
+      reason: 'Разрешить browser producer без Activity Day',
+    });
+    expect(workspace.currentSchema.revisionId).toBe('revision-4');
   });
 
-  it("preserves local policy choices and reason after EVENT_POLICY_CONFLICT", async () => {
+  it('preserves local policy choices and reason after EVENT_POLICY_CONFLICT', async () => {
     mocks.updatePolicy.mockRejectedValue(
-      new ApiError(
-        409,
-        "Policy changed",
-        undefined,
-        "request-1",
-        "EVENT_POLICY_CONFLICT",
-      ),
+      new ApiError(409, 'Policy changed', undefined, 'request-1', 'EVENT_POLICY_CONFLICT'),
     );
     mocks.getDefinition
       .mockReset()
@@ -679,73 +584,62 @@ describe("EventDefinitionWorkspacePage Overview", () => {
       });
     const wrapper = mountWorkspace();
     await flushPromises();
-    await wrapper
-      .get('button[role="tab"][data-section="policy"]')
-      .trigger("click");
-    await wrapper.get("#event-policy-client-ingestible").setValue(true);
-    await wrapper.get("#event-policy-counts-as-activity").setValue(false);
-    await wrapper
-      .get("#event-policy-reason")
-      .setValue("Мои несохранённые настройки");
-    await button(wrapper, "Сохранить правила приёма").trigger("click");
+    await wrapper.get('button[role="tab"][data-section="policy"]').trigger('click');
+    await wrapper.get('#event-policy-client-ingestible').setValue(true);
+    await wrapper.get('#event-policy-counts-as-activity').setValue(false);
+    await wrapper.get('#event-policy-reason').setValue('Мои несохранённые настройки');
+    await button(wrapper, 'Сохранить правила приёма').trigger('click');
     await flushPromises();
 
-    expect(
-      wrapper.get("#event-policy-client-ingestible").element,
-    ).toHaveProperty("checked", true);
-    expect(
-      wrapper.get("#event-policy-counts-as-activity").element,
-    ).toHaveProperty("checked", false);
-    expect(wrapper.get("#event-policy-reason").element).toHaveProperty(
-      "value",
-      "Мои несохранённые настройки",
+    expect(wrapper.get('#event-policy-client-ingestible').element).toHaveProperty('checked', true);
+    expect(wrapper.get('#event-policy-counts-as-activity').element).toHaveProperty(
+      'checked',
+      false,
     );
-    expect(wrapper.get('[role="alert"]').text()).toContain(
-      "сервере уже обновлены до v4",
+    expect(wrapper.get('#event-policy-reason').element).toHaveProperty(
+      'value',
+      'Мои несохранённые настройки',
     );
-    expect(
-      wrapper.get('[data-test="policy-conflict-server"]').text(),
-    ).toContain("браузер: запрещён");
-    expect(
-      button(wrapper, "Сохранить правила приёма").attributes("disabled"),
-    ).toBeUndefined();
+    expect(wrapper.get('[role="alert"]').text()).toContain('сервере уже обновлены до v4');
+    expect(wrapper.get('[data-test="policy-conflict-server"]').text()).toContain(
+      'браузер: запрещён',
+    );
+    expect(button(wrapper, 'Сохранить правила приёма').attributes('disabled')).toBeUndefined();
   });
 
-  it("passes publish permission independently from draft write permission", async () => {
+  it('passes publish permission independently from draft write permission', async () => {
     mocks.auth!.project = {
-      id: "project-1",
-      effectivePermissionCodes: ["project.event_catalog.write"],
+      id: 'project-1',
+      effectivePermissionCodes: ['project.event_catalog.write'],
     };
     const wrapper = mountWorkspace();
     await flushPromises();
-    await wrapper
-      .get('button[role="tab"][data-section="schema"]')
-      .trigger("click");
+    await wrapper.get('button[role="tab"][data-section="schema"]').trigger('click');
 
     const schema = wrapper.get('[data-test="schema-authoring-stub"]');
-    expect(schema.attributes("data-can-edit")).toBe("true");
-    expect(schema.attributes("data-can-publish")).toBe("false");
+    expect(schema.attributes('data-can-edit')).toBe('true');
+    expect(schema.attributes('data-can-publish')).toBe('false');
   });
 
-  it("refetches after a stale archive preflight conflict and never navigates", async () => {
-    mocks.archive.mockRejectedValue(new ApiError(409, "Conflict"));
+  it('refetches after a stale archive preflight conflict and never navigates', async () => {
+    mocks.archive.mockRejectedValue(new ApiError(409, 'Conflict'));
     const wrapper = mountWorkspace();
     await flushPromises();
-    await button(wrapper, "Архивировать").trigger("click");
+    await button(wrapper, 'Архивировать').trigger('click');
     await flushPromises();
-    await button(wrapper, "Архивировать", true).trigger("click");
+    await button(wrapper, 'Архивировать', true).trigger('click');
     await flushPromises();
 
     expect(mocks.getDefinition).toHaveBeenCalledTimes(2);
     expect(mocks.getUsage).toHaveBeenCalledTimes(4);
     expect(mocks.push).not.toHaveBeenCalled();
-    expect(wrapper.get('[role="alert"]').text()).toContain("Conflict");
+    expect(wrapper.get('[role="alert"]').text()).toContain('Conflict');
   });
 
-  it("renders server blockers and never calls archive when usage denies it", async () => {
+  it('renders server blockers and never calls archive when usage denies it', async () => {
     mocks.getUsage.mockResolvedValue({
-      definitionKeyId: "event-key-1",
-      evaluatedAt: "now",
+      definitionKeyId: 'event-key-1',
+      evaluatedAt: 'now',
       lifecycleVersion: 2,
       policyVersion: 3,
       eventLogs: { exists: false },
@@ -753,10 +647,10 @@ describe("EventDefinitionWorkspacePage Overview", () => {
         total: 1,
         items: [
           {
-            scenarioId: "scenario-1",
-            name: "VIP депозит",
-            status: "DRAFT",
-            usages: ["TRIGGER"],
+            scenarioId: 'scenario-1',
+            name: 'VIP депозит',
+            status: 'DRAFT',
+            usages: ['TRIGGER'],
           },
         ],
         truncated: false,
@@ -766,28 +660,22 @@ describe("EventDefinitionWorkspacePage Overview", () => {
       activeWaitCount: 1,
       canArchive: false,
       canDelete: false,
-      archiveBlockers: ["SCENARIO_DEPENDENCIES"],
-      deleteBlockers: ["SCENARIO_DEPENDENCIES"],
+      archiveBlockers: ['SCENARIO_DEPENDENCIES'],
+      deleteBlockers: ['SCENARIO_DEPENDENCIES'],
     });
     const wrapper = mountWorkspace();
     await flushPromises();
 
-    expect(
-      button(wrapper, "Архивировать").attributes("disabled"),
-    ).toBeDefined();
-    expect(wrapper.get(".lifecycle-blocker-summary").text()).toContain(
-      "Сценарий: VIP депозит",
-    );
-    expect(wrapper.get(".lifecycle-blocker-summary").text()).toContain(
-      "Активные ожидания: 1",
-    );
+    expect(button(wrapper, 'Архивировать').attributes('disabled')).toBeDefined();
+    expect(wrapper.get('.lifecycle-blocker-summary').text()).toContain('Сценарий: VIP депозит');
+    expect(wrapper.get('.lifecycle-blocker-summary').text()).toContain('Активные ожидания: 1');
     expect(mocks.archive).not.toHaveBeenCalled();
   });
 
-  it("explains Event Query history and disables permanent deletion", async () => {
+  it('explains Event Query history and disables permanent deletion', async () => {
     mocks.getUsage.mockResolvedValue({
-      definitionKeyId: "event-key-1",
-      evaluatedAt: "now",
+      definitionKeyId: 'event-key-1',
+      evaluatedAt: 'now',
       lifecycleVersion: 2,
       policyVersion: 3,
       eventLogs: { exists: false },
@@ -805,95 +693,81 @@ describe("EventDefinitionWorkspacePage Overview", () => {
       canDelete: false,
       archiveBlockers: [],
       archiveEffects: [],
-      deleteBlockers: ["EVENT_QUERY_POLICY_HISTORY"],
+      deleteBlockers: ['EVENT_QUERY_POLICY_HISTORY'],
     });
     const wrapper = mountWorkspace();
     await flushPromises();
-    await button(wrapper, "Удалить").trigger("click");
+    await button(wrapper, 'Удалить').trigger('click');
     await flushPromises();
 
     expect(wrapper.text()).toContain(
-      "Событие использовалось в опубликованной политике доступа AI и не может быть удалено",
+      'Событие использовалось в опубликованной политике доступа AI и не может быть удалено',
     );
-    expect(
-      button(wrapper, "Удалить навсегда").attributes("disabled"),
-    ).toBeDefined();
+    expect(button(wrapper, 'Удалить навсегда').attributes('disabled')).toBeDefined();
   });
 
-  it("requires code and reason, then hard-deletes with usage OCC and verifies list absence", async () => {
+  it('requires code and reason, then hard-deletes with usage OCC and verifies list absence', async () => {
     const wrapper = mountWorkspace();
     await flushPromises();
-    await button(wrapper, "Удалить").trigger("click");
+    await button(wrapper, 'Удалить').trigger('click');
     await flushPromises();
 
-    const deleteButton = button(wrapper, "Удалить навсегда");
-    expect(deleteButton.attributes("disabled")).toBeDefined();
-    await wrapper.get("#event-delete-reason").setValue("Создано по ошибке");
-    await wrapper
-      .get("#event-delete-confirmation")
-      .setValue("deposit.succeeded");
-    await deleteButton.trigger("click");
+    const deleteButton = button(wrapper, 'Удалить навсегда');
+    expect(deleteButton.attributes('disabled')).toBeDefined();
+    await wrapper.get('#event-delete-reason').setValue('Создано по ошибке');
+    await wrapper.get('#event-delete-confirmation').setValue('deposit.succeeded');
+    await deleteButton.trigger('click');
     await flushPromises();
 
-    expect(mocks.hardDelete).toHaveBeenCalledWith("project-1", "event-key-1", {
+    expect(mocks.hardDelete).toHaveBeenCalledWith('project-1', 'event-key-1', {
       expectedLifecycleVersion: 2,
       expectedPolicyVersion: 3,
-      reason: "Создано по ошибке",
+      reason: 'Создано по ошибке',
     });
-    expect(mocks.listDefinitions).toHaveBeenCalledWith("project-1", "ACTIVE");
-    expect(mocks.push).toHaveBeenCalledWith({ name: "events", query: {} });
+    expect(mocks.listDefinitions).toHaveBeenCalledWith('project-1', 'ACTIVE');
+    expect(mocks.push).toHaveBeenCalledWith({ name: 'events', query: {} });
   });
 
-  it("restores an archived definition but keeps ingestion disabled", async () => {
+  it('restores an archived definition but keeps ingestion disabled', async () => {
     mocks.getDefinition.mockResolvedValue({
       ...workspace,
-      lifecycle: "ARCHIVED",
+      lifecycle: 'ARCHIVED',
       readOnly: true,
       policy: { ...workspace.policy, enabled: false },
     });
     mocks.listDefinitions.mockResolvedValue([
       {
         ...workspace,
-        lifecycle: "ACTIVE",
+        lifecycle: 'ACTIVE',
         policy: { ...workspace.policy, enabled: false },
       },
     ]);
     const wrapper = mountWorkspace();
     await flushPromises();
-    await button(wrapper, "Восстановить").trigger("click");
+    await button(wrapper, 'Восстановить').trigger('click');
     await flushPromises();
 
-    expect(mocks.restore).toHaveBeenCalledWith("project-1", "event-key-1", {
+    expect(mocks.restore).toHaveBeenCalledWith('project-1', 'event-key-1', {
       expectedLifecycleVersion: 2,
-      reason: "Restored from CMS workspace",
+      reason: 'Restored from CMS workspace',
     });
-    expect(wrapper.text()).toContain(
-      "Приём новых событий остаётся выключенным",
-    );
-    expect(wrapper.get('[data-test="lifecycle-state"]').text()).toBe(
-      "Выключено",
-    );
-    await wrapper
-      .get('button[role="tab"][data-section="schema"]')
-      .trigger("click");
-    expect(button(wrapper, "История").exists()).toBe(true);
+    expect(wrapper.text()).toContain('Приём новых событий остаётся выключенным');
+    expect(wrapper.get('[data-test="lifecycle-state"]').text()).toBe('Выключено');
+    await wrapper.get('button[role="tab"][data-section="schema"]').trigger('click');
+    expect(button(wrapper, 'История').exists()).toBe(true);
   });
 
-  it("keeps Retenive-managed definitions read-only without lifecycle actions", async () => {
+  it('keeps Retenive-managed definitions read-only without lifecycle actions', async () => {
     mocks.getDefinition.mockResolvedValue({
       ...workspace,
-      origin: "RETENIVE_MANAGED",
+      origin: 'RETENIVE_MANAGED',
       readOnly: true,
     });
     const wrapper = mountWorkspace();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Управляется Retenive · только чтение");
-    expect(
-      wrapper.findAll("button").some((item) => item.text() === "Архивировать"),
-    ).toBe(false);
-    expect(
-      wrapper.findAll("button").some((item) => item.text() === "Удалить"),
-    ).toBe(false);
+    expect(wrapper.text()).toContain('Управляется Retenive · только чтение');
+    expect(wrapper.findAll('button').some((item) => item.text() === 'Архивировать')).toBe(false);
+    expect(wrapper.findAll('button').some((item) => item.text() === 'Удалить')).toBe(false);
   });
 });

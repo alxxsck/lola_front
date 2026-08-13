@@ -1,52 +1,41 @@
-import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import test from "node:test";
-import { validateSupportCaseIntelligenceContract } from "./support-case-intelligence-contract.mjs";
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import test from 'node:test';
+import { validateSupportCaseIntelligenceContract } from './support-case-intelligence-contract.mjs';
 
 const document = JSON.parse(
-  await readFile(
-    new URL("../openapi/retenive-backend.json", import.meta.url),
-    "utf8",
-  ),
+  await readFile(new URL('../openapi/retenive-backend.json', import.meta.url), 'utf8'),
 );
 
 function cloneDocument() {
   return JSON.parse(JSON.stringify(document));
 }
 
-test("pinned OpenAPI publishes the available Case Intelligence foundation", () => {
+test('pinned OpenAPI publishes the available Case Intelligence foundation', () => {
   assert.doesNotThrow(() => validateSupportCaseIntelligenceContract(document));
 });
 
-test("validator rejects an untyped Detection rule kind", () => {
+test('validator rejects an untyped Detection rule kind', () => {
   const broken = cloneDocument();
-  delete broken.components.schemas.CaseIntelligenceDetectionRuleDto.properties
-    .kind.enum;
-  assert.throws(
-    () => validateSupportCaseIntelligenceContract(broken),
-    /must retain EXACT/,
-  );
+  delete broken.components.schemas.CaseIntelligenceDetectionRuleDto.properties.kind.enum;
+  assert.throws(() => validateSupportCaseIntelligenceContract(broken), /must retain EXACT/);
 });
 
-test("validator rejects publication without fresh strong authentication", () => {
+test('validator rejects publication without fresh strong authentication', () => {
   const broken = cloneDocument();
   const publish = Object.values(broken.paths)
     .flatMap((pathItem) => Object.values(pathItem))
-    .find(
-      (operation) =>
-        operation.operationId === "CaseIntelligence_publishDetection",
-    );
-  delete publish["x-iam-fresh-strong-authentication"];
+    .find((operation) => operation.operationId === 'CaseIntelligence_publishDetection');
+  delete publish['x-iam-fresh-strong-authentication'];
   assert.throws(
     () => validateSupportCaseIntelligenceContract(broken),
     /fresh strong authentication/,
   );
 });
 
-test("validator rejects the old compiler bounds and topic shape", () => {
+test('validator rejects the old compiler bounds and topic shape', () => {
   const broken = cloneDocument();
-  broken.components.schemas.CaseIntelligenceRouterContextDto.properties.maxSignals.maximum =
-    20;
+  broken.components.schemas.CaseIntelligenceRouterContextDto.properties.maxSignals.maximum = 20;
   delete broken.components.schemas.CaseIntelligenceTopicDto.properties.label;
   assert.throws(
     () => validateSupportCaseIntelligenceContract(broken),
@@ -54,26 +43,23 @@ test("validator rejects the old compiler bounds and topic shape", () => {
   );
 });
 
-test("validator rejects untyped preview errors", () => {
+test('validator rejects untyped preview errors', () => {
   const broken = cloneDocument();
   const validate = Object.values(broken.paths)
     .flatMap((pathItem) => Object.values(pathItem))
-    .find(
-      (operation) =>
-        operation.operationId === "CaseIntelligence_validateDetection",
-    );
-  delete validate.responses[503].content["application/json"].schema.properties
-    .error.properties.code.enum;
+    .find((operation) => operation.operationId === 'CaseIntelligence_validateDetection');
+  delete validate.responses[503].content['application/json'].schema.properties.error.properties.code
+    .enum;
   assert.throws(
     () => validateSupportCaseIntelligenceContract(broken),
     /validateDetection 503 must publish a typed error code/,
   );
 });
 
-test("validator rejects an incomplete Human Escalation simulator contract", () => {
+test('validator rejects an incomplete Human Escalation simulator contract', () => {
   const broken = cloneDocument();
   broken.components.schemas.CaseIntelligenceEscalationSimulationStepDto.properties.kind.enum = [
-    "EXPLICIT_HUMAN_REQUEST",
+    'EXPLICIT_HUMAN_REQUEST',
   ];
   assert.throws(
     () => validateSupportCaseIntelligenceContract(broken),
@@ -81,26 +67,27 @@ test("validator rejects an incomplete Human Escalation simulator contract", () =
   );
 });
 
-test("validator rejects mutable or incomplete Project Safety projection", () => {
+test('validator rejects mutable or incomplete Project Safety projection', () => {
   const broken = cloneDocument();
-  delete broken.components.schemas.CaseIntelligenceProjectSafetyPolicyResponseDto.properties.projectOverrideAllowed;
+  delete broken.components.schemas.CaseIntelligenceProjectSafetyPolicyResponseDto.properties
+    .projectOverrideAllowed;
   assert.throws(
     () => validateSupportCaseIntelligenceContract(broken),
     /must publish projectOverrideAllowed/,
   );
 });
 
-test("validator rejects an evaluation report without an atomic admission gate", () => {
+test('validator rejects an evaluation report without an atomic admission gate', () => {
   const broken = cloneDocument();
-  delete broken.components.schemas.CaseIntelligenceEvaluationReportResponseDto
-    .properties.capacityGatePassed;
+  delete broken.components.schemas.CaseIntelligenceEvaluationReportResponseDto.properties
+    .capacityGatePassed;
   assert.throws(
     () => validateSupportCaseIntelligenceContract(broken),
     /must publish capacityGatePassed/,
   );
 });
 
-test("validator rejects a decision log that loses immutable version pins", () => {
+test('validator rejects a decision log that loses immutable version pins', () => {
   const broken = cloneDocument();
   delete broken.components.schemas.CaseIntelligenceDecisionLogItemDto.properties
     .calibratorRevisionId;

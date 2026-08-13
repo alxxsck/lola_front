@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import Select from "primevue/select";
-import Skeleton from "primevue/skeleton";
-import ToggleSwitch from "primevue/toggleswitch";
-import { translationSettingsApi } from "@/features/translation-settings/api/translation-settings.api";
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import Select from 'primevue/select';
+import Skeleton from 'primevue/skeleton';
+import ToggleSwitch from 'primevue/toggleswitch';
+import { translationSettingsApi } from '@/features/translation-settings/api/translation-settings.api';
 import type {
   AiModelCatalogItemResponseDto,
   AiModelSettingsResponseDto,
-} from "@/shared/api/generated/models";
-import { isMockMode } from "@/shared/config/data-mode";
-import ProjectSettingsSectionHeader from "@/shared/ui/ProjectSettingsSectionHeader.vue";
+} from '@/shared/api/generated/models';
+import { isMockMode } from '@/shared/config/data-mode';
+import ProjectSettingsSectionHeader from '@/shared/ui/ProjectSettingsSectionHeader.vue';
 
-type Workload = "ASSISTANT" | "TRANSLATION";
-type ReasoningEffort = "none" | "low" | "medium" | "high";
+type Workload = 'ASSISTANT' | 'TRANSLATION';
+type ReasoningEffort = 'none' | 'low' | 'medium' | 'high';
 
 const props = defineProps<{
   projectId: string;
@@ -28,7 +28,7 @@ const emit = defineEmits<{
 const expanded = ref(false);
 const loading = ref(true);
 const saving = ref(false);
-const error = ref("");
+const error = ref('');
 const settings = ref<AiModelSettingsResponseDto | null>(null);
 const catalogs = reactive<Record<Workload, AiModelCatalogItemResponseDto[]>>({
   ASSISTANT: [],
@@ -36,112 +36,98 @@ const catalogs = reactive<Record<Workload, AiModelCatalogItemResponseDto[]>>({
 });
 const catalogStale = ref(false);
 const form = reactive({
-  assistant: { modelId: "", reasoningEffort: "none" as ReasoningEffort },
-  translation: { modelId: "", reasoningEffort: "none" as ReasoningEffort },
+  assistant: { modelId: '', reasoningEffort: 'none' as ReasoningEffort },
+  translation: { modelId: '', reasoningEffort: 'none' as ReasoningEffort },
 });
-const lastReasoningEffort = reactive<
-  Record<"assistant" | "translation", ReasoningEffort>
->({
-  assistant: "low",
-  translation: "low",
+const lastReasoningEffort = reactive<Record<'assistant' | 'translation', ReasoningEffort>>({
+  assistant: 'low',
+  translation: 'low',
 });
-const baseline = ref("");
+const baseline = ref('');
 const formSnapshot = computed(() => JSON.stringify(form));
-const dirty = computed(
-  () => Boolean(baseline.value) && baseline.value !== formSnapshot.value,
-);
+const dirty = computed(() => Boolean(baseline.value) && baseline.value !== formSnapshot.value);
 
 const workloadCards = [
   {
-    key: "assistant" as const,
-    workload: "ASSISTANT" as const,
-    title: "Основная модель",
-    description: "Отвечает пользователям и выполняет продуктовые сценарии.",
+    key: 'assistant' as const,
+    workload: 'ASSISTANT' as const,
+    title: 'Основная модель',
+    description: 'Отвечает пользователям и выполняет продуктовые сценарии.',
   },
   {
-    key: "translation" as const,
-    workload: "TRANSLATION" as const,
-    title: "Модель переводов",
-    description:
-      "Переводит сценарии и сообщения поддержки независимо от основной модели.",
+    key: 'translation' as const,
+    workload: 'TRANSLATION' as const,
+    title: 'Модель переводов',
+    description: 'Переводит сценарии и сообщения поддержки независимо от основной модели.',
   },
 ];
 
 function modelOptions(workload: Workload) {
   return catalogs[workload].map((model) => ({
-    label: `${model.displayName}${model.reteniveTested ? " · проверено Retenive" : ""}`,
+    label: `${model.displayName}${model.reteniveTested ? ' · проверено Retenive' : ''}`,
     value: model.id,
     disabled: !model.selectable || model.providerAvailable === false,
   }));
 }
 
-function selectedModel(key: "assistant" | "translation", workload: Workload) {
+function selectedModel(key: 'assistant' | 'translation', workload: Workload) {
   return catalogs[workload].find((item) => item.id === form[key].modelId);
 }
 
-function reasoningOptions(
-  key: "assistant" | "translation",
-  workload: Workload,
-) {
+function reasoningOptions(key: 'assistant' | 'translation', workload: Workload) {
   const model = selectedModel(key, workload);
-  return (model?.reasoningEfforts ?? ["none"])
-    .filter((effort) => !model?.reasoningRequired || effort !== "none")
+  return (model?.reasoningEfforts ?? ['none'])
+    .filter((effort) => !model?.reasoningRequired || effort !== 'none')
     .map((effort) => ({
       label:
-        effort === "none"
-          ? "Без reasoning"
-          : effort === "low"
-            ? "Низкий"
-            : effort === "medium"
-              ? "Средний"
-              : "Высокий",
+        effort === 'none'
+          ? 'Без reasoning'
+          : effort === 'low'
+            ? 'Низкий'
+            : effort === 'medium'
+              ? 'Средний'
+              : 'Высокий',
       value: effort,
     }));
 }
 
-function reasoningEnabled(key: "assistant" | "translation"): boolean {
-  return form[key].reasoningEffort !== "none";
+function reasoningEnabled(key: 'assistant' | 'translation'): boolean {
+  return form[key].reasoningEffort !== 'none';
 }
 
 function setReasoning(
-  key: "assistant" | "translation",
+  key: 'assistant' | 'translation',
   workload: Workload,
   enabled: boolean,
 ): void {
   const model = selectedModel(key, workload);
   if (!enabled && !model?.reasoningRequired) {
-    if (form[key].reasoningEffort !== "none") {
+    if (form[key].reasoningEffort !== 'none') {
       lastReasoningEffort[key] = form[key].reasoningEffort;
     }
-    form[key].reasoningEffort = "none";
+    form[key].reasoningEffort = 'none';
     return;
   }
-  form[key].reasoningEffort = model?.reasoningEfforts.includes(
-    lastReasoningEffort[key],
-  )
+  form[key].reasoningEffort = model?.reasoningEfforts.includes(lastReasoningEffort[key])
     ? lastReasoningEffort[key]
-    : model?.reasoningEfforts.includes("low")
-      ? "low"
-      : (model?.reasoningEfforts.find((item) => item !== "none") ?? "none");
+    : model?.reasoningEfforts.includes('low')
+      ? 'low'
+      : (model?.reasoningEfforts.find((item) => item !== 'none') ?? 'none');
 }
 
-function normalizeReasoning(
-  key: "assistant" | "translation",
-  workload: Workload,
-): void {
+function normalizeReasoning(key: 'assistant' | 'translation', workload: Workload): void {
   const model = selectedModel(key, workload);
   if (!model) return;
-  if (form[key].reasoningEffort !== "none") {
+  if (form[key].reasoningEffort !== 'none') {
     lastReasoningEffort[key] = form[key].reasoningEffort;
   }
   if (
     !model.reasoningEfforts.includes(form[key].reasoningEffort) ||
-    (model.reasoningRequired && form[key].reasoningEffort === "none")
+    (model.reasoningRequired && form[key].reasoningEffort === 'none')
   ) {
     form[key].reasoningEffort =
-      model.reasoningEfforts.find((item) =>
-        model.reasoningRequired ? item !== "none" : true,
-      ) ?? "none";
+      model.reasoningEfforts.find((item) => (model.reasoningRequired ? item !== 'none' : true)) ??
+      'none';
   }
 }
 
@@ -154,31 +140,31 @@ const settingsValid = computed(() =>
       model.selectable &&
       model.providerAvailable !== false &&
       model.reasoningEfforts.includes(effort) &&
-      (!model.reasoningRequired || effort !== "none"),
+      (!model.reasoningRequired || effort !== 'none'),
     );
   }),
 );
 
 async function load(): Promise<void> {
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const demoItem = (
       workload: Workload,
-      id: "grok-4.3" | "grok-4.5",
+      id: 'grok-4.3' | 'grok-4.5',
       reasoningRequired = false,
     ) => ({
       id,
-      displayName: id === "grok-4.5" ? "Grok 4.5" : "Grok 4.3",
+      displayName: id === 'grok-4.5' ? 'Grok 4.5' : 'Grok 4.3',
       workload,
       selectable: true,
       reteniveTested: true,
       providerAvailable: true,
       reasoningRequired,
-      reasoningEfforts: ["none", "low", "medium", "high"] as ReasoningEffort[],
-      inputPricePerMillion: "0",
-      cachedInputPricePerMillion: "0",
-      outputPricePerMillion: "0",
+      reasoningEfforts: ['none', 'low', 'medium', 'high'] as ReasoningEffort[],
+      inputPricePerMillion: '0',
+      cachedInputPricePerMillion: '0',
+      outputPricePerMillion: '0',
     });
     const [current, assistant, translation] = isMockMode
       ? [
@@ -186,42 +172,36 @@ async function load(): Promise<void> {
             projectVersion: 1,
             resolved: {
               assistant: {
-                modelId: "grok-4.5",
-                reasoningEffort: "low" as const,
-                configRevision: "demo-assistant-model",
-                source: "PROJECT" as const,
+                modelId: 'grok-4.5',
+                reasoningEffort: 'low' as const,
+                configRevision: 'demo-assistant-model',
+                source: 'PROJECT' as const,
               },
               translation: {
-                modelId: "grok-4.3",
-                reasoningEffort: "low" as const,
-                configRevision: "demo-translation-model",
-                source: "PROJECT" as const,
+                modelId: 'grok-4.3',
+                reasoningEffort: 'low' as const,
+                configRevision: 'demo-translation-model',
+                source: 'PROJECT' as const,
               },
             },
             saved: null,
           },
           {
-            items: [
-              demoItem("ASSISTANT", "grok-4.5", true),
-              demoItem("ASSISTANT", "grok-4.3"),
-            ],
+            items: [demoItem('ASSISTANT', 'grok-4.5', true), demoItem('ASSISTANT', 'grok-4.3')],
             stale: false,
           },
           {
-            items: [
-              demoItem("TRANSLATION", "grok-4.3"),
-              demoItem("TRANSLATION", "grok-4.5", true),
-            ],
+            items: [demoItem('TRANSLATION', 'grok-4.3'), demoItem('TRANSLATION', 'grok-4.5', true)],
             stale: false,
           },
         ]
       : await Promise.all([
           translationSettingsApi.aiModels.settings(props.projectId),
           translationSettingsApi.aiModels.catalog(props.projectId, {
-            workload: "ASSISTANT",
+            workload: 'ASSISTANT',
           }),
           translationSettingsApi.aiModels.catalog(props.projectId, {
-            workload: "TRANSLATION",
+            workload: 'TRANSLATION',
           }),
         ]);
     settings.value = current;
@@ -230,32 +210,24 @@ async function load(): Promise<void> {
     catalogStale.value = assistant.stale || translation.stale;
     form.assistant = {
       modelId: current.resolved.assistant.modelId,
-      reasoningEffort: current.resolved.assistant
-        .reasoningEffort as ReasoningEffort,
+      reasoningEffort: current.resolved.assistant.reasoningEffort as ReasoningEffort,
     };
     form.translation = {
       modelId: current.resolved.translation.modelId,
-      reasoningEffort: current.resolved.translation
-        .reasoningEffort as ReasoningEffort,
+      reasoningEffort: current.resolved.translation.reasoningEffort as ReasoningEffort,
     };
     baseline.value = formSnapshot.value;
   } catch {
-    error.value = "Не удалось загрузить модели xAI";
+    error.value = 'Не удалось загрузить модели xAI';
   } finally {
     loading.value = false;
   }
 }
 
 async function save(): Promise<void> {
-  if (
-    !settings.value ||
-    saving.value ||
-    !props.editable ||
-    !settingsValid.value
-  )
-    return;
+  if (!settings.value || saving.value || !props.editable || !settingsValid.value) return;
   saving.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const response = isMockMode
       ? {
@@ -264,13 +236,13 @@ async function save(): Promise<void> {
           resolved: {
             assistant: {
               ...form.assistant,
-              configRevision: "demo-assistant-model",
-              source: "PROJECT" as const,
+              configRevision: 'demo-assistant-model',
+              source: 'PROJECT' as const,
             },
             translation: {
               ...form.translation,
-              configRevision: "demo-translation-model",
-              source: "PROJECT" as const,
+              configRevision: 'demo-translation-model',
+              source: 'PROJECT' as const,
             },
           },
         }
@@ -281,20 +253,18 @@ async function save(): Promise<void> {
         });
     settings.value = response;
     baseline.value = formSnapshot.value;
-    emit("changed", response.projectVersion);
+    emit('changed', response.projectVersion);
   } catch {
-    error.value = "Не удалось сохранить модели";
+    error.value = 'Не удалось сохранить модели';
   } finally {
     saving.value = false;
   }
 }
 
-const hasCatalog = computed(
-  () => catalogs.ASSISTANT.length > 0 && catalogs.TRANSLATION.length > 0,
-);
+const hasCatalog = computed(() => catalogs.ASSISTANT.length > 0 && catalogs.TRANSLATION.length > 0);
 
 onMounted(load);
-watch(dirty, (value) => emit("dirtyChange", value), { immediate: true });
+watch(dirty, (value) => emit('dirtyChange', value), { immediate: true });
 watch(
   () => props.projectVersion,
   (projectVersion) => {
@@ -319,53 +289,27 @@ watch(
       <div v-if="loading" class="model-grid">
         <Skeleton v-for="item in 2" :key="item" height="190px" />
       </div>
-      <Message
-        v-else-if="error && !hasCatalog"
-        severity="error"
-        :closable="false"
-      >
+      <Message v-else-if="error && !hasCatalog" severity="error" :closable="false">
         <div class="model-error">
           <span>{{ error }}</span>
-          <Button
-            label="Повторить"
-            icon="pi pi-refresh"
-            size="small"
-            text
-            @click="load"
-          />
+          <Button label="Повторить" icon="pi pi-refresh" size="small" text @click="load" />
         </div>
       </Message>
       <template v-else>
         <Message v-if="catalogStale" severity="warn" :closable="false">
-          Каталог xAI временно недоступен. Показана последняя проверенная
-          версия.
+          Каталог xAI временно недоступен. Показана последняя проверенная версия.
         </Message>
         <Message v-if="error" severity="error" :closable="false">
           <div class="model-error">
             <span>{{ error }}</span>
-            <Button
-              label="Обновить"
-              icon="pi pi-refresh"
-              size="small"
-              text
-              @click="load"
-            />
+            <Button label="Обновить" icon="pi pi-refresh" size="small" text @click="load" />
           </div>
         </Message>
         <div class="model-grid">
-          <article
-            v-for="card in workloadCards"
-            :key="card.key"
-            class="model-card"
-          >
+          <article v-for="card in workloadCards" :key="card.key" class="model-card">
             <header>
               <span
-                ><i
-                  :class="
-                    card.key === 'assistant'
-                      ? 'pi pi-sparkles'
-                      : 'pi pi-language'
-                  "
+                ><i :class="card.key === 'assistant' ? 'pi pi-sparkles' : 'pi pi-language'"
               /></span>
               <div>
                 <strong>{{ card.title }}</strong>
@@ -388,27 +332,19 @@ watch(
               <div>
                 <strong>Reasoning</strong>
                 <small
-                  >Даёт модели больше времени на сложные формулировки и
-                  добавляет задержку.</small
+                  >Даёт модели больше времени на сложные формулировки и добавляет задержку.</small
                 >
-                <small
-                  v-if="
-                    selectedModel(card.key, card.workload)?.reasoningRequired
-                  "
+                <small v-if="selectedModel(card.key, card.workload)?.reasoningRequired"
                   >Для этой модели reasoning обязателен.</small
                 >
               </div>
               <ToggleSwitch
                 :model-value="reasoningEnabled(card.key)"
                 :disabled="
-                  saving ||
-                  !editable ||
-                  selectedModel(card.key, card.workload)?.reasoningRequired
+                  saving || !editable || selectedModel(card.key, card.workload)?.reasoningRequired
                 "
                 :aria-label="`Reasoning: ${card.title}`"
-                @update:model-value="
-                  setReasoning(card.key, card.workload, $event)
-                "
+                @update:model-value="setReasoning(card.key, card.workload, $event)"
               />
             </div>
             <label v-if="reasoningEnabled(card.key)">
@@ -421,10 +357,7 @@ watch(
                 :disabled="saving || !editable"
               />
             </label>
-            <div
-              v-if="selectedModel(card.key, card.workload)"
-              class="model-meta"
-            >
+            <div v-if="selectedModel(card.key, card.workload)" class="model-meta">
               <span v-if="settings?.resolved[card.key]">
                 Сохранено:
                 {{ settings.resolved[card.key].modelId }} · reasoning
@@ -432,25 +365,15 @@ watch(
               </span>
               <span>
                 Input
-                {{
-                  selectedModel(card.key, card.workload)?.inputPricePerMillion
-                }}/1M · cached
-                {{
-                  selectedModel(card.key, card.workload)
-                    ?.cachedInputPricePerMillion
-                }}/1M · output
-                {{
-                  selectedModel(card.key, card.workload)?.outputPricePerMillion
-                }}/1M
+                {{ selectedModel(card.key, card.workload)?.inputPricePerMillion }}/1M · cached
+                {{ selectedModel(card.key, card.workload)?.cachedInputPricePerMillion }}/1M · output
+                {{ selectedModel(card.key, card.workload)?.outputPricePerMillion }}/1M
               </span>
             </div>
           </article>
         </div>
         <footer class="settings-footer">
-          <span
-            >Для переводов по умолчанию рекомендуется Grok 4.3 с reasoning
-            low.</span
-          >
+          <span>Для переводов по умолчанию рекомендуется Grok 4.3 с reasoning low.</span>
           <Button
             data-testid="save-ai-model-settings"
             label="Сохранить модели"

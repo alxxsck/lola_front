@@ -1,26 +1,22 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue";
-import Button from "primevue/button";
-import Checkbox from "primevue/checkbox";
-import Dialog from "primevue/dialog";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import ProgressSpinner from "primevue/progressspinner";
-import Textarea from "primevue/textarea";
-import { useRouter } from "vue-router";
-import { aiErrorMessage } from "@/features/ai-errors/model/ai-error-message";
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Checkbox from 'primevue/checkbox';
+import Dialog from 'primevue/dialog';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import ProgressSpinner from 'primevue/progressspinner';
+import Textarea from 'primevue/textarea';
+import { useRouter } from 'vue-router';
+import { aiErrorMessage } from '@/features/ai-errors/model/ai-error-message';
 import EventPicker, {
   type EventPickerOption,
   type EventPickerPage,
   type EventPickerRequest,
-} from "@/features/events/EventPicker.vue";
-import { eventQueryRepository } from "@/features/event-query/api/event-query-repository";
-import { aiReviewRepository } from "../api/ai-review-repository";
-import type {
-  AIReviewEstimate,
-  AIReviewRun,
-  AIReviewSettings,
-} from "../model/ai-review";
+} from '@/features/events/EventPicker.vue';
+import { eventQueryRepository } from '@/features/event-query/api/event-query-repository';
+import { aiReviewRepository } from '../api/ai-review-repository';
+import type { AIReviewEstimate, AIReviewRun, AIReviewSettings } from '../model/ai-review';
 
 const props = defineProps<{
   projectId: string;
@@ -28,7 +24,7 @@ const props = defineProps<{
   timezone?: string;
   canOpenAnalysis?: boolean;
 }>();
-const visible = defineModel<boolean>("visible", { required: true });
+const visible = defineModel<boolean>('visible', { required: true });
 const router = useRouter();
 const settings = ref<AIReviewSettings | null>(null);
 const queryPolicyEnabled = ref(false);
@@ -38,13 +34,13 @@ const run = ref<AIReviewRun | null>(null);
 const loading = ref(false);
 const estimating = ref(false);
 const starting = ref(false);
-const error = ref("");
+const error = ref('');
 const confirmedExpensive = ref(false);
-const submissionKey = ref("");
+const submissionKey = ref('');
 const form = reactive({
-  localDate: localInputDate(new Date(), props.timezone ?? "UTC"),
+  localDate: localInputDate(new Date(), props.timezone ?? 'UTC'),
   eventCodes: [] as string[],
-  instruction: "",
+  instruction: '',
 });
 let pollTimer: ReturnType<typeof setTimeout> | undefined;
 let pollFailures = 0;
@@ -53,10 +49,7 @@ let loadGeneration = 0;
 let reviewEventGeneration = 0;
 
 const scopeReady = computed(
-  () =>
-    queryPolicyEnabled.value &&
-    Boolean(form.localDate) &&
-    form.eventCodes.length > 0,
+  () => queryPolicyEnabled.value && Boolean(form.localDate) && form.eventCodes.length > 0,
 );
 const canStart = computed(
   () =>
@@ -64,15 +57,13 @@ const canStart = computed(
     !estimate.value?.blocked &&
     (!estimate.value?.requiresConfirmation || confirmedExpensive.value),
 );
-const running = computed(
-  () => run.value?.status === "PENDING" || run.value?.status === "RUNNING",
-);
+const running = computed(() => run.value?.status === 'PENDING' || run.value?.status === 'RUNNING');
 
 async function openAnalysis(): Promise<void> {
   if (!run.value?.analysisId) return;
   visible.value = false;
   await router.push({
-    name: "ai-analysis-detail",
+    name: 'ai-analysis-detail',
     params: { analysisId: run.value.analysisId },
     query: { projectId: props.projectId },
   });
@@ -93,7 +84,7 @@ watch(
     estimate.value = null;
     run.value = null;
     confirmedExpensive.value = false;
-    submissionKey.value = "";
+    submissionKey.value = '';
     form.eventCodes = [];
     options.value = [];
     estimating.value = false;
@@ -110,7 +101,7 @@ watch(
     estimate.value = null;
     estimating.value = false;
     confirmedExpensive.value = false;
-    submissionKey.value = "";
+    submissionKey.value = '';
     pollFailures = 0;
   },
   { deep: true },
@@ -123,7 +114,7 @@ async function load() {
   const generation = ++loadGeneration;
   const projectId = props.projectId;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   run.value = null;
   estimate.value = null;
   pollFailures = 0;
@@ -131,7 +122,7 @@ async function load() {
     const [nextSettings, catalog] = await Promise.all([
       aiReviewRepository.getSettings(projectId),
       eventQueryRepository.listItems(projectId, {
-        audience: "INTERNAL_AI",
+        audience: 'INTERNAL_AI',
         effective: true,
         limit: 100,
       }),
@@ -141,69 +132,51 @@ async function load() {
     queryPolicyEnabled.value = catalog.items.length > 0;
     const queryableCodes = new Set(catalog.items.map((item) => item.eventCode));
     options.value = catalog.items.map(toEventOption);
-    form.eventCodes = form.eventCodes.filter((code) =>
-      queryableCodes.has(code),
-    );
+    form.eventCodes = form.eventCodes.filter((code) => queryableCodes.has(code));
   } catch (cause) {
     if (generation !== loadGeneration) return;
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось открыть AI Review";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось открыть AI Review';
   } finally {
     if (generation === loadGeneration) loading.value = false;
   }
 }
 
-async function loadReviewEvents(
-  request: EventPickerRequest,
-): Promise<EventPickerPage> {
+async function loadReviewEvents(request: EventPickerRequest): Promise<EventPickerPage> {
   const projectId = props.projectId;
   const generation = ++reviewEventGeneration;
-  error.value = "";
+  error.value = '';
   try {
     const catalog = await eventQueryRepository.listItems(projectId, {
-      audience: "INTERNAL_AI",
+      audience: 'INTERNAL_AI',
       effective: true,
       ...(request.query ? { query: request.query } : {}),
       ...(request.cursor ? { cursor: request.cursor } : {}),
       limit: request.limit,
     });
-    if (
-      generation !== reviewEventGeneration ||
-      projectId !== props.projectId
-    ) return { items: [], nextCursor: null };
-    const selected = options.value.filter((option) =>
-      form.eventCodes.includes(option.value),
-    );
+    if (generation !== reviewEventGeneration || projectId !== props.projectId)
+      return { items: [], nextCursor: null };
+    const selected = options.value.filter((option) => form.eventCodes.includes(option.value));
     queryPolicyEnabled.value =
-      queryPolicyEnabled.value ||
-      selected.length > 0 ||
-      catalog.items.length > 0;
+      queryPolicyEnabled.value || selected.length > 0 || catalog.items.length > 0;
     const found = catalog.items.map(toEventOption);
     options.value = [...selected, ...found].filter(
       (option, index, all) =>
-        all.findIndex((candidate) => candidate.value === option.value) ===
-        index,
+        all.findIndex((candidate) => candidate.value === option.value) === index,
     );
     return {
       items: found,
       nextCursor: catalog.pageInfo.nextCursor ?? null,
     };
   } catch (cause) {
-    if (
-      generation === reviewEventGeneration &&
-      projectId === props.projectId
-    ) {
-      error.value =
-        cause instanceof Error ? cause.message : "Не удалось найти события";
+    if (generation === reviewEventGeneration && projectId === props.projectId) {
+      error.value = cause instanceof Error ? cause.message : 'Не удалось найти события';
     }
     throw cause;
   }
 }
 
 function toEventOption(
-  item: Awaited<
-    ReturnType<typeof eventQueryRepository.listItems>
-  >["items"][number],
+  item: Awaited<ReturnType<typeof eventQueryRepository.listItems>>['items'][number],
 ): EventPickerOption {
   return {
     value: item.eventCode,
@@ -218,9 +191,7 @@ function scope() {
     endUserId: props.endUserId,
     localDate: form.localDate,
     eventCodes: [...form.eventCodes].sort(),
-    ...(form.instruction.trim()
-      ? { instruction: form.instruction.trim() }
-      : {}),
+    ...(form.instruction.trim() ? { instruction: form.instruction.trim() } : {}),
   };
 }
 
@@ -229,19 +200,15 @@ async function calculateEstimate() {
   await nextTick();
   const generation = ++estimateGeneration;
   estimating.value = true;
-  error.value = "";
+  error.value = '';
   run.value = null;
   try {
-    const nextEstimate = await aiReviewRepository.estimate(
-      props.projectId,
-      scope(),
-    );
+    const nextEstimate = await aiReviewRepository.estimate(props.projectId, scope());
     if (generation !== estimateGeneration) return;
     estimate.value = nextEstimate;
   } catch (cause) {
     if (generation !== estimateGeneration) return;
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось оценить запрос";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось оценить запрос';
   } finally {
     if (generation === estimateGeneration) estimating.value = false;
   }
@@ -251,7 +218,7 @@ async function start() {
   if (!canStart.value || starting.value) return;
   const generation = estimateGeneration;
   starting.value = true;
-  error.value = "";
+  error.value = '';
   try {
     submissionKey.value ||= crypto.randomUUID();
     const nextRun = await aiReviewRepository.start(props.projectId, {
@@ -264,8 +231,7 @@ async function start() {
     if (running.value) schedulePoll();
   } catch (cause) {
     if (generation !== estimateGeneration) return;
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось запустить AI Review";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось запустить AI Review';
   } finally {
     if (generation === estimateGeneration) starting.value = false;
   }
@@ -283,25 +249,14 @@ async function poll() {
   const runId = run.value.id;
   try {
     const nextRun = await aiReviewRepository.get(projectId, runId);
-    if (
-      projectId !== props.projectId ||
-      run.value?.id !== runId ||
-      !visible.value
-    )
-      return;
+    if (projectId !== props.projectId || run.value?.id !== runId || !visible.value) return;
     run.value = nextRun;
-    error.value = "";
+    error.value = '';
     pollFailures = 0;
     if (running.value) schedulePoll();
   } catch (cause) {
-    if (
-      projectId !== props.projectId ||
-      run.value?.id !== runId ||
-      !visible.value
-    )
-      return;
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось обновить статус";
+    if (projectId !== props.projectId || run.value?.id !== runId || !visible.value) return;
+    error.value = cause instanceof Error ? cause.message : 'Не удалось обновить статус';
     pollFailures += 1;
     if (visible.value && running.value) schedulePoll();
   }
@@ -318,11 +273,11 @@ function formatBytes(value: number) {
 
 function localInputDate(value: Date, timezone: string) {
   try {
-    return new Intl.DateTimeFormat("en-CA", {
+    return new Intl.DateTimeFormat('en-CA', {
       timeZone: timezone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
     }).format(value);
   } catch {
     return value.toISOString().slice(0, 10);
@@ -330,10 +285,10 @@ function localInputDate(value: Date, timezone: string) {
 }
 
 function formatRange(value: string) {
-  return new Intl.DateTimeFormat("ru-RU", {
-    dateStyle: "short",
-    timeStyle: "short",
-    timeZone: "UTC",
+  return new Intl.DateTimeFormat('ru-RU', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+    timeZone: 'UTC',
   }).format(new Date(value));
 }
 </script>
@@ -353,31 +308,23 @@ function formatRange(value: string) {
   >
     <div class="review-form">
       <Message severity="warn" :closable="false">
-        Анализ использует токены. Сначала Retenive посчитает объём без обращения
-        к модели; дорогой запрос потребует отдельного подтверждения.
+        Анализ использует токены. Сначала Retenive посчитает объём без обращения к модели; дорогой
+        запрос потребует отдельного подтверждения.
       </Message>
-      <Message v-if="error" severity="error" :closable="false">{{
-        error
-      }}</Message>
+      <Message v-if="error" severity="error" :closable="false">{{ error }}</Message>
       <div v-if="loading" class="loading">
         <ProgressSpinner stroke-width="4" />
       </div>
       <template v-else>
-        <Message
-          v-if="settings && !settings.enabled"
-          severity="secondary"
-          :closable="false"
-        >
-          AI Review выключен в настройках проекта. Включите его, чтобы запускать
-          анализ.
+        <Message v-if="settings && !settings.enabled" severity="secondary" :closable="false">
+          AI Review выключен в настройках проекта. Включите его, чтобы запускать анализ.
         </Message>
         <Message
           v-else-if="!queryPolicyEnabled || !options.length"
           severity="warn"
           :closable="false"
         >
-          Нет опубликованных queryable событий. Настройте раздел «Доступ ИИ к
-          событиям» в проекте.
+          Нет опубликованных queryable событий. Настройте раздел «Доступ ИИ к событиям» в проекте.
         </Message>
         <label>
           <span>Дата в часовом поясе проекта</span>
@@ -393,14 +340,10 @@ function formatRange(value: string) {
           label="События"
           placeholder="Выберите от 1 до 20 событий"
           :disabled="running"
-          @update:model-value="
-            Array.isArray($event) && (form.eventCodes = $event)
-          "
+          @update:model-value="Array.isArray($event) && (form.eventCodes = $event)"
         />
         <label>
-          <span
-            >Что проверить <small>необязательно, до 500 символов</small></span
-          >
+          <span>Что проверить <small>необязательно, до 500 символов</small></span>
           <Textarea
             v-model="form.instruction"
             rows="3"
@@ -419,25 +362,19 @@ function formatRange(value: string) {
           @click="calculateEstimate"
         />
 
-        <section
-          v-if="estimate"
-          class="estimate"
-          :data-cost="estimate.costLevel"
-        >
+        <section v-if="estimate" class="estimate" :data-cost="estimate.costLevel">
           <div>
             <strong
-              >{{ estimate.eventCount }} событий ·
-              {{ formatBytes(estimate.redactedBytes) }}</strong
+              >{{ estimate.eventCount }} событий · {{ formatBytes(estimate.redactedBytes) }}</strong
             >
             <span
               >Консервативная оценка:
-              {{ estimate.estimatedInputTokens.toLocaleString("ru-RU") }}
+              {{ estimate.estimatedInputTokens.toLocaleString('ru-RU') }}
               входных токенов</span
             >
             <span
               >Часовой пояс проекта: {{ estimate.timezone }} · UTC
-              {{ formatRange(estimate.range.start) }} —
-              {{ formatRange(estimate.range.end) }}</span
+              {{ formatRange(estimate.range.start) }} — {{ formatRange(estimate.range.end) }}</span
             >
           </div>
           <span class="cost">{{ estimate.costLevel }}</span>
@@ -445,30 +382,21 @@ function formatRange(value: string) {
         <Message v-if="estimate?.blocked" severity="error" :closable="false">
           {{ estimate.blockedReason }}. Выберите меньше событий.
         </Message>
-        <label
-          v-if="estimate?.requiresConfirmation && !estimate.blocked"
-          class="confirm"
-        >
-          <Checkbox
-            v-model="confirmedExpensive"
-            binary
-            input-id="confirm-ai-review"
-          />
+        <label v-if="estimate?.requiresConfirmation && !estimate.blocked" class="confirm">
+          <Checkbox v-model="confirmedExpensive" binary input-id="confirm-ai-review" />
           <span>Подтверждаю запуск дорогого AI Review</span>
         </label>
         <Message
-          v-if="
-            run && (run.status === 'FAILED' || run.status === 'OUTCOME_UNKNOWN')
-          "
+          v-if="run && (run.status === 'FAILED' || run.status === 'OUTCOME_UNKNOWN')"
           :severity="run.status === 'OUTCOME_UNKNOWN' ? 'warn' : 'error'"
           :closable="false"
         >
           {{
-            run.status === "OUTCOME_UNKNOWN"
-              ? "Ответ провайдера потерян. Автоматический повтор отключён, чтобы не списать токены дважды."
+            run.status === 'OUTCOME_UNKNOWN'
+              ? 'Ответ провайдера потерян. Автоматический повтор отключён, чтобы не списать токены дважды.'
               : aiErrorMessage(
                   run.errorCode,
-                  "Анализ завершился с ошибкой. Технические данные доступны в журнале операций.",
+                  'Анализ завершился с ошибкой. Технические данные доступны в журнале операций.',
                 )
           }}
         </Message>
@@ -483,28 +411,20 @@ function formatRange(value: string) {
         >
           <div>
             <strong>AI Review завершён</strong>
+            <span>Policy revision: {{ run.policyRevisionId ?? 'legacy / недоступна' }}</span>
             <span
-              >Policy revision:
-              {{ run.policyRevisionId ?? "legacy / недоступна" }}</span
-            >
-            <span
-              >{{ run.eventCount }} событий ·
-              {{ formatBytes(run.redactedBytes) }} ·
-              {{ run.estimatedInputTokens.toLocaleString("ru-RU") }}
+              >{{ run.eventCount }} событий · {{ formatBytes(run.redactedBytes) }} ·
+              {{ run.estimatedInputTokens.toLocaleString('ru-RU') }}
               входных токенов</span
             >
             <span v-if="run.limitations?.length">
-              Ограничения: {{ run.limitations.join(" · ") }}
+              Ограничения: {{ run.limitations.join(' · ') }}
             </span>
             <span v-else>Ограничения выборки не зафиксированы.</span>
           </div>
         </section>
         <Button
-          v-if="
-            run?.status === 'SUCCEEDED' &&
-            run.analysisId &&
-            props.canOpenAnalysis === true
-          "
+          v-if="run?.status === 'SUCCEEDED' && run.analysisId && props.canOpenAnalysis === true"
           class="review-action"
           label="Открыть AI-анализ"
           icon="pi pi-arrow-up-right"
@@ -630,7 +550,7 @@ function formatRange(value: string) {
   color: var(--status-accent-text);
   font-weight: 800;
 }
-.estimate[data-cost="HIGH"] .cost {
+.estimate[data-cost='HIGH'] .cost {
   background: var(--status-red-soft);
   color: var(--status-red-text);
 }

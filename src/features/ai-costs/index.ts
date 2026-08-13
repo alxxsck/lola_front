@@ -1,1 +1,1 @@
-export { default as AiCostsDashboard } from "./ui/AiCostsDashboard.vue";
+export { default as AiCostsDashboard } from './ui/AiCostsDashboard.vue';

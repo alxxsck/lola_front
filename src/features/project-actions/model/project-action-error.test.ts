@@ -1,16 +1,18 @@
-import { describe, expect, it } from 'vitest'
-import { ApiError } from '@/shared/api/http/api-error'
-import { toProjectActionError } from './project-action-error'
+import { describe, expect, it } from 'vitest';
+import { ApiError } from '@/shared/api/http/api-error';
+import { toProjectActionError } from './project-action-error';
 
 describe('Project Action errors', () => {
   it('preserves typed backend policy failures for safe UI rendering', () => {
-    const error = toProjectActionError(new ApiError(
-      409,
-      'Project Action is referenced by active scenarios',
-      { scenarioIds: ['scenario-1'] },
-      'request-1',
-      'PROJECT_ACTION_IN_USE',
-    ))
+    const error = toProjectActionError(
+      new ApiError(
+        409,
+        'Project Action is referenced by active scenarios',
+        { scenarioIds: ['scenario-1'] },
+        'request-1',
+        'PROJECT_ACTION_IN_USE',
+      ),
+    );
 
     expect(error).toEqual({
       kind: 'conflict',
@@ -19,8 +21,8 @@ describe('Project Action errors', () => {
       details: { scenarioIds: ['scenario-1'] },
       requestId: 'request-1',
       status: 409,
-    })
-  })
+    });
+  });
 
   it('does not expose an unknown technical backend message', () => {
     const error = toProjectActionError(
@@ -31,12 +33,12 @@ describe('Project Action errors', () => {
         'request-2',
         'UNKNOWN_BACKEND_CODE',
       ),
-    )
+    );
 
     expect(error.message).toBe(
       'Не удалось выполнить действие. Повторите попытку или сообщите администратору код обращения.',
-    )
-    expect(error.message).not.toContain('schema')
-    expect(error.requestId).toBe('request-2')
-  })
-})
+    );
+    expect(error.message).not.toContain('schema');
+    expect(error.requestId).toBe('request-2');
+  });
+});

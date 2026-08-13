@@ -1,4 +1,4 @@
-import { computed, onScopeDispose, ref, watch } from "vue";
+import { computed, onScopeDispose, ref, watch } from 'vue';
 import type {
   ConversationMessageTranslationItemResponseDto,
   ConversationMessageTranslationsResponseDto,
@@ -6,8 +6,8 @@ import type {
   EditReplyTranslationDraftDto,
   ReplyTranslationDraftResponseDto,
   UpdateConversationTranslationPreferenceDto,
-} from "@/shared/api/generated/models";
-import { conversationTranslationApi } from "../api/conversation-translation.api";
+} from '@/shared/api/generated/models';
+import { conversationTranslationApi } from '../api/conversation-translation.api';
 
 export interface ConversationTranslationContext {
   projectId(): string | undefined;
@@ -96,16 +96,11 @@ export interface ConversationTranslationApi {
   ): Promise<ReplyTranslationDraftResponseDto>;
 }
 
-const terminalDraftStatuses = new Set([
-  "READY",
-  "FAILED",
-  "EXPIRED",
-  "CONSUMED",
-]);
-const terminalMessageStatuses = new Set(["COMPLETED", "FAILED", "SKIPPED"]);
+const terminalDraftStatuses = new Set(['READY', 'FAILED', 'EXPIRED', 'CONSUMED']);
+const terminalMessageStatuses = new Set(['COMPLETED', 'FAILED', 'SKIPPED']);
 
 function objectValue(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value)
+  return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
 }
@@ -115,35 +110,26 @@ function translationApiErrorCode(cause: unknown): string | null {
   const response = objectValue(root?.response);
   const data = objectValue(response?.data);
   const payload = objectValue(data?.error);
-  return typeof payload?.code === "string" ? payload.code : null;
+  return typeof payload?.code === 'string' ? payload.code : null;
 }
 
-export function translationOperationErrorMessage(
-  cause: unknown,
-  fallback: string,
-): string {
+export function translationOperationErrorMessage(cause: unknown, fallback: string): string {
   const code = translationApiErrorCode(cause);
-  if (code === "TRANSLATION_DISABLED") {
-    return "На сервере выключена обработка переводов. Включите processing workers и повторите попытку.";
+  if (code === 'TRANSLATION_DISABLED') {
+    return 'На сервере выключена обработка переводов. Включите processing workers и повторите попытку.';
+  }
+  if (code === 'TRANSLATION_BUDGET_EXCEEDED' || code === 'TRANSLATION_GLOBAL_BUDGET_EXCEEDED') {
+    return 'Лимит переводов исчерпан. Проверьте бюджет проекта.';
   }
   if (
-    code === "TRANSLATION_BUDGET_EXCEEDED" ||
-    code === "TRANSLATION_GLOBAL_BUDGET_EXCEEDED"
+    code === 'TRANSLATION_MODEL_UNAVAILABLE' ||
+    code === 'TRANSLATION_MODEL_PRICING_UNAVAILABLE' ||
+    code === 'TRANSLATION_PRICING_NOT_CONFIGURED'
   ) {
-    return "Лимит переводов исчерпан. Проверьте бюджет проекта.";
+    return 'Модель перевода или её тариф временно недоступны. Проверьте настройки модели.';
   }
-  if (
-    code === "TRANSLATION_MODEL_UNAVAILABLE" ||
-    code === "TRANSLATION_MODEL_PRICING_UNAVAILABLE" ||
-    code === "TRANSLATION_PRICING_NOT_CONFIGURED"
-  ) {
-    return "Модель перевода или её тариф временно недоступны. Проверьте настройки модели.";
-  }
-  if (
-    code === "TRANSLATION_PROVIDER_TIMEOUT" ||
-    code === "TRANSLATION_PROVIDER_UNAVAILABLE"
-  ) {
-    return "Провайдер перевода временно недоступен. Повторите попытку позже.";
+  if (code === 'TRANSLATION_PROVIDER_TIMEOUT' || code === 'TRANSLATION_PROVIDER_UNAVAILABLE') {
+    return 'Провайдер перевода временно недоступен. Повторите попытку позже.';
   }
   return fallback;
 }
@@ -169,14 +155,12 @@ export function createConversationTranslationController(
   const loading = ref(false);
   const savingPreference = ref(false);
   const translatingMessageIds = ref(new Set<string>());
-  const messageTranslations = ref(
-    new Map<string, ConversationMessageTranslationItemResponseDto>(),
-  );
+  const messageTranslations = ref(new Map<string, ConversationMessageTranslationItemResponseDto>());
   const draft = ref<ReplyTranslationDraftResponseDto | null>(null);
   const previewing = ref(false);
   const editingReply = ref(false);
   const previewStale = ref(false);
-  const error = ref("");
+  const error = ref('');
   let generation = 0;
   let disposed = false;
   const messageAttemptKeys = new Map<string, string>();
@@ -186,7 +170,7 @@ export function createConversationTranslationController(
 
   const readyDraft = computed(() => {
     const current = draft.value;
-    return current?.status === "READY" &&
+    return current?.status === 'READY' &&
       current.sourceText === context.sourceText().trim() &&
       current.targetLocale === targetLocale.value
       ? current
@@ -201,10 +185,7 @@ export function createConversationTranslationController(
     return current.language.needsConfirmation ? null : current.language.locale;
   });
   const conversationLocale = computed(
-    () =>
-      state.value?.language.locale ??
-      state.value?.preference.endUserLocaleOverride ??
-      null,
+    () => state.value?.language.locale ?? state.value?.preference.endUserLocaleOverride ?? null,
   );
 
   function requiredContext() {
@@ -212,31 +193,28 @@ export function createConversationTranslationController(
     const endUserId = context.endUserId();
     const conversationId = context.conversationId();
     if (!projectId || !endUserId || !conversationId) {
-      throw new Error("Диалог для перевода не выбран");
+      throw new Error('Диалог для перевода не выбран');
     }
     return { projectId, endUserId, conversationId };
   }
 
   function providerWorkUnavailableMessage(): string | null {
     if (!state.value?.availability.available) {
-      return "Перевод временно недоступен. Исходный текст не будет отправлен автоматически.";
+      return 'Перевод временно недоступен. Исходный текст не будет отправлен автоматически.';
     }
     if (state.value.budget.hardExhausted) {
-      return "Лимит переводов исчерпан. Исходный текст не будет отправлен автоматически.";
+      return 'Лимит переводов исчерпан. Исходный текст не будет отправлен автоматически.';
     }
     return null;
   }
 
   function setOperationError(cause: unknown, fallback: string): void {
-    if (
-      translationApiErrorCode(cause) === "TRANSLATION_DISABLED" &&
-      state.value
-    ) {
+    if (translationApiErrorCode(cause) === 'TRANSLATION_DISABLED' && state.value) {
       state.value = {
         ...state.value,
         availability: {
           available: false,
-          reason: "DEPLOYMENT_DISABLED",
+          reason: 'DEPLOYMENT_DISABLED',
         },
       };
     }
@@ -258,15 +236,13 @@ export function createConversationTranslationController(
     }
   }
 
-  function persistDraftEnvelope(
-    value: ReplyTranslationDraftResponseDto | null,
-  ): void {
+  function persistDraftEnvelope(value: ReplyTranslationDraftResponseDto | null): void {
     const key = draftStorageKey();
     if (!key) return;
     try {
       if (
         !value ||
-        ["CONSUMED", "EXPIRED"].includes(value.status) ||
+        ['CONSUMED', 'EXPIRED'].includes(value.status) ||
         Date.parse(value.expiresAt) <= Date.now()
       ) {
         globalThis.sessionStorage?.removeItem(key);
@@ -296,9 +272,9 @@ export function createConversationTranslationController(
       const envelope: unknown = JSON.parse(raw);
       if (
         !envelope ||
-        typeof envelope !== "object" ||
+        typeof envelope !== 'object' ||
         Array.isArray(envelope) ||
-        Object.hasOwn(envelope, "sourceText")
+        Object.hasOwn(envelope, 'sourceText')
       ) {
         globalThis.sessionStorage?.removeItem(storageKey);
       }
@@ -314,11 +290,7 @@ export function createConversationTranslationController(
       const raw = globalThis.sessionStorage?.getItem(storageKey);
       if (!raw) return;
       const parsedEnvelope: unknown = JSON.parse(raw);
-      if (
-        !parsedEnvelope ||
-        typeof parsedEnvelope !== "object" ||
-        Array.isArray(parsedEnvelope)
-      ) {
+      if (!parsedEnvelope || typeof parsedEnvelope !== 'object' || Array.isArray(parsedEnvelope)) {
         globalThis.sessionStorage?.removeItem(storageKey);
         return;
       }
@@ -331,19 +303,17 @@ export function createConversationTranslationController(
         targetLocale?: unknown;
       };
       const expiresAt =
-        typeof envelope.expiresAt === "string"
-          ? Date.parse(envelope.expiresAt)
-          : Number.NaN;
+        typeof envelope.expiresAt === 'string' ? Date.parse(envelope.expiresAt) : Number.NaN;
       if (
-        Object.hasOwn(envelope, "sourceText") ||
-        typeof envelope.draftId !== "string" ||
+        Object.hasOwn(envelope, 'sourceText') ||
+        typeof envelope.draftId !== 'string' ||
         !Number.isFinite(expiresAt) ||
         expiresAt <= Date.now() ||
-        typeof envelope.sourceTextHash !== "string" ||
+        typeof envelope.sourceTextHash !== 'string' ||
         !envelope.sourceTextHash ||
-        typeof envelope.sourceLocale !== "string" ||
+        typeof envelope.sourceLocale !== 'string' ||
         !envelope.sourceLocale ||
-        typeof envelope.targetLocale !== "string"
+        typeof envelope.targetLocale !== 'string'
       ) {
         globalThis.sessionStorage?.removeItem(storageKey);
         return;
@@ -370,7 +340,7 @@ export function createConversationTranslationController(
         response.expiresAt !== envelope.expiresAt ||
         !Number.isFinite(responseExpiresAt) ||
         responseExpiresAt <= Date.now() ||
-        typeof responseSourceText !== "string" ||
+        typeof responseSourceText !== 'string' ||
         !responseSourceText.trim() ||
         responseSourceText.length > 10_000
       ) {
@@ -412,11 +382,7 @@ export function createConversationTranslationController(
   }
 
   function isCurrent(key: string | null, requestGeneration: number): boolean {
-    return (
-      !disposed &&
-      generation === requestGeneration &&
-      contextKey(context) === key
-    );
+    return !disposed && generation === requestGeneration && contextKey(context) === key;
   }
 
   function reset(): void {
@@ -430,7 +396,7 @@ export function createConversationTranslationController(
     editingReply.value = false;
     replyEditPromise = null;
     previewStale.value = false;
-    error.value = "";
+    error.value = '';
     loading.value = false;
   }
 
@@ -462,7 +428,7 @@ export function createConversationTranslationController(
       }
     } catch {
       if (isCurrent(key, requestGeneration)) {
-        error.value = "Не удалось загрузить настройки перевода";
+        error.value = 'Не удалось загрузить настройки перевода';
       }
     } finally {
       if (isCurrent(key, requestGeneration)) loading.value = false;
@@ -473,7 +439,7 @@ export function createConversationTranslationController(
     patch: Partial<
       Pick<
         UpdateConversationTranslationPreferenceDto,
-        "enabled" | "workingLocale" | "endUserLocaleOverride"
+        'enabled' | 'workingLocale' | 'endUserLocaleOverride'
       >
     >,
   ): Promise<void> {
@@ -484,7 +450,7 @@ export function createConversationTranslationController(
     const requestGeneration = generation;
     const previousTargetLocale = targetLocale.value;
     savingPreference.value = true;
-    error.value = "";
+    error.value = '';
     try {
       const response = await api.updateConversation(
         ids.projectId,
@@ -492,11 +458,10 @@ export function createConversationTranslationController(
         ids.conversationId,
         {
           enabled: patch.enabled ?? current.preference.enabled,
-          workingLocale:
-            patch.workingLocale ?? current.preference.workingLocale,
+          workingLocale: patch.workingLocale ?? current.preference.workingLocale,
           endUserLocaleOverride: Object.prototype.hasOwnProperty.call(
             patch,
-            "endUserLocaleOverride",
+            'endUserLocaleOverride',
           )
             ? (patch.endUserLocaleOverride ?? null)
             : current.preference.endUserLocaleOverride,
@@ -508,9 +473,7 @@ export function createConversationTranslationController(
         state.value = response;
         const nextTargetLocale =
           response.preference.endUserLocaleOverride ??
-          (response.language.needsConfirmation
-            ? null
-            : response.language.locale);
+          (response.language.needsConfirmation ? null : response.language.locale);
         if (draft.value && nextTargetLocale !== previousTargetLocale) {
           previewStale.value =
             draft.value.sourceText !== context.sourceText().trim() ||
@@ -519,16 +482,14 @@ export function createConversationTranslationController(
       }
     } catch {
       if (isCurrent(key, requestGeneration)) {
-        error.value = "Не удалось изменить настройки перевода";
+        error.value = 'Не удалось изменить настройки перевода';
       }
     } finally {
       if (isCurrent(key, requestGeneration)) savingPreference.value = false;
     }
   }
 
-  function upsertMessageTranslation(
-    item: ConversationMessageTranslationItemResponseDto,
-  ): void {
+  function upsertMessageTranslation(item: ConversationMessageTranslationItemResponseDto): void {
     const next = new Map(messageTranslations.value);
     next.set(item.messageId, item);
     messageTranslations.value = next;
@@ -554,8 +515,7 @@ export function createConversationTranslationController(
         );
       } catch {
         if (isCurrent(key, requestGeneration)) {
-          error.value =
-            "Статус перевода временно недоступен. Проверка продолжится.";
+          error.value = 'Статус перевода временно недоступен. Проверка продолжится.';
         }
         continue;
       }
@@ -577,11 +537,8 @@ export function createConversationTranslationController(
     const ids = requiredContext();
     const key = contextKey(context);
     const requestGeneration = generation;
-    translatingMessageIds.value = new Set([
-      ...translatingMessageIds.value,
-      messageId,
-    ]);
-    error.value = "";
+    translatingMessageIds.value = new Set([...translatingMessageIds.value, messageId]);
+    error.value = '';
     try {
       const item = await api.getMessageTranslation(
         ids.projectId,
@@ -592,16 +549,11 @@ export function createConversationTranslationController(
       if (!isCurrent(key, requestGeneration)) return;
       upsertMessageTranslation(item);
       if (!terminalMessageStatuses.has(item.state)) {
-        await pollMessageTranslation(
-          existing.translationId,
-          messageId,
-          key,
-          requestGeneration,
-        );
+        await pollMessageTranslation(existing.translationId, messageId, key, requestGeneration);
       }
     } catch {
       if (isCurrent(key, requestGeneration)) {
-        error.value = "Не удалось сверить статус перевода. Попробуйте ещё раз.";
+        error.value = 'Не удалось сверить статус перевода. Попробуйте ещё раз.';
       }
     } finally {
       if (isCurrent(key, requestGeneration)) {
@@ -626,15 +578,11 @@ export function createConversationTranslationController(
     const ids = requiredContext();
     const key = contextKey(context);
     const requestGeneration = generation;
-    translatingMessageIds.value = new Set([
-      ...translatingMessageIds.value,
-      ...eligible,
-    ]);
-    error.value = "";
-    const attemptId = `${ids.conversationId}:${eligible.join(",")}`;
+    translatingMessageIds.value = new Set([...translatingMessageIds.value, ...eligible]);
+    error.value = '';
+    const attemptId = `${ids.conversationId}:${eligible.join(',')}`;
     try {
-      const idempotencyKey =
-        messageAttemptKeys.get(attemptId) ?? globalThis.crypto.randomUUID();
+      const idempotencyKey = messageAttemptKeys.get(attemptId) ?? globalThis.crypto.randomUUID();
       messageAttemptKeys.set(attemptId, idempotencyKey);
       const response = await api.translateMessages(
         ids.projectId,
@@ -648,24 +596,18 @@ export function createConversationTranslationController(
       if (!isCurrent(key, requestGeneration)) return;
       for (const item of response.items) upsertMessageTranslation(item);
       const pending = response.items.filter(
-        (item) =>
-          item.translationId && !terminalMessageStatuses.has(item.state),
+        (item) => item.translationId && !terminalMessageStatuses.has(item.state),
       );
       if (pending.length) {
         await Promise.all(
           pending.map((item) =>
-            pollMessageTranslation(
-              item.translationId!,
-              item.messageId,
-              key,
-              requestGeneration,
-            ),
+            pollMessageTranslation(item.translationId!, item.messageId, key, requestGeneration),
           ),
         );
       }
     } catch (cause) {
       if (isCurrent(key, requestGeneration)) {
-        setOperationError(cause, "Не удалось перевести сообщения");
+        setOperationError(cause, 'Не удалось перевести сообщения');
         try {
           await context.reconcileMessages?.();
           if (isCurrent(key, requestGeneration)) {
@@ -702,8 +644,7 @@ export function createConversationTranslationController(
     const key = contextKey(context);
     const requestGeneration = generation;
     const idempotencyKey =
-      retryAttemptKeys.get(existing.translationId) ??
-      globalThis.crypto.randomUUID();
+      retryAttemptKeys.get(existing.translationId) ?? globalThis.crypto.randomUUID();
     retryAttemptKeys.set(existing.translationId, idempotencyKey);
     const item = await api.retryMessageTranslation(
       ids.projectId,
@@ -716,43 +657,37 @@ export function createConversationTranslationController(
     if (!isCurrent(key, requestGeneration)) return;
     upsertMessageTranslation(item);
     if (!terminalMessageStatuses.has(item.state)) {
-      await pollMessageTranslation(
-        existing.translationId,
-        messageId,
-        key,
-        requestGeneration,
-      );
+      await pollMessageTranslation(existing.translationId, messageId, key, requestGeneration);
     }
   }
 
   function mergeRealtimeTranslation(value: unknown): boolean {
-    if (!value || typeof value !== "object") return false;
+    if (!value || typeof value !== 'object') return false;
     const envelope = value as Record<string, unknown>;
     const ids =
       context.projectId() && context.endUserId() && context.conversationId()
         ? requiredContext()
         : null;
     const translation =
-      envelope.translation && typeof envelope.translation === "object"
+      envelope.translation && typeof envelope.translation === 'object'
         ? (envelope.translation as Record<string, unknown>)
         : null;
-    const states = ["PENDING", "RUNNING", "COMPLETED", "FAILED"] as const;
+    const states = ['PENDING', 'RUNNING', 'COMPLETED', 'FAILED'] as const;
     if (
       !ids ||
       envelope.contractVersion !== 1 ||
       envelope.projectId !== ids.projectId ||
       envelope.endUserId !== ids.endUserId ||
       envelope.conversationId !== ids.conversationId ||
-      typeof envelope.messageId !== "string" ||
+      typeof envelope.messageId !== 'string' ||
       !translation ||
-      typeof translation.id !== "string" ||
+      typeof translation.id !== 'string' ||
       translation.sourceMessageId !== envelope.messageId ||
       !states.includes(translation.status as (typeof states)[number]) ||
-      typeof translation.targetLocale !== "string" ||
-      typeof translation.updatedAt !== "string" ||
+      typeof translation.targetLocale !== 'string' ||
+      typeof translation.updatedAt !== 'string' ||
       !Number.isFinite(Date.parse(translation.updatedAt)) ||
-      (translation.translatedText !== null &&
-        typeof translation.translatedText !== "string")
+      (translation.translatedText !== null && typeof translation.translatedText !== 'string')
     ) {
       return false;
     }
@@ -760,23 +695,13 @@ export function createConversationTranslationController(
       messageId: envelope.messageId,
       translationId: translation.id,
       state: translation.status as (typeof states)[number],
-      sourceLocale:
-        typeof translation.sourceLocale === "string"
-          ? translation.sourceLocale
-          : null,
+      sourceLocale: typeof translation.sourceLocale === 'string' ? translation.sourceLocale : null,
       targetLocale: translation.targetLocale,
       translatedText:
-        typeof translation.translatedText === "string"
-          ? translation.translatedText
-          : null,
-      errorCode:
-        typeof translation.errorCode === "string"
-          ? translation.errorCode
-          : null,
+        typeof translation.translatedText === 'string' ? translation.translatedText : null,
+      errorCode: typeof translation.errorCode === 'string' ? translation.errorCode : null,
       warnings: Array.isArray(translation.warnings)
-        ? translation.warnings.filter(
-            (warning): warning is string => typeof warning === "string",
-          )
+        ? translation.warnings.filter((warning): warning is string => typeof warning === 'string')
         : [],
       updatedAt: translation.updatedAt,
     };
@@ -792,8 +717,7 @@ export function createConversationTranslationController(
       if (
         Date.parse(existing.updatedAt) > Date.parse(incoming.updatedAt!) ||
         (existing.updatedAt === incoming.updatedAt &&
-          (statusRank[existing.state] ?? -1) >=
-            (statusRank[incoming.state] ?? -1))
+          (statusRank[existing.state] ?? -1) >= (statusRank[incoming.state] ?? -1))
       ) {
         return false;
       }
@@ -808,9 +732,7 @@ export function createConversationTranslationController(
     requestGeneration: number,
   ): Promise<ReplyTranslationDraftResponseDto | null> {
     let current = first;
-    for (const delay of [
-      350, 700, 1_400, 2_800, 5_000, 10_000, 15_000, 25_000,
-    ]) {
+    for (const delay of [350, 700, 1_400, 2_800, 5_000, 10_000, 15_000, 25_000]) {
       if (terminalDraftStatuses.has(current.status)) return current;
       await wait(delay);
       if (!isCurrent(key, requestGeneration)) return null;
@@ -824,8 +746,7 @@ export function createConversationTranslationController(
         );
       } catch {
         if (isCurrent(key, requestGeneration)) {
-          error.value =
-            "Статус перевода временно недоступен. Проверка продолжится.";
+          error.value = 'Статус перевода временно недоступен. Проверка продолжится.';
         }
         continue;
       }
@@ -844,7 +765,7 @@ export function createConversationTranslationController(
     const key = contextKey(context);
     const requestGeneration = generation;
     previewing.value = true;
-    error.value = "";
+    error.value = '';
     try {
       const response = await api.getReplyDraft(
         ids.projectId,
@@ -860,7 +781,7 @@ export function createConversationTranslationController(
       }
     } catch {
       if (isCurrent(key, requestGeneration)) {
-        error.value = "Не удалось сверить статус перевода. Попробуйте ещё раз.";
+        error.value = 'Не удалось сверить статус перевода. Попробуйте ещё раз.';
       }
     } finally {
       if (isCurrent(key, requestGeneration)) previewing.value = false;
@@ -888,7 +809,7 @@ export function createConversationTranslationController(
     const requestGeneration = generation;
     previewing.value = true;
     previewStale.value = false;
-    error.value = "";
+    error.value = '';
     try {
       const macroReplyDraft = context.macroReplyDraft?.() ?? undefined;
       const fingerprint = [
@@ -896,10 +817,10 @@ export function createConversationTranslationController(
         sourceText,
         current.preference.workingLocale,
         locale,
-        macroReplyDraft?.id ?? "",
-        macroReplyDraft?.sourceHash ?? "",
-        macroReplyDraft?.version ?? "",
-      ].join("\u001f");
+        macroReplyDraft?.id ?? '',
+        macroReplyDraft?.sourceHash ?? '',
+        macroReplyDraft?.version ?? '',
+      ].join('\u001f');
       let response = await api.createReplyDraft(
         ids.projectId,
         ids.endUserId,
@@ -909,8 +830,7 @@ export function createConversationTranslationController(
         locale,
         context.selectedCaseId(),
         (() => {
-          const key =
-            draftAttemptKeys.get(fingerprint) ?? globalThis.crypto.randomUUID();
+          const key = draftAttemptKeys.get(fingerprint) ?? globalThis.crypto.randomUUID();
           draftAttemptKeys.set(fingerprint, key);
           return key;
         })(),
@@ -920,17 +840,13 @@ export function createConversationTranslationController(
       if (!isCurrent(key, requestGeneration)) return null;
       draft.value = response;
       persistDraftEnvelope(response);
-      if (
-        options.poll !== false &&
-        !terminalDraftStatuses.has(response.status)
-      ) {
-        response =
-          (await pollDraft(response, key, requestGeneration)) ?? response;
+      if (options.poll !== false && !terminalDraftStatuses.has(response.status)) {
+        response = (await pollDraft(response, key, requestGeneration)) ?? response;
       }
       return isCurrent(key, requestGeneration) ? response : null;
     } catch (cause) {
       if (isCurrent(key, requestGeneration)) {
-        setOperationError(cause, "Не удалось подготовить перевод ответа");
+        setOperationError(cause, 'Не удалось подготовить перевод ответа');
       }
       return null;
     } finally {
@@ -986,10 +902,9 @@ export function createConversationTranslationController(
     const key = contextKey(context);
     const requestGeneration = generation;
     previewing.value = true;
-    error.value = "";
+    error.value = '';
     try {
-      const idempotencyKey =
-        retryAttemptKeys.get(current.id) ?? globalThis.crypto.randomUUID();
+      const idempotencyKey = retryAttemptKeys.get(current.id) ?? globalThis.crypto.randomUUID();
       retryAttemptKeys.set(current.id, idempotencyKey);
       const response = await api.retryReplyDraft(
         ids.projectId,
@@ -1005,7 +920,7 @@ export function createConversationTranslationController(
       await pollDraft(response, key, requestGeneration);
     } catch (cause) {
       if (isCurrent(key, requestGeneration)) {
-        setOperationError(cause, "Не удалось повторить перевод ответа");
+        setOperationError(cause, 'Не удалось повторить перевод ответа');
       }
     } finally {
       if (isCurrent(key, requestGeneration)) previewing.value = false;
@@ -1021,8 +936,7 @@ export function createConversationTranslationController(
         return;
       }
       previewStale.value =
-        next.trim() !== draft.value.sourceText ||
-        draft.value.targetLocale !== targetLocale.value;
+        next.trim() !== draft.value.sourceText || draft.value.targetLocale !== targetLocale.value;
     },
   );
   onScopeDispose(() => {

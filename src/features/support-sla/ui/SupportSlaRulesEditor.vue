@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import Button from "primevue/button";
-import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import MultiSelect from "primevue/multiselect";
-import Textarea from "primevue/textarea";
+import { ref } from 'vue';
+import Button from 'primevue/button';
+import InputNumber from 'primevue/inputnumber';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import MultiSelect from 'primevue/multiselect';
+import Textarea from 'primevue/textarea';
 import {
   createEmptySupportSlaRule,
   type SupportSlaConfigurationForm,
   type SupportSlaFormIssue,
-} from "../model/support-sla-configuration-form";
+} from '../model/support-sla-configuration-form';
 
 defineProps<{
   readonly: boolean;
@@ -20,23 +20,23 @@ const form = defineModel<SupportSlaConfigurationForm>({ required: true });
 const draggedRule = ref<number | null>(null);
 
 const priorityOptions = [
-  { label: "Низкий", value: "LOW" },
-  { label: "Обычный", value: "NORMAL" },
-  { label: "Высокий", value: "HIGH" },
-  { label: "Срочный", value: "URGENT" },
-  { label: "Критический", value: "CRITICAL" },
+  { label: 'Низкий', value: 'LOW' },
+  { label: 'Обычный', value: 'NORMAL' },
+  { label: 'Высокий', value: 'HIGH' },
+  { label: 'Срочный', value: 'URGENT' },
+  { label: 'Критический', value: 'CRITICAL' },
 ];
 const caseTypeOptions = [
-  { label: "Информационный запрос", value: "INFORMATION_REQUEST" },
-  { label: "Решение проблемы", value: "PROBLEM_RESOLUTION" },
-  { label: "Поддержка решения", value: "DECISION_SUPPORT" },
-  { label: "Запрос действия", value: "ACTION_REQUEST" },
-  { label: "Обратная связь", value: "FEEDBACK" },
-  { label: "Другое", value: "OTHER" },
+  { label: 'Информационный запрос', value: 'INFORMATION_REQUEST' },
+  { label: 'Решение проблемы', value: 'PROBLEM_RESOLUTION' },
+  { label: 'Поддержка решения', value: 'DECISION_SUPPORT' },
+  { label: 'Запрос действия', value: 'ACTION_REQUEST' },
+  { label: 'Обратная связь', value: 'FEEDBACK' },
+  { label: 'Другое', value: 'OTHER' },
 ];
 const pauseOptions = [
-  { label: "Ожидаем пользователя", value: "WAITING_END_USER" },
-  { label: "Ожидаем систему", value: "WAITING_SYSTEM" },
+  { label: 'Ожидаем пользователя', value: 'WAITING_END_USER' },
+  { label: 'Ожидаем систему', value: 'WAITING_SYSTEM' },
 ];
 
 function isFallback(index: number): boolean {
@@ -44,23 +44,12 @@ function isFallback(index: number): boolean {
 }
 
 function addRule(): void {
-  form.value.rules.splice(
-    Math.max(0, form.value.rules.length - 1),
-    0,
-    createEmptySupportSlaRule(),
-  );
+  form.value.rules.splice(Math.max(0, form.value.rules.length - 1), 0, createEmptySupportSlaRule());
 }
 
 function moveRule(from: number, to: number): void {
   const fallbackIndex = form.value.rules.length - 1;
-  if (
-    from < 0 ||
-    to < 0 ||
-    from >= fallbackIndex ||
-    to >= fallbackIndex ||
-    from === to
-  )
-    return;
+  if (from < 0 || to < 0 || from >= fallbackIndex || to >= fallbackIndex || from === to) return;
   const [rule] = form.value.rules.splice(from, 1);
   if (rule) form.value.rules.splice(to, 0, rule);
 }
@@ -108,9 +97,16 @@ function dropRule(target: number): void {
         >
           <span class="sla-rule__order">{{ index + 1 }}</span>
           <span class="sla-rule__summary">
-            <strong>{{ rule.code || "Новое правило" }}</strong>
+            <strong>{{ rule.code || 'Новое правило' }}</strong>
             <small v-if="isFallback(index)">Обязательное правило для остальных обращений</small>
-            <small v-else>Условий: {{ rule.priorities.length + rule.caseTypes.length + (rule.groupCodesText.trim() ? 1 : 0) }}</small>
+            <small v-else
+              >Условий:
+              {{
+                rule.priorities.length +
+                rule.caseTypes.length +
+                (rule.groupCodesText.trim() ? 1 : 0)
+              }}</small
+            >
           </span>
           <span v-if="isFallback(index)" class="sla-rule__badge">Последнее</span>
           <i class="pi pi-chevron-down" aria-hidden="true" />
@@ -216,7 +212,10 @@ function dropRule(target: number): void {
                   placeholder="VIP&#10;ENTERPRISE"
                   :aria-label="`Коды групп правила ${index + 1}`"
                 />
-                <small>По одному серверному коду на строку. Названия групп появятся после публикации каталога.</small>
+                <small
+                  >По одному серверному коду на строку. Названия групп появятся после публикации
+                  каталога.</small
+                >
               </label>
             </div>
           </section>
@@ -316,7 +315,8 @@ function dropRule(target: number): void {
             :key="`${issue.code}-${issue.path}`"
             severity="error"
             :closable="false"
-          >{{ issue.message }}</Message>
+            >{{ issue.message }}</Message
+          >
         </div>
       </details>
     </div>
@@ -326,7 +326,8 @@ function dropRule(target: number): void {
       :key="`${issue.code}-${issue.path}`"
       severity="error"
       :closable="false"
-    >{{ issue.message }}</Message>
+      >{{ issue.message }}</Message
+    >
   </section>
 </template>
 
@@ -347,14 +348,24 @@ function dropRule(target: number): void {
 }
 .section-kicker {
   color: var(--text-tertiary);
-  font-size: .7rem;
+  font-size: 0.7rem;
   font-weight: 800;
-  letter-spacing: .09em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
-.sla-editor-panel h2 { margin-top: 4px; font-size: 1.1rem; }
-.sla-editor-panel p { margin: 5px 0 0; color: var(--text-secondary); font-size: .78rem; }
-.sla-rule-list { display: grid; gap: 10px; }
+.sla-editor-panel h2 {
+  margin-top: 4px;
+  font-size: 1.1rem;
+}
+.sla-editor-panel p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+.sla-rule-list {
+  display: grid;
+  gap: 10px;
+}
 .sla-rule {
   overflow: hidden;
   border: 1px solid var(--line);
@@ -375,7 +386,9 @@ function dropRule(target: number): void {
   cursor: pointer;
   list-style: none;
 }
-.sla-rule > summary::-webkit-details-marker { display: none; }
+.sla-rule > summary::-webkit-details-marker {
+  display: none;
+}
 .sla-rule__order {
   display: grid;
   place-items: center;
@@ -384,20 +397,28 @@ function dropRule(target: number): void {
   color: var(--text-secondary);
   background: var(--surface-subtle);
   border-radius: 10px;
-  font-size: .76rem;
+  font-size: 0.76rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 .sla-rule__summary strong,
-.sla-rule__summary small { display: block; }
-.sla-rule__summary strong { font-size: .82rem; }
-.sla-rule__summary small { margin-top: 3px; color: var(--text-tertiary); font-size: .68rem; }
+.sla-rule__summary small {
+  display: block;
+}
+.sla-rule__summary strong {
+  font-size: 0.82rem;
+}
+.sla-rule__summary small {
+  margin-top: 3px;
+  color: var(--text-tertiary);
+  font-size: 0.68rem;
+}
 .sla-rule__badge {
   padding: 5px 8px;
   color: var(--status-accent-text);
   background: var(--status-accent-soft);
   border-radius: 999px;
-  font-size: .68rem;
+  font-size: 0.68rem;
   font-weight: 800;
 }
 .sla-rule__controls {
@@ -406,40 +427,96 @@ function dropRule(target: number): void {
   gap: 2px;
   padding-top: 4px;
 }
-.sla-rule > summary > i { color: var(--text-tertiary); font-size: .7rem; transition: transform 160ms cubic-bezier(.23, 1, .32, 1); }
-.sla-rule[open] > summary > i { transform: rotate(180deg); }
+.sla-rule > summary > i {
+  color: var(--text-tertiary);
+  font-size: 0.7rem;
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.sla-rule[open] > summary > i {
+  transform: rotate(180deg);
+}
 .sla-rule__body {
   display: grid;
   gap: 18px;
   padding: 4px 14px 16px;
   border-top: 1px solid var(--line);
 }
-.rule-section { display: grid; gap: 10px; padding-top: 14px; }
-.rule-section h3 { margin: 0; font-size: .86rem; letter-spacing: -.01em; }
-.rule-section p { margin-top: 3px; font-size: .7rem; }
+.rule-section {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+}
+.rule-section h3 {
+  margin: 0;
+  font-size: 0.86rem;
+  letter-spacing: -0.01em;
+}
+.rule-section p {
+  margin-top: 3px;
+  font-size: 0.7rem;
+}
 .rule-grid,
-.target-grid { display: grid; gap: 10px; }
-.rule-grid--identity { grid-template-columns: minmax(0, 1fr) minmax(180px, .45fr); padding-top: 14px; }
-.rule-grid--conditions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.rule-groups-field { grid-column: 1 / -1; }
-.target-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.sla-field { display: grid; gap: 7px; min-width: 0; }
-.sla-field > span { font-size: .76rem; font-weight: 700; }
-.sla-field small { color: var(--text-tertiary); font-size: .68rem; line-height: 1.45; }
+.target-grid {
+  display: grid;
+  gap: 10px;
+}
+.rule-grid--identity {
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.45fr);
+  padding-top: 14px;
+}
+.rule-grid--conditions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.rule-groups-field {
+  grid-column: 1 / -1;
+}
+.target-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.sla-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.sla-field > span {
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+.sla-field small {
+  color: var(--text-tertiary);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
 @media (max-width: 760px) {
-  .sla-editor-panel { padding: 16px; }
+  .sla-editor-panel {
+    padding: 16px;
+  }
   .rule-grid--identity,
   .rule-grid--conditions,
-  .target-grid { grid-template-columns: 1fr; }
-  .sla-rule > summary { grid-template-columns: 32px minmax(0, 1fr) auto 16px; }
-  .sla-rule__controls { justify-content: flex-start; }
+  .target-grid {
+    grid-template-columns: 1fr;
+  }
+  .sla-rule > summary {
+    grid-template-columns: 32px minmax(0, 1fr) auto 16px;
+  }
+  .sla-rule__controls {
+    justify-content: flex-start;
+  }
 }
 @media (max-width: 480px) {
-  .sla-editor-panel__header { flex-direction: column; }
-  .sla-editor-panel__header :deep(.p-button) { width: 100%; }
-  .sla-rule__badge { display: none; }
+  .sla-editor-panel__header {
+    flex-direction: column;
+  }
+  .sla-editor-panel__header :deep(.p-button) {
+    width: 100%;
+  }
+  .sla-rule__badge {
+    display: none;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sla-rule > summary > i { transition: none; }
+  .sla-rule > summary > i {
+    transition: none;
+  }
 }
 </style>

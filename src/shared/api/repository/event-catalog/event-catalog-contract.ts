@@ -17,9 +17,9 @@ import type {
   SaveEventSchemaDraftDto,
   UpdateEventDefinitionMetadataDto,
   UpdateEventIngestionPolicyDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
-export type EventDefinitionLifecycle = "ACTIVE" | "ARCHIVED";
+export type EventDefinitionLifecycle = 'ACTIVE' | 'ARCHIVED';
 
 export interface EventCatalogDefinition {
   definitionKeyId: string;
@@ -46,14 +46,13 @@ export interface EventCatalogDefinition {
     payloadSchema: Record<string, unknown>;
     publishedAt: string;
   };
-  origin: EventDefinitionCatalogResponseDto["origin"];
+  origin: EventDefinitionCatalogResponseDto['origin'];
   readOnly: boolean;
 }
 
 export type EventDefinitionUsage = EventDefinitionUsageResponseDto;
 export type EventDefinitionRevision = EventDefinitionRevisionResponseDto;
-export type EventDefinitionRevisionPage =
-  EventDefinitionRevisionPageResponseDto;
+export type EventDefinitionRevisionPage = EventDefinitionRevisionPageResponseDto;
 export type CreateEventDefinitionCommand = CreateEventCatalogDefinitionDto;
 export type CreateEventSchemaSuccessorCommand = CreateEventSchemaSuccessorDto;
 export type UpdateEventMetadataCommand = UpdateEventDefinitionMetadataDto;
@@ -67,13 +66,12 @@ export type EventSchemaPublishResult = EventSchemaPublishResponseDto;
 export type SaveEventSchemaDraftCommand = SaveEventSchemaDraftDto;
 export type AnalyzeEventSchemaDraftCommand = AnalyzeEventSchemaDraftDto;
 export type PublishEventSchemaDraftCommand = PublishEventSchemaDraftDto;
-export type DiscardEventSchemaDraftCommand =
-  EventCatalogDiscardSchemaDraftParams;
+export type DiscardEventSchemaDraftCommand = EventCatalogDiscardSchemaDraftParams;
 
 export interface EventMetadataUpdateResult {
   definitionKeyId: string;
   code: string;
-  metadata: EventCatalogDefinition["metadata"];
+  metadata: EventCatalogDefinition['metadata'];
   currentRevisionId: string | null;
   metadataChanged: boolean;
   schemaRevisionUnchanged: boolean;
@@ -83,9 +81,7 @@ export function toEventCatalogDefinition(
   dto: EventDefinitionCatalogResponseDto,
 ): EventCatalogDefinition {
   if (!dto.currentRevision) {
-    throw new Error(
-      `Event Definition ${dto.id} has no current schema revision`,
-    );
+    throw new Error(`Event Definition ${dto.id} has no current schema revision`);
   }
   return {
     definitionKeyId: dto.id,

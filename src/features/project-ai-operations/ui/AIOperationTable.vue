@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import Tag from "primevue/tag";
-import type { AiOperationListItemDto } from "@/shared/api/generated/models";
+import Tag from 'primevue/tag';
+import type { AiOperationListItemDto } from '@/shared/api/generated/models';
 import {
   aiOperationActorLabel,
   aiOperationCategoryLabel,
@@ -11,7 +11,7 @@ import {
   aiOperationSourceLabel,
   aiOperationStatusPresentation,
   aiOperationTitleLabel,
-} from "../model/project-ai-operation-presentation";
+} from '../model/project-ai-operation-presentation';
 
 defineProps<{
   items: AiOperationListItemDto[];
@@ -31,9 +31,7 @@ defineProps<{
           <th scope="col">Источник расходов</th>
           <th scope="col">Статус</th>
           <th scope="col" class="number-column">AI-вызовы</th>
-          <th v-if="canReadCost" scope="col" class="number-column">
-            Стоимость
-          </th>
+          <th v-if="canReadCost" scope="col" class="number-column">Стоимость</th>
           <th scope="col" class="action-column">
             <span class="sr-only">Открыть</span>
           </th>
@@ -47,9 +45,7 @@ defineProps<{
           :class="{ failed: item.status === 'FAILED' }"
         >
           <td class="time-cell">
-            <time :datetime="item.startedAt">{{
-              aiOperationDateLabel(item.startedAt)
-            }}</time>
+            <time :datetime="item.startedAt">{{ aiOperationDateLabel(item.startedAt) }}</time>
             <small>№ {{ item.projectSequence }}</small>
           </td>
           <td class="operation-cell">
@@ -70,14 +66,11 @@ defineProps<{
             </small>
           </td>
           <td>
-            <span class="primary-value">{{
-              aiOperationActorLabel(item.initiator)
-            }}</span>
+            <span class="primary-value">{{ aiOperationActorLabel(item.initiator) }}</span>
             <small
               v-if="
                 item.responsibleCmsUserDisplayName &&
-                item.responsibleCmsUserDisplayName !==
-                  item.initiator.displayName
+                item.responsibleCmsUserDisplayName !== item.initiator.displayName
               "
             >
               Ответственный: {{ item.responsibleCmsUserDisplayName }}
@@ -94,9 +87,7 @@ defineProps<{
               :severity="aiOperationStatusPresentation(item.status).severity"
             />
             <small v-if="item.limitationCodes.length" class="limitation">
-              {{
-                aiOperationOutcomeLabel(item.limitationCodes[0], item.status)
-              }}
+              {{ aiOperationOutcomeLabel(item.limitationCodes[0], item.status) }}
               <template v-if="item.limitationCodes.length > 1">
                 · ещё {{ item.limitationCodes.length - 1 }}
               </template>
@@ -104,9 +95,7 @@ defineProps<{
           </td>
           <td class="number-column">{{ item.usageRecords }}</td>
           <td v-if="canReadCost" class="number-column cost-cell">
-            {{
-              item.cost ? aiOperationCostLabel(item.cost.effectiveCost) : "—"
-            }}
+            {{ item.cost ? aiOperationCostLabel(item.cost.effectiveCost) : '—' }}
           </td>
           <td class="action-column">
             <RouterLink

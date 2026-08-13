@@ -1,28 +1,28 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
+import { computed, onMounted, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
 import EventPicker, {
   type EventPickerOption,
   type EventPickerPage,
   type EventPickerRequest,
-} from "@/features/events/EventPicker.vue";
+} from '@/features/events/EventPicker.vue';
 import type {
   EventQueryPolicyItemDto,
   EventQueryRequestDto,
   EventQueryResultResponseDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 import {
   endUserProfileRepository,
   type ResolvedEndUserIdentity,
-} from "@/features/end-user-profile/api/end-user-profile-repository";
-import { eventQueryRepository } from "../api/event-query-repository";
-import { eventQueryPolicyItemFromConfiguration } from "../model/event-query-policy";
+} from '@/features/end-user-profile/api/end-user-profile-repository';
+import { eventQueryRepository } from '../api/event-query-repository';
+import { eventQueryPolicyItemFromConfiguration } from '../model/event-query-policy';
 import {
   eventQueryPeriodOptions,
   eventQueryTimeRange,
   type EventQueryRange,
-} from "../model/event-query-range";
+} from '../model/event-query-range';
 
 const props = defineProps<{
   projectId: string;
@@ -31,23 +31,21 @@ const props = defineProps<{
 
 const items = ref<EventQueryPolicyItemDto[]>([]);
 const eventNames = ref<Record<string, string>>({});
-const audience = ref<"INTERNAL_AI" | "END_USER_CONVERSATION">("INTERNAL_AI");
+const audience = ref<'INTERNAL_AI' | 'END_USER_CONVERSATION'>('INTERNAL_AI');
 const loadingCatalog = ref(false);
-const catalogError = ref("");
-const endUserId = ref("");
+const catalogError = ref('');
+const endUserId = ref('');
 const resolvedIdentity = ref<ResolvedEndUserIdentity | null>(null);
-const eventCode = ref("");
-const mode = ref<"SUMMARY" | "AGGREGATE" | "LATEST">("SUMMARY");
-const timeRange = ref<EventQueryRange>("LAST_24_HOURS");
+const eventCode = ref('');
+const mode = ref<'SUMMARY' | 'AGGREGATE' | 'LATEST'>('SUMMARY');
+const timeRange = ref<EventQueryRange>('LAST_24_HOURS');
 const result = ref<EventQueryResultResponseDto | null>(null);
 const loading = ref(false);
-const error = ref("");
+const error = ref('');
 let catalogScope = 0;
 let catalogRequestGeneration = 0;
 
-const selected = computed(() =>
-  items.value.find((item) => item.stableCode === eventCode.value),
-);
+const selected = computed(() => items.value.find((item) => item.stableCode === eventCode.value));
 const selectedEventOption = computed<EventPickerOption | undefined>(() =>
   selected.value ? toEventOption(selected.value) : undefined,
 );
@@ -57,12 +55,12 @@ const periodOptions = computed(() => {
 });
 const aggregateMetric = computed(() => {
   const field = selected.value?.safeFields.find((candidate) =>
-    ["SUM", "AVG", "MIN", "MAX"].some((operation) =>
+    ['SUM', 'AVG', 'MIN', 'MAX'].some((operation) =>
       candidate.operations.includes(operation as never),
     ),
   );
-  if (!field) return { operation: "COUNT" as const };
-  const operation = (["SUM", "AVG", "MIN", "MAX"] as const).find((value) =>
+  if (!field) return { operation: 'COUNT' as const };
+  const operation = (['SUM', 'AVG', 'MIN', 'MAX'] as const).find((value) =>
     field.operations.includes(value),
   )!;
   return {
@@ -73,31 +71,26 @@ const aggregateMetric = computed(() => {
 });
 const aggregateGroupBy = computed(() => {
   const currencyField =
-    "currencyField" in aggregateMetric.value
-      ? aggregateMetric.value.currencyField
-      : undefined;
+    'currencyField' in aggregateMetric.value ? aggregateMetric.value.currencyField : undefined;
   return currencyField ? [currencyField] : undefined;
 });
 const normalizedTimeRange = computed(() => {
-  return eventQueryTimeRange(
-    timeRange.value,
-    selected.value?.maxInteractiveLookbackHours ?? 1,
-  );
+  return eventQueryTimeRange(timeRange.value, selected.value?.maxInteractiveLookbackHours ?? 1);
 });
 const query = computed<EventQueryRequestDto>(() => ({
   eventCodes: eventCode.value ? [eventCode.value] : [],
   mode: mode.value,
   timeRange: normalizedTimeRange.value,
-  ...(mode.value === "AGGREGATE"
+  ...(mode.value === 'AGGREGATE'
     ? {
         metrics: [aggregateMetric.value],
         ...(aggregateGroupBy.value ? { groupBy: aggregateGroupBy.value } : {}),
       }
     : {}),
-  ...(mode.value === "LATEST"
+  ...(mode.value === 'LATEST'
     ? {
         fields: selected.value?.safeFields
-          .filter((field) => field.operations.includes("PROJECT"))
+          .filter((field) => field.operations.includes('PROJECT'))
           .map((field) => field.path),
         limit: 10,
       }
@@ -105,32 +98,32 @@ const query = computed<EventQueryRequestDto>(() => ({
 }));
 
 watch(eventCode, () => {
-  const allowedModes = selected.value?.allowedModes ?? ["SUMMARY"];
+  const allowedModes = selected.value?.allowedModes ?? ['SUMMARY'];
   if (!allowedModes.includes(mode.value)) {
-    mode.value = allowedModes[0] ?? "SUMMARY";
+    mode.value = allowedModes[0] ?? 'SUMMARY';
   }
   const allowedPeriods = periodOptions.value.map((item) => item.value);
   if (!allowedPeriods.includes(timeRange.value)) {
-    timeRange.value = allowedPeriods[0] ?? "POLICY_MAX";
+    timeRange.value = allowedPeriods[0] ?? 'POLICY_MAX';
   }
   result.value = null;
-  error.value = "";
+  error.value = '';
 });
 watch(endUserId, () => {
   resolvedIdentity.value = null;
   result.value = null;
-  error.value = "";
+  error.value = '';
 });
 
 async function loadCatalog(
-  request: EventPickerRequest = { query: "", limit: 25 },
+  request: EventPickerRequest = { query: '', limit: 25 },
 ): Promise<EventPickerPage> {
   const scope = catalogScope;
   const requestGeneration = ++catalogRequestGeneration;
   const projectId = props.projectId;
   const requestedAudience = audience.value;
   loadingCatalog.value = true;
-  catalogError.value = "";
+  catalogError.value = '';
   try {
     const response = await eventQueryRepository.listItems(projectId, {
       audience: requestedAudience,
@@ -151,15 +144,14 @@ async function loadCatalog(
       scope !== catalogScope ||
       projectId !== props.projectId ||
       requestedAudience !== audience.value
-    ) return { items: [], nextCursor: null };
+    )
+      return { items: [], nextCursor: null };
     for (const candidate of response.items) {
       eventNames.value[candidate.eventCode] = candidate.eventName;
     }
     items.value = [...items.value, ...parsed].filter(
       (item, index, all) =>
-        all.findIndex(
-          (candidate) => candidate.stableCode === item.stableCode,
-        ) === index,
+        all.findIndex((candidate) => candidate.stableCode === item.stableCode) === index,
     );
     return {
       items: parsed.map(toEventOption),
@@ -171,11 +163,10 @@ async function loadCatalog(
       scope !== catalogScope ||
       projectId !== props.projectId ||
       requestedAudience !== audience.value
-    ) return { items: [], nextCursor: null };
+    )
+      return { items: [], nextCursor: null };
     catalogError.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить каталог доступных событий";
+      cause instanceof Error ? cause.message : 'Не удалось загрузить каталог доступных событий';
     throw cause;
   } finally {
     if (
@@ -183,13 +174,14 @@ async function loadCatalog(
       scope === catalogScope &&
       projectId === props.projectId &&
       requestedAudience === audience.value
-    ) loadingCatalog.value = false;
+    )
+      loadingCatalog.value = false;
   }
 }
 
 async function initializeCatalog(): Promise<void> {
   const page = await loadCatalog();
-  if (!eventCode.value) eventCode.value = page.items[0]?.value ?? "";
+  if (!eventCode.value) eventCode.value = page.items[0]?.value ?? '';
 }
 
 function toEventOption(item: EventQueryPolicyItemDto): EventPickerOption {
@@ -211,9 +203,9 @@ watch(audience, () => {
   catalogRequestGeneration += 1;
   items.value = [];
   eventNames.value = {};
-  eventCode.value = "";
+  eventCode.value = '';
   result.value = null;
-  error.value = "";
+  error.value = '';
   void initializeCatalog().catch(() => undefined);
 });
 watch(
@@ -223,7 +215,7 @@ watch(
     catalogRequestGeneration += 1;
     items.value = [];
     eventNames.value = {};
-    eventCode.value = "";
+    eventCode.value = '';
     result.value = null;
     void initializeCatalog().catch(() => undefined);
   },
@@ -233,7 +225,7 @@ onMounted(() => void initializeCatalog().catch(() => undefined));
 async function preview() {
   if (!endUserId.value.trim() || !eventCode.value) return;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   result.value = null;
   try {
     const identity = await endUserProfileRepository.resolveIdentity(
@@ -242,7 +234,7 @@ async function preview() {
     );
     if (!identity) {
       error.value =
-        "Пользователь не найден. Укажите UUID Retenive или точный ID пользователя в продукте.";
+        'Пользователь не найден. Укажите UUID Retenive или точный ID пользователя в продукте.';
       return;
     }
     resolvedIdentity.value = identity;
@@ -252,15 +244,14 @@ async function preview() {
       query: query.value,
     });
   } catch (cause) {
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось выполнить preview";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось выполнить preview';
   } finally {
     loading.value = false;
   }
 }
 
 function formatBytes(value?: number) {
-  if (value === undefined) return "—";
+  if (value === undefined) return '—';
   return value < 1024 ? `${value} Б` : `${(value / 1024).toFixed(1)} КБ`;
 }
 </script>
@@ -271,8 +262,8 @@ function formatBytes(value?: number) {
       <div>
         <h4 id="event-query-preview-title">Безопасный preview</h4>
         <p>
-          Проверяет типизированный запрос для одного пользователя. Исходный
-          payload событий не показывается.
+          Проверяет типизированный запрос для одного пользователя. Исходный payload событий не
+          показывается.
         </p>
       </div>
       <span class="readonly-badge">read-only</span>
@@ -282,18 +273,14 @@ function formatBytes(value?: number) {
         <span>Режим проверки</span>
         <select v-model="audience" :disabled="disabled || loadingCatalog">
           <option value="INTERNAL_AI">Как внутренний AI-анализ</option>
-          <option value="END_USER_CONVERSATION">
-            Как ответ пользователю в Chat/Voice
-          </option>
+          <option value="END_USER_CONVERSATION">Как ответ пользователю в Chat/Voice</option>
         </select>
       </label>
     </div>
     <Message v-if="catalogError" severity="error" :closable="false">
       {{ catalogError }}
     </Message>
-    <Message v-if="error" severity="error" :closable="false">{{
-      error
-    }}</Message>
+    <Message v-if="error" severity="error" :closable="false">{{ error }}</Message>
     <div class="preview-form">
       <label>
         <span>Пользователь</span>
@@ -321,11 +308,7 @@ function formatBytes(value?: number) {
       />
       <label>
         <span>Режим</span>
-        <select
-          v-model="mode"
-          data-test="preview-mode"
-          :disabled="disabled || loading"
-        >
+        <select v-model="mode" data-test="preview-mode" :disabled="disabled || loading">
           <option
             v-for="value in selected?.allowedModes ?? ['SUMMARY']"
             :key="value"
@@ -337,16 +320,8 @@ function formatBytes(value?: number) {
       </label>
       <label>
         <span>Период</span>
-        <select
-          v-model="timeRange"
-          data-test="preview-period"
-          :disabled="disabled || loading"
-        >
-          <option
-            v-for="option in periodOptions"
-            :key="option.value"
-            :value="option.value"
-          >
+        <select v-model="timeRange" data-test="preview-period" :disabled="disabled || loading">
+          <option v-for="option in periodOptions" :key="option.value" :value="option.value">
             {{ option.label }}
           </option>
         </select>
@@ -371,7 +346,7 @@ function formatBytes(value?: number) {
           <span>Статус</span><strong>{{ result.status }}</strong>
         </div>
         <div>
-          <span>Найдено</span><strong>{{ result.matchedCount ?? "—" }}</strong>
+          <span>Найдено</span><strong>{{ result.matchedCount ?? '—' }}</strong>
         </div>
         <div>
           <span>Безопасный результат</span
@@ -380,10 +355,7 @@ function formatBytes(value?: number) {
         <div>
           <span>Оценка вклада</span
           ><strong
-            >{{
-              result.estimatedAddedInputTokens?.toLocaleString("ru-RU") ?? "—"
-            }}
-            токенов</strong
+            >{{ result.estimatedAddedInputTokens?.toLocaleString('ru-RU') ?? '—' }} токенов</strong
           >
         </div>
       </div>
@@ -395,13 +367,7 @@ function formatBytes(value?: number) {
           {{ limitation }}
         </li>
       </ul>
-      <details
-        v-if="
-          result.rows?.length ||
-          result.summaries?.length ||
-          result.groups?.length
-        "
-      >
+      <details v-if="result.rows?.length || result.summaries?.length || result.groups?.length">
         <summary>Показать безопасный результат</summary>
         <pre>{{ result.rows ?? result.summaries ?? result.groups }}</pre>
       </details>

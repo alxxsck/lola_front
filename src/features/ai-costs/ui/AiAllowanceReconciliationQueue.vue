@@ -1,54 +1,48 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import { formatDecimalMoney } from "@/shared/lib/decimal-money";
-import { aiAllowanceRepository } from "../api/ai-allowance-repository";
+import { computed, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import { formatDecimalMoney } from '@/shared/lib/decimal-money';
+import { aiAllowanceRepository } from '../api/ai-allowance-repository';
 import {
   allowanceCategoryLabel,
   allowanceCostQualityLabel,
-} from "../model/ai-allowance-presentation";
-import { isAllowanceReauthenticationRequired } from "../model/allowance-reauthentication";
-import AiAllowanceReauthenticationAction from "./AiAllowanceReauthenticationAction.vue";
+} from '../model/ai-allowance-presentation';
+import { isAllowanceReauthenticationRequired } from '../model/allowance-reauthentication';
+import AiAllowanceReauthenticationAction from './AiAllowanceReauthenticationAction.vue';
 import type {
   AiAllowanceReconciliationItem,
   AiAllowanceReconciliationPage,
   AiAllowanceReconciliationResolution,
-} from "../model/ai-allowance";
+} from '../model/ai-allowance';
 
 const props = defineProps<{
   projectId: string;
   canReconcile: boolean;
 }>();
-const emit = defineEmits<{ "fresh-login": [] }>();
+const emit = defineEmits<{ 'fresh-login': [] }>();
 
-const status = ref<"" | "RESERVED" | "UNKNOWN_HELD">("");
-const cursor = ref("");
+const status = ref<'' | 'RESERVED' | 'UNKNOWN_HELD'>('');
+const cursor = ref('');
 const page = ref<AiAllowanceReconciliationPage | null>(null);
-const loadedContextKey = ref("");
+const loadedContextKey = ref('');
 const loading = ref(false);
-const error = ref("");
-const notice = ref("");
+const error = ref('');
+const notice = ref('');
 const selected = ref<AiAllowanceReconciliationItem | null>(null);
-const resolution =
-  ref<AiAllowanceReconciliationResolution>("SETTLE_FROM_USAGE");
-const reason = ref("");
-const idempotencyKey = ref("");
+const resolution = ref<AiAllowanceReconciliationResolution>('SETTLE_FROM_USAGE');
+const reason = ref('');
+const idempotencyKey = ref('');
 const confirmed = ref(false);
-const formError = ref("");
+const formError = ref('');
 const resolving = ref(false);
 const reauthenticationRequired = ref(false);
 let generation = 0;
 
 const contextKey = computed(() =>
-  JSON.stringify([
-    props.canReconcile,
-    props.projectId,
-    status.value,
-    cursor.value,
-  ]),
+  JSON.stringify([props.canReconcile, props.projectId, status.value, cursor.value]),
 );
 const visiblePage = computed(() =>
   loadedContextKey.value === contextKey.value ? page.value : null,
@@ -57,10 +51,10 @@ const visiblePage = computed(() =>
 watch(
   () => props.projectId,
   () => {
-    cursor.value = "";
+    cursor.value = '';
     selected.value = null;
     resolving.value = false;
-    notice.value = "";
+    notice.value = '';
     reauthenticationRequired.value = false;
   },
 );
@@ -78,18 +72,15 @@ async function load(): Promise<void> {
   const requestContextKey = contextKey.value;
   const requestProjectId = props.projectId;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   page.value = null;
-  loadedContextKey.value = "";
+  loadedContextKey.value = '';
   try {
-    const next = await aiAllowanceRepository.reconciliationQueue(
-      requestProjectId,
-      {
-        limit: 50,
-        ...(cursor.value ? { cursor: cursor.value } : {}),
-        ...(status.value ? { status: status.value } : {}),
-      },
-    );
+    const next = await aiAllowanceRepository.reconciliationQueue(requestProjectId, {
+      limit: 50,
+      ...(cursor.value ? { cursor: cursor.value } : {}),
+      ...(status.value ? { status: status.value } : {}),
+    });
     if (
       requestGeneration === generation &&
       requestContextKey === contextKey.value &&
@@ -100,11 +91,8 @@ async function load(): Promise<void> {
       loadedContextKey.value = requestContextKey;
     }
   } catch (cause) {
-    if (
-      requestGeneration === generation &&
-      requestContextKey === contextKey.value
-    )
-      error.value = message(cause, "Не удалось загрузить очередь сверки");
+    if (requestGeneration === generation && requestContextKey === contextKey.value)
+      error.value = message(cause, 'Не удалось загрузить очередь сверки');
   } finally {
     if (requestGeneration === generation) loading.value = false;
   }
@@ -113,15 +101,15 @@ async function load(): Promise<void> {
 function invalidate(): void {
   generation += 1;
   page.value = null;
-  loadedContextKey.value = "";
+  loadedContextKey.value = '';
   loading.value = false;
-  error.value = "";
+  error.value = '';
   selected.value = null;
   resolving.value = false;
 }
 
 function resetPagination(): void {
-  cursor.value = "";
+  cursor.value = '';
 }
 
 function nextPage(): void {
@@ -130,33 +118,31 @@ function nextPage(): void {
 }
 
 function openResolve(item: AiAllowanceReconciliationItem): void {
-  if (!props.canReconcile || loadedContextKey.value !== contextKey.value)
-    return;
+  if (!props.canReconcile || loadedContextKey.value !== contextKey.value) return;
   selected.value = item;
-  resolution.value = "SETTLE_FROM_USAGE";
-  reason.value = "";
+  resolution.value = 'SETTLE_FROM_USAGE';
+  reason.value = '';
   idempotencyKey.value = commandKey();
   confirmed.value = false;
-  formError.value = "";
+  formError.value = '';
   reauthenticationRequired.value = false;
 }
 
 async function submitResolve(): Promise<void> {
   const item = selected.value;
-  if (!item || !props.canReconcile) return fail("Операция больше недоступна.");
+  if (!item || !props.canReconcile) return fail('Операция больше недоступна.');
   if (reason.value.trim().length < 3 || reason.value.trim().length > 500)
-    return fail("Причина должна содержать от 3 до 500 символов.");
+    return fail('Причина должна содержать от 3 до 500 символов.');
   if (!idempotencyKey.value || idempotencyKey.value.length > 128)
-    return fail("Некорректный ключ защиты от повторной отправки.");
-  if (!confirmed.value)
-    return fail("Подтвердите проверку данных и выбранного результата.");
+    return fail('Некорректный ключ защиты от повторной отправки.');
+  if (!confirmed.value) return fail('Подтвердите проверку данных и выбранного результата.');
 
   const requestContextKey = contextKey.value;
   const requestProjectId = props.projectId;
   resolving.value = true;
-  formError.value = "";
+  formError.value = '';
   reauthenticationRequired.value = false;
-  notice.value = "";
+  notice.value = '';
   try {
     await aiAllowanceRepository.resolveAttempt(
       requestProjectId,
@@ -164,22 +150,17 @@ async function submitResolve(): Promise<void> {
       { resolution: resolution.value, reason: reason.value.trim() },
       idempotencyKey.value,
     );
-    if (
-      requestContextKey !== contextKey.value ||
-      requestProjectId !== props.projectId
-    )
-      return;
+    if (requestContextKey !== contextKey.value || requestProjectId !== props.projectId) return;
     selected.value = null;
-    notice.value = "Операция завершена. Очередь обновлена.";
-    if (cursor.value) cursor.value = "";
+    notice.value = 'Операция завершена. Очередь обновлена.';
+    if (cursor.value) cursor.value = '';
     else await load();
   } catch (cause) {
     if (requestContextKey === contextKey.value) {
-      reauthenticationRequired.value =
-        isAllowanceReauthenticationRequired(cause);
+      reauthenticationRequired.value = isAllowanceReauthenticationRequired(cause);
       formError.value = reauthenticationRequired.value
-        ? ""
-        : message(cause, "Не удалось завершить операцию");
+        ? ''
+        : message(cause, 'Не удалось завершить операцию');
     }
   } finally {
     if (requestContextKey === contextKey.value) resolving.value = false;
@@ -190,21 +171,19 @@ function fail(value: string): void {
   formError.value = value;
 }
 
-function money(value: AiAllowanceReconciliationItem["reservedUsd"]): string {
-  return formatDecimalMoney(value, "USD");
+function money(value: AiAllowanceReconciliationItem['reservedUsd']): string {
+  return formatDecimalMoney(value, 'USD');
 }
 
 function date(value: string): string {
-  return new Intl.DateTimeFormat("ru-RU", {
-    dateStyle: "short",
-    timeStyle: "short",
+  return new Intl.DateTimeFormat('ru-RU', {
+    dateStyle: 'short',
+    timeStyle: 'short',
   }).format(new Date(value));
 }
 
-function statusLabel(value: AiAllowanceReconciliationItem["status"]): string {
-  return value === "RESERVED"
-    ? "Средства зарезервированы"
-    : "Сумма ожидает уточнения";
+function statusLabel(value: AiAllowanceReconciliationItem['status']): string {
+  return value === 'RESERVED' ? 'Средства зарезервированы' : 'Сумма ожидает уточнения';
 }
 
 function commandKey(): string {
@@ -217,16 +196,13 @@ function message(cause: unknown, fallback: string): string {
 </script>
 
 <template>
-  <section
-    class="reconciliation-queue"
-    aria-labelledby="reconciliation-heading"
-  >
+  <section class="reconciliation-queue" aria-labelledby="reconciliation-heading">
     <header>
       <div>
         <h2 id="reconciliation-heading">Незавершённые операции AI</h2>
         <p>
-          Здесь собраны операции, для которых итоговое списание ещё не
-          определено. Сначала показаны самые старые.
+          Здесь собраны операции, для которых итоговое списание ещё не определено. Сначала показаны
+          самые старые.
         </p>
       </div>
       <label for="reconciliation-status"
@@ -248,22 +224,13 @@ function message(cause: unknown, fallback: string): string {
       Нет доступа к сверке незавершённых операций.
     </Message>
     <template v-else>
-      <Message
-        v-if="notice"
-        severity="success"
-        :closable="false"
-        aria-live="polite"
-        >{{ notice }}</Message
-      >
+      <Message v-if="notice" severity="success" :closable="false" aria-live="polite">{{
+        notice
+      }}</Message>
       <Message v-if="error" severity="error" :closable="false" role="alert">
         {{ error }} <Button label="Повторить" text size="small" @click="load" />
       </Message>
-      <div
-        v-if="loading"
-        class="queue-loading"
-        role="status"
-        aria-label="Загрузка очереди"
-      >
+      <div v-if="loading" class="queue-loading" role="status" aria-label="Загрузка очереди">
         <Skeleton v-for="index in 4" :key="index" height="52px" />
       </div>
       <div v-else-if="visiblePage?.items.length" class="queue-table">
@@ -295,18 +262,11 @@ function message(cause: unknown, fallback: string): string {
                 <small>уточняется {{ money(item.unknownHeldUsd) }}</small>
               </td>
               <td>
-                <span>{{
-                  item.outcomeReason ?? "Причина пока не указана"
-                }}</span>
+                <span>{{ item.outcomeReason ?? 'Причина пока не указана' }}</span>
                 <small>{{ allowanceCostQualityLabel(item.costQuality) }}</small>
               </td>
               <td>
-                <Button
-                  label="Завершить"
-                  size="small"
-                  severity="warn"
-                  @click="openResolve(item)"
-                />
+                <Button label="Завершить" size="small" severity="warn" @click="openResolve(item)" />
               </td>
             </tr>
           </tbody>
@@ -316,24 +276,14 @@ function message(cause: unknown, fallback: string): string {
         В выбранном статусе незавершённых операций нет.
       </p>
       <footer v-if="visiblePage" class="queue-footer">
-        <Button
-          v-if="cursor"
-          label="К началу"
-          text
-          :disabled="loading"
-          @click="cursor = ''"
-        />
+        <Button v-if="cursor" label="К началу" text :disabled="loading" @click="cursor = ''" />
         <span />
         <Button
           label="Следующие 50"
           icon="pi pi-chevron-right"
           icon-pos="right"
           outlined
-          :disabled="
-            !visiblePage.pageInfo.hasMore ||
-            !visiblePage.pageInfo.nextCursor ||
-            loading
-          "
+          :disabled="!visiblePage.pageInfo.hasMore || !visiblePage.pageInfo.nextCursor || loading"
           @click="nextPage"
         />
       </footer>
@@ -349,60 +299,38 @@ function message(cause: unknown, fallback: string): string {
   >
     <form class="resolve-form" @submit.prevent="submitResolve">
       <Message severity="warn" :closable="false">
-        Служебная операция изменит баланс пользователя. Завершить можно только
-        операцию из этой очереди.
+        Служебная операция изменит баланс пользователя. Завершить можно только операцию из этой
+        очереди.
       </Message>
       <p v-if="selected">Пользователь: {{ selected.endUserId }}</p>
       <label for="attempt-resolution"
         >Результат
         <select id="attempt-resolution" v-model="resolution">
-          <option value="SETTLE_FROM_USAGE">
-            Списать подтверждённую стоимость
-          </option>
+          <option value="SETTLE_FROM_USAGE">Списать подтверждённую стоимость</option>
           <option value="HOLD_UNKNOWN">Оставить сумму на уточнении</option>
-          <option value="RELEASE_PROVEN_NON_BILLABLE">
-            Освободить резерв без списания
-          </option>
+          <option value="RELEASE_PROVEN_NON_BILLABLE">Освободить резерв без списания</option>
         </select></label
       >
       <label for="attempt-reason"
         >Причина и подтверждающие данные
-        <textarea
-          id="attempt-reason"
-          v-model="reason"
-          rows="4"
-          maxlength="500"
-        />
+        <textarea id="attempt-reason" v-model="reason" rows="4" maxlength="500" />
       </label>
       <label class="confirmation">
         <input v-model="confirmed" type="checkbox" />
         {{
-          resolution === "RELEASE_PROVEN_NON_BILLABLE"
-            ? "Подтверждаю, что списание не требуется"
-            : "Подтверждаю проверку данных об использовании и стоимости"
+          resolution === 'RELEASE_PROVEN_NON_BILLABLE'
+            ? 'Подтверждаю, что списание не требуется'
+            : 'Подтверждаю проверку данных об использовании и стоимости'
         }}
       </label>
-      <small v-if="formError" class="form-error" role="alert">{{
-        formError
-      }}</small>
+      <small v-if="formError" class="form-error" role="alert">{{ formError }}</small>
       <AiAllowanceReauthenticationAction
         :required="reauthenticationRequired"
         @fresh-login="emit('fresh-login')"
       />
       <footer>
-        <Button
-          label="Отмена"
-          text
-          type="button"
-          :disabled="resolving"
-          @click="selected = null"
-        />
-        <Button
-          label="Подтвердить результат"
-          severity="warn"
-          type="submit"
-          :loading="resolving"
-        />
+        <Button label="Отмена" text type="button" :disabled="resolving" @click="selected = null" />
+        <Button label="Подтвердить результат" severity="warn" type="submit" :loading="resolving" />
       </footer>
     </form>
   </Dialog>

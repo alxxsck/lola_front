@@ -8,7 +8,7 @@ import {
   integrationRecoveryOperationsReplayDispatch,
   integrationRecoveryOperationsReplayIngress,
   integrationRecoveryOperationsResumeDirection,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   CancelIntegrationDispatchDto,
   ChangeIntegrationDirectionPauseDto,
@@ -17,14 +17,13 @@ import type {
   QuarantineIntegrationIngressDto,
   ReplayIntegrationDispatchDto,
   ReplayIntegrationIngressDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
-export type RecoveryOperationKind =
-  IntegrationRecoveryOperationListItemDto["operationKind"];
-export type IntegrationDirection = "INBOUND" | "OUTBOUND";
+export type RecoveryOperationKind = IntegrationRecoveryOperationListItemDto['operationKind'];
+export type IntegrationDirection = 'INBOUND' | 'OUTBOUND';
 
 const commandOptions = (idempotencyKey: string) => ({
-  headers: { "Idempotency-Key": idempotencyKey },
+  headers: { 'Idempotency-Key': idempotencyKey },
 });
 
 export const integrationRecoveryApi = {
@@ -32,16 +31,8 @@ export const integrationRecoveryApi = {
     return integrationRecoveryOperationsList(projectId, params);
   },
 
-  detail(
-    projectId: string,
-    operationKind: RecoveryOperationKind,
-    operationId: string,
-  ) {
-    return integrationRecoveryOperationsDetail(
-      projectId,
-      operationKind,
-      operationId,
-    );
+  detail(projectId: string, operationKind: RecoveryOperationKind, operationId: string) {
+    return integrationRecoveryOperationsDetail(projectId, operationKind, operationId);
   },
 
   listConnections(projectId: string) {
@@ -115,12 +106,6 @@ export const integrationRecoveryApi = {
     const command = paused
       ? integrationRecoveryOperationsPauseDirection
       : integrationRecoveryOperationsResumeDirection;
-    return command(
-      projectId,
-      connectionId,
-      direction,
-      input,
-      commandOptions(idempotencyKey),
-    );
+    return command(projectId, connectionId, direction, input, commandOptions(idempotencyKey));
   },
 };

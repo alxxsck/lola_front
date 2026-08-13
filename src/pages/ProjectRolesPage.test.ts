@@ -1,11 +1,11 @@
-import { flushPromises, shallowMount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import ProjectRolesPage from './ProjectRolesPage.vue'
-import { projectRoleApi } from '@/features/project-roles/api/project-role.api'
-import { ApiError } from '@/shared/api/http/api-error'
+import { flushPromises, shallowMount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import ProjectRolesPage from './ProjectRolesPage.vue';
+import { projectRoleApi } from '@/features/project-roles/api/project-role.api';
+import { ApiError } from '@/shared/api/http/api-error';
 
-const projectId = '00000000-0000-4000-8000-000000000010'
-const roleId = '00000000-0000-4000-8000-000000000020'
+const projectId = '00000000-0000-4000-8000-000000000010';
+const roleId = '00000000-0000-4000-8000-000000000020';
 
 const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
@@ -23,10 +23,10 @@ const mocks = vi.hoisted(() => ({
     refreshContext: vi.fn(),
     logout: vi.fn(),
   },
-}))
+}));
 
-vi.mock('vue-router', () => ({ useRouter: () => ({ replace: mocks.replace }) }))
-vi.mock('@/features/auth/auth.store', () => ({ useAuthStore: () => mocks.auth }))
+vi.mock('vue-router', () => ({ useRouter: () => ({ replace: mocks.replace }) }));
+vi.mock('@/features/auth/auth.store', () => ({ useAuthStore: () => mocks.auth }));
 vi.mock('@/features/project-roles/api/project-role.api', () => ({
   projectRoleApi: {
     permissions: vi.fn(),
@@ -37,7 +37,7 @@ vi.mock('@/features/project-roles/api/project-role.api', () => ({
     reassign: vi.fn(),
     archive: vi.fn(),
   },
-}))
+}));
 
 const role = (managed = false) => ({
   id: roleId,
@@ -53,7 +53,7 @@ const role = (managed = false) => ({
   version: 3,
   createdAt: '2026-07-21T10:00:00.000Z',
   updatedAt: '2026-07-21T10:00:00.000Z',
-})
+});
 
 function mountPage() {
   return shallowMount(ProjectRolesPage, {
@@ -63,7 +63,8 @@ function mountPage() {
           inheritAttrs: false,
           props: ['label', 'disabled'],
           emits: ['click'],
-          template: '<button v-bind="$attrs" :disabled="disabled" @click="$emit(\'click\')">{{ label }}</button>',
+          template:
+            '<button v-bind="$attrs" :disabled="disabled" @click="$emit(\'click\')">{{ label }}</button>',
         },
         Dialog: {
           props: ['visible'],
@@ -73,7 +74,8 @@ function mountPage() {
           inheritAttrs: false,
           props: ['modelValue'],
           emits: ['update:modelValue'],
-          template: '<input v-bind="$attrs" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)">',
+          template:
+            '<input v-bind="$attrs" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)">',
         },
         Message: { template: '<div><slot /></div>' },
         MultiSelect: true,
@@ -82,24 +84,25 @@ function mountPage() {
           inheritAttrs: false,
           props: ['modelValue'],
           emits: ['update:modelValue'],
-          template: '<textarea v-bind="$attrs" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+          template:
+            '<textarea v-bind="$attrs" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
         },
       },
     },
-  })
+  });
 }
 
 describe('Project Roles page', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    mocks.auth.user.platformPermissionCodes = []
+    vi.clearAllMocks();
+    mocks.auth.user.platformPermissionCodes = [];
     mocks.auth.project = {
       id: projectId,
       effectivePermissionCodes: ['project.roles.read', 'project.roles.manage'],
-    }
-    mocks.auth.refreshContext.mockResolvedValue(undefined)
-    mocks.auth.logout.mockResolvedValue(undefined)
-    vi.mocked(projectRoleApi.list).mockResolvedValue({ items: [role()] })
+    };
+    mocks.auth.refreshContext.mockResolvedValue(undefined);
+    mocks.auth.logout.mockResolvedValue(undefined);
+    vi.mocked(projectRoleApi.list).mockResolvedValue({ items: [role()] });
     vi.mocked(projectRoleApi.permissions).mockResolvedValue({
       groups: [
         {
@@ -120,33 +123,33 @@ describe('Project Roles page', () => {
           ],
         },
       ],
-    })
-    vi.mocked(projectRoleApi.create).mockResolvedValue(role())
-    vi.mocked(projectRoleApi.get).mockResolvedValue(role())
-    vi.mocked(projectRoleApi.update).mockResolvedValue({ ...role(), version: 4 })
-  })
+    });
+    vi.mocked(projectRoleApi.create).mockResolvedValue(role());
+    vi.mocked(projectRoleApi.get).mockResolvedValue(role());
+    vi.mocked(projectRoleApi.update).mockResolvedValue({ ...role(), version: 4 });
+  });
 
   it('keeps managed roles read-only even for role managers', async () => {
-    vi.mocked(projectRoleApi.list).mockResolvedValue({ items: [role(true)] })
-    const wrapper = mountPage()
-    await flushPromises()
+    vi.mocked(projectRoleApi.list).mockResolvedValue({ items: [role(true)] });
+    const wrapper = mountPage();
+    await flushPromises();
 
-    expect(wrapper.text()).toContain('Системная')
-    expect(wrapper.text()).not.toContain('Изменить')
-    expect(wrapper.text()).not.toContain('Архивировать')
-  })
+    expect(wrapper.text()).toContain('Системная');
+    expect(wrapper.text()).not.toContain('Изменить');
+    expect(wrapper.text()).not.toContain('Архивировать');
+  });
 
   it('creates from the visible server-owned delegable catalog and refreshes authority', async () => {
-    const wrapper = mountPage()
-    await flushPromises()
-    await wrapper.get('[data-testid="create-role"]').trigger('click')
-    await wrapper.get('[data-testid="role-key"]').setValue('SUPPORT_READER')
-    await wrapper.get('[data-testid="role-name"]').setValue('Support reader')
-    await wrapper.get('[data-testid="role-description"]').setValue('Reads support queues')
-    await wrapper.get('input[type="checkbox"]').setValue(true)
-    await wrapper.get('[data-testid="role-reason"]').setValue('  Approved role creation  ')
-    await wrapper.get('[data-testid="submit-role"]').trigger('click')
-    await flushPromises()
+    const wrapper = mountPage();
+    await flushPromises();
+    await wrapper.get('[data-testid="create-role"]').trigger('click');
+    await wrapper.get('[data-testid="role-key"]').setValue('SUPPORT_READER');
+    await wrapper.get('[data-testid="role-name"]').setValue('Support reader');
+    await wrapper.get('[data-testid="role-description"]').setValue('Reads support queues');
+    await wrapper.get('input[type="checkbox"]').setValue(true);
+    await wrapper.get('[data-testid="role-reason"]').setValue('  Approved role creation  ');
+    await wrapper.get('[data-testid="submit-role"]').trigger('click');
+    await flushPromises();
 
     expect(projectRoleApi.create).toHaveBeenCalledWith(projectId, {
       key: 'SUPPORT_READER',
@@ -154,49 +157,52 @@ describe('Project Roles page', () => {
       description: 'Reads support queues',
       permissionCodes: ['project.roles.read'],
       reason: 'Approved role creation',
-    })
-    expect(mocks.auth.refreshContext).toHaveBeenCalledOnce()
-  })
+    });
+    expect(mocks.auth.refreshContext).toHaveBeenCalledOnce();
+  });
 
   it('does not submit an update until the displayed impact is explicitly confirmed', async () => {
-    const wrapper = mountPage()
-    await flushPromises()
-    const edit = wrapper.findAll('button').find((button) => button.text() === 'Изменить')
-    expect(edit).toBeTruthy()
-    await edit!.trigger('click')
-    await wrapper.get('[data-testid="role-reason"]').setValue('Approved role update')
-    await wrapper.get('[data-testid="submit-role"]').trigger('click')
-    expect(projectRoleApi.update).not.toHaveBeenCalled()
+    const wrapper = mountPage();
+    await flushPromises();
+    const edit = wrapper.findAll('button').find((button) => button.text() === 'Изменить');
+    expect(edit).toBeTruthy();
+    await edit!.trigger('click');
+    await wrapper.get('[data-testid="role-reason"]').setValue('Approved role update');
+    await wrapper.get('[data-testid="submit-role"]').trigger('click');
+    expect(projectRoleApi.update).not.toHaveBeenCalled();
 
-    await wrapper.get('[data-testid="impact-confirmation"]').setValue(true)
-    await wrapper.get('[data-testid="submit-role"]').trigger('click')
-    await flushPromises()
-    expect(projectRoleApi.update).toHaveBeenCalledOnce()
-  })
+    await wrapper.get('[data-testid="impact-confirmation"]').setValue(true);
+    await wrapper.get('[data-testid="submit-role"]').trigger('click');
+    await flushPromises();
+    expect(projectRoleApi.update).toHaveBeenCalledOnce();
+  });
 
   it('rebinds the open editor to the conflict winner and requires fresh impact confirmation', async () => {
     vi.mocked(projectRoleApi.update)
       .mockRejectedValueOnce(new ApiError(409, 'unsafe', undefined, 'r1', 'VERSION_CONFLICT'))
-      .mockResolvedValueOnce({ ...role(), version: 5, assignedMembershipCount: 3 })
+      .mockResolvedValueOnce({ ...role(), version: 5, assignedMembershipCount: 3 });
     vi.mocked(projectRoleApi.get).mockResolvedValue({
       ...role(),
       version: 4,
       assignedMembershipCount: 3,
-    })
-    const wrapper = mountPage()
-    await flushPromises()
-    await wrapper.findAll('button').find((button) => button.text() === 'Изменить')!.trigger('click')
-    await wrapper.get('[data-testid="role-reason"]').setValue('Approved role update')
-    await wrapper.get('[data-testid="impact-confirmation"]').setValue(true)
-    await wrapper.get('[data-testid="submit-role"]').trigger('click')
-    await flushPromises()
+    });
+    const wrapper = mountPage();
+    await flushPromises();
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Изменить')!
+      .trigger('click');
+    await wrapper.get('[data-testid="role-reason"]').setValue('Approved role update');
+    await wrapper.get('[data-testid="impact-confirmation"]').setValue(true);
+    await wrapper.get('[data-testid="submit-role"]').trigger('click');
+    await flushPromises();
 
-    await wrapper.get('[data-testid="submit-role"]').trigger('click')
-    expect(projectRoleApi.update).toHaveBeenCalledOnce()
+    await wrapper.get('[data-testid="submit-role"]').trigger('click');
+    expect(projectRoleApi.update).toHaveBeenCalledOnce();
 
-    await wrapper.get('[data-testid="impact-confirmation"]').setValue(true)
-    await wrapper.get('[data-testid="submit-role"]').trigger('click')
-    await flushPromises()
+    await wrapper.get('[data-testid="impact-confirmation"]').setValue(true);
+    await wrapper.get('[data-testid="submit-role"]').trigger('click');
+    await flushPromises();
     expect(projectRoleApi.update).toHaveBeenNthCalledWith(
       2,
       projectId,
@@ -206,35 +212,35 @@ describe('Project Roles page', () => {
         expectedAssignedMembershipCount: 3,
         expectedAssignedMembershipCountCapped: false,
       }),
-    )
-  })
+    );
+  });
 
   it('offers a fresh login after step-up denial without replaying the role mutation', async () => {
     vi.mocked(projectRoleApi.create).mockRejectedValue(
       new ApiError(428, 'unsafe backend text', undefined, 'step-up-request', 'MFA_REQUIRED'),
-    )
-    const wrapper = mountPage()
-    await flushPromises()
-    await wrapper.get('[data-testid="create-role"]').trigger('click')
-    await wrapper.get('[data-testid="role-key"]').setValue('SUPPORT_READER')
-    await wrapper.get('[data-testid="role-name"]').setValue('Support reader')
-    await wrapper.get('[data-testid="role-description"]').setValue('Reads support queues')
-    await wrapper.get('input[type="checkbox"]').setValue(true)
-    await wrapper.get('[data-testid="role-reason"]').setValue('Approved role creation')
-    await wrapper.get('[data-testid="submit-role"]').trigger('click')
-    await flushPromises()
+    );
+    const wrapper = mountPage();
+    await flushPromises();
+    await wrapper.get('[data-testid="create-role"]').trigger('click');
+    await wrapper.get('[data-testid="role-key"]').setValue('SUPPORT_READER');
+    await wrapper.get('[data-testid="role-name"]').setValue('Support reader');
+    await wrapper.get('[data-testid="role-description"]').setValue('Reads support queues');
+    await wrapper.get('input[type="checkbox"]').setValue(true);
+    await wrapper.get('[data-testid="role-reason"]').setValue('Approved role creation');
+    await wrapper.get('[data-testid="submit-role"]').trigger('click');
+    await flushPromises();
 
-    expect(wrapper.text()).toContain('Требуется свежий вход с MFA')
-    expect(wrapper.text()).not.toContain('unsafe backend text')
-    expect(projectRoleApi.create).toHaveBeenCalledOnce()
+    expect(wrapper.text()).toContain('Требуется свежий вход с MFA');
+    expect(wrapper.text()).not.toContain('unsafe backend text');
+    expect(projectRoleApi.create).toHaveBeenCalledOnce();
 
-    await wrapper.get('[data-testid="role-step-up"]').trigger('click')
-    await flushPromises()
-    expect(mocks.auth.logout).toHaveBeenCalledOnce()
+    await wrapper.get('[data-testid="role-step-up"]').trigger('click');
+    await flushPromises();
+    expect(mocks.auth.logout).toHaveBeenCalledOnce();
     expect(mocks.replace).toHaveBeenCalledWith({
       name: 'login',
       query: { redirect: '/project/roles' },
-    })
-    expect(projectRoleApi.create).toHaveBeenCalledOnce()
-  })
-})
+    });
+    expect(projectRoleApi.create).toHaveBeenCalledOnce();
+  });
+});

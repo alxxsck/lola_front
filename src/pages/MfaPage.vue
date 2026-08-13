@@ -1,56 +1,47 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import Checkbox from "primevue/checkbox";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { normalizeApiError } from "@/shared/api/http/api-error";
+import { computed, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Checkbox from 'primevue/checkbox';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { normalizeApiError } from '@/shared/api/http/api-error';
 
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 auth.setPostAuthenticationRedirect(route.query.redirect);
-const error = ref("");
-const recoveryCode = ref("");
-const passkeyLabel = ref("");
+const error = ref('');
+const recoveryCode = ref('');
+const passkeyLabel = ref('');
 const useRecovery = ref(false);
 const codesSaved = ref(false);
 const copied = ref(false);
 const handoffPending = ref(false);
-const pending = computed(
-  () => auth.phase === "MFA_PENDING" || handoffPending.value,
-);
-const enrollment = computed(
-  () => auth.mfaChallenge?.kind === "MFA_ENROLLMENT_REQUIRED",
-);
+const pending = computed(() => auth.phase === 'MFA_PENDING' || handoffPending.value);
+const enrollment = computed(() => auth.mfaChallenge?.kind === 'MFA_ENROLLMENT_REQUIRED');
 const recoveryAvailable = computed(
-  () =>
-    auth.mfaChallenge?.kind === "MFA_REQUIRED" &&
-    auth.mfaChallenge.recoveryAvailable,
+  () => auth.mfaChallenge?.kind === 'MFA_REQUIRED' && auth.mfaChallenge.recoveryAvailable,
 );
-const showingCodes = computed(() => auth.phase === "MFA_RECOVERY_CODES");
+const showingCodes = computed(() => auth.phase === 'MFA_RECOVERY_CODES');
 
 async function usePasskey() {
-  error.value = "";
+  error.value = '';
   try {
-    const result = await auth.completeMfaPasskey(
-      passkeyLabel.value.trim() || undefined,
-    );
-    if (result === "AUTHENTICATED") {
+    const result = await auth.completeMfaPasskey(passkeyLabel.value.trim() || undefined);
+    if (result === 'AUTHENTICATED') {
       handoffPending.value = true;
       if (auth.requiresProjectSelection) {
         await router.replace({
-          name: "login",
+          name: 'login',
           ...(auth.postAuthenticationRedirect
             ? { query: { redirect: auth.postAuthenticationRedirect } }
             : {}),
         });
       } else {
         await router.replace(
-          auth.consumePostAuthenticationRedirect() ??
-            auth.authenticatedLandingPath,
+          auth.consumePostAuthenticationRedirect() ?? auth.authenticatedLandingPath,
         );
       }
     }
@@ -62,20 +53,20 @@ async function usePasskey() {
 
 async function recover() {
   if (!recoveryCode.value.trim()) return;
-  error.value = "";
+  error.value = '';
   try {
     await auth.completeMfaRecovery(
       recoveryCode.value.trim(),
       passkeyLabel.value.trim() || undefined,
     );
-    recoveryCode.value = "";
+    recoveryCode.value = '';
   } catch (cause) {
     error.value = webAuthnError(cause);
   }
 }
 
 async function copyCodes() {
-  await navigator.clipboard.writeText(auth.recoveryCodes.join("\n"));
+  await navigator.clipboard.writeText(auth.recoveryCodes.join('\n'));
   copied.value = true;
 }
 
@@ -84,24 +75,24 @@ async function finish() {
   const redirect = auth.postAuthenticationRedirect;
   auth.acknowledgeRecoveryCodes();
   await router.replace({
-    name: "login",
+    name: 'login',
     ...(redirect ? { query: { redirect } } : {}),
   });
 }
 
 async function cancel() {
   auth.cancelMfa();
-  await router.replace("/login");
+  await router.replace('/login');
 }
 
 function webAuthnError(cause: unknown): string {
-  if (cause instanceof DOMException && cause.name === "NotAllowedError") {
-    return "Проверка passkey отменена или истекло время ожидания.";
+  if (cause instanceof DOMException && cause.name === 'NotAllowedError') {
+    return 'Проверка passkey отменена или истекло время ожидания.';
   }
   const normalized = normalizeApiError(cause);
-  return normalized.code === "MFA_CAPABILITY_INVALID"
-    ? "MFA-сессия истекла или уже использована. Войдите ещё раз."
-    : normalized.message || "Не удалось завершить проверку passkey.";
+  return normalized.code === 'MFA_CAPABILITY_INVALID'
+    ? 'MFA-сессия истекла или уже использована. Войдите ещё раз.'
+    : normalized.message || 'Не удалось завершить проверку passkey.';
 }
 </script>
 
@@ -111,137 +102,120 @@ function webAuthnError(cause: unknown): string {
       <div class="brand"><span>R</span><strong>Retenive</strong></div>
 
       <Transition name="auth-swap" mode="out-in">
-      <section
-        v-if="handoffPending"
-        key="handoff"
-        class="mfa-flow auth-handoff"
-        data-testid="auth-handoff"
-        aria-live="polite"
-      >
-        <span class="icon success"><i class="pi pi-check" /></span>
-        <div>
-          <span class="eyebrow">Вход подтверждён</span>
-          <h1>Открываем рабочее пространство</h1>
+        <section
+          v-if="handoffPending"
+          key="handoff"
+          class="mfa-flow auth-handoff"
+          data-testid="auth-handoff"
+          aria-live="polite"
+        >
+          <span class="icon success"><i class="pi pi-check" /></span>
+          <div>
+            <span class="eyebrow">Вход подтверждён</span>
+            <h1>Открываем рабочее пространство</h1>
+            <p class="description">
+              Проверяем доступ и готовим данные без повторного показа формы.
+            </p>
+          </div>
+          <i class="pi pi-spin pi-spinner handoff-spinner" aria-hidden="true" />
+        </section>
+
+        <section v-else-if="showingCodes" key="codes" class="mfa-flow">
+          <div class="heading">
+            <span class="icon success"><i class="pi pi-shield" /></span>
+            <div>
+              <span class="eyebrow">Passkey подключён</span>
+              <h1>Сохраните recovery-коды</h1>
+            </div>
+          </div>
+          <Message severity="warn" :closable="false">
+            Коды показаны один раз. Каждый код можно использовать только один раз для замены
+            passkey.
+          </Message>
+          <ol class="recovery-codes" data-testid="mfa-recovery-codes">
+            <li v-for="code in auth.recoveryCodes" :key="code">
+              <code>{{ code }}</code>
+            </li>
+          </ol>
+          <Button
+            :label="copied ? 'Скопировано' : 'Скопировать коды'"
+            icon="pi pi-copy"
+            outlined
+            @click="copyCodes"
+          />
+          <label class="confirmation">
+            <Checkbox v-model="codesSaved" binary input-id="codes-saved" />
+            <span>Я сохранил коды в надёжном месте</span>
+          </label>
+          <Button label="Вернуться ко входу" :disabled="!codesSaved" @click="finish" />
+        </section>
+
+        <section v-else key="challenge" class="mfa-flow">
+          <div class="heading">
+            <span class="icon"><i class="pi pi-key" /></span>
+            <div>
+              <span class="eyebrow">Защищённый вход</span>
+              <h1>{{ enrollment ? 'Создайте passkey' : 'Подтвердите вход' }}</h1>
+            </div>
+          </div>
           <p class="description">
-            Проверяем доступ и готовим данные без повторного показа формы.
+            {{
+              enrollment
+                ? 'Платформенным администраторам нужен phishing-resistant второй фактор.'
+                : 'Используйте passkey этого аккаунта. Пароль сам по себе не создаёт сессию.'
+            }}
           </p>
-        </div>
-        <i class="pi pi-spin pi-spinner handoff-spinner" aria-hidden="true" />
-      </section>
+          <Message v-if="error" severity="error" role="alert">{{ error }}</Message>
 
-      <section v-else-if="showingCodes" key="codes" class="mfa-flow">
-        <div class="heading">
-          <span class="icon success"><i class="pi pi-shield" /></span>
-          <div>
-            <span class="eyebrow">Passkey подключён</span>
-            <h1>Сохраните recovery-коды</h1>
-          </div>
-        </div>
-        <Message severity="warn" :closable="false">
-          Коды показаны один раз. Каждый код можно использовать только один раз
-          для замены passkey.
-        </Message>
-        <ol class="recovery-codes" data-testid="mfa-recovery-codes">
-          <li v-for="code in auth.recoveryCodes" :key="code">
-            <code>{{ code }}</code>
-          </li>
-        </ol>
-        <Button
-          :label="copied ? 'Скопировано' : 'Скопировать коды'"
-          icon="pi pi-copy"
-          outlined
-          @click="copyCodes"
-        />
-        <label class="confirmation">
-          <Checkbox v-model="codesSaved" binary input-id="codes-saved" />
-          <span>Я сохранил коды в надёжном месте</span>
-        </label>
-        <Button
-          label="Вернуться ко входу"
-          :disabled="!codesSaved"
-          @click="finish"
-        />
-      </section>
-
-      <section v-else key="challenge" class="mfa-flow">
-        <div class="heading">
-          <span class="icon"><i class="pi pi-key" /></span>
-          <div>
-            <span class="eyebrow">Защищённый вход</span>
-            <h1>{{ enrollment ? "Создайте passkey" : "Подтвердите вход" }}</h1>
-          </div>
-        </div>
-        <p class="description">
-          {{
-            enrollment
-              ? "Платформенным администраторам нужен phishing-resistant второй фактор."
-              : "Используйте passkey этого аккаунта. Пароль сам по себе не создаёт сессию."
-          }}
-        </p>
-        <Message v-if="error" severity="error" role="alert">{{
-          error
-        }}</Message>
-
-        <template v-if="useRecovery">
-          <form class="recovery-form" @submit.prevent="recover">
-            <label for="recovery-code">Одноразовый recovery-код</label>
-            <InputText
-              id="recovery-code"
-              v-model="recoveryCode"
-              autocomplete="off"
-              spellcheck="false"
-              placeholder="lrc_…"
-              autofocus
-            />
-            <label for="replacement-label"
-              >Название нового passkey (необязательно)</label
-            >
-            <InputText
-              id="replacement-label"
-              v-model="passkeyLabel"
-              maxlength="100"
+          <template v-if="useRecovery">
+            <form class="recovery-form" @submit.prevent="recover">
+              <label for="recovery-code">Одноразовый recovery-код</label>
+              <InputText
+                id="recovery-code"
+                v-model="recoveryCode"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="lrc_…"
+                autofocus
+              />
+              <label for="replacement-label">Название нового passkey (необязательно)</label>
+              <InputText id="replacement-label" v-model="passkeyLabel" maxlength="100" />
+              <Button
+                type="submit"
+                label="Заменить passkey"
+                :loading="pending"
+                :disabled="!recoveryCode.trim()"
+              />
+            </form>
+            <Button label="Назад к passkey" text @click="useRecovery = false" />
+          </template>
+          <template v-else>
+            <label v-if="enrollment" class="label-field" for="passkey-label">
+              Название passkey (необязательно)
+              <InputText
+                id="passkey-label"
+                v-model="passkeyLabel"
+                maxlength="100"
+                placeholder="Например, MacBook Work"
+              />
+            </label>
+            <Button
+              data-testid="mfa-passkey-action"
+              :label="enrollment ? 'Создать passkey' : 'Продолжить с passkey'"
+              icon="pi pi-key"
+              size="large"
+              :loading="pending"
+              @click="usePasskey"
             />
             <Button
-              type="submit"
-              label="Заменить passkey"
-              :loading="pending"
-              :disabled="!recoveryCode.trim()"
+              v-if="recoveryAvailable"
+              label="Использовать recovery-код"
+              text
+              @click="useRecovery = true"
             />
-          </form>
-          <Button label="Назад к passkey" text @click="useRecovery = false" />
-        </template>
-        <template v-else>
-          <label v-if="enrollment" class="label-field" for="passkey-label">
-            Название passkey (необязательно)
-            <InputText
-              id="passkey-label"
-              v-model="passkeyLabel"
-              maxlength="100"
-              placeholder="Например, MacBook Work"
-            />
-          </label>
-          <Button
-            data-testid="mfa-passkey-action"
-            :label="enrollment ? 'Создать passkey' : 'Продолжить с passkey'"
-            icon="pi pi-key"
-            size="large"
-            :loading="pending"
-            @click="usePasskey"
-          />
-          <Button
-            v-if="recoveryAvailable"
-            label="Использовать recovery-код"
-            text
-            @click="useRecovery = true"
-          />
-        </template>
-        <Button
-          label="Отменить вход"
-          severity="secondary"
-          text
-          @click="cancel"
-        />
-      </section>
+          </template>
+          <Button label="Отменить вход" severity="secondary" text @click="cancel" />
+        </section>
       </Transition>
     </section>
   </main>

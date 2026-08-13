@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import type { RequestedMessageTranslation } from "@/features/conversation-translation/model/translation-presentation";
+import { computed } from 'vue';
+import type { RequestedMessageTranslation } from '@/features/conversation-translation/model/translation-presentation';
 import type {
   ConversationSurfaceComposer,
   ConversationSurfaceComposerAction,
@@ -8,10 +8,10 @@ import type {
   ConversationSurfaceReconcileIssue,
   ConversationSurfaceSendRequest,
   ConversationSurfaceTranslation,
-} from "@/features/conversation-surface/model/conversation-surface-contract";
-import ConversationSurface from "@/features/conversation-surface/ui/ConversationSurface.vue";
-import type { ConversationMessage } from "@/shared/types/domain";
-import { adaptUsersConversationMessages } from "./model/user-conversation-surface-adapter";
+} from '@/features/conversation-surface/model/conversation-surface-contract';
+import ConversationSurface from '@/features/conversation-surface/ui/ConversationSurface.vue';
+import type { ConversationMessage } from '@/shared/types/domain';
+import { adaptUsersConversationMessages } from './model/user-conversation-surface-adapter';
 
 const props = defineProps<{
   title: string;
@@ -23,18 +23,18 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "load-older": [];
-  "cancel-translation": [];
-  "change-translation-mode": [mode: "ORIGINAL" | "TRANSLATED"];
-  "reconcile-required": [issues: ConversationSurfaceReconcileIssue[]];
-  "draft-change": [request: ConversationSurfaceSendRequest];
+  'load-older': [];
+  'cancel-translation': [];
+  'change-translation-mode': [mode: 'ORIGINAL' | 'TRANSLATED'];
+  'reconcile-required': [issues: ConversationSurfaceReconcileIssue[]];
+  'draft-change': [request: ConversationSurfaceSendRequest];
   send: [request: ConversationSurfaceSendRequest];
-  "request-reply-translation": [];
-  "reconcile-reply-translation": [];
-  "retry-reply-translation": [];
-  "save-reply-translation": [text: string];
-  "send-reply-translation": [request: ConversationSurfaceSendRequest];
-  "composer-action": [action: ConversationSurfaceComposerAction];
+  'request-reply-translation': [];
+  'reconcile-reply-translation': [];
+  'retry-reply-translation': [];
+  'save-reply-translation': [text: string];
+  'send-reply-translation': [request: ConversationSurfaceSendRequest];
+  'composer-action': [action: ConversationSurfaceComposerAction];
 }>();
 
 const surfaceMessages = computed(() =>

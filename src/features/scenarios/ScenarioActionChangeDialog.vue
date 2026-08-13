@@ -2,68 +2,67 @@
 import type {
   ScenarioActionTypeReplacementPlan,
   ScenarioEntryPointChangePlan,
-} from './model/scenario-action-change'
+} from './model/scenario-action-change';
 
 export type ScenarioActionChangePreview =
   | {
-      kind: 'entry-point'
-      currentNodeKey: string
-      targetNodeKey: string
-      plan: ScenarioEntryPointChangePlan
-      sourceFingerprint: string
-      refreshed?: boolean
+      kind: 'entry-point';
+      currentNodeKey: string;
+      targetNodeKey: string;
+      plan: ScenarioEntryPointChangePlan;
+      sourceFingerprint: string;
+      refreshed?: boolean;
     }
   | {
-      kind: 'type-replacement'
-      currentName: string
-      targetName: string
-      targetType: string
-      plan: ScenarioActionTypeReplacementPlan
-      sourceFingerprint: string
-      refreshed?: boolean
-    }
+      kind: 'type-replacement';
+      currentName: string;
+      targetName: string;
+      targetType: string;
+      plan: ScenarioActionTypeReplacementPlan;
+      sourceFingerprint: string;
+      refreshed?: boolean;
+    };
 </script>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import Button from 'primevue/button'
-import Dialog from 'primevue/dialog'
+import { computed } from 'vue';
+import Button from 'primevue/button';
+import Dialog from 'primevue/dialog';
 
 const props = defineProps<{
-  visible: boolean
-  preview: ScenarioActionChangePreview | null
-}>()
+  visible: boolean;
+  preview: ScenarioActionChangePreview | null;
+}>();
 
 const emit = defineEmits<{
-  apply: []
-  cancel: []
-}>()
+  apply: [];
+  cancel: [];
+}>();
 
-const canApply = computed(() =>
-  Boolean(props.preview) && !(
-    props.preview?.kind === 'entry-point' && props.preview.plan.status === 'blocked'
-  ),
-)
+const canApply = computed(
+  () =>
+    Boolean(props.preview) &&
+    !(props.preview?.kind === 'entry-point' && props.preview.plan.status === 'blocked'),
+);
 
 const title = computed(() =>
-  props.preview?.kind === 'entry-point'
-    ? 'Изменить точку входа'
-    : 'Заменить действие',
-)
+  props.preview?.kind === 'entry-point' ? 'Изменить точку входа' : 'Заменить действие',
+);
 
 function transitionResetText(count: number) {
-  const lastTwo = count % 100
-  const last = count % 10
-  const noun = lastTwo >= 11 && lastTwo <= 14
-    ? 'переходов'
-    : last === 1
-      ? 'переход'
-      : last >= 2 && last <= 4
-        ? 'перехода'
-        : 'переходов'
+  const lastTwo = count % 100;
+  const last = count % 10;
+  const noun =
+    lastTwo >= 11 && lastTwo <= 14
+      ? 'переходов'
+      : last === 1
+        ? 'переход'
+        : last >= 2 && last <= 4
+          ? 'перехода'
+          : 'переходов';
   return count % 10 === 1 && !(lastTwo >= 11 && lastTwo <= 14)
     ? `${count} ${noun} будет сброшен`
-    : `${count} ${noun} будут сброшены`
+    : `${count} ${noun} будут сброшены`;
 }
 </script>
 
@@ -96,7 +95,11 @@ function transitionResetText(count: number) {
       </div>
 
       <template v-if="preview.kind === 'entry-point'">
-        <div v-if="preview.plan.status === 'blocked'" class="impact-card impact-card--danger" role="alert">
+        <div
+          v-if="preview.plan.status === 'blocked'"
+          class="impact-card impact-card--danger"
+          role="alert"
+        >
           <i class="pi pi-ban" aria-hidden="true" />
           <div>
             <strong>Изменение пока невозможно</strong>
@@ -109,7 +112,8 @@ function transitionResetText(count: number) {
             <div>
               <strong>Маршрут будет переподключён атомарно</strong>
               <p v-if="preview.plan.removedIncomingTransitions.length">
-                Входящие связи к новой точке будут удалены. Скрытых переходов в конец сценария не появится.
+                Входящие связи к новой точке будут удалены. Скрытых переходов в конец сценария не
+                появится.
               </p>
               <p v-else>Связи между остальными действиями сохранятся.</p>
             </div>
@@ -140,7 +144,11 @@ function transitionResetText(count: number) {
           <i class="pi pi-check-circle" aria-hidden="true" />
           <div>
             <strong>
-              {{ preview.plan.transitionImpact === 'preserved' ? 'Переход сохранится' : 'Исходящих переходов нет' }}
+              {{
+                preview.plan.transitionImpact === 'preserved'
+                  ? 'Переход сохранится'
+                  : 'Исходящих переходов нет'
+              }}
             </strong>
             <p>Ключ узла и его место в сценарии останутся прежними.</p>
           </div>
@@ -165,7 +173,12 @@ function transitionResetText(count: number) {
         <Button label="Отмена" severity="secondary" text @click="emit('cancel')" />
         <Button
           :label="preview?.kind === 'entry-point' ? 'Изменить точку входа' : 'Заменить действие'"
-          :severity="preview?.kind === 'type-replacement' && preview.plan.transitionImpact === 'reset-required' ? 'danger' : 'primary'"
+          :severity="
+            preview?.kind === 'type-replacement' &&
+            preview.plan.transitionImpact === 'reset-required'
+              ? 'danger'
+              : 'primary'
+          "
           :disabled="!canApply"
           @click="emit('apply')"
         />

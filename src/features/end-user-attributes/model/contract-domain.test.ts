@@ -1,60 +1,60 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from 'vitest';
 
 import {
   createContractField,
   parseAllowedValues,
   validateContractDocument,
-} from "./contract-domain";
+} from './contract-domain';
 
-describe("Attribute Contract draft", () => {
-  it("creates a policy-safe optional field", () => {
+describe('Attribute Contract draft', () => {
+  it('creates a policy-safe optional field', () => {
     expect(createContractField(10)).toMatchObject({
-      lifecycle: "ACTIVE",
+      lifecycle: 'ACTIVE',
       position: 10,
-      requirement: "OPTIONAL",
+      requirement: 'OPTIONAL',
       policies: {
-        cmsRead: { mode: "HIDDEN" },
+        cmsRead: { mode: 'HIDDEN' },
         aiRead: false,
         audienceRead: false,
         clientRead: false,
         exportRead: false,
-        indexPolicy: "NONE",
+        indexPolicy: 'NONE',
         templateRead: false,
       },
     });
   });
 
-  it("reports duplicate keys and dangerous client exposure", () => {
+  it('reports duplicate keys and dangerous client exposure', () => {
     const first = {
       ...createContractField(10),
-      key: "risk_score",
-      label: "Risk score",
-      classification: "SENSITIVE" as const,
+      key: 'risk_score',
+      label: 'Risk score',
+      classification: 'SENSITIVE' as const,
       policies: { ...createContractField(10).policies, clientRead: true },
     };
     const issues = validateContractDocument({
       fields: [first, { ...first, position: 20 }],
     });
     expect(issues.map((issue) => issue.code)).toEqual(
-      expect.arrayContaining(["DUPLICATE_KEY", "SENSITIVE_CLIENT_READ"]),
+      expect.arrayContaining(['DUPLICATE_KEY', 'SENSITIVE_CLIENT_READ']),
     );
   });
 
-  it("requires a clear purpose for personal, sensitive, or exposed fields", () => {
+  it('requires a clear purpose for personal, sensitive, or exposed fields', () => {
     const personal = {
       ...createContractField(10),
-      key: "email",
-      label: "Электронная почта",
-      classification: "PERSONAL" as const,
+      key: 'email',
+      label: 'Электронная почта',
+      classification: 'PERSONAL' as const,
       policies: {
         ...createContractField(10).policies,
-        cmsRead: { mode: "HIDDEN" as const },
+        cmsRead: { mode: 'HIDDEN' as const },
       },
     };
     const exposed = {
       ...createContractField(20),
-      key: "loyaltyLevel",
-      label: "Уровень лояльности",
+      key: 'loyaltyLevel',
+      label: 'Уровень лояльности',
       policies: {
         ...createContractField(20).policies,
         audienceRead: true,
@@ -63,52 +63,49 @@ describe("Attribute Contract draft", () => {
 
     const issues = validateContractDocument({ fields: [personal, exposed] });
 
-    expect(issues.filter((issue) => issue.code === "PURPOSE_REQUIRED")).toEqual(
-      [
-        expect.objectContaining({
-          path: "fields.0.purpose",
-          message: expect.stringContaining("Электронная почта"),
-        }),
-        expect.objectContaining({
-          path: "fields.1.purpose",
-          message: expect.stringContaining("Уровень лояльности"),
-        }),
-      ],
-    );
+    expect(issues.filter((issue) => issue.code === 'PURPOSE_REQUIRED')).toEqual([
+      expect.objectContaining({
+        path: 'fields.0.purpose',
+        message: expect.stringContaining('Электронная почта'),
+      }),
+      expect.objectContaining({
+        path: 'fields.1.purpose',
+        message: expect.stringContaining('Уровень лояльности'),
+      }),
+    ]);
   });
 
-  it("keeps DECIMAL enum precision and parses scalar constraints by declared type", () => {
-    expect(
-      parseAllowedValues("DECIMAL", "9007199254740993.1200\n0.10"),
-    ).toEqual(["9007199254740993.1200", "0.10"]);
-    expect(parseAllowedValues("INTEGER", "1\n42")).toEqual([1, 42]);
-    expect(() => parseAllowedValues("BOOLEAN", "maybe")).toThrow(
-      "true или false",
-    );
+  it('keeps DECIMAL enum precision and parses scalar constraints by declared type', () => {
+    expect(parseAllowedValues('DECIMAL', '9007199254740993.1200\n0.10')).toEqual([
+      '9007199254740993.1200',
+      '0.10',
+    ]);
+    expect(parseAllowedValues('INTEGER', '1\n42')).toEqual([1, 42]);
+    expect(() => parseAllowedValues('BOOLEAN', 'maybe')).toThrow('true или false');
   });
 
-  it("validates the Locale Attribute singleton, string type, canonical values and default", () => {
+  it('validates the Locale Attribute singleton, string type, canonical values and default', () => {
     const locale = {
       ...createContractField(10),
-      key: "language",
-      label: "Язык",
-      purpose: "Определяет язык сообщений сценария",
-      semanticRole: "LOCALE" as const,
-      valueType: "INTEGER" as const,
+      key: 'language',
+      label: 'Язык',
+      purpose: 'Определяет язык сообщений сценария',
+      semanticRole: 'LOCALE' as const,
+      valueType: 'INTEGER' as const,
       constraints: {
-        allowedValues: ["pt-BR", "pt-br"],
-        defaultLocale: "en",
+        allowedValues: ['pt-BR', 'pt-br'],
+        defaultLocale: 'en',
       },
     };
     const issues = validateContractDocument({
-      fields: [locale, { ...locale, key: "otherLanguage", position: 20 }],
+      fields: [locale, { ...locale, key: 'otherLanguage', position: 20 }],
     });
     expect(issues.map(({ code }) => code)).toEqual(
       expect.arrayContaining([
-        "LOCALE_SINGLETON",
-        "LOCALE_STRING_REQUIRED",
-        "LOCALE_DUPLICATE",
-        "LOCALE_DEFAULT_INVALID",
+        'LOCALE_SINGLETON',
+        'LOCALE_STRING_REQUIRED',
+        'LOCALE_DUPLICATE',
+        'LOCALE_DEFAULT_INVALID',
       ]),
     );
   });

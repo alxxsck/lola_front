@@ -38,7 +38,7 @@ import {
   supportExternalMappingValidateDraft,
   supportExternalSettingsMutationReadOutcome,
   supportExternalTimelineList,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   CreateSupportExternalMappingDto,
   LinkHelpDeskCompatibilityTicketDto,
@@ -84,13 +84,13 @@ import type {
   SupportExternalTimelineListParams,
   SupportExternalWorkCommandReceiptDto,
   UpdateSupportExternalMappingDraftDto,
-} from "@/shared/api/generated/models";
-import { noAuthRetryRequestOptions } from "@/shared/api/http/axios-instance";
-import type { RequestOptions } from "@/shared/api/http/orval-mutator";
-import { isMockMode } from "@/shared/config/data-mode";
-import { mockSupportExternalWorkSource } from "./support-external-work-mock-source";
+} from '@/shared/api/generated/models';
+import { noAuthRetryRequestOptions } from '@/shared/api/http/axios-instance';
+import type { RequestOptions } from '@/shared/api/http/orval-mutator';
+import { isMockMode } from '@/shared/config/data-mode';
+import { mockSupportExternalWorkSource } from './support-external-work-mock-source';
 
-export type SupportExternalProvider = "JSM" | "HELPDESK";
+export type SupportExternalProvider = 'JSM' | 'HELPDESK';
 
 export interface SupportExternalMutationMetadata {
   receiptId: string | null;
@@ -286,9 +286,7 @@ export interface SupportExternalWorkSource {
     body: RollbackSupportExternalMappingDto,
     idempotencyKey: string,
     signal?: AbortSignal,
-  ): Promise<
-    SupportExternalMutation<SupportExternalMappingRollbackResponseDto>
-  >;
+  ): Promise<SupportExternalMutation<SupportExternalMappingRollbackResponseDto>>;
   readSettingsMutation(
     projectId: string,
     receiptId: string,
@@ -353,14 +351,14 @@ export interface SupportExternalWorkSource {
 }
 
 function responseHeader(headers: unknown, name: string): string | null {
-  if (!headers || typeof headers !== "object") return null;
-  const getter = "get" in headers ? headers.get : undefined;
-  if (typeof getter === "function") {
+  if (!headers || typeof headers !== 'object') return null;
+  const getter = 'get' in headers ? headers.get : undefined;
+  if (typeof getter === 'function') {
     const value = getter.call(headers, name);
-    return typeof value === "string" ? value : null;
+    return typeof value === 'string' ? value : null;
   }
   const value = (headers as Record<string, unknown>)[name.toLowerCase()];
-  return typeof value === "string" ? value : null;
+  return typeof value === 'string' ? value : null;
 }
 
 function auditedOptions(
@@ -378,16 +376,15 @@ function auditedOptions(
       ...noAuthRetryRequestOptions(),
       signal,
       headers: {
-        "Idempotency-Key": idempotencyKey,
-        ...(expectedVersion ? { "If-Match": `"${expectedVersion}"` } : {}),
+        'Idempotency-Key': idempotencyKey,
+        ...(expectedVersion ? { 'If-Match': `"${expectedVersion}"` } : {}),
       },
       onResponse({ headers }) {
         metadata.receiptId = responseHeader(
           headers,
-          "x-support-external-settings-mutation-receipt-id",
+          'x-support-external-settings-mutation-receipt-id',
         );
-        metadata.replayed =
-          responseHeader(headers, "x-idempotent-replay") === "true";
+        metadata.replayed = responseHeader(headers, 'x-idempotent-replay') === 'true';
       },
     },
   };
@@ -407,12 +404,7 @@ export const apiSupportExternalWorkSource: SupportExternalWorkSource = {
   readCaseCreateOptions: (projectId, caseId, signal) =>
     supportExternalCaseCreateOptionsRead(projectId, caseId, { signal }),
   listCaseLinks: (projectId, caseId, params, signal) =>
-    supportExternalCaseLinksList(
-      projectId,
-      caseId,
-      { limit: 50, ...params },
-      { signal },
-    ),
+    supportExternalCaseLinksList(projectId, caseId, { limit: 50, ...params }, { signal }),
   readCaseLink: (projectId, caseId, linkId, signal) =>
     supportExternalCaseLinksRead(projectId, caseId, linkId, { signal }),
   readCommand: (projectId, caseId, commandId, signal) =>
@@ -422,21 +414,21 @@ export const apiSupportExternalWorkSource: SupportExternalWorkSource = {
       ...noAuthRetryRequestOptions(),
       signal,
       headers: {
-        "Idempotency-Key": key,
-        ...(version ? { "If-Match": `"${version}"` } : {}),
+        'Idempotency-Key': key,
+        ...(version ? { 'If-Match': `"${version}"` } : {}),
       },
     }),
   resolveCommand: (projectId, caseId, commandId, body, version, key, signal) =>
     supportExternalCommandResolveUnknown(projectId, caseId, commandId, body, {
       ...noAuthRetryRequestOptions(),
       signal,
-      headers: { "Idempotency-Key": key, "If-Match": `"${version}"` },
+      headers: { 'Idempotency-Key': key, 'If-Match': `"${version}"` },
     }),
   linkInboxItemToCase: (projectId, remoteItemId, body, version, key, signal) =>
     supportExternalInboxLinkToCase(projectId, remoteItemId, body, {
       ...noAuthRetryRequestOptions(),
       signal,
-      headers: { "Idempotency-Key": key, "If-Match": `"${version}"` },
+      headers: { 'Idempotency-Key': key, 'If-Match': `"${version}"` },
     }),
   listConnections: (projectId, cursor, signal) =>
     supportExternalConnectionList(
@@ -452,12 +444,7 @@ export const apiSupportExternalWorkSource: SupportExternalWorkSource = {
     supportExternalConnectionListOAuthTenants(projectId, sessionId, { signal }),
   selectOAuthTenant: (projectId, sessionId, body, key, signal) =>
     audited(key, signal, undefined, (options) =>
-      supportExternalConnectionSelectOAuthTenant(
-        projectId,
-        sessionId,
-        body,
-        options,
-      ),
+      supportExternalConnectionSelectOAuthTenant(projectId, sessionId, body, options),
     ),
   testConnection: (projectId, connectionId, key, signal) =>
     audited(key, signal, undefined, (options) =>
@@ -465,12 +452,7 @@ export const apiSupportExternalWorkSource: SupportExternalWorkSource = {
     ),
   reconnectConnection: (projectId, connectionId, version, key, signal) =>
     audited(key, signal, version, (options) =>
-      supportExternalConnectionReconnectOAuth(
-        projectId,
-        connectionId,
-        {},
-        options,
-      ),
+      supportExternalConnectionReconnectOAuth(projectId, connectionId, {}, options),
     ),
   disableConnection: (projectId, connectionId, version, key, signal) =>
     audited(key, signal, version, (options) =>
@@ -518,61 +500,36 @@ export const apiSupportExternalWorkSource: SupportExternalWorkSource = {
     supportExternalMappingListRevisions(projectId, mappingId, params, {
       signal,
     }),
-  rollbackMapping: (
-    projectId,
-    mappingId,
-    revisionId,
-    version,
-    body,
-    key,
-    signal,
-  ) =>
+  rollbackMapping: (projectId, mappingId, revisionId, version, body, key, signal) =>
     audited(key, signal, version, (options) =>
-      supportExternalMappingRollback(
-        projectId,
-        mappingId,
-        revisionId,
-        body,
-        options,
-      ),
+      supportExternalMappingRollback(projectId, mappingId, revisionId, body, options),
     ),
   readSettingsMutation: (projectId, receiptId, signal) =>
     supportExternalSettingsMutationReadOutcome(projectId, receiptId, {
       signal,
     }),
-  listInbox: (projectId, params, signal) =>
-    supportExternalInboxList(projectId, params, { signal }),
+  listInbox: (projectId, params, signal) => supportExternalInboxList(projectId, params, { signal }),
   readInboxItem: (projectId, itemId, signal) =>
     supportExternalInboxRead(projectId, itemId, { signal }),
   readInboxTimeline: (projectId, itemId, params, signal) =>
     supportExternalInboxTimelineList(projectId, itemId, params, { signal }),
   readLinkedTimeline: (projectId, caseId, linkId, params, signal) =>
     supportExternalTimelineList(projectId, caseId, linkId, params, { signal }),
-  listItems: (projectId, params, signal) =>
-    supportExternalItemList(projectId, params, { signal }),
-  readItem: (projectId, itemId, signal) =>
-    supportExternalItemRead(projectId, itemId, { signal }),
+  listItems: (projectId, params, signal) => supportExternalItemList(projectId, params, { signal }),
+  readItem: (projectId, itemId, signal) => supportExternalItemRead(projectId, itemId, { signal }),
   listCaseCommands: (projectId, caseId, params, signal) =>
     supportExternalCommandListForCase(projectId, caseId, params, { signal }),
   retryCommand: (projectId, caseId, commandId, version, key, signal) =>
     supportExternalCommandRetry(projectId, caseId, commandId, {
       ...noAuthRetryRequestOptions(),
       signal,
-      headers: { "Idempotency-Key": key, "If-Match": `"${version}"` },
+      headers: { 'Idempotency-Key': key, 'If-Match': `"${version}"` },
     }),
-  refreshCommandEvidence: (
-    projectId,
-    caseId,
-    commandId,
-    body,
-    version,
-    key,
-    signal,
-  ) =>
+  refreshCommandEvidence: (projectId, caseId, commandId, body, version, key, signal) =>
     supportExternalCommandRefreshEvidence(projectId, caseId, commandId, body, {
       ...noAuthRetryRequestOptions(),
       signal,
-      headers: { "Idempotency-Key": key, "If-Match": `"${version}"` },
+      headers: { 'Idempotency-Key': key, 'If-Match': `"${version}"` },
     }),
 };
 

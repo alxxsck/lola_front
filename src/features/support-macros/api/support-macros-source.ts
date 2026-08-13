@@ -13,7 +13,7 @@ import {
   supportMacroReplyDraftCreate,
   supportMacroReplyDraftEdit,
   supportMacroRollback,
-} from "@/shared/api/generated/retenive-backend";
+} from '@/shared/api/generated/retenive-backend';
 import type {
   CreateSupportMacroNoteDraftDto,
   CreateSupportMacroReplyDraftDto,
@@ -24,9 +24,9 @@ import type {
   SupportMacroReplyDraftResponseDto,
   SupportMacroResponseDto,
   SupportMacroRevisionPageResponseDto,
-} from "@/shared/api/generated/models";
-import { normalizeApiError } from "@/shared/api/http/api-error";
-import { isMockMode } from "@/shared/config/data-mode";
+} from '@/shared/api/generated/models';
+import { normalizeApiError } from '@/shared/api/http/api-error';
+import { isMockMode } from '@/shared/config/data-mode';
 
 export interface SupportMacroCatalogRequest {
   query?: string;
@@ -39,7 +39,7 @@ export interface SupportMacroCatalogRequest {
 }
 
 export interface SupportMacroDraftTarget {
-  kind: "PUBLIC_REPLY" | "INTERNAL_NOTE";
+  kind: 'PUBLIC_REPLY' | 'INTERNAL_NOTE';
   projectId: string;
   macroId: string;
   expectedMacroRevisionId: string;
@@ -133,29 +133,24 @@ function requestOptions(signal?: AbortSignal) {
 function commandOptions(idempotencyKey: string, actionEtag?: string) {
   return {
     headers: {
-      "Idempotency-Key": idempotencyKey,
-      ...(actionEtag ? { "If-Match": actionEtag } : {}),
+      'Idempotency-Key': idempotencyKey,
+      ...(actionEtag ? { 'If-Match': actionEtag } : {}),
     },
   };
 }
 
 function assertDraftTarget(target: SupportMacroDraftTarget): void {
   if (
-    (target.kind === "PUBLIC_REPLY" &&
-      (!target.endUserId || !target.conversationId)) ||
-    (target.kind === "INTERNAL_NOTE" && !target.caseId)
+    (target.kind === 'PUBLIC_REPLY' && (!target.endUserId || !target.conversationId)) ||
+    (target.kind === 'INTERNAL_NOTE' && !target.caseId)
   )
-    throw new Error("Support Macro draft target is incomplete");
+    throw new Error('Support Macro draft target is incomplete');
 }
 
 const apiSource: SupportMacroSource = {
   async catalog(projectId, request, signal) {
     try {
-      return await supportMacroCatalog(
-        projectId,
-        request,
-        requestOptions(signal),
-      );
+      return await supportMacroCatalog(projectId, request, requestOptions(signal));
     } catch (cause) {
       throw normalizeApiError(cause);
     }
@@ -167,7 +162,7 @@ const apiSource: SupportMacroSource = {
       expectedMacroRevisionId: target.expectedMacroRevisionId,
     };
     try {
-      if (target.kind === "PUBLIC_REPLY") {
+      if (target.kind === 'PUBLIC_REPLY') {
         const body: CreateSupportMacroReplyDraftDto = {
           ...commonBody,
           ...(target.caseId ? { endUserCaseId: target.caseId } : {}),
@@ -180,20 +175,15 @@ const apiSource: SupportMacroSource = {
           body,
           {
             ...(signal ? { signal } : {}),
-            headers: { "Idempotency-Key": idempotencyKey },
+            headers: { 'Idempotency-Key': idempotencyKey },
           },
         );
       }
       const body: CreateSupportMacroNoteDraftDto = commonBody;
-      return await supportMacroNoteDraftCreate(
-        target.projectId,
-        target.caseId!,
-        body,
-        {
-          ...(signal ? { signal } : {}),
-          headers: { "Idempotency-Key": idempotencyKey },
-        },
-      );
+      return await supportMacroNoteDraftCreate(target.projectId, target.caseId!, body, {
+        ...(signal ? { signal } : {}),
+        headers: { 'Idempotency-Key': idempotencyKey },
+      });
     } catch (cause) {
       throw normalizeApiError(cause);
     }
@@ -202,10 +192,10 @@ const apiSource: SupportMacroSource = {
     assertDraftTarget(target);
     const options = {
       ...(signal ? { signal } : {}),
-      headers: { "If-Match": target.actionEtag },
+      headers: { 'If-Match': target.actionEtag },
     };
     try {
-      return target.kind === "PUBLIC_REPLY"
+      return target.kind === 'PUBLIC_REPLY'
         ? await supportMacroReplyDraftEdit(
             target.projectId,
             target.endUserId!,
@@ -227,33 +217,21 @@ const apiSource: SupportMacroSource = {
   },
   async authoringCatalog(projectId, request, signal) {
     try {
-      return await supportMacroAuthoringCatalog(
-        projectId,
-        request,
-        requestOptions(signal),
-      );
+      return await supportMacroAuthoringCatalog(projectId, request, requestOptions(signal));
     } catch (cause) {
       throw normalizeApiError(cause);
     }
   },
   async readAuthoring(projectId, macroId, signal) {
     try {
-      return await supportMacroReadAuthoring(
-        projectId,
-        macroId,
-        requestOptions(signal),
-      );
+      return await supportMacroReadAuthoring(projectId, macroId, requestOptions(signal));
     } catch (cause) {
       throw normalizeApiError(cause);
     }
   },
   async preview(projectId, draft, signal) {
     try {
-      return await supportMacroPreview(
-        projectId,
-        { draft },
-        requestOptions(signal),
-      );
+      return await supportMacroPreview(projectId, { draft }, requestOptions(signal));
     } catch (cause) {
       throw normalizeApiError(cause);
     }
@@ -315,14 +293,7 @@ const apiSource: SupportMacroSource = {
       throw normalizeApiError(cause);
     }
   },
-  async rollback(
-    projectId,
-    macroId,
-    revisionId,
-    reasonCode,
-    actionEtag,
-    idempotencyKey,
-  ) {
+  async rollback(projectId, macroId, revisionId, reasonCode, actionEtag, idempotencyKey) {
     try {
       return await supportMacroRollback(
         projectId,
@@ -338,37 +309,37 @@ const apiSource: SupportMacroSource = {
 };
 
 const mockMacro: SupportMacroResponseDto = {
-  id: "65000000-0000-4000-8000-000000000001",
-  stableCode: "payment-check",
-  lifecycle: "ACTIVE",
+  id: '65000000-0000-4000-8000-000000000001',
+  stableCode: 'payment-check',
+  lifecycle: 'ACTIVE',
   version: 1,
   draft: null,
   publishedRevision: {
-    id: "65000000-0000-4000-8000-000000000002",
+    id: '65000000-0000-4000-8000-000000000002',
     revisionNumber: 3,
-    contentHash: "a".repeat(64),
+    contentHash: 'a'.repeat(64),
     publishedAt: new Date(Date.now() - 86_400_000).toISOString(),
     configuration: {
       compilerRevision: 1,
-      title: "Проверка платежа",
-      shortcuts: ["платёж", "deposit"],
-      locale: "ru",
-      body: "Проверяю статус платежа. Пожалуйста, подождите одну минуту.",
+      title: 'Проверка платежа',
+      shortcuts: ['платёж', 'deposit'],
+      locale: 'ru',
+      body: 'Проверяю статус платежа. Пожалуйста, подождите одну минуту.',
       translations: {
-        ru: "Проверяю статус платежа. Пожалуйста, подождите одну минуту.",
-        en: "I am checking the payment status. Please wait one minute.",
+        ru: 'Проверяю статус платежа. Пожалуйста, подождите одну минуту.',
+        en: 'I am checking the payment status. Please wait one minute.',
       },
-      visibility: { mode: "PROJECT", teamIds: [], topicCodes: ["PAYMENTS"] },
+      visibility: { mode: 'PROJECT', teamIds: [], topicCodes: ['PAYMENTS'] },
       variables: [],
-      contentHash: "a".repeat(64),
+      contentHash: 'a'.repeat(64),
     },
   },
   actionEtag: '"sm1.mock"',
   applicability: {
-    visibility: "PROJECT",
+    visibility: 'PROJECT',
     teamIds: [],
-    categoryCodes: ["PAYMENTS"],
-    locale: "ru",
+    categoryCodes: ['PAYMENTS'],
+    locale: 'ru',
   },
 };
 
@@ -376,46 +347,46 @@ const mockMacros: SupportMacroResponseDto[] = [
   mockMacro,
   {
     ...mockMacro,
-    id: "65000000-0000-4000-8000-000000000011",
-    stableCode: "profile-access",
+    id: '65000000-0000-4000-8000-000000000011',
+    stableCode: 'profile-access',
     version: 2,
     publishedRevision: {
       ...mockMacro.publishedRevision!,
-      id: "65000000-0000-4000-8000-000000000012",
+      id: '65000000-0000-4000-8000-000000000012',
       revisionNumber: 2,
       configuration: {
         ...mockMacro.publishedRevision!.configuration,
-        title: "Доступ к профилю",
-        body: "Откройте профиль и перейдите в раздел безопасности.",
+        title: 'Доступ к профилю',
+        body: 'Откройте профиль и перейдите в раздел безопасности.',
         translations: {
-          ru: "Откройте профиль и перейдите в раздел безопасности.",
+          ru: 'Откройте профиль и перейдите в раздел безопасности.',
         },
-        shortcuts: ["профиль", "доступ"],
-        visibility: { mode: "PROJECT", teamIds: [], topicCodes: ["ACCOUNT"] },
+        shortcuts: ['профиль', 'доступ'],
+        visibility: { mode: 'PROJECT', teamIds: [], topicCodes: ['ACCOUNT'] },
       },
     },
     actionEtag: '"sm1.mock-profile"',
   },
   {
     ...mockMacro,
-    id: "65000000-0000-4000-8000-000000000021",
-    stableCode: "refund-timing",
+    id: '65000000-0000-4000-8000-000000000021',
+    stableCode: 'refund-timing',
     version: 1,
     draft: {
       generation: 1,
       version: 1,
-      contentHash: "c".repeat(64),
+      contentHash: 'c'.repeat(64),
       configuration: {
         ...mockMacro.publishedRevision!.configuration,
-        contentHash: "c".repeat(64),
-        title: "Срок возврата",
-        body: "Возврат уже создан. Обычно он поступает в течение пяти рабочих дней.",
+        contentHash: 'c'.repeat(64),
+        title: 'Срок возврата',
+        body: 'Возврат уже создан. Обычно он поступает в течение пяти рабочих дней.',
         translations: {
-          ru: "Возврат уже создан. Обычно он поступает в течение пяти рабочих дней.",
-          en: "The refund has been created and usually arrives within five business days.",
+          ru: 'Возврат уже создан. Обычно он поступает в течение пяти рабочих дней.',
+          en: 'The refund has been created and usually arrives within five business days.',
         },
-        shortcuts: ["возврат"],
-        visibility: { mode: "PROJECT", teamIds: [], topicCodes: ["REFUNDS"] },
+        shortcuts: ['возврат'],
+        visibility: { mode: 'PROJECT', teamIds: [], topicCodes: ['REFUNDS'] },
       },
     },
     publishedRevision: null,
@@ -423,20 +394,20 @@ const mockMacros: SupportMacroResponseDto[] = [
   },
   {
     ...mockMacro,
-    id: "65000000-0000-4000-8000-000000000031",
-    stableCode: "legacy-game-list",
-    lifecycle: "ARCHIVED",
+    id: '65000000-0000-4000-8000-000000000031',
+    stableCode: 'legacy-game-list',
+    lifecycle: 'ARCHIVED',
     publishedRevision: {
       ...mockMacro.publishedRevision!,
-      id: "65000000-0000-4000-8000-000000000032",
+      id: '65000000-0000-4000-8000-000000000032',
       revisionNumber: 1,
       configuration: {
         ...mockMacro.publishedRevision!.configuration,
-        title: "Список игр",
-        body: "Показываю список доступных игр.",
-        translations: { ru: "Показываю список доступных игр." },
-        shortcuts: ["игры"],
-        visibility: { mode: "PROJECT", teamIds: [], topicCodes: [] },
+        title: 'Список игр',
+        body: 'Показываю список доступных игр.',
+        translations: { ru: 'Показываю список доступных игр.' },
+        shortcuts: ['игры'],
+        visibility: { mode: 'PROJECT', teamIds: [], topicCodes: [] },
       },
     },
     actionEtag: '"sm1.mock-legacy"',
@@ -445,27 +416,24 @@ const mockMacros: SupportMacroResponseDto[] = [
 
 const mockSource: SupportMacroSource = {
   async catalog(_projectId, request) {
-    const query = request.query?.trim().toLocaleLowerCase("ru") ?? "";
+    const query = request.query?.trim().toLocaleLowerCase('ru') ?? '';
     const items = query
       ? mockMacros.filter((macro) => {
           const configuration =
-            macro.draft?.configuration ??
-            macro.publishedRevision?.configuration;
+            macro.draft?.configuration ?? macro.publishedRevision?.configuration;
           return [macro.stableCode, configuration?.title, configuration?.body]
             .filter(Boolean)
-            .some((value) =>
-              String(value).toLocaleLowerCase("ru").includes(query),
-            );
+            .some((value) => String(value).toLocaleLowerCase('ru').includes(query));
         })
       : mockMacros;
     return {
       items,
       nextCursor: null,
       freshness: {
-        state: "CURRENT",
-        generation: "1",
+        state: 'CURRENT',
+        generation: '1',
         evaluatedAt: new Date().toISOString(),
-        authorizationRevision: "mock",
+        authorizationRevision: 'mock',
       },
     };
   },
@@ -479,17 +447,15 @@ const mockSource: SupportMacroSource = {
       targetKind: target.kind,
       conversationId: target.conversationId ?? null,
       endUserCaseId: target.caseId ?? null,
-      state: "READY",
+      state: 'READY',
       version: 1,
-      locale: target.locale ?? "ru",
+      locale: target.locale ?? 'ru',
       text:
         (
-          mockMacros.find((macro) => macro.id === target.macroId)
-            ?.publishedRevision?.configuration.translations as
-            Record<string, string> | undefined
-        )?.[target.locale ?? "ru"] ??
-        mockMacro.publishedRevision!.configuration.body,
-      renderedHash: "a".repeat(64),
+          mockMacros.find((macro) => macro.id === target.macroId)?.publishedRevision?.configuration
+            .translations as Record<string, string> | undefined
+        )?.[target.locale ?? 'ru'] ?? mockMacro.publishedRevision!.configuration.body,
+      renderedHash: 'a'.repeat(64),
       expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -497,10 +463,7 @@ const mockSource: SupportMacroSource = {
     };
   },
   async editDraft(target) {
-    const draft = await this.createDraft(
-      target,
-      globalThis.crypto.randomUUID(),
-    );
+    const draft = await this.createDraft(target, globalThis.crypto.randomUUID());
     return { ...draft, id: target.draftId, version: 2, text: target.text };
   },
   async authoringCatalog(projectId, request) {
@@ -512,14 +475,14 @@ const mockSource: SupportMacroSource = {
   async preview(_projectId, draft) {
     return {
       compilerRevision: 1,
-      contentHash: "a".repeat(64),
+      contentHash: 'a'.repeat(64),
       validatedAt: new Date().toISOString(),
       warningCodes: [],
       draft: {
         ...draft,
         translations: draft.translations ?? { [draft.locale]: draft.body },
         compilerRevision: 1,
-        contentHash: "a".repeat(64),
+        contentHash: 'a'.repeat(64),
         shortcuts: draft.shortcuts ?? [],
         visibility: {
           mode: draft.visibility.mode,
@@ -540,8 +503,8 @@ const mockSource: SupportMacroSource = {
       draft: {
         generation: 1,
         version: 1,
-        contentHash: "a".repeat(64),
-        configuration: (await this.preview("", draft)).draft,
+        contentHash: 'a'.repeat(64),
+        configuration: (await this.preview('', draft)).draft,
       },
     };
   },
@@ -551,8 +514,8 @@ const mockSource: SupportMacroSource = {
       draft: {
         generation: 1,
         version: 2,
-        contentHash: "a".repeat(64),
-        configuration: (await this.preview("", draft)).draft,
+        contentHash: 'a'.repeat(64),
+        configuration: (await this.preview('', draft)).draft,
       },
     };
   },
@@ -560,7 +523,7 @@ const mockSource: SupportMacroSource = {
     return mockMacro;
   },
   async archive() {
-    return { ...mockMacro, lifecycle: "ARCHIVED" };
+    return { ...mockMacro, lifecycle: 'ARCHIVED' };
   },
   async revisions() {
     return { items: [], nextCursor: null };
@@ -570,6 +533,4 @@ const mockSource: SupportMacroSource = {
   },
 };
 
-export const supportMacroSource: SupportMacroSource = isMockMode
-  ? mockSource
-  : apiSource;
+export const supportMacroSource: SupportMacroSource = isMockMode ? mockSource : apiSource;

@@ -1,13 +1,13 @@
-import { flushPromises, shallowMount } from "@vue/test-utils";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createContractField } from "@/features/end-user-attributes/model/contract-domain";
-import type { AttributeContractWorkspaceResponseDto } from "@/shared/api/generated/models";
-import ProfileFieldEditorPage from "./ProfileFieldEditorPage.vue";
+import { flushPromises, shallowMount } from '@vue/test-utils';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createContractField } from '@/features/end-user-attributes/model/contract-domain';
+import type { AttributeContractWorkspaceResponseDto } from '@/shared/api/generated/models';
+import ProfileFieldEditorPage from './ProfileFieldEditorPage.vue';
 
 const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   route: {
-    name: "profile-field-create",
+    name: 'profile-field-create',
     params: {} as Record<string, string>,
     query: {} as Record<string, string>,
   },
@@ -22,103 +22,87 @@ function setPublishedFields(
   } as never;
 }
 
-vi.mock("vue-router", () => ({
+vi.mock('vue-router', () => ({
   useRoute: () => mocks.route,
   useRouter: () => ({ push: mocks.push }),
   onBeforeRouteLeave: vi.fn(),
 }));
-vi.mock("@/features/auth/auth.store", () => ({
+vi.mock('@/features/auth/auth.store', () => ({
   useAuthStore: () => ({
     project: {
-      id: "project-1",
-      effectivePermissionCodes: ["project.profile_contract.write"],
+      id: 'project-1',
+      effectivePermissionCodes: ['project.profile_contract.write'],
     },
   }),
 }));
-vi.mock("@/shared/api/repository", () => ({ repository: { mode: "mock" } }));
-vi.mock("primevue/usetoast", () => ({ useToast: () => ({ add: vi.fn() }) }));
+vi.mock('@/shared/api/repository', () => ({ repository: { mode: 'mock' } }));
+vi.mock('primevue/usetoast', () => ({ useToast: () => ({ add: vi.fn() }) }));
 
-describe("ProfileFieldEditorPage", () => {
-  async function chooseCustom(
-    wrapper: ReturnType<typeof shallowMount>,
-  ): Promise<void> {
-    await wrapper
-      .find('input[name="profile-field-kind"][value="CUSTOM"]')
-      .trigger("click");
+describe('ProfileFieldEditorPage', () => {
+  async function chooseCustom(wrapper: ReturnType<typeof shallowMount>): Promise<void> {
+    await wrapper.find('input[name="profile-field-kind"][value="CUSTOM"]').trigger('click');
   }
 
   beforeEach(() => {
     vi.clearAllMocks();
     window.localStorage.clear();
-    mocks.route.name = "profile-field-create";
+    mocks.route.name = 'profile-field-create';
     mocks.route.params = {};
     mocks.route.query = {};
   });
 
-  it("asks for the field purpose before the administrator fills its details", async () => {
+  it('asks for the field purpose before the administrator fills its details', async () => {
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
 
     const text = wrapper.text();
-    expect(text).toContain("Как Retenive должна понимать это поле?");
-    expect(text).toContain("Обычное поле");
-    expect(text).toContain("Язык контента");
-    expect(text).not.toContain("Что хранится в поле");
-    expect(wrapper.find("fieldset.preset-section legend").exists()).toBe(true);
-    expect(
-      wrapper.find("fieldset.preset-section > .preset-heading").exists(),
-    ).toBe(true);
+    expect(text).toContain('Как Retenive должна понимать это поле?');
+    expect(text).toContain('Обычное поле');
+    expect(text).toContain('Язык контента');
+    expect(text).not.toContain('Что хранится в поле');
+    expect(wrapper.find('fieldset.preset-section legend').exists()).toBe(true);
+    expect(wrapper.find('fieldset.preset-section > .preset-heading').exists()).toBe(true);
     const presets = wrapper.findAll('input[name="profile-field-kind"]');
     expect(presets).toHaveLength(7);
-    expect(
-      presets.every((preset) => !(preset.element as HTMLInputElement).checked),
-    ).toBe(true);
+    expect(presets.every((preset) => !(preset.element as HTMLInputElement).checked)).toBe(true);
     await chooseCustom(wrapper);
-    expect(wrapper.text()).toContain("Что хранится в поле");
-    expect(wrapper.find(".advanced-content").text()).not.toContain(
-      "Системное назначение",
-    );
+    expect(wrapper.text()).toContain('Что хранится в поле');
+    expect(wrapper.find('.advanced-content').text()).not.toContain('Системное назначение');
   });
 
-  it("makes the complete preset content a label for its radio control", async () => {
+  it('makes the complete preset content a label for its radio control', async () => {
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
 
     const option = wrapper
-      .findAll(".preset-option")
-      .find((item) => item.text().includes("Электронная почта"));
+      .findAll('.preset-option')
+      .find((item) => item.text().includes('Электронная почта'));
     const input = option?.find('input[value="EMAIL"]');
-    const choice = option?.find("label.preset-choice");
+    const choice = option?.find('label.preset-choice');
 
     expect(input?.exists()).toBe(true);
-    expect(choice?.attributes("for")).toBe(input?.attributes("id"));
-    expect(choice?.text()).toContain("Электронная почта");
-    expect(option?.find("label.preset-choice > .preset-icon").exists()).toBe(
-      true,
-    );
-    expect(option?.find("label.preset-choice > .preset-copy").exists()).toBe(
-      true,
-    );
+    expect(choice?.attributes('for')).toBe(input?.attributes('id'));
+    expect(choice?.text()).toContain('Электронная почта');
+    expect(option?.find('label.preset-choice > .preset-icon').exists()).toBe(true);
+    expect(option?.find('label.preset-choice > .preset-copy').exists()).toBe(true);
   });
 
-  it("uses a compact preset confirmation without a separate close icon", async () => {
+  it('uses a compact preset confirmation without a separate close icon', async () => {
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
 
-    const dialog = wrapper.findComponent({ name: "Dialog" });
-    expect(dialog.attributes("closable")).toBe("false");
-    expect(dialog.attributes("draggable")).toBe("false");
-    expect(dialog.classes()).toContain("preset-switch-dialog");
+    const dialog = wrapper.findComponent({ name: 'Dialog' });
+    expect(dialog.attributes('closable')).toBe('false');
+    expect(dialog.attributes('draggable')).toBe('false');
+    expect(dialog.classes()).toContain('preset-switch-dialog');
   });
 
-  it("applies a system preset before manual field setup", async () => {
+  it('applies a system preset before manual field setup', async () => {
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
 
-    const countryPreset = wrapper.find(
-      'input[name="profile-field-kind"][value="COUNTRY"]',
-    );
-    await countryPreset.trigger("click");
+    const countryPreset = wrapper.find('input[name="profile-field-kind"][value="COUNTRY"]');
+    await countryPreset.trigger('click');
 
     const vm = wrapper.vm as unknown as {
       form: {
@@ -129,17 +113,15 @@ describe("ProfileFieldEditorPage", () => {
       };
     };
     expect(vm.form).toMatchObject({
-      semanticRole: "COUNTRY",
-      label: "Страна",
-      key: "country",
-      valueType: "COUNTRY_CODE",
+      semanticRole: 'COUNTRY',
+      label: 'Страна',
+      key: 'country',
+      valueType: 'COUNTRY_CODE',
     });
-    expect(wrapper.findAll("select-stub")[0]?.attributes("disabled")).toBe(
-      "false",
-    );
+    expect(wrapper.findAll('select-stub')[0]?.attributes('disabled')).toBe('false');
   });
 
-  it("keeps manually entered details when the administrator changes the preset", async () => {
+  it('keeps manually entered details when the administrator changes the preset', async () => {
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
     const vm = wrapper.vm as unknown as {
@@ -150,23 +132,21 @@ describe("ProfileFieldEditorPage", () => {
         valueType: string;
       };
     };
-    vm.form.label = "Предпочитаемый язык";
-    vm.form.key = "preferredLanguage";
+    vm.form.label = 'Предпочитаемый язык';
+    vm.form.key = 'preferredLanguage';
 
-    await wrapper
-      .find('input[name="profile-field-kind"][value="LOCALE"]')
-      .trigger("click");
+    await wrapper.find('input[name="profile-field-kind"][value="LOCALE"]').trigger('click');
 
     expect(vm.form).toMatchObject({
-      semanticRole: "LOCALE",
-      label: "Предпочитаемый язык",
-      key: "preferredLanguage",
-      valueType: "STRING",
+      semanticRole: 'LOCALE',
+      label: 'Предпочитаемый язык',
+      key: 'preferredLanguage',
+      valueType: 'STRING',
     });
-    expect(wrapper.text()).toContain("Языки контента");
+    expect(wrapper.text()).toContain('Языки контента');
   });
 
-  it("does not mutate incompatible settings before the administrator confirms", async () => {
+  it('does not mutate incompatible settings before the administrator confirms', async () => {
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
     await chooseCustom(wrapper);
@@ -177,21 +157,19 @@ describe("ProfileFieldEditorPage", () => {
       fieldKind: string | null;
       cancelPresetChange: () => void;
     };
-    vm.form.valueType = "DECIMAL";
+    vm.form.valueType = 'DECIMAL';
     vm.form.constraints = { precision: 8, scale: 2 };
-    vm.allowedValuesInput = "10.00\n25.50";
+    vm.allowedValuesInput = '10.00\n25.50';
     const before = JSON.stringify({
       form: vm.form,
       allowedValuesInput: vm.allowedValuesInput,
     });
 
-    await wrapper
-      .find('input[name="profile-field-kind"][value="LOCALE"]')
-      .trigger("click");
+    await wrapper.find('input[name="profile-field-kind"][value="LOCALE"]').trigger('click');
     await wrapper.vm.$nextTick();
 
-    expect(vm.pendingPreset).toBe("LOCALE");
-    expect(vm.fieldKind).toBe("CUSTOM");
+    expect(vm.pendingPreset).toBe('LOCALE');
+    expect(vm.fieldKind).toBe('CUSTOM');
     expect(
       JSON.stringify({
         form: vm.form,
@@ -208,61 +186,57 @@ describe("ProfileFieldEditorPage", () => {
     ).toBe(before);
   });
 
-  it("restores the locale draft after a confirmed round trip through a custom field", async () => {
+  it('restores the locale draft after a confirmed round trip through a custom field', async () => {
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
-    await wrapper
-      .find('input[name="profile-field-kind"][value="LOCALE"]')
-      .trigger("click");
+    await wrapper.find('input[name="profile-field-kind"][value="LOCALE"]').trigger('click');
     const vm = wrapper.vm as unknown as {
       form: ReturnType<typeof createContractField>;
       pendingPreset: string | null;
-      requestFieldKind: (kind: "CUSTOM" | "LOCALE") => void;
+      requestFieldKind: (kind: 'CUSTOM' | 'LOCALE') => void;
       confirmPresetChange: () => void;
     };
     vm.form.constraints = {
-      allowedValues: ["pt-BR", "en"],
-      defaultLocale: "pt-BR",
+      allowedValues: ['pt-BR', 'en'],
+      defaultLocale: 'pt-BR',
     };
 
-    vm.requestFieldKind("CUSTOM");
-    expect(vm.pendingPreset).toBe("CUSTOM");
+    vm.requestFieldKind('CUSTOM');
+    expect(vm.pendingPreset).toBe('CUSTOM');
     vm.confirmPresetChange();
     expect(vm.form.semanticRole).toBeNull();
     expect(vm.form.constraints).toEqual({});
-    vm.form.description = "Общее описание после смены заготовки";
-    vm.form.classification = "PERSONAL";
+    vm.form.description = 'Общее описание после смены заготовки';
+    vm.form.classification = 'PERSONAL';
     vm.form.policies.aiRead = true;
 
-    vm.requestFieldKind("LOCALE");
+    vm.requestFieldKind('LOCALE');
     expect(vm.form).toMatchObject({
-      semanticRole: "LOCALE",
-      description: "Общее описание после смены заготовки",
-      classification: "PERSONAL",
+      semanticRole: 'LOCALE',
+      description: 'Общее описание после смены заготовки',
+      classification: 'PERSONAL',
       policies: { aiRead: true },
       constraints: {
-        allowedValues: ["pt-BR", "en"],
-        defaultLocale: "pt-BR",
+        allowedValues: ['pt-BR', 'en'],
+        defaultLocale: 'pt-BR',
       },
     });
   });
 
-  it("marks a system purpose already used by another field as unavailable", async () => {
+  it('marks a system purpose already used by another field as unavailable', async () => {
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
 
     const displayNamePreset = wrapper.find(
       'input[name="profile-field-kind"][value="DISPLAY_NAME"]',
     );
-    expect(displayNamePreset.attributes("disabled")).toBeDefined();
-    expect(displayNamePreset.element.parentElement?.textContent).toContain(
-      "Уже используется",
-    );
-    expect(wrapper.text()).toContain("Открыть «Отображаемое имя»");
+    expect(displayNamePreset.attributes('disabled')).toBeDefined();
+    expect(displayNamePreset.element.parentElement?.textContent).toContain('Уже используется');
+    expect(wrapper.text()).toContain('Открыть «Отображаемое имя»');
   });
 
-  it("opens a requested system preset with ready-to-edit defaults", async () => {
-    mocks.route.query = { semanticRole: "LOCALE" };
+  it('opens a requested system preset with ready-to-edit defaults', async () => {
+    mocks.route.query = { semanticRole: 'LOCALE' };
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
     const vm = wrapper.vm as unknown as {
@@ -275,15 +249,15 @@ describe("ProfileFieldEditorPage", () => {
     };
 
     expect(vm.form).toMatchObject({
-      semanticRole: "LOCALE",
-      label: "Язык контента",
-      key: "locale",
-      valueType: "STRING",
+      semanticRole: 'LOCALE',
+      label: 'Язык контента',
+      key: 'locale',
+      valueType: 'STRING',
     });
   });
 
-  it("does not let a deep link select a system purpose already used by another field", async () => {
-    mocks.route.query = { semanticRole: "DISPLAY_NAME" };
+  it('does not let a deep link select a system purpose already used by another field', async () => {
+    mocks.route.query = { semanticRole: 'DISPLAY_NAME' };
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
     const vm = wrapper.vm as unknown as {
@@ -294,46 +268,46 @@ describe("ProfileFieldEditorPage", () => {
 
     expect(vm.fieldKind).toBeNull();
     expect(vm.form.semanticRole).toBeNull();
-    expect(vm.error).toContain("уже используется");
+    expect(vm.error).toContain('уже используется');
   });
 
-  it("shows administrator language and only relevant value constraints", async () => {
+  it('shows administrator language and only relevant value constraints', async () => {
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
     await chooseCustom(wrapper);
 
-    expect(wrapper.text()).toContain("Новое поле профиля");
-    expect(wrapper.text()).toContain("Где можно использовать поле");
-    expect(wrapper.text()).toContain("Обязательно ли передавать поле?");
-    expect(wrapper.text()).not.toContain("Нужно ли передавать поле?");
-    expect(wrapper.text()).toContain("Для чего нужно это поле?");
-    expect(wrapper.text()).not.toContain("Для чего нужно это поле? *");
-    expect(wrapper.text()).toContain("Пример для ИИ");
-    expect(wrapper.text()).toContain("ИИ получит значение и описание поля");
-    expect(wrapper.text()).toContain("Поле придёт во фронтенд");
-    expect(wrapper.text()).not.toContain("Значение получит код страницы");
-    expect(wrapper.text()).toContain("Расширенные настройки");
-    expect(wrapper.text()).toContain("Минимальная длина");
-    expect(wrapper.text()).not.toContain("Всего цифр");
-    expect(wrapper.text()).not.toContain("Admin read");
-    expect(wrapper.text()).not.toContain("Allowed values");
+    expect(wrapper.text()).toContain('Новое поле профиля');
+    expect(wrapper.text()).toContain('Где можно использовать поле');
+    expect(wrapper.text()).toContain('Обязательно ли передавать поле?');
+    expect(wrapper.text()).not.toContain('Нужно ли передавать поле?');
+    expect(wrapper.text()).toContain('Для чего нужно это поле?');
+    expect(wrapper.text()).not.toContain('Для чего нужно это поле? *');
+    expect(wrapper.text()).toContain('Пример для ИИ');
+    expect(wrapper.text()).toContain('ИИ получит значение и описание поля');
+    expect(wrapper.text()).toContain('Поле придёт во фронтенд');
+    expect(wrapper.text()).not.toContain('Значение получит код страницы');
+    expect(wrapper.text()).toContain('Расширенные настройки');
+    expect(wrapper.text()).toContain('Минимальная длина');
+    expect(wrapper.text()).not.toContain('Всего цифр');
+    expect(wrapper.text()).not.toContain('Admin read');
+    expect(wrapper.text()).not.toContain('Allowed values');
 
     const vm = wrapper.vm as unknown as {
       form: { valueType: string };
-      cmsReadAccess: "HIDDEN" | "BASE" | "RESTRICTED";
+      cmsReadAccess: 'HIDDEN' | 'BASE' | 'RESTRICTED';
     };
-    vm.cmsReadAccess = "BASE";
+    vm.cmsReadAccess = 'BASE';
     await wrapper.vm.$nextTick();
-    expect(wrapper.text()).toContain("Для чего нужно это поле? *");
+    expect(wrapper.text()).toContain('Для чего нужно это поле? *');
 
-    vm.form.valueType = "DECIMAL";
+    vm.form.valueType = 'DECIMAL';
     await wrapper.vm.$nextTick();
-    expect(wrapper.text()).toContain("Всего цифр");
-    expect(wrapper.text()).toContain("Знаков после запятой");
-    expect(wrapper.text()).not.toContain("Минимальная длина");
+    expect(wrapper.text()).toContain('Всего цифр');
+    expect(wrapper.text()).toContain('Знаков после запятой');
+    expect(wrapper.text()).not.toContain('Минимальная длина');
   });
 
-  it("adds a valid field to the draft and returns to the field list", async () => {
+  it('adds a valid field to the draft and returns to the field list', async () => {
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
     const vm = wrapper.vm as unknown as {
@@ -341,19 +315,19 @@ describe("ProfileFieldEditorPage", () => {
       error: string;
       save: () => Promise<void>;
     };
-    vm.form.label = "Город";
-    vm.form.key = "city";
-    vm.form.purpose = "Показывать город в карточке пользователя";
+    vm.form.label = 'Город';
+    vm.form.key = 'city';
+    vm.form.purpose = 'Показывать город в карточке пользователя';
     await vm.save();
 
-    expect(vm.error).toBe("");
-    expect(
-      window.localStorage.getItem("retenive:demo:profile-fields:project-1"),
-    ).toContain('"key":"city"');
-    expect(mocks.push).toHaveBeenCalledWith("/profile-fields");
+    expect(vm.error).toBe('');
+    expect(window.localStorage.getItem('retenive:demo:profile-fields:project-1')).toContain(
+      '"key":"city"',
+    );
+    expect(mocks.push).toHaveBeenCalledWith('/profile-fields');
   });
 
-  it("maps validation errors to the exact field", async () => {
+  it('maps validation errors to the exact field', async () => {
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
     const vm = wrapper.vm as unknown as {
@@ -361,16 +335,16 @@ describe("ProfileFieldEditorPage", () => {
       fieldErrors: Record<string, string>;
       save: () => Promise<void>;
     };
-    vm.form.label = "";
-    vm.form.key = "Invalid key";
+    vm.form.label = '';
+    vm.form.key = 'Invalid key';
     await vm.save();
 
-    expect(vm.fieldErrors.label).toBe("Укажите название поля.");
-    expect(vm.fieldErrors.key).toContain("Ключ начинается");
+    expect(vm.fieldErrors.label).toBe('Укажите название поля.');
+    expect(vm.fieldErrors.key).toContain('Ключ начинается');
     expect(mocks.push).not.toHaveBeenCalled();
   });
 
-  it("marks the purpose as optional for an internal field with no consumers", async () => {
+  it('marks the purpose as optional for an internal field with no consumers', async () => {
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
     await chooseCustom(wrapper);
@@ -381,55 +355,53 @@ describe("ProfileFieldEditorPage", () => {
       };
       purposeRequired: boolean;
     };
-    vm.form.classification = "INTERNAL";
+    vm.form.classification = 'INTERNAL';
     Object.assign(vm.form.policies, {
-      cmsRead: { mode: "HIDDEN" },
+      cmsRead: { mode: 'HIDDEN' },
       aiRead: false,
       audienceRead: false,
       clientRead: false,
       exportRead: false,
-      indexPolicy: "NONE",
+      indexPolicy: 'NONE',
       templateRead: false,
     });
     await wrapper.vm.$nextTick();
 
     expect(vm.purposeRequired).toBe(false);
     expect(wrapper.text()).toContain(
-      "Необязательно для внутреннего поля, недоступного другим разделам.",
+      'Необязательно для внутреннего поля, недоступного другим разделам.',
     );
   });
 
-  it("round-trips restricted CMS access without broadening it to base", async () => {
+  it('round-trips restricted CMS access without broadening it to base', async () => {
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
     const vm = wrapper.vm as unknown as {
       form: {
         policies: {
-          cmsRead:
-            | { mode: "HIDDEN" }
-            | { mode: "VISIBLE"; access: "BASE" | "RESTRICTED" };
+          cmsRead: { mode: 'HIDDEN' } | { mode: 'VISIBLE'; access: 'BASE' | 'RESTRICTED' };
         };
       };
-      cmsReadAccess: "HIDDEN" | "BASE" | "RESTRICTED";
+      cmsReadAccess: 'HIDDEN' | 'BASE' | 'RESTRICTED';
     };
 
     vm.form.policies.cmsRead = {
-      mode: "VISIBLE",
-      access: "RESTRICTED",
+      mode: 'VISIBLE',
+      access: 'RESTRICTED',
     };
     await wrapper.vm.$nextTick();
 
-    expect(vm.cmsReadAccess).toBe("RESTRICTED");
+    expect(vm.cmsReadAccess).toBe('RESTRICTED');
     expect(vm.form.policies.cmsRead).toEqual({
-      mode: "VISIBLE",
-      access: "RESTRICTED",
+      mode: 'VISIBLE',
+      access: 'RESTRICTED',
     });
 
-    vm.cmsReadAccess = "HIDDEN";
-    expect(vm.form.policies.cmsRead).toEqual({ mode: "HIDDEN" });
+    vm.cmsReadAccess = 'HIDDEN';
+    expect(vm.form.policies.cmsRead).toEqual({ mode: 'HIDDEN' });
   });
 
-  it("edits a Locale Attribute as canonical locale chips with a required default", async () => {
+  it('edits a Locale Attribute as canonical locale chips with a required default', async () => {
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
     const vm = wrapper.vm as unknown as {
@@ -441,24 +413,24 @@ describe("ProfileFieldEditorPage", () => {
       localeInput: string;
       addLocale: () => void;
     };
-    vm.form.semanticRole = "LOCALE";
+    vm.form.semanticRole = 'LOCALE';
     await wrapper.vm.$nextTick();
-    vm.localeInput = "pt-br";
+    vm.localeInput = 'pt-br';
     vm.addLocale();
-    vm.localeInput = "en";
+    vm.localeInput = 'en';
     vm.addLocale();
     await wrapper.vm.$nextTick();
 
-    expect(vm.form.valueType).toBe("STRING");
-    expect(vm.form.constraints.allowedValues).toEqual(["pt-BR", "en"]);
-    expect(vm.form.constraints.defaultLocale).toBe("pt-BR");
+    expect(vm.form.valueType).toBe('STRING');
+    expect(vm.form.constraints.allowedValues).toEqual(['pt-BR', 'en']);
+    expect(vm.form.constraints.defaultLocale).toBe('pt-BR');
     expect(wrapper.text()).toContain(
-      "Значение этого атрибута у пользователя определяет язык сообщений сценария",
+      'Значение этого атрибута у пользователя определяет язык сообщений сценария',
     );
-    expect(wrapper.text()).toContain("Основной язык проекта");
+    expect(wrapper.text()).toContain('Основной язык проекта');
   });
 
-  it("keeps key and type editable for a saved draft-only field", async () => {
+  it('keeps key and type editable for a saved draft-only field', async () => {
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
     await chooseCustom(wrapper);
@@ -466,24 +438,18 @@ describe("ProfileFieldEditorPage", () => {
       form: ReturnType<typeof createContractField>;
       workspace: AttributeContractWorkspaceResponseDto;
     };
-    vm.form.definitionId = "definition-draft-only";
+    vm.form.definitionId = 'definition-draft-only';
     setPublishedFields(vm.workspace, []);
     await wrapper.vm.$nextTick();
 
-    expect(
-      wrapper
-        .find('input-text-stub[id="profile-field-key"]')
-        .attributes("disabled"),
-    ).toBe("false");
-    expect(wrapper.findAll("select-stub")[0]?.attributes("disabled")).toBe(
-      "false",
+    expect(wrapper.find('input-text-stub[id="profile-field-key"]').attributes('disabled')).toBe(
+      'false',
     );
-    expect(wrapper.text()).toContain(
-      "После первой публикации ключ и тип данных изменить нельзя.",
-    );
+    expect(wrapper.findAll('select-stub')[0]?.attributes('disabled')).toBe('false');
+    expect(wrapper.text()).toContain('После первой публикации ключ и тип данных изменить нельзя.');
   });
 
-  it("locks key and type when the field exists in the current revision", async () => {
+  it('locks key and type when the field exists in the current revision', async () => {
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
     await chooseCustom(wrapper);
@@ -491,32 +457,26 @@ describe("ProfileFieldEditorPage", () => {
       form: ReturnType<typeof createContractField>;
       workspace: AttributeContractWorkspaceResponseDto;
     };
-    vm.form.definitionId = "definition-published";
+    vm.form.definitionId = 'definition-published';
     setPublishedFields(vm.workspace, [
-      { ...createContractField(), definitionId: "definition-published" },
+      { ...createContractField(), definitionId: 'definition-published' },
     ]);
     await wrapper.vm.$nextTick();
 
-    expect(
-      wrapper
-        .find('input-text-stub[id="profile-field-key"]')
-        .attributes("disabled"),
-    ).toBe("true");
-    expect(wrapper.findAll("select-stub")[0]?.attributes("disabled")).toBe(
-      "true",
+    expect(wrapper.find('input-text-stub[id="profile-field-key"]').attributes('disabled')).toBe(
+      'true',
     );
-    const emailPreset = wrapper.find(
-      'input[name="profile-field-kind"][value="EMAIL"]',
-    );
-    expect(emailPreset.attributes("disabled")).toBeDefined();
+    expect(wrapper.findAll('select-stub')[0]?.attributes('disabled')).toBe('true');
+    const emailPreset = wrapper.find('input[name="profile-field-kind"][value="EMAIL"]');
+    expect(emailPreset.attributes('disabled')).toBeDefined();
     expect(emailPreset.element.parentElement?.textContent).toContain(
-      "Для опубликованного поля создайте поле-замену",
+      'Для опубликованного поля создайте поле-замену',
     );
   });
 
-  it("does not let an administrator repurpose an already published system field", async () => {
-    mocks.route.name = "profile-field-edit";
-    mocks.route.params = { definitionId: "attr-name" };
+  it('does not let an administrator repurpose an already published system field', async () => {
+    mocks.route.name = 'profile-field-edit';
+    mocks.route.params = { definitionId: 'attr-name' };
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
     const vm = wrapper.vm as unknown as {
@@ -525,22 +485,20 @@ describe("ProfileFieldEditorPage", () => {
     setPublishedFields(vm.workspace, [
       {
         ...createContractField(),
-        definitionId: "attr-name",
-        semanticRole: "DISPLAY_NAME",
+        definitionId: 'attr-name',
+        semanticRole: 'DISPLAY_NAME',
       },
     ]);
     await wrapper.vm.$nextTick();
 
-    const customPreset = wrapper.find(
-      'input[name="profile-field-kind"][value="CUSTOM"]',
-    );
-    expect(customPreset.attributes("disabled")).toBeDefined();
+    const customPreset = wrapper.find('input[name="profile-field-kind"][value="CUSTOM"]');
+    expect(customPreset.attributes('disabled')).toBeDefined();
     expect(customPreset.element.parentElement?.textContent).toContain(
-      "Назначение опубликованного поля зафиксировано",
+      'Назначение опубликованного поля зафиксировано',
     );
   });
 
-  it("keeps identity locked when a published field has draft changes", async () => {
+  it('keeps identity locked when a published field has draft changes', async () => {
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
     await chooseCustom(wrapper);
@@ -548,29 +506,25 @@ describe("ProfileFieldEditorPage", () => {
       form: ReturnType<typeof createContractField>;
       workspace: AttributeContractWorkspaceResponseDto;
     };
-    vm.form.definitionId = "definition-published";
-    vm.form.label = "Название из черновика";
+    vm.form.definitionId = 'definition-published';
+    vm.form.label = 'Название из черновика';
     setPublishedFields(vm.workspace, [
       {
         ...createContractField(),
-        definitionId: "definition-published",
-        label: "Опубликованное название",
+        definitionId: 'definition-published',
+        label: 'Опубликованное название',
       },
     ]);
     await wrapper.vm.$nextTick();
 
-    expect(
-      wrapper
-        .find('input-text-stub[id="profile-field-key"]')
-        .attributes("disabled"),
-    ).toBe("true");
-    expect(wrapper.findAll("select-stub")[0]?.attributes("disabled")).toBe(
-      "true",
+    expect(wrapper.find('input-text-stub[id="profile-field-key"]').attributes('disabled')).toBe(
+      'true',
     );
+    expect(wrapper.findAll('select-stub')[0]?.attributes('disabled')).toBe('true');
   });
 
-  it("does not change the type of a published field assigned as LOCALE", async () => {
-    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+  it('does not change the type of a published field assigned as LOCALE', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
     const wrapper = shallowMount(ProfileFieldEditorPage);
     await flushPromises();
     const vm = wrapper.vm as unknown as {
@@ -578,16 +532,16 @@ describe("ProfileFieldEditorPage", () => {
       workspace: AttributeContractWorkspaceResponseDto;
       fieldKind: string | null;
     };
-    vm.form.definitionId = "definition-published";
-    vm.form.valueType = "INTEGER";
+    vm.form.definitionId = 'definition-published';
+    vm.form.valueType = 'INTEGER';
     setPublishedFields(vm.workspace, [
-      { ...createContractField(), definitionId: "definition-published" },
+      { ...createContractField(), definitionId: 'definition-published' },
     ]);
 
-    vm.form.semanticRole = "LOCALE";
+    vm.form.semanticRole = 'LOCALE';
     await wrapper.vm.$nextTick();
 
-    expect(vm.form.valueType).toBe("INTEGER");
+    expect(vm.form.valueType).toBe('INTEGER');
     expect(vm.fieldKind).toBeNull();
     expect(confirm).not.toHaveBeenCalled();
   });

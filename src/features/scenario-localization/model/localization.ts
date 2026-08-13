@@ -1,29 +1,29 @@
 import type {
   ScenarioLocalizationCatalogResponseDto,
   ScenarioLocalizationPolicyDto,
-} from "@/shared/api/generated/models";
+} from '@/shared/api/generated/models';
 
 export type LocalizedText = Record<string, string>;
 
 export function defaultLocalizationPolicy(): ScenarioLocalizationPolicyDto {
-  return { version: 1, mode: "ALL_PROJECT_LOCALES", locales: [] };
+  return { version: 1, mode: 'ALL_PROJECT_LOCALES', locales: [] };
 }
 
 export function requiredLocales(
   catalog: ScenarioLocalizationCatalogResponseDto,
   policy: ScenarioLocalizationPolicyDto,
 ): string[] {
-  return policy.mode === "ALL_PROJECT_LOCALES"
+  return policy.mode === 'ALL_PROJECT_LOCALES'
     ? catalog.locales.map(({ code }) => code)
     : policy.locales;
 }
 
 export function localizedValue(value: unknown, defaultLocale: string): LocalizedText {
-  if (typeof value === "string") return { [defaultLocale]: value };
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  if (typeof value === 'string') return { [defaultLocale]: value };
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   return Object.fromEntries(
     Object.entries(value).filter(
-      (entry): entry is [string, string] => typeof entry[1] === "string",
+      (entry): entry is [string, string] => typeof entry[1] === 'string',
     ),
   );
 }
@@ -66,11 +66,11 @@ export function resolveLocalizedContent(
       fallbackReason: null,
     };
   return {
-    text: localized[defaultLocale] ?? "",
+    text: localized[defaultLocale] ?? '',
     contentLocale: defaultLocale,
     fallbackReason:
       requestedLocale === defaultLocale
-        ? "Основной вариант не заполнен"
+        ? 'Основной вариант не заполнен'
         : `Вариант ${requestedLocale} не заполнен — используется основной язык`,
   };
 }
@@ -80,15 +80,15 @@ export function applyTranslationResult(input: {
   snapshot: TranslationValueSnapshot;
   translatedText: string;
 }): {
-  outcome: "APPLIED" | "STALE_SOURCE" | "TARGET_CONFLICT";
+  outcome: 'APPLIED' | 'STALE_SOURCE' | 'TARGET_CONFLICT';
   value: LocalizedText;
 } {
-  if ((input.current[input.snapshot.sourceLocale] ?? "") !== input.snapshot.sourceText)
-    return { outcome: "STALE_SOURCE", value: input.current };
-  if ((input.current[input.snapshot.targetLocale] ?? "") !== input.snapshot.targetText)
-    return { outcome: "TARGET_CONFLICT", value: input.current };
+  if ((input.current[input.snapshot.sourceLocale] ?? '') !== input.snapshot.sourceText)
+    return { outcome: 'STALE_SOURCE', value: input.current };
+  if ((input.current[input.snapshot.targetLocale] ?? '') !== input.snapshot.targetText)
+    return { outcome: 'TARGET_CONFLICT', value: input.current };
   return {
-    outcome: "APPLIED",
+    outcome: 'APPLIED',
     value: {
       ...input.current,
       [input.snapshot.targetLocale]: input.translatedText,
@@ -103,13 +103,12 @@ export function localizedPath(
 ) {
   return catalog.paths.find(
     (descriptor) =>
-      descriptor.actionType === actionType &&
-      descriptor.path === `config.${fieldKey}`,
+      descriptor.actionType === actionType && descriptor.path === `config.${fieldKey}`,
   );
 }
 
 function record(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value)
+  return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
 }
@@ -119,12 +118,10 @@ export function normalizeLocalizedActionContent<T extends object>(
   catalog: ScenarioLocalizationCatalogResponseDto,
 ): T[] {
   const visit = (action: Record<string, unknown>) => {
-    const type = typeof action.type === "string" ? action.type : "";
+    const type = typeof action.type === 'string' ? action.type : '';
     const config = record(action.config);
-    for (const descriptor of catalog.paths.filter(
-      (candidate) => candidate.actionType === type,
-    )) {
-      if (descriptor.path === "config.options[].label") {
+    for (const descriptor of catalog.paths.filter((candidate) => candidate.actionType === type)) {
+      if (descriptor.path === 'config.options[].label') {
         if (Array.isArray(config.options)) {
           config.options = config.options.map((option) => {
             const item = record(option);
@@ -157,7 +154,5 @@ export function normalizeLocalizedActionContent<T extends object>(
     return action;
   };
   const plainActions = JSON.parse(JSON.stringify(actions)) as T[];
-  return plainActions.map((action) =>
-    visit(action as Record<string, unknown>) as T,
-  );
+  return plainActions.map((action) => visit(action as Record<string, unknown>) as T);
 }

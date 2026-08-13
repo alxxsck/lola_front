@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch } from 'vue';
 import {
   TELEGRAM_BROADCAST_END_USER_EXTERNAL_ID_MAX_LENGTH,
   TELEGRAM_BROADCAST_TEST_LABEL_MAX_LENGTH,
@@ -7,10 +7,8 @@ import {
   validBroadcastTestLabel,
   type TelegramBroadcastExclusionReason,
   type TelegramBroadcastPreview,
-} from "../model/telegram-broadcast";
-import type {
-  TelegramBroadcastTestSend,
-} from "../model/use-telegram-broadcasts";
+} from '../model/telegram-broadcast';
+import type { TelegramBroadcastTestSend } from '../model/use-telegram-broadcasts';
 
 const props = defineProps<{
   preview: TelegramBroadcastPreview;
@@ -23,8 +21,8 @@ const emit = defineEmits<{
   testSend: [endUserExternalId: string, label: string];
 }>();
 
-const endUserExternalId = ref("");
-const testLabel = ref("");
+const endUserExternalId = ref('');
+const testLabel = ref('');
 const canSubmitTest = computed(
   () =>
     validBroadcastEndUserExternalId(endUserExternalId.value) &&
@@ -34,21 +32,21 @@ const canSubmitTest = computed(
 watch(
   () => props.preview.revisionId,
   () => {
-    endUserExternalId.value = "";
-    testLabel.value = "";
+    endUserExternalId.value = '';
+    testLabel.value = '';
   },
 );
 
 const exclusionLabels: Record<TelegramBroadcastExclusionReason, string> = {
-  CONSENT_NOT_ACTIVE: "Без активного явного согласия",
-  STALE_CONSENT: "Согласие относится к прошлой версии",
-  NO_ACTIVE_LINK: "Неактивная привязка Telegram",
-  INSTALLATION_UNAVAILABLE: "Telegram-канал недоступен",
+  CONSENT_NOT_ACTIVE: 'Без активного явного согласия',
+  STALE_CONSENT: 'Согласие относится к прошлой версии',
+  NO_ACTIVE_LINK: 'Неактивная привязка Telegram',
+  INSTALLATION_UNAVAILABLE: 'Telegram-канал недоступен',
 };
 
 function sendTest(): void {
   if (!canSubmitTest.value) return;
-  emit("testSend", endUserExternalId.value.trim(), testLabel.value.trim());
+  emit('testSend', endUserExternalId.value.trim(), testLabel.value.trim());
 }
 </script>
 
@@ -89,8 +87,8 @@ function sendTest(): void {
           :disabled="disabled"
         />
         <small id="broadcast-test-external-id-hint">
-          Идентификатор пользователя в текущем проекте. Согласие и активную
-          привязку проверит сервер.
+          Идентификатор пользователя в текущем проекте. Согласие и активную привязку проверит
+          сервер.
         </small>
       </div>
       <div class="test-field">
@@ -118,12 +116,7 @@ function sendTest(): void {
       >
         Отправить тест
       </button>
-      <p
-        v-if="latestTestSend"
-        class="test-result"
-        role="status"
-        aria-live="polite"
-      >
+      <p v-if="latestTestSend" class="test-result" role="status" aria-live="polite">
         Тестовое сообщение: {{ latestTestSend.status }}
       </p>
     </div>

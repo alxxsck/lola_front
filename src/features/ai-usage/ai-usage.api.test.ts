@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import type { AiUsageReportResponseDto } from "@/shared/api/generated/models";
-import { parseAiUsageReport } from "./ai-usage.api";
+import { describe, expect, it } from 'vitest';
+import type { AiUsageReportResponseDto } from '@/shared/api/generated/models';
+import { parseAiUsageReport } from './ai-usage.api';
 
 const currentTotals = {
   records: 2,
@@ -26,17 +26,17 @@ const currentTotals = {
   inputImageTokens: 0,
   cachedInputImageTokens: 0,
   outputImageTokens: 0,
-  durationSeconds: "0.000000000000",
-  providerBilledUnits: "0.000000000000",
-  estimatedCost: "0.001200000000",
-  billedCost: "0.000000000000",
-  providerReportedCost: "0.000000000000",
-  estimatedFallbackCost: "0.001200000000",
-  effectiveCost: "0.001200000000",
+  durationSeconds: '0.000000000000',
+  providerBilledUnits: '0.000000000000',
+  estimatedCost: '0.001200000000',
+  billedCost: '0.000000000000',
+  providerReportedCost: '0.000000000000',
+  estimatedFallbackCost: '0.001200000000',
+  effectiveCost: '0.001200000000',
 };
 
 const response = {
-  projectId: "project-1",
+  projectId: 'project-1',
   range: { from: null, to: null },
   providers: {
     xai: {
@@ -50,7 +50,7 @@ const response = {
           inputTokens: 60_000,
           outputTokens: 14_546,
           totalTokens: 74_546,
-          billedCostUsd: "0.029500800000",
+          billedCostUsd: '0.029500800000',
           estimatedCostUsd: null,
         },
       },
@@ -58,44 +58,44 @@ const response = {
   },
   textToSpeechPricing: {
     current: {
-      rate: "15",
-      currency: "usd",
-      unit: "per_million_input_characters",
-      effectiveFrom: "2026-07-29T10:00:00.000Z",
+      rate: '15',
+      currency: 'usd',
+      unit: 'per_million_input_characters',
+      effectiveFrom: '2026-07-29T10:00:00.000Z',
     },
-    sourceUrl: "https://docs.x.ai/developers/pricing",
+    sourceUrl: 'https://docs.x.ai/developers/pricing',
   },
   totals: currentTotals,
   workloads: {
     range: {
-      from: "2026-07-30T00:00:00.000Z",
-      to: "2026-07-30T23:59:59.999Z",
+      from: '2026-07-30T00:00:00.000Z',
+      to: '2026-07-30T23:59:59.999Z',
       truncated: false,
     },
     items: [
       {
-        workload: "CONVERSATION_OUTBOUND",
-        requestedModel: "grok-4.3",
-        appliedModel: "grok-4.3",
-        reasoningEffort: "low",
+        workload: 'CONVERSATION_OUTBOUND',
+        requestedModel: 'grok-4.3',
+        appliedModel: 'grok-4.3',
+        reasoningEffort: 'low',
         reasoningTokens: 24,
         requests: 3,
         averageLatencyMs: 420,
-        effectiveCostUsd: "0.003100000000",
+        effectiveCostUsd: '0.003100000000',
         isOther: false,
       },
     ],
   },
   breakdown: [
     {
-      provider: "xai",
-      model: "grok-4.5",
-      requestedModel: "grok-4.5",
-      appliedModel: "grok-4.5",
-      modelConfigRevision: "model-config-1",
-      reasoningEffort: "none",
-      operation: "responses",
-      currency: "usd",
+      provider: 'xai',
+      model: 'grok-4.5',
+      requestedModel: 'grok-4.5',
+      appliedModel: 'grok-4.5',
+      modelConfigRevision: 'model-config-1',
+      reasoningEffort: 'none',
+      operation: 'responses',
+      currency: 'usd',
       records: 2,
       inputCharacters: 0,
       totalTokens: 120,
@@ -113,13 +113,13 @@ const response = {
       inputImageTokens: 0,
       cachedInputImageTokens: 0,
       outputImageTokens: 0,
-      durationSeconds: "0.000000000000",
-      providerBilledUnits: "0.000000000000",
-      estimatedCost: "0.001200000000",
-      billedCost: "0.000000000000",
-      providerReportedCost: "0.000000000000",
-      estimatedFallbackCost: "0.001200000000",
-      effectiveCost: "0.001200000000",
+      durationSeconds: '0.000000000000',
+      providerBilledUnits: '0.000000000000',
+      estimatedCost: '0.001200000000',
+      billedCost: '0.000000000000',
+      providerReportedCost: '0.000000000000',
+      estimatedFallbackCost: '0.001200000000',
+      effectiveCost: '0.001200000000',
     },
   ],
   categories: [],
@@ -127,69 +127,67 @@ const response = {
   nextCursor: null,
 } satisfies AiUsageReportResponseDto;
 
-describe("AI usage API response validation", () => {
-  it("accepts CMS agent usage returned by the current backend contract", () => {
+describe('AI usage API response validation', () => {
+  it('accepts CMS agent usage returned by the current backend contract', () => {
     const cmsAgentResponse = {
       ...response,
-      categories: [
-        { ...response.breakdown[0], category: "CMS_AGENT" as const },
-      ],
+      categories: [{ ...response.breakdown[0], category: 'CMS_AGENT' as const }],
     };
 
-    expect(
-      parseAiUsageReport(cmsAgentResponse, "project-1")?.categories,
-    ).toEqual([expect.objectContaining({ category: "CMS_AGENT" })]);
+    expect(parseAiUsageReport(cmsAgentResponse, 'project-1')?.categories).toEqual([
+      expect.objectContaining({ category: 'CMS_AGENT' }),
+    ]);
   });
 
-  it("preserves canonical decimal strings without exposing raw ledger rows", () => {
-    expect(parseAiUsageReport(response, "project-1")).toMatchObject({
-      projectId: "project-1",
+  it('preserves canonical decimal strings without exposing raw ledger rows', () => {
+    expect(parseAiUsageReport(response, 'project-1')).toMatchObject({
+      projectId: 'project-1',
       eventQuery: {
         calls: 6,
         linkedAiUsage: {
           totalTokens: 74_546,
-          billedCostUsd: "0.029500800000",
+          billedCostUsd: '0.029500800000',
         },
       },
       totals: {
         inputCharacters: 0,
         providerBilledUnits: 0,
-        estimatedCost: "0.001200000000",
+        estimatedCost: '0.001200000000',
       },
       workloads: [
         {
-          workload: "CONVERSATION_OUTBOUND",
-          appliedModel: "grok-4.3",
-          reasoningEffort: "low",
+          workload: 'CONVERSATION_OUTBOUND',
+          appliedModel: 'grok-4.3',
+          reasoningEffort: 'low',
           reasoningTokens: 24,
           requests: 3,
-          effectiveCostUsd: "0.003100000000",
+          effectiveCostUsd: '0.003100000000',
         },
       ],
       breakdown: [
         {
-          model: "grok-4.5",
+          model: 'grok-4.5',
           inputCharacters: 0,
           providerBilledUnits: 0,
-          estimatedCost: "0.001200000000",
+          estimatedCost: '0.001200000000',
         },
       ],
     });
   });
 
-  it("rejects numeric monetary values instead of silently losing precision", () => {
+  it('rejects numeric monetary values instead of silently losing precision', () => {
     expect(
       parseAiUsageReport(
         {
           ...response,
           totals: { ...response.totals, effectiveCost: 0.0012 },
         },
-        "project-1",
+        'project-1',
       ),
     ).toBeUndefined();
   });
 
-  it("accepts fractional average workload latency from a multi-day aggregate", () => {
+  it('accepts fractional average workload latency from a multi-day aggregate', () => {
     const sevenDayResponse = {
       ...response,
       workloads: {
@@ -197,7 +195,7 @@ describe("AI usage API response validation", () => {
         items: [
           {
             ...response.workloads.items[0],
-            workload: "SCENARIO_AUTHORING",
+            workload: 'SCENARIO_AUTHORING',
             requests: 11,
             averageLatencyMs: 973.4545454545455,
           },
@@ -217,24 +215,18 @@ describe("AI usage API response validation", () => {
       },
     };
 
-    expect(
-      parseAiUsageReport(integerLatencyControl, "project-1"),
-    ).toBeDefined();
-    expect(
-      parseAiUsageReport(sevenDayResponse, "project-1")?.workloads,
-    ).toEqual([
+    expect(parseAiUsageReport(integerLatencyControl, 'project-1')).toBeDefined();
+    expect(parseAiUsageReport(sevenDayResponse, 'project-1')?.workloads).toEqual([
       expect.objectContaining({
-        workload: "SCENARIO_AUTHORING",
+        workload: 'SCENARIO_AUTHORING',
         requests: 11,
         averageLatencyMs: 973.4545454545455,
       }),
     ]);
   });
 
-  it("rejects missing Event Query data or a false totals-inclusion contract", () => {
-    expect(
-      parseAiUsageReport({ ...response, providers: undefined }, "project-1"),
-    ).toBeUndefined();
+  it('rejects missing Event Query data or a false totals-inclusion contract', () => {
+    expect(parseAiUsageReport({ ...response, providers: undefined }, 'project-1')).toBeUndefined();
     expect(
       parseAiUsageReport(
         {
@@ -248,13 +240,13 @@ describe("AI usage API response validation", () => {
             },
           },
         },
-        "project-1",
+        'project-1',
       ),
     ).toBeUndefined();
   });
 
-  it("parses modality details from the current backend DTO", () => {
-    expect(parseAiUsageReport(response, "project-1")?.totals).toMatchObject({
+  it('parses modality details from the current backend DTO', () => {
+    expect(parseAiUsageReport(response, 'project-1')?.totals).toMatchObject({
       cacheWriteInputTokens: 0,
       cachedInputTextTokens: 20,
       cachedInputAudioTokens: 0,
@@ -264,17 +256,15 @@ describe("AI usage API response validation", () => {
     });
   });
 
-  it("parses the backend-owned current TTS pricing explanation", () => {
-    expect(
-      parseAiUsageReport(response, "project-1")?.textToSpeechPricing,
-    ).toEqual({
+  it('parses the backend-owned current TTS pricing explanation', () => {
+    expect(parseAiUsageReport(response, 'project-1')?.textToSpeechPricing).toEqual({
       current: {
-        rate: "15",
-        currency: "usd",
-        unit: "per_million_input_characters",
-        effectiveFrom: "2026-07-29T10:00:00.000Z",
+        rate: '15',
+        currency: 'usd',
+        unit: 'per_million_input_characters',
+        effectiveFrom: '2026-07-29T10:00:00.000Z',
       },
-      sourceUrl: "https://docs.x.ai/developers/pricing",
+      sourceUrl: 'https://docs.x.ai/developers/pricing',
     });
 
     expect(
@@ -286,54 +276,52 @@ describe("AI usage API response validation", () => {
             current: null,
           },
         },
-        "project-1",
+        'project-1',
       )?.textToSpeechPricing.current,
     ).toBeNull();
   });
 
-  it("rejects unsafe or malformed TTS pricing context", () => {
+  it('rejects unsafe or malformed TTS pricing context', () => {
     for (const textToSpeechPricing of [
       {
         ...response.textToSpeechPricing,
-        sourceUrl: "http://docs.x.ai/developers/pricing",
+        sourceUrl: 'http://docs.x.ai/developers/pricing',
       },
       {
         ...response.textToSpeechPricing,
-        current: { ...response.textToSpeechPricing.current, rate: "0" },
+        current: { ...response.textToSpeechPricing.current, rate: '0' },
       },
       {
         ...response.textToSpeechPricing,
         current: {
           ...response.textToSpeechPricing.current,
-          rate: "0.1234567890123",
+          rate: '0.1234567890123',
         },
       },
       {
         ...response.textToSpeechPricing,
         current: {
           ...response.textToSpeechPricing.current,
-          unit: "per_thousand_characters",
+          unit: 'per_thousand_characters',
         },
       },
       {
         ...response.textToSpeechPricing,
         current: {
           ...response.textToSpeechPricing.current,
-          effectiveFrom: "not-a-date",
+          effectiveFrom: 'not-a-date',
         },
       },
     ]) {
-      expect(
-        parseAiUsageReport({ ...response, textToSpeechPricing }, "project-1"),
-      ).toBeUndefined();
+      expect(parseAiUsageReport({ ...response, textToSpeechPricing }, 'project-1')).toBeUndefined();
     }
   });
 
-  it("accepts a nullable model only for xAI Text-to-Speech usage", () => {
+  it('accepts a nullable model only for xAI Text-to-Speech usage', () => {
     const speech = {
       ...response.breakdown[0],
       model: null,
-      operation: "speech",
+      operation: 'speech',
       records: 1,
       inputCharacters: 240,
       totalTokens: 0,
@@ -343,124 +331,117 @@ describe("AI usage API response validation", () => {
       inputTextTokens: 0,
       cachedInputTextTokens: 0,
       outputTextTokens: 0,
-      estimatedCost: "0.003600000000",
-      estimatedFallbackCost: "0.003600000000",
-      effectiveCost: "0.003600000000",
+      estimatedCost: '0.003600000000',
+      estimatedFallbackCost: '0.003600000000',
+      effectiveCost: '0.003600000000',
     };
 
     expect(
-      parseAiUsageReport({ ...response, breakdown: [speech] }, "project-1")
-        ?.breakdown[0],
+      parseAiUsageReport({ ...response, breakdown: [speech] }, 'project-1')?.breakdown[0],
     ).toMatchObject({
-      provider: "xai",
+      provider: 'xai',
       model: null,
-      operation: "speech",
+      operation: 'speech',
       inputCharacters: 240,
-      effectiveCost: "0.003600000000",
+      effectiveCost: '0.003600000000',
     });
     expect(
       parseAiUsageReport(
         {
           ...response,
-          breakdown: [{ ...speech, operation: "responses" }],
+          breakdown: [{ ...speech, operation: 'responses' }],
         },
-        "project-1",
+        'project-1',
       ),
     ).toBeUndefined();
   });
 
-  it("parses case intelligence as a project usage category", () => {
+  it('parses case intelligence as a project usage category', () => {
     const responseWithCaseUsage = {
       ...response,
       categories: [
         {
           ...response.breakdown[0],
-          category: "CASE_INTELLIGENCE",
+          category: 'CASE_INTELLIGENCE',
           records: 23,
           totalTokens: 41_099,
-          billedCost: "0.089032400000",
+          billedCost: '0.089032400000',
         },
       ],
     };
 
-    expect(
-      parseAiUsageReport(responseWithCaseUsage, "project-1"),
-    ).toMatchObject({
+    expect(parseAiUsageReport(responseWithCaseUsage, 'project-1')).toMatchObject({
       categories: [
         {
-          category: "CASE_INTELLIGENCE",
+          category: 'CASE_INTELLIGENCE',
           records: 23,
           totalTokens: 41_099,
-          billedCost: "0.089032400000",
+          billedCost: '0.089032400000',
         },
       ],
     });
   });
 
-  it("preserves project AI analysis usage returned by the backend", () => {
+  it('preserves project AI analysis usage returned by the backend', () => {
     const responseWithAnalysisUsage = {
       ...response,
       categories: [
         {
           ...response.breakdown[0],
-          category: "AI_ANALYSIS",
+          category: 'AI_ANALYSIS',
           records: 7,
           totalTokens: 12_345,
-          billedCost: "0.041200000000",
+          billedCost: '0.041200000000',
         },
       ],
     };
 
-    expect(
-      parseAiUsageReport(responseWithAnalysisUsage, "project-1"),
-    ).toMatchObject({
+    expect(parseAiUsageReport(responseWithAnalysisUsage, 'project-1')).toMatchObject({
       categories: [
         {
-          category: "AI_ANALYSIS",
+          category: 'AI_ANALYSIS',
           records: 7,
           totalTokens: 12_345,
-          billedCost: "0.041200000000",
+          billedCost: '0.041200000000',
         },
       ],
     });
   });
 
-  it("parses provider-reported xAI billed cost when estimated cost is zero", () => {
+  it('parses provider-reported xAI billed cost when estimated cost is zero', () => {
     const providerReportedResponse = {
       ...response,
       totals: {
         ...response.totals,
         providerReportedUsageRecords: 2,
         estimatedCostRecords: 0,
-        estimatedCost: "0.000000000000",
-        billedCost: "0.018152000000",
+        estimatedCost: '0.000000000000',
+        billedCost: '0.018152000000',
       },
       breakdown: [
         {
           ...response.breakdown[0],
-          estimatedCost: "0.000000000000",
-          billedCost: "0.018152000000",
+          estimatedCost: '0.000000000000',
+          billedCost: '0.018152000000',
         },
       ],
     };
 
-    expect(
-      parseAiUsageReport(providerReportedResponse, "project-1"),
-    ).toMatchObject({
+    expect(parseAiUsageReport(providerReportedResponse, 'project-1')).toMatchObject({
       totals: {
-        estimatedCost: "0.000000000000",
-        billedCost: "0.018152000000",
+        estimatedCost: '0.000000000000',
+        billedCost: '0.018152000000',
       },
       breakdown: [
         {
-          estimatedCost: "0.000000000000",
-          billedCost: "0.018152000000",
+          estimatedCost: '0.000000000000',
+          billedCost: '0.018152000000',
         },
       ],
     });
   });
 
-  it("parses nonzero cache and image modality details", () => {
+  it('parses nonzero cache and image modality details', () => {
     const legacyResponse = {
       ...response,
       totals: {
@@ -474,9 +455,7 @@ describe("AI usage API response validation", () => {
       },
     };
 
-    expect(
-      parseAiUsageReport(legacyResponse, "project-1")?.totals,
-    ).toMatchObject({
+    expect(parseAiUsageReport(legacyResponse, 'project-1')?.totals).toMatchObject({
       cacheWriteInputTokens: 3,
       cachedInputTextTokens: 4,
       cachedInputAudioTokens: 5,
@@ -486,19 +465,16 @@ describe("AI usage API response validation", () => {
     });
   });
 
-  it("rejects cross-project, negative and oversized responses", () => {
-    expect(parseAiUsageReport(response, "project-2")).toBeUndefined();
+  it('rejects cross-project, negative and oversized responses', () => {
+    expect(parseAiUsageReport(response, 'project-2')).toBeUndefined();
     expect(
       parseAiUsageReport(
         { ...response, totals: { ...response.totals, totalTokens: -1 } },
-        "project-1",
+        'project-1',
       ),
     ).toBeUndefined();
     expect(
-      parseAiUsageReport(
-        { ...response, breakdown: Array.from({ length: 1_001 }) },
-        "project-1",
-      ),
+      parseAiUsageReport({ ...response, breakdown: Array.from({ length: 1_001 }) }, 'project-1'),
     ).toBeUndefined();
   });
 });

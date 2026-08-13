@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, shallowRef, watch } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import { TranslationUsagePanel } from "@/features/scenario-localization/ui";
-import { isMockMode } from "@/shared/config/data-mode";
-import { compareDecimalStrings } from "@/shared/lib/decimal-money";
-import ProjectSettingsSectionHeader from "@/shared/ui/ProjectSettingsSectionHeader.vue";
-import { fetchAiUsageReport } from "./ai-usage.api";
-import AiModelUsageSlice from "./components/AiModelUsageSlice.vue";
-import AiSpeechUsageSlice from "./components/AiSpeechUsageSlice.vue";
-import AiVoiceUsageSlice from "./components/AiVoiceUsageSlice.vue";
+import { computed, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import { TranslationUsagePanel } from '@/features/scenario-localization/ui';
+import { isMockMode } from '@/shared/config/data-mode';
+import { compareDecimalStrings } from '@/shared/lib/decimal-money';
+import ProjectSettingsSectionHeader from '@/shared/ui/ProjectSettingsSectionHeader.vue';
+import { fetchAiUsageReport } from './ai-usage.api';
+import AiModelUsageSlice from './components/AiModelUsageSlice.vue';
+import AiSpeechUsageSlice from './components/AiSpeechUsageSlice.vue';
+import AiVoiceUsageSlice from './components/AiVoiceUsageSlice.vue';
 import {
   AI_USAGE_RANGE_OPTIONS,
   aggregateProviderUsage,
@@ -23,69 +23,65 @@ import {
   pluralizeRu,
   type AiUsageRangeKey,
   type AiUsageReport,
-} from "./ai-usage.model";
+} from './ai-usage.model';
 
 const props = defineProps<{ projectId: string }>();
 
-const range = shallowRef<AiUsageRangeKey>("today");
+const range = shallowRef<AiUsageRangeKey>('today');
 const expanded = shallowRef(false);
 const report = shallowRef<AiUsageReport | null>(null);
 const loading = shallowRef(false);
-const error = shallowRef("");
+const error = shallowRef('');
 const cache = new Map<AiUsageRangeKey, AiUsageReport>();
 let activeRequest: AbortController | undefined;
 let requestGeneration = 0;
 
 const totals = computed(() => report.value?.totals);
 const xAiBreakdown = computed(() =>
-  report.value ? getProviderBreakdown(report.value.breakdown, "xai") : [],
+  report.value ? getProviderBreakdown(report.value.breakdown, 'xai') : [],
 );
 const xAiUsage = computed(() => aggregateProviderUsage(xAiBreakdown.value));
 const voiceUsage = computed(() =>
-  report.value ? getCategoryUsage(report.value, "VOICE") : undefined,
+  report.value ? getCategoryUsage(report.value, 'VOICE') : undefined,
 );
 const speechUsage = computed(() =>
-  report.value ? getCategoryUsage(report.value, "SPEECH") : undefined,
+  report.value ? getCategoryUsage(report.value, 'SPEECH') : undefined,
 );
 const caseIntelligenceUsage = computed(() =>
-  report.value
-    ? getCategoryUsage(report.value, "CASE_INTELLIGENCE")
-    : undefined,
+  report.value ? getCategoryUsage(report.value, 'CASE_INTELLIGENCE') : undefined,
 );
 const eventQueryUsage = computed(() => report.value?.eventQuery ?? null);
 const xAiCurrency = computed(() => getUsageCurrency(xAiBreakdown.value));
 const eventQueryCost = computed(() => {
   const linked = eventQueryUsage.value?.linkedAiUsage;
-  if (!linked) return "0";
-  const billed = linked.billedCostUsd ?? "0";
-  const estimated = linked.estimatedCostUsd ?? "0";
-  return compareDecimalStrings(billed, "0") > 0 ? billed : estimated;
+  if (!linked) return '0';
+  const billed = linked.billedCostUsd ?? '0';
+  const estimated = linked.estimatedCostUsd ?? '0';
+  return compareDecimalStrings(billed, '0') > 0 ? billed : estimated;
 });
-const eventQueryHasCost = computed(
-  () => compareDecimalStrings(eventQueryCost.value, "0") > 0,
-);
+const eventQueryHasCost = computed(() => compareDecimalStrings(eventQueryCost.value, '0') > 0);
 
 function operationCount(value: number) {
-  return `${formatTokenCount(value)} ${pluralizeRu(value, "операция", "операции", "операций")}`;
+  return `${formatTokenCount(value)} ${pluralizeRu(value, 'операция', 'операции', 'операций')}`;
 }
 
 function formatBytes(value: number) {
   return value < 1024
     ? `${value} Б`
-    : `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(value / 1024)} КБ`;
+    : `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(value / 1024)} КБ`;
 }
 function formatLatency(value: number | null) {
   return value === null
-    ? "—"
-    : `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(value)} мс`;
+    ? '—'
+    : `${new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(value)} мс`;
 }
 function workloadLabel(value: string) {
   return (
     {
-      ASSISTANT: "Основное общение",
-      SCENARIO_AUTHORING: "Переводы сценариев",
-      CONVERSATION_INBOUND: "Входящие сообщения",
-      CONVERSATION_OUTBOUND: "Исходящие ответы",
+      ASSISTANT: 'Основное общение',
+      SCENARIO_AUTHORING: 'Переводы сценариев',
+      CONVERSATION_INBOUND: 'Входящие сообщения',
+      CONVERSATION_OUTBOUND: 'Исходящие ответы',
     }[value] ?? value
   );
 }
@@ -98,7 +94,7 @@ async function load(force = false) {
     requestGeneration += 1;
     loading.value = false;
     report.value = cached;
-    error.value = "";
+    error.value = '';
     return;
   }
 
@@ -107,7 +103,7 @@ async function load(force = false) {
   activeRequest = controller;
   const generation = ++requestGeneration;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   if (!cached) report.value = null;
 
   try {
@@ -121,10 +117,7 @@ async function load(force = false) {
     report.value = nextReport;
   } catch (cause) {
     if (controller.signal.aborted || generation !== requestGeneration) return;
-    error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить потребление AI";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить потребление AI';
   } finally {
     if (generation === requestGeneration) loading.value = false;
   }
@@ -153,11 +146,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section
-    class="ai-usage card"
-    :class="{ collapsed: !expanded }"
-    aria-labelledby="ai-usage-title"
-  >
+  <section class="ai-usage card" :class="{ collapsed: !expanded }" aria-labelledby="ai-usage-title">
     <ProjectSettingsSectionHeader
       v-model:expanded="expanded"
       title="Потребление AI"
@@ -199,21 +188,11 @@ onBeforeUnmount(() => {
       <Message v-if="error" severity="error" :closable="false">
         <div class="error-row">
           <span>{{ error }}</span>
-          <Button
-            label="Повторить"
-            icon="pi pi-refresh"
-            size="small"
-            text
-            @click="load(true)"
-          />
+          <Button label="Повторить" icon="pi pi-refresh" size="small" text @click="load(true)" />
         </div>
       </Message>
 
-      <div
-        v-if="loading && !report"
-        class="usage-skeleton"
-        aria-label="Загрузка статистики"
-      >
+      <div v-if="loading && !report" class="usage-skeleton" aria-label="Загрузка статистики">
         <Skeleton height="10rem" border-radius="18px" />
         <Skeleton height="24rem" border-radius="18px" />
         <Skeleton height="18rem" border-radius="18px" />
@@ -221,10 +200,7 @@ onBeforeUnmount(() => {
 
       <template v-else-if="report && totals">
         <div class="provider-stack">
-          <section
-            class="provider-panel xai-panel"
-            aria-labelledby="xai-usage-title"
-          >
+          <section class="provider-panel xai-panel" aria-labelledby="xai-usage-title">
             <header class="provider-header">
               <span class="provider-mark xai-mark">
                 <i class="pi pi-sparkles" />
@@ -242,11 +218,11 @@ onBeforeUnmount(() => {
                 <strong>{{
                   xAiCurrency
                     ? formatMoney(xAiUsage.providerReportedCost, xAiCurrency)
-                    : "Несколько валют"
+                    : 'Несколько валют'
                 }}</strong>
                 <small
-                  >{{ totals.providerReportedCostRecords ?? 0 }} операций с
-                  provider-reported ценой</small
+                  >{{ totals.providerReportedCostRecords ?? 0 }} операций с provider-reported
+                  ценой</small
                 >
               </article>
               <article class="summary-card estimated-cost">
@@ -254,40 +230,28 @@ onBeforeUnmount(() => {
                 <strong>{{
                   xAiCurrency
                     ? formatMoney(xAiUsage.estimatedFallbackCost, xAiCurrency)
-                    : "Несколько валют"
+                    : 'Несколько валют'
                 }}</strong>
-                <small
-                  >{{ totals.estimatedCostRecords ?? 0 }} операций рассчитано
-                  локально</small
-                >
+                <small>{{ totals.estimatedCostRecords ?? 0 }} операций рассчитано локально</small>
               </article>
               <article class="summary-card effective-cost">
                 <span class="summary-label">Общий расход</span>
                 <strong>{{
-                  xAiCurrency
-                    ? formatMoney(xAiUsage.effectiveCost, xAiCurrency)
-                    : "Несколько валют"
+                  xAiCurrency ? formatMoney(xAiUsage.effectiveCost, xAiCurrency) : 'Несколько валют'
                 }}</strong>
                 <small>Сумма фактической и расчётной частей</small>
               </article>
             </div>
 
-            <div
-              v-if="totals.unpricedRecords"
-              class="unpriced-note"
-              role="status"
-            >
+            <div v-if="totals.unpricedRecords" class="unpriced-note" role="status">
               <i class="pi pi-info-circle" />
               <span>
-                {{ operationCount(totals.unpricedRecords) }} без денежной
-                стоимости учтены только в количестве.
+                {{ operationCount(totals.unpricedRecords) }} без денежной стоимости учтены только в
+                количестве.
               </span>
             </div>
 
-            <AiModelUsageSlice
-              :breakdown="xAiBreakdown"
-              :case-usage="caseIntelligenceUsage"
-            />
+            <AiModelUsageSlice :breakdown="xAiBreakdown" :case-usage="caseIntelligenceUsage" />
 
             <section
               v-if="report.workloads?.length"
@@ -298,10 +262,7 @@ onBeforeUnmount(() => {
                 <div>
                   <span class="provider-kicker">Фактически применено</span>
                   <h4 id="workload-usage-title">Модели по назначению</h4>
-                  <p>
-                    Requested и applied model могут различаться при безопасном
-                    fallback.
-                  </p>
+                  <p>Requested и applied model могут различаться при безопасном fallback.</p>
                 </div>
               </header>
               <div class="workload-grid">
@@ -315,12 +276,10 @@ onBeforeUnmount(() => {
                         ? `${workloadLabel(item.workload)} · Другие`
                         : workloadLabel(item.workload)
                     }}</strong>
-                    <span v-if="item.isOther"
-                      >Агрегированные редкие комбинации</span
-                    >
+                    <span v-if="item.isOther">Агрегированные редкие комбинации</span>
                     <span v-else
-                      >{{ item.appliedModel ?? "Модель не зафиксирована" }} ·
-                      reasoning {{ item.reasoningEffort ?? "неизвестен" }}</span
+                      >{{ item.appliedModel ?? 'Модель не зафиксирована' }} · reasoning
+                      {{ item.reasoningEffort ?? 'неизвестен' }}</span
                     >
                   </div>
                   <dl>
@@ -338,7 +297,7 @@ onBeforeUnmount(() => {
                     </div>
                     <div>
                       <dt>Стоимость</dt>
-                      <dd>{{ formatMoney(item.effectiveCostUsd, "usd") }}</dd>
+                      <dd>{{ formatMoney(item.effectiveCostUsd, 'usd') }}</dd>
                     </div>
                   </dl>
                   <small
@@ -367,8 +326,8 @@ onBeforeUnmount(() => {
                   <span class="provider-kicker">Event Query</span>
                   <h4 id="event-query-usage-title">Запросы к событиям</h4>
                   <p>
-                    Вклад данных событий за выбранный период. Связанные токены и
-                    стоимость уже входят в итог Grok выше.
+                    Вклад данных событий за выбранный период. Связанные токены и стоимость уже
+                    входят в итог Grok выше.
                   </p>
                 </div>
               </header>
@@ -379,42 +338,29 @@ onBeforeUnmount(() => {
                 </article>
                 <article>
                   <small>Данные событий</small>
-                  <strong>{{
-                    formatBytes(eventQueryUsage.resultBytes)
-                  }}</strong>
+                  <strong>{{ formatBytes(eventQueryUsage.resultBytes) }}</strong>
                 </article>
                 <article>
                   <small>Оценка вклада</small>
                   <strong>
-                    {{
-                      formatTokenCount(
-                        eventQueryUsage.estimatedAddedInputTokens,
-                      )
-                    }}
+                    {{ formatTokenCount(eventQueryUsage.estimatedAddedInputTokens) }}
                     токенов
                   </strong>
                 </article>
                 <article>
                   <small>Связано с Grok</small>
                   <strong>
-                    {{
-                      formatTokenCount(
-                        eventQueryUsage.linkedAiUsage.totalTokens,
-                      )
-                    }}
+                    {{ formatTokenCount(eventQueryUsage.linkedAiUsage.totalTokens) }}
                     токенов
                   </strong>
                   <span v-if="eventQueryHasCost">
-                    {{ formatMoney(eventQueryCost, "usd") }}
+                    {{ formatMoney(eventQueryCost, 'usd') }}
                   </span>
                 </article>
               </div>
             </section>
 
-            <AiVoiceUsageSlice
-              :usage="voiceUsage"
-              :fallback-currency="xAiCurrency"
-            />
+            <AiVoiceUsageSlice :usage="voiceUsage" :fallback-currency="xAiCurrency" />
             <AiSpeechUsageSlice
               :usage="speechUsage"
               :pricing="report.textToSpeechPricing"
@@ -425,16 +371,13 @@ onBeforeUnmount(() => {
 
         <footer class="usage-footer">
           <span v-if="isMockMode">
-            <i class="pi pi-database" /> Демонстрационные данные для
-            предварительного просмотра.
+            <i class="pi pi-database" /> Демонстрационные данные для предварительного просмотра.
           </span>
           <span v-else>
-            <i class="pi pi-shield" /> Данные доступны только участникам проекта
-            через защищённый CMS endpoint.
+            <i class="pi pi-shield" /> Данные доступны только участникам проекта через защищённый
+            CMS endpoint.
           </span>
-          <span
-            >Исторические суммы приходят из backend и не пересчитываются.</span
-          >
+          <span>Исторические суммы приходят из backend и не пересчитываются.</span>
         </footer>
       </template>
 
@@ -624,8 +567,7 @@ onBeforeUnmount(() => {
 
 .unpriced-note {
   margin-top: 12px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-warning) 35%, var(--border-default));
+  border: 1px solid color-mix(in srgb, var(--status-warning) 35%, var(--border-default));
   background: var(--status-warning-soft);
   color: var(--status-warning-text);
 }
@@ -633,16 +575,14 @@ onBeforeUnmount(() => {
 .event-query-usage {
   padding: 16px;
   margin-top: 14px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-accent) 24%, var(--border-default));
+  border: 1px solid color-mix(in srgb, var(--status-accent) 24%, var(--border-default));
   border-radius: 16px;
   background: var(--surface-card);
 }
 .workload-usage {
   padding: 16px;
   margin-top: 14px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-accent) 24%, var(--border-default));
+  border: 1px solid color-mix(in srgb, var(--status-accent) 24%, var(--border-default));
   border-radius: 16px;
   background: var(--surface-card);
 }

@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import Button from "primevue/button";
-import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import MultiSelect from "primevue/multiselect";
-import Select from "primevue/select";
-import Textarea from "primevue/textarea";
-import ToggleSwitch from "primevue/toggleswitch";
-import UiElementPicker from "@/features/interface/UiElementPicker.vue";
-import type { UiElement } from "@/shared/types/domain";
-import { buildProjectActionForm } from "../model/schema-form";
+import { computed } from 'vue';
+import Button from 'primevue/button';
+import InputNumber from 'primevue/inputnumber';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import MultiSelect from 'primevue/multiselect';
+import Select from 'primevue/select';
+import Textarea from 'primevue/textarea';
+import ToggleSwitch from 'primevue/toggleswitch';
+import UiElementPicker from '@/features/interface/UiElementPicker.vue';
+import type { UiElement } from '@/shared/types/domain';
+import { buildProjectActionForm } from '../model/schema-form';
 
 const props = withDefaults(
   defineProps<{
@@ -25,29 +25,25 @@ const props = withDefaults(
   { elements: () => [], elementsLoading: false, elementsError: null },
 );
 const emit = defineEmits<{
-  "update:modelValue": [value: Record<string, unknown>];
-  "retry-elements": [];
+  'update:modelValue': [value: Record<string, unknown>];
+  'retry-elements': [];
 }>();
 
-const form = computed(() =>
-  buildProjectActionForm(props.schema, props.uiSchema),
-);
-const hasTargetField = computed(() =>
-  form.value.fields.some((field) => field.kind === "target"),
-);
+const form = computed(() => buildProjectActionForm(props.schema, props.uiSchema));
+const hasTargetField = computed(() => form.value.fields.some((field) => field.kind === 'target'));
 
 function update(key: string, value: unknown) {
-  emit("update:modelValue", { ...props.modelValue, [key]: value });
+  emit('update:modelValue', { ...props.modelValue, [key]: value });
 }
 
 function numberValue(key: string): number | null | undefined {
   const value = props.modelValue[key];
-  return typeof value === "number" ? value : value === null ? null : undefined;
+  return typeof value === 'number' ? value : value === null ? null : undefined;
 }
 
 function stringValue(key: string): string | undefined {
   const value = props.modelValue[key];
-  return typeof value === "string" ? value : undefined;
+  return typeof value === 'string' ? value : undefined;
 }
 </script>
 
@@ -56,10 +52,7 @@ function stringValue(key: string): string | undefined {
     <Message v-if="form.blocked" severity="error" :closable="false">
       <strong>Настройки временно недоступны</strong>
       <ul>
-        <li
-          v-for="issue in form.issues"
-          :key="`${issue.code}:${issue.field ?? ''}`"
-        >
+        <li v-for="issue in form.issues" :key="`${issue.code}:${issue.field ?? ''}`">
           {{ issue.message }}
         </li>
       </ul>
@@ -79,11 +72,7 @@ function stringValue(key: string): string | undefined {
           @click="emit('retry-elements')"
         />
       </Message>
-      <div
-        v-for="field in form.fields"
-        :key="field.key"
-        class="schema-field"
-      >
+      <div v-for="field in form.fields" :key="field.key" class="schema-field">
         <label
           v-if="field.kind !== 'target'"
           class="field-label"
@@ -168,9 +157,7 @@ function stringValue(key: string): string | undefined {
       </div>
     </div>
     <div v-else class="empty-config">
-      <i class="pi pi-lock" /><span
-        >Дополнительные настройки не требуются.</span
-      >
+      <i class="pi pi-lock" /><span>Дополнительные настройки не требуются.</span>
     </div>
   </div>
 </template>
@@ -207,9 +194,7 @@ function stringValue(key: string): string | undefined {
   width: 100%;
 }
 .schema-target-picker {
-  --catalog-picker-trigger-height: calc(
-    1.5em + 2 * var(--p-form-field-padding-y) + 2px
-  );
+  --catalog-picker-trigger-height: calc(1.5em + 2 * var(--p-form-field-padding-y) + 2px);
 }
 .schema-target-picker :deep(.catalog-picker__trigger) {
   padding-block: 3px;

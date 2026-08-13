@@ -1,33 +1,26 @@
-import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import test from "node:test";
-import { fileURLToPath } from "node:url";
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
-const repositoryRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-);
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-test("production and Vercel builds cannot bypass the committed contract gate", async () => {
-  const packageJson = JSON.parse(
-    await readFile(path.join(repositoryRoot, "package.json"), "utf8"),
-  );
-  const vercel = JSON.parse(
-    await readFile(path.join(repositoryRoot, "vercel.json"), "utf8"),
-  );
+test('production and Vercel builds cannot bypass the committed contract gate', async () => {
+  const packageJson = JSON.parse(await readFile(path.join(repositoryRoot, 'package.json'), 'utf8'));
+  const vercel = JSON.parse(await readFile(path.join(repositoryRoot, 'vercel.json'), 'utf8'));
 
   assert.match(packageJson.scripts.build, /npm run api:check/);
-  assert.equal(vercel.buildCommand, "npm run build");
+  assert.equal(vercel.buildCommand, 'npm run build');
   assert.doesNotMatch(packageJson.scripts.build, /api:fetch|https?:\/\//u);
-  assert.equal(packageJson.scripts["api:fetch"], undefined);
-  assert.equal(packageJson.scripts["api:update"], undefined);
+  assert.equal(packageJson.scripts['api:fetch'], undefined);
+  assert.equal(packageJson.scripts['api:update'], undefined);
 });
 
-test("CI checks the committed artifact against an explicitly configured backend checkout", async () => {
+test('CI checks the committed artifact against an explicitly configured backend checkout', async () => {
   const workflow = await readFile(
-    path.join(repositoryRoot, ".github/workflows/openapi-contract.yml"),
-    "utf8",
+    path.join(repositoryRoot, '.github/workflows/openapi-contract.yml'),
+    'utf8',
   );
 
   assert.match(workflow, /repository: alxxsck\/lola_back/u);

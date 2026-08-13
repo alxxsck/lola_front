@@ -1,41 +1,38 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import Button from "primevue/button";
-import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
-import ActionConfigFields from "@/features/actions/ActionConfigFields.vue";
-import ActionPicker from "@/features/actions/ActionPicker.vue";
+import { computed, ref } from 'vue';
+import Button from 'primevue/button';
+import InputNumber from 'primevue/inputnumber';
+import InputText from 'primevue/inputtext';
+import ActionConfigFields from '@/features/actions/ActionConfigFields.vue';
+import ActionPicker from '@/features/actions/ActionPicker.vue';
 import ScenarioActionTargetPicker, {
   type ScenarioActionTargetOption,
-} from "@/features/actions/ScenarioActionTargetPicker.vue";
-import {
-  ScenarioGoalEditor,
-  ScenarioGoalPreview,
-} from "@/features/scenario-goals/ui";
-import type { ScenarioAuthoringContract } from "@/shared/api/repository/scenario-authoring";
-import type { ScenarioLocalizationPolicyDto } from "@/shared/api/generated/models";
-import type { TranslationUiState } from "@/features/scenario-localization/ui";
-import { LocalizedField } from "@/features/scenario-localization/ui";
-import { localizedValue } from "@/features/scenario-localization/model";
-import ScenarioConditionRows from "./ScenarioConditionRows.vue";
+} from '@/features/actions/ScenarioActionTargetPicker.vue';
+import { ScenarioGoalEditor, ScenarioGoalPreview } from '@/features/scenario-goals/ui';
+import type { ScenarioAuthoringContract } from '@/shared/api/repository/scenario-authoring';
+import type { ScenarioLocalizationPolicyDto } from '@/shared/api/generated/models';
+import type { TranslationUiState } from '@/features/scenario-localization/ui';
+import { LocalizedField } from '@/features/scenario-localization/ui';
+import { localizedValue } from '@/features/scenario-localization/model';
+import ScenarioConditionRows from './ScenarioConditionRows.vue';
 import type {
   EventDefinition,
   ScenarioAction,
   ScenarioActionCatalogItem,
   UiElement,
-} from "@/shared/types/domain";
+} from '@/shared/types/domain';
 import {
   availableTargets,
   choiceOptions,
   choiceReminders,
   conditionBranches,
-} from "./model/scenario-graph";
-import type { ChoiceOption } from "./model/scenario-graph";
+} from './model/scenario-graph';
+import type { ChoiceOption } from './model/scenario-graph';
 import {
   createActionConfig,
   findScenarioActionCatalogItem,
-} from "@/shared/lib/scenario-action-catalog";
-import { slugify } from "@/shared/lib/format";
+} from '@/shared/lib/scenario-action-catalog';
+import { slugify } from '@/shared/lib/format';
 
 const props = defineProps<{
   projectId: string;
@@ -62,13 +59,7 @@ const emit = defineEmits<{
   typePickerClosed: [];
   createTarget: [
     type: string,
-    kind:
-      | "next"
-      | "choice"
-      | "timeout"
-      | "condition"
-      | "fallback"
-      | "goal",
+    kind: 'next' | 'choice' | 'timeout' | 'condition' | 'fallback' | 'goal',
     index?: number,
   ];
   remove: [];
@@ -76,10 +67,10 @@ const emit = defineEmits<{
   update: [action: ScenarioAction];
   rename: [oldKey: string, newKey: string];
   close: [];
-  "translation-request": [payload: { fieldPath: string; targets: string[] }];
-  "translation-retry": [payload: { fieldPath: string; locale: string }];
-  "translation-cancel": [fieldPath: string];
-  "translation-manual-edit": [payload: { fieldPath: string; locale: string }];
+  'translation-request': [payload: { fieldPath: string; targets: string[] }];
+  'translation-retry': [payload: { fieldPath: string; locale: string }];
+  'translation-cancel': [fieldPath: string];
+  'translation-manual-edit': [payload: { fieldPath: string; locale: string }];
 }>();
 
 const inspectorElement = ref<HTMLElement | null>(null);
@@ -98,16 +89,17 @@ const existingTargetOptions = computed<ScenarioActionTargetOption[]>(() =>
     const targetDefinition = action
       ? findScenarioActionCatalogItem(props.actionCatalog, action.type)
       : undefined;
-    return [{
-      value: target.value,
-      name: targetDefinition?.name ?? action.type,
-      code: action.nodeKey ?? target.value,
-      description:
-        targetDefinition?.description ?? "Уже добавленный шаг сценария",
-      kind: "existing",
-      executor: targetDefinition?.executor,
-      position: action.position,
-    }];
+    return [
+      {
+        value: target.value,
+        name: targetDefinition?.name ?? action.type,
+        code: action.nodeKey ?? target.value,
+        description: targetDefinition?.description ?? 'Уже добавленный шаг сценария',
+        kind: 'existing',
+        executor: targetDefinition?.executor,
+        position: action.position,
+      },
+    ];
   }),
 );
 const createTargetOptions = computed<ScenarioActionTargetOption[]>(() =>
@@ -117,8 +109,8 @@ const createTargetOptions = computed<ScenarioActionTargetOption[]>(() =>
       value: `catalog-action:${item.id}`,
       name: item.name,
       code: item.type,
-      description: item.description ?? "Описание пока не добавлено",
-      kind: "create",
+      description: item.description ?? 'Описание пока не добавлено',
+      kind: 'create',
       actionType: item.type,
       executor: item.executor,
     })),
@@ -129,55 +121,46 @@ const targetOptions = computed<ScenarioActionTargetOption[]>(() => [
 ]);
 const reminderActionTypes = computed(() =>
   props.actionCatalog
-    .filter(
-      (item) =>
-        item.enabled && (item.type === "SAY" || item.executor === "FRONTEND"),
-    )
+    .filter((item) => item.enabled && (item.type === 'SAY' || item.executor === 'FRONTEND'))
     .map((item) => item.type),
 );
 const genericDefinition = computed(() => {
-  if (props.action.type === "WAIT_FOR_GOAL") return undefined;
-  if (
-    !definition.value ||
-    !["ASK_CHOICE", "CONDITION"].includes(props.action.type)
-  )
+  if (props.action.type === 'WAIT_FOR_GOAL') return undefined;
+  if (!definition.value || !['ASK_CHOICE', 'CONDITION'].includes(props.action.type))
     return definition.value;
   const hidden =
-    props.action.type === "ASK_CHOICE"
-      ? new Set(["options", "onTimeout", "reminders"])
-      : new Set(["branches", "fallbackNodeKey"]);
+    props.action.type === 'ASK_CHOICE'
+      ? new Set(['options', 'onTimeout', 'reminders'])
+      : new Set(['branches', 'fallbackNodeKey']);
   return {
     ...definition.value,
     uiSchema: {
       ...definition.value.uiSchema,
-      fields: definition.value.uiSchema.fields.filter(
-        (field) => !hidden.has(field.key),
-      ),
+      fields: definition.value.uiSchema.fields.filter((field) => !hidden.has(field.key)),
     },
   };
 });
 const choiceLabelDescriptor = computed(() =>
   props.authoringContract?.localization?.paths.find(
     (descriptor) =>
-      descriptor.actionType === "ASK_CHOICE" &&
-      descriptor.path === "config.options[].label",
+      descriptor.actionType === 'ASK_CHOICE' && descriptor.path === 'config.options[].label',
   ),
 );
 
 function updateAction(patch: Partial<ScenarioAction>) {
-  emit("update", { ...props.action, ...patch });
+  emit('update', { ...props.action, ...patch });
 }
 function setConfig(key: string, value: unknown) {
   updateAction({ config: { ...props.action.config, [key]: value } });
 }
 function setOptions(value: ReturnType<typeof choiceOptions>) {
-  setConfig("options", value);
+  setConfig('options', value);
 }
 function setReminders(value: ReturnType<typeof choiceReminders>) {
-  setConfig("reminders", value);
+  setConfig('reminders', value);
 }
 function setBranches(value: ReturnType<typeof conditionBranches>) {
-  setConfig("branches", value);
+  setConfig('branches', value);
 }
 function nextOptionId() {
   const used = new Set(choiceOptions(props.action).map((item) => item.id));
@@ -186,10 +169,7 @@ function nextOptionId() {
   return `option_${index}`;
 }
 function addChoice() {
-  setOptions([
-    ...choiceOptions(props.action),
-    { id: nextOptionId(), label: "", nextNodeKey: "" },
-  ]);
+  setOptions([...choiceOptions(props.action), { id: nextOptionId(), label: '', nextNodeKey: '' }]);
 }
 function updateChoice(index: number, patch: Partial<ChoiceOption>) {
   setOptions(
@@ -199,7 +179,7 @@ function updateChoice(index: number, patch: Partial<ChoiceOption>) {
   );
 }
 function choiceLabelText(option: ChoiceOption) {
-  return typeof option.label === "string" ? option.label : "";
+  return typeof option.label === 'string' ? option.label : '';
 }
 function addBranch() {
   setBranches([
@@ -207,50 +187,46 @@ function addBranch() {
     {
       conditions: [
         {
-          path: props.conditionPaths[0] ?? "user.segment",
-          operator: "eq",
-          value: "",
+          path: props.conditionPaths[0] ?? 'user.segment',
+          operator: 'eq',
+          value: '',
         },
       ],
-      nextNodeKey: "",
+      nextNodeKey: '',
     },
   ]);
 }
 function selectTarget(
   value: unknown,
-  kind: "next" | "choice" | "timeout" | "condition" | "fallback",
+  kind: 'next' | 'choice' | 'timeout' | 'condition' | 'fallback',
   index?: number,
 ) {
-  const target = String(value ?? "");
-  if (kind === "next") updateAction({ nextNodeKey: target || null });
-  else if (kind === "choice" && index !== undefined)
-    updateChoice(index, { nextNodeKey: target });
-  else if (kind === "timeout") setConfig("onTimeout", target);
-  else if (kind === "condition" && index !== undefined)
+  const target = String(value ?? '');
+  if (kind === 'next') updateAction({ nextNodeKey: target || null });
+  else if (kind === 'choice' && index !== undefined) updateChoice(index, { nextNodeKey: target });
+  else if (kind === 'timeout') setConfig('onTimeout', target);
+  else if (kind === 'condition' && index !== undefined)
     setBranches(
       conditionBranches(props.action).map((item, itemIndex) =>
         itemIndex === index ? { ...item, nextNodeKey: target } : item,
       ),
     );
-  else if (kind === "fallback") setConfig("fallbackNodeKey", target);
+  else if (kind === 'fallback') setConfig('fallbackNodeKey', target);
 }
 function createSelectedTarget(
   target: ScenarioActionTargetOption,
-  kind: "next" | "choice" | "timeout" | "condition" | "fallback",
+  kind: 'next' | 'choice' | 'timeout' | 'condition' | 'fallback',
   index?: number,
 ) {
-  if (target.kind === "create" && target.actionType) {
-    emit("createTarget", target.actionType, kind, index);
+  if (target.kind === 'create' && target.actionType) {
+    emit('createTarget', target.actionType, kind, index);
   }
 }
-function createGoalTarget(
-  type: string,
-  branch: "goal" | "timeout",
-) {
-  emit("createTarget", type, branch);
+function createGoalTarget(type: string, branch: 'goal' | 'timeout') {
+  emit('createTarget', type, branch);
 }
 function addReminder() {
-  const type = reminderActionTypes.value[0] ?? "SAY";
+  const type = reminderActionTypes.value[0] ?? 'SAY';
   const actionDefinition = findScenarioActionCatalogItem(props.actionCatalog, type);
   setReminders([
     ...choiceReminders(props.action),
@@ -267,7 +243,7 @@ function addReminder() {
 }
 function addReminderAction(reminderIndex: number) {
   const reminders = choiceReminders(props.action);
-  const type = reminderActionTypes.value[0] ?? "SAY";
+  const type = reminderActionTypes.value[0] ?? 'SAY';
   const actionDefinition = findScenarioActionCatalogItem(props.actionCatalog, type);
   reminders[reminderIndex].actions.push({
     type,
@@ -275,11 +251,7 @@ function addReminderAction(reminderIndex: number) {
   });
   setReminders(reminders);
 }
-function changeReminderType(
-  reminderIndex: number,
-  actionIndex: number,
-  type: string,
-) {
+function changeReminderType(reminderIndex: number, actionIndex: number, type: string) {
   const reminders = choiceReminders(props.action);
   const actionDefinition = findScenarioActionCatalogItem(props.actionCatalog, type);
   reminders[reminderIndex].actions[actionIndex] = {
@@ -290,8 +262,8 @@ function changeReminderType(
 }
 function updateNodeKey(value: string | undefined) {
   const oldKey = props.action.nodeKey;
-  const newKey = slugify(value ?? "").replace(/\./g, "_");
-  emit("rename", oldKey ?? "", newKey);
+  const newKey = slugify(value ?? '').replace(/\./g, '_');
+  emit('rename', oldKey ?? '', newKey);
 }
 </script>
 
@@ -352,14 +324,11 @@ function updateNodeKey(value: string | undefined) {
           :model-value="action.nodeKey"
           class="mono"
           @update:model-value="updateNodeKey"
-        /><small>Неизменяемый код шага. По нему сценарий связывает переходы, ответы и результаты.</small>
+        /><small
+          >Неизменяемый код шага. По нему сценарий связывает переходы, ответы и результаты.</small
+        >
       </div>
-      <div
-        v-if="
-          !['ASK_CHOICE', 'CONDITION', 'WAIT_FOR_GOAL'].includes(action.type)
-        "
-        class="field"
-      >
+      <div v-if="!['ASK_CHOICE', 'CONDITION', 'WAIT_FOR_GOAL'].includes(action.type)" class="field">
         <ScenarioActionTargetPicker
           :model-value="action.nextNodeKey ?? ''"
           :options="targetOptions"
@@ -426,23 +395,19 @@ function updateNodeKey(value: string | undefined) {
           <h3>Варианты ответа</h3>
           <p>Выберите существующее следующее действие или создайте новое.</p>
         </div>
-        <Button
-          icon="pi pi-plus"
-          text
-          rounded
-          aria-label="Добавить вариант"
-          @click="addChoice"
-        />
+        <Button icon="pi pi-plus" text rounded aria-label="Добавить вариант" @click="addChoice" />
       </div>
-      <div
-        class="choice-card"
-        v-for="(option, index) in choiceOptions(action)"
-        :key="index"
-      >
+      <div class="choice-card" v-for="(option, index) in choiceOptions(action)" :key="index">
         <div class="choice-grid">
           <LocalizedField
-            v-if="choiceLabelDescriptor && authoringContract?.localization && authoringContract.translation"
-            :model-value="localizedValue(option.label, authoringContract.localization.defaultLocale)"
+            v-if="
+              choiceLabelDescriptor &&
+              authoringContract?.localization &&
+              authoringContract.translation
+            "
+            :model-value="
+              localizedValue(option.label, authoringContract.localization.defaultLocale)
+            "
             :catalog="authoringContract.localization"
             :translation="authoringContract.translation"
             :policy="localizationPolicy"
@@ -452,13 +417,34 @@ function updateNodeKey(value: string | undefined) {
             :project-id="projectId"
             label="Текст кнопки"
             :max-length="choiceLabelDescriptor.maxLength"
-            :translation-states="translationStates[`${actionPath}.config.options.${option.id}.label`]"
-            :focus-locale="focusFieldPath === `${actionPath}.config.options.${option.id}.label` ? focusLocale : ''"
+            :translation-states="
+              translationStates[`${actionPath}.config.options.${option.id}.label`]
+            "
+            :focus-locale="
+              focusFieldPath === `${actionPath}.config.options.${option.id}.label`
+                ? focusLocale
+                : ''
+            "
             @update:model-value="updateChoice(index, { label: $event })"
-            @translation-request="emit('translation-request', { fieldPath: `${actionPath}.config.options.${option.id}.label`, targets: $event })"
-            @retry="emit('translation-retry', { fieldPath: `${actionPath}.config.options.${option.id}.label`, locale: $event })"
+            @translation-request="
+              emit('translation-request', {
+                fieldPath: `${actionPath}.config.options.${option.id}.label`,
+                targets: $event,
+              })
+            "
+            @retry="
+              emit('translation-retry', {
+                fieldPath: `${actionPath}.config.options.${option.id}.label`,
+                locale: $event,
+              })
+            "
             @cancel="emit('translation-cancel', `${actionPath}.config.options.${option.id}.label`)"
-            @manual-edit="emit('translation-manual-edit', { fieldPath: `${actionPath}.config.options.${option.id}.label`, locale: $event })"
+            @manual-edit="
+              emit('translation-manual-edit', {
+                fieldPath: `${actionPath}.config.options.${option.id}.label`,
+                locale: $event,
+              })
+            "
           />
           <InputText
             v-else
@@ -481,9 +467,7 @@ function updateNodeKey(value: string | undefined) {
             :model-value="option.id"
             class="mono"
             placeholder="option_id"
-            @update:model-value="
-              updateChoice(index, { id: String($event ?? '') })
-            "
+            @update:model-value="updateChoice(index, { id: String($event ?? '') })"
           />
         </div>
         <div class="choice-target">
@@ -503,13 +487,7 @@ function updateNodeKey(value: string | undefined) {
             rounded
             severity="danger"
             :aria-label="`Удалить вариант ${index + 1}`"
-            @click="
-              setOptions(
-                choiceOptions(action).filter(
-                  (_, itemIndex) => itemIndex !== index,
-                ),
-              )
-            "
+            @click="setOptions(choiceOptions(action).filter((_, itemIndex) => itemIndex !== index))"
           />
         </div>
       </div>
@@ -532,19 +510,9 @@ function updateNodeKey(value: string | undefined) {
           <h3>Ветки выполнения</h3>
           <p>Проверяются сверху вниз; сработает первая.</p>
         </div>
-        <Button
-          icon="pi pi-plus"
-          text
-          rounded
-          aria-label="Добавить ветку"
-          @click="addBranch"
-        />
+        <Button icon="pi pi-plus" text rounded aria-label="Добавить ветку" @click="addBranch" />
       </div>
-      <div
-        class="branch-card"
-        v-for="(branch, index) in conditionBranches(action)"
-        :key="index"
-      >
+      <div class="branch-card" v-for="(branch, index) in conditionBranches(action)" :key="index">
         <div class="branch-head">
           <strong>Ветка {{ index + 1 }}</strong
           ><Button
@@ -554,11 +522,7 @@ function updateNodeKey(value: string | undefined) {
             severity="danger"
             :aria-label="`Удалить ветку ${index + 1}`"
             @click="
-              setBranches(
-                conditionBranches(action).filter(
-                  (_, itemIndex) => itemIndex !== index,
-                ),
-              )
+              setBranches(conditionBranches(action).filter((_, itemIndex) => itemIndex !== index))
             "
           />
         </div>
@@ -620,7 +584,8 @@ function updateNodeKey(value: string | undefined) {
       >
         <div class="reminder-head">
           <div class="field">
-            <label :for="`${scenarioId}-${action.nodeKey}-reminder-${reminderIndex}-delay`">Через, мс</label
+            <label :for="`${scenarioId}-${action.nodeKey}-reminder-${reminderIndex}-delay`"
+              >Через, мс</label
             ><InputNumber
               :input-id="`${scenarioId}-${action.nodeKey}-reminder-${reminderIndex}-delay`"
               :model-value="reminder.afterMs"
@@ -630,9 +595,7 @@ function updateNodeKey(value: string | undefined) {
               @update:model-value="
                 setReminders(
                   choiceReminders(action).map((item, index) =>
-                    index === reminderIndex
-                      ? { ...item, afterMs: $event ?? 1000 }
-                      : item,
+                    index === reminderIndex ? { ...item, afterMs: $event ?? 1000 } : item,
                   ),
                 )
               "
@@ -645,11 +608,7 @@ function updateNodeKey(value: string | undefined) {
             severity="danger"
             :aria-label="`Удалить напоминание ${reminderIndex + 1}`"
             @click="
-              setReminders(
-                choiceReminders(action).filter(
-                  (_, index) => index !== reminderIndex,
-                ),
-              )
+              setReminders(choiceReminders(action).filter((_, index) => index !== reminderIndex))
             "
           />
         </div>
@@ -666,16 +625,12 @@ function updateNodeKey(value: string | undefined) {
             placeholder="Выберите действие"
             hide-label
             apply-label="Заменить действие"
-            @update:model-value="
-              changeReminderType(reminderIndex, actionIndex, $event)
-            "
+            @update:model-value="changeReminderType(reminderIndex, actionIndex, $event)"
           />
           <ActionConfigFields
             v-if="findScenarioActionCatalogItem(actionCatalog, reminderAction.type)"
             :model-value="reminderAction.config"
-            :definition="
-              findScenarioActionCatalogItem(actionCatalog, reminderAction.type)!
-            "
+            :definition="findScenarioActionCatalogItem(actionCatalog, reminderAction.type)!"
             :elements="elements"
             :events="events"
             :template-variables="templateVariables"
@@ -695,9 +650,7 @@ function updateNodeKey(value: string | undefined) {
                     ? {
                         ...item,
                         actions: item.actions.map((nested, nestedIndex) =>
-                          nestedIndex === actionIndex
-                            ? { ...nested, config: $event }
-                            : nested,
+                          nestedIndex === actionIndex ? { ...nested, config: $event } : nested,
                         ),
                       }
                     : item,

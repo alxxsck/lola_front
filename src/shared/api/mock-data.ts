@@ -12,23 +12,22 @@ import type {
   Scenario,
   ScenarioActionCatalogItem,
   UiElement,
-} from '@/shared/types/domain'
-import { ASSISTANT_ANIMATIONS } from '@/shared/domain/assistant-animations'
+} from '@/shared/types/domain';
+import { ASSISTANT_ANIMATIONS } from '@/shared/domain/assistant-animations';
 
 const ServerActionHandler = {
   START_VOICE_CONVERSATION: 'START_VOICE_CONVERSATION',
-} as const
+} as const;
 
-const now = Date.now()
-const isoAgo = (minutes: number) =>
-  new Date(now - minutes * 60_000).toISOString()
+const now = Date.now();
+const isoAgo = (minutes: number) => new Date(now - minutes * 60_000).toISOString();
 const automaticAISuspension = () => ({
   mode: 'AUTOMATIC' as const,
   lifecycle: 'NONE' as const,
   version: '0',
   suspendedUntil: null,
   serverTime: new Date(now).toISOString(),
-})
+});
 
 export const demoProject: Project = {
   id: 'prj_retenive_demo',
@@ -41,8 +40,7 @@ export const demoProject: Project = {
   supportedLocales: ['ru', 'en'],
   assistantName: 'Retenive',
   systemPrompt: 'Помогай пользователю коротко, дружелюбно и по существу.',
-  voiceInstructions:
-    'Говори мягко и уверенно, в спокойном темпе. Используй тёплую интонацию.',
+  voiceInstructions: 'Говори мягко и уверенно, в спокойном темпе. Используй тёплую интонацию.',
   settings: {
     description: 'AI-ассистент для онбординга и поддержки пользователей',
     timezone: 'Europe/Madrid',
@@ -55,19 +53,19 @@ export const demoProject: Project = {
   },
   organization: { id: 'org_1', name: 'Lucky Group', slug: 'lucky_group' },
   _count: { users: 1284, scenarios: 4, eventLogs: 18742 },
-}
+};
 
-const demoVoiceIds = ['ara', 'eve', 'leo', 'rex', 'sal']
+const demoVoiceIds = ['ara', 'eve', 'leo', 'rex', 'sal'];
 const timeoutProperty = {
   type: 'integer' as const,
   minimum: 1000,
   maximum: 300000,
-}
+};
 const timeoutField: ActionUiField = {
   key: 'timeoutMs',
   label: 'Таймаут, мс',
   control: 'number',
-}
+};
 
 function demoScenarioActionCatalogItem(
   type: string,
@@ -78,7 +76,7 @@ function demoScenarioActionCatalogItem(
   fields: ActionUiField[] = [],
   description: string | null = null,
 ): ScenarioActionCatalogItem {
-  const frontend = executor === 'FRONTEND'
+  const frontend = executor === 'FRONTEND';
   return {
     id: `scenario_action_${type.toLowerCase()}`,
     type,
@@ -87,15 +85,13 @@ function demoScenarioActionCatalogItem(
     executor,
     configSchema: {
       type: 'object',
-      properties: frontend
-        ? { ...properties, timeoutMs: timeoutProperty }
-        : properties,
+      properties: frontend ? { ...properties, timeoutMs: timeoutProperty } : properties,
       required,
       additionalProperties: false,
     },
     uiSchema: { fields: frontend ? [...fields, timeoutField] : fields },
     enabled: true,
-  }
+  };
 }
 
 export const demoScenarioActionCatalog: ScenarioActionCatalogItem[] = [
@@ -420,7 +416,7 @@ export const demoScenarioActionCatalog: ScenarioActionCatalogItem[] = [
     [],
     [{ key: 'result', label: 'Результат завершения', control: 'text' }],
   ),
-]
+];
 
 export const demoElements: UiElement[] = [
   {
@@ -489,7 +485,7 @@ export const demoElements: UiElement[] = [
     aiDescription: null,
     aiAliases: [],
   },
-]
+];
 
 export const demoEvents: EventDefinition[] = [
   {
@@ -539,7 +535,7 @@ export const demoEvents: EventDefinition[] = [
     countsAsActivity: false,
     enabled: false,
   },
-]
+];
 
 export const demoScenarios: Scenario[] = [
   {
@@ -570,7 +566,7 @@ export const demoScenarios: Scenario[] = [
     createdAt: '2026-07-21T10:00:00.000Z',
     updatedAt: '2026-07-23T09:00:00.000Z',
   },
-]
+];
 
 export const demoUsers: EndUser[] = [
   {
@@ -629,7 +625,7 @@ export const demoUsers: EndUser[] = [
     lastSeenAt: isoAgo(1440),
     createdAt: isoAgo(55000),
   },
-]
+];
 
 export const demoSessions: ActiveSession[] = [
   {
@@ -666,7 +662,7 @@ export const demoSessions: ActiveSession[] = [
     lastSeenAt: isoAgo(18),
     status: 'STALE',
   },
-]
+];
 
 export const demoActivity: ActivityItem[] = [
   {
@@ -705,7 +701,7 @@ export const demoActivity: ActivityItem[] = [
     timestamp: isoAgo(3),
     status: 'delivered',
   },
-]
+];
 
 export const demoConversations: Conversation[] = [
   {
@@ -741,7 +737,7 @@ export const demoConversations: Conversation[] = [
     currentInteractionSessionCount: 1,
     aiSuspension: automaticAISuspension(),
   },
-]
+];
 
 export const demoMessages: ConversationMessage[] = [
   {
@@ -833,4 +829,4 @@ export const demoMessages: ConversationMessage[] = [
     },
     createdAt: isoAgo(27),
   },
-]
+];

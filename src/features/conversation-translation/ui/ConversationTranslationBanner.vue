@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import Button from "primevue/button";
-import Select from "primevue/select";
-import ToggleSwitch from "primevue/toggleswitch";
-import type { ConversationTranslationResponseDto } from "@/shared/api/generated/models";
-import { localeDisplayName } from "@/shared/lib/locale";
+import { computed } from 'vue';
+import Button from 'primevue/button';
+import Select from 'primevue/select';
+import ToggleSwitch from 'primevue/toggleswitch';
+import type { ConversationTranslationResponseDto } from '@/shared/api/generated/models';
+import { localeDisplayName } from '@/shared/lib/locale';
 
 const props = defineProps<{
   state: ConversationTranslationResponseDto | null;
@@ -21,18 +21,15 @@ const emit = defineEmits<{
 }>();
 
 const languageSourceLabels = {
-  MANUAL: "выбран вручную",
-  PROFILE: "из профиля",
-  RECENT_MESSAGES: "по последним сообщениям",
-  CASE_HINT: "из обращения",
-  UNKNOWN: "источник не определён",
+  MANUAL: 'выбран вручную',
+  PROFILE: 'из профиля',
+  RECENT_MESSAGES: 'по последним сообщениям',
+  CASE_HINT: 'из обращения',
+  UNKNOWN: 'источник не определён',
 } as const;
 
 const responseLocale = computed(
-  () =>
-    props.state?.preference.endUserLocaleOverride ??
-    props.state?.language.locale ??
-    null,
+  () => props.state?.preference.endUserLocaleOverride ?? props.state?.language.locale ?? null,
 );
 const responseLocaleSource = computed(() =>
   props.state?.preference.endUserLocaleOverride
@@ -41,30 +38,22 @@ const responseLocaleSource = computed(() =>
       ? languageSourceLabels[props.state.language.source]
       : languageSourceLabels.UNKNOWN,
 );
-const supportedLocaleSet = computed(
-  () => new Set(props.state?.supportedLocales ?? []),
-);
+const supportedLocaleSet = computed(() => new Set(props.state?.supportedLocales ?? []));
 const selectableResponseLocale = computed(() => {
   const locale =
-    props.state?.preference.endUserLocaleOverride ??
-    props.state?.language.locale ??
-    null;
+    props.state?.preference.endUserLocaleOverride ?? props.state?.language.locale ?? null;
   return locale && supportedLocaleSet.value.has(locale) ? locale : null;
 });
 
-const localeOptions = computed<Array<{ label: string; value: string | null }>>(
-  () => [
-    { label: "Определять автоматически", value: null },
-    ...[...new Set(props.state?.supportedLocales ?? [])].map((locale) => ({
-      label: `${localeDisplayName(locale)} · ${locale.toUpperCase()}`,
-      value: locale,
-    })),
-  ],
-);
+const localeOptions = computed<Array<{ label: string; value: string | null }>>(() => [
+  { label: 'Определять автоматически', value: null },
+  ...[...new Set(props.state?.supportedLocales ?? [])].map((locale) => ({
+    label: `${localeDisplayName(locale)} · ${locale.toUpperCase()}`,
+    value: locale,
+  })),
+]);
 
-function isSupportedLocale(
-  locale: string | null | undefined,
-): locale is string {
+function isSupportedLocale(locale: string | null | undefined): locale is string {
   return Boolean(locale && supportedLocaleSet.value.has(locale));
 }
 </script>
@@ -76,9 +65,7 @@ function isSupportedLocale(
     aria-label="Перевод диалога"
   >
     <div class="translation-banner__main">
-      <span class="translation-banner__icon"
-        ><i class="pi pi-language" aria-hidden="true"
-      /></span>
+      <span class="translation-banner__icon"><i class="pi pi-language" aria-hidden="true" /></span>
       <div>
         <strong>Перевод диалога</strong>
         <span v-if="loading">Определяем язык и загружаем настройки…</span>
@@ -99,9 +86,7 @@ function isSupportedLocale(
             Альтернативный:
             {{ localeDisplayName(state.language.conflictingLocale) }}.
           </template>
-          <template
-            v-if="!state.language.locale && !state.language.conflictingLocale"
-          >
+          <template v-if="!state.language.locale && !state.language.conflictingLocale">
             Выберите язык вручную.
           </template>
         </span>
@@ -110,14 +95,12 @@ function isSupportedLocale(
           {{
             responseLocale
               ? `${localeDisplayName(responseLocale)} · ${responseLocale.toUpperCase()}`
-              : "не подтверждён"
+              : 'не подтверждён'
           }}
           · {{ responseLocaleSource }}
           · рабочий язык:
           {{ state.preference.workingLocale.toUpperCase() }}
-          <template v-if="!state.preference.enabled">
-            · перевод выключен
-          </template>
+          <template v-if="!state.preference.enabled"> · перевод выключен </template>
         </span>
       </div>
     </div>
@@ -132,12 +115,7 @@ function isSupportedLocale(
         :disabled="loading || saving"
         @click="emit('reload')"
       />
-      <template
-        v-if="
-          state.language.needsConfirmation &&
-          !state.preference.endUserLocaleOverride
-        "
-      >
+      <template v-if="state.language.needsConfirmation && !state.preference.endUserLocaleOverride">
         <Button
           v-if="isSupportedLocale(state.language.conflictingLocale)"
           type="button"
@@ -158,11 +136,7 @@ function isSupportedLocale(
         />
       </template>
       <Button
-        v-if="
-          !state.language.needsConfirmation &&
-          state.preference.enabled &&
-          eligibleCount
-        "
+        v-if="!state.language.needsConfirmation && state.preference.enabled && eligibleCount"
         type="button"
         icon="pi pi-language"
         size="small"
@@ -192,8 +166,7 @@ function isSupportedLocale(
             saving ||
             !canManage ||
             !state.availability.available ||
-            (state.language.needsConfirmation &&
-              !state.preference.endUserLocaleOverride)
+            (state.language.needsConfirmation && !state.preference.endUserLocaleOverride)
           "
           aria-label="Переводить этот диалог"
           @update:model-value="emit('updateEnabled', $event)"

@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import Button from "primevue/button";
+import Button from 'primevue/button';
 
 const props = withDefaults(
   defineProps<{
     title: string;
     description: string;
     icon: string;
-    tone?: "lime" | "accent" | "coral" | "green" | "blue" | "brand";
+    tone?: 'lime' | 'accent' | 'coral' | 'green' | 'blue' | 'brand';
     contentId?: string;
     headingId?: string;
     expanded?: boolean;
     eyebrow?: string;
   }>(),
   {
-    tone: "accent",
+    tone: 'accent',
     contentId: undefined,
     headingId: undefined,
     expanded: false,
@@ -21,35 +21,26 @@ const props = withDefaults(
   },
 );
 
-const emit = defineEmits<{ "update:expanded": [expanded: boolean] }>();
+const emit = defineEmits<{ 'update:expanded': [expanded: boolean] }>();
 
 function toggle() {
-  emit("update:expanded", !props.expanded);
+  emit('update:expanded', !props.expanded);
 }
 </script>
 
 <template>
-  <header
-    class="project-settings-header"
-    :class="{ 'is-collapsed': !expanded }"
-  >
+  <header class="project-settings-header" :class="{ 'is-collapsed': !expanded }">
     <div class="project-settings-heading">
       <span class="project-settings-icon" :class="`tone-${tone}`">
         <i :class="icon" />
       </span>
       <div>
-        <span v-if="eyebrow" class="project-settings-eyebrow">{{
-          eyebrow
-        }}</span>
+        <span v-if="eyebrow" class="project-settings-eyebrow">{{ eyebrow }}</span>
         <h2 :id="headingId">{{ title }}</h2>
         <p>{{ description }}</p>
       </div>
     </div>
-    <div
-      v-if="$slots.actions"
-      v-show="expanded"
-      class="project-settings-actions"
-    >
+    <div v-if="$slots.actions" v-show="expanded" class="project-settings-actions">
       <slot name="actions" />
     </div>
     <Button
@@ -58,9 +49,7 @@ function toggle() {
       severity="secondary"
       text
       rounded
-      :aria-label="
-        expanded ? `Свернуть раздел «${title}»` : `Развернуть раздел «${title}»`
-      "
+      :aria-label="expanded ? `Свернуть раздел «${title}»` : `Развернуть раздел «${title}»`"
       :aria-expanded="expanded"
       :aria-controls="contentId"
       @click="toggle"

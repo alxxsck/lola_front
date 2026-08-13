@@ -1,4 +1,4 @@
-import { computed, ref, shallowRef, type Ref } from "vue";
+import { computed, ref, shallowRef, type Ref } from 'vue';
 import type {
   DisableSupportCaseNotificationPolicyDto,
   PublishSupportCaseNotificationPolicyDto,
@@ -8,13 +8,13 @@ import type {
   SupportCaseNotificationMetricsResponseDto,
   SupportCaseNotificationPolicyCurrentResponseDto,
   SupportCaseNotificationPolicyPreviewResponseDto,
-} from "@/shared/api/generated/models";
-import { ApiError } from "@/shared/api/http/api-error";
+} from '@/shared/api/generated/models';
+import { ApiError } from '@/shared/api/http/api-error';
 import type {
   NotificationPolicyCommandBody,
   NotificationPolicyOperation,
   SupportCaseNotificationPolicySource,
-} from "../api/support-case-notification-policy-source";
+} from '../api/support-case-notification-policy-source';
 import {
   clonePolicyForm,
   createDefaultNotificationPolicy,
@@ -23,7 +23,7 @@ import {
   revisionFingerprint,
   validatePolicyForm,
   type SupportCaseNotificationPolicyForm,
-} from "./support-case-notification-policy";
+} from './support-case-notification-policy';
 
 export interface SupportCaseNotificationPolicyContext {
   actorId(): string | undefined;
@@ -46,39 +46,30 @@ interface PendingCommand {
 }
 
 const memory = new Map<string, PendingCommand>();
-const storagePrefix = "support-case-notification-policy-command-v1:";
+const storagePrefix = 'support-case-notification-policy-command-v1:';
 const scopeKey = (scope: Scope) => `${scope.actorId}:${scope.projectId}`;
 const sameScope = (left: Scope | null, right: Scope | null) =>
-  Boolean(
-    left &&
-    right &&
-    left.actorId === right.actorId &&
-    left.projectId === right.projectId,
-  );
+  Boolean(left && right && left.actorId === right.actorId && left.projectId === right.projectId);
 const operations = new Set<NotificationPolicyOperation>([
-  "SAVE_DRAFT",
-  "PUBLISH",
-  "DISABLE",
-  "RESTORE",
+  'SAVE_DRAFT',
+  'PUBLISH',
+  'DISABLE',
+  'RESTORE',
 ]);
-const uuidPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
-function isPendingCommand(
-  value: unknown,
-  scope: Scope,
-): value is PendingCommand {
-  if (!value || typeof value !== "object") return false;
+function isPendingCommand(value: unknown, scope: Scope): value is PendingCommand {
+  if (!value || typeof value !== 'object') return false;
   const candidate = value as Partial<PendingCommand>;
   return (
     sameScope(candidate.scope as Scope | null, scope) &&
-    typeof candidate.operation === "string" &&
+    typeof candidate.operation === 'string' &&
     operations.has(candidate.operation as NotificationPolicyOperation) &&
-    typeof candidate.key === "string" &&
+    typeof candidate.key === 'string' &&
     candidate.key.length >= 8 &&
     candidate.key.length <= 200 &&
     /^[\x21-\x7e]+$/u.test(candidate.key) &&
-    Boolean(candidate.body && typeof candidate.body === "object")
+    Boolean(candidate.body && typeof candidate.body === 'object')
   );
 }
 
@@ -114,17 +105,11 @@ export function createSupportCaseNotificationPolicyController(
   context: SupportCaseNotificationPolicyContext,
   source: SupportCaseNotificationPolicySource,
 ) {
-  const current = ref<SupportCaseNotificationPolicyCurrentResponseDto | null>(
-    null,
-  );
+  const current = ref<SupportCaseNotificationPolicyCurrentResponseDto | null>(null);
   const metrics = ref<SupportCaseNotificationMetricsResponseDto | null>(null);
   const teams = ref<readonly SupportCaseNotificationAvailableTeamDto[]>([]);
-  const form: Ref<SupportCaseNotificationPolicyForm> = ref(
-    createDefaultNotificationPolicy(),
-  );
-  const preview = ref<SupportCaseNotificationPolicyPreviewResponseDto | null>(
-    null,
-  );
+  const form: Ref<SupportCaseNotificationPolicyForm> = ref(createDefaultNotificationPolicy());
+  const preview = ref<SupportCaseNotificationPolicyPreviewResponseDto | null>(null);
   const previewFingerprint = ref<string | null>(null);
   const previewStale = ref(false);
   const pending = shallowRef<PendingCommand | null>(null);
@@ -155,8 +140,7 @@ export function createSupportCaseNotificationPolicyController(
   const draftMatchesForm = computed(
     () =>
       Boolean(current.value?.draft) &&
-      revisionFingerprint(current.value!.draft!) ===
-        policyFingerprint(form.value),
+      revisionFingerprint(current.value!.draft!) === policyFingerprint(form.value),
   );
   const previewMatchesDraft = computed(
     () =>
@@ -167,9 +151,7 @@ export function createSupportCaseNotificationPolicyController(
   function resolveScope(): Scope | null {
     const actorId = context.actorId();
     const projectId = context.projectId();
-    return actorId && projectId && context.canManage()
-      ? { actorId, projectId }
-      : null;
+    return actorId && projectId && context.canManage() ? { actorId, projectId } : null;
   }
 
   function isCurrent(scope: Scope, run: number): boolean {
@@ -203,10 +185,7 @@ export function createSupportCaseNotificationPolicyController(
     clearProtected();
   }
 
-  async function handleAccess(
-    errorValue: ApiError,
-    scope?: Scope,
-  ): Promise<boolean> {
+  async function handleAccess(errorValue: ApiError, scope?: Scope): Promise<boolean> {
     if ([401, 428].includes(errorValue.status)) {
       if (scope) storageWrite(scope, null);
       reset();
@@ -222,13 +201,9 @@ export function createSupportCaseNotificationPolicyController(
     return false;
   }
 
-  function initializeForm(
-    snapshot: SupportCaseNotificationPolicyCurrentResponseDto,
-  ): void {
+  function initializeForm(snapshot: SupportCaseNotificationPolicyCurrentResponseDto): void {
     const base = snapshot.draft ?? snapshot.current;
-    form.value = base
-      ? policyFromRevision(base)
-      : createDefaultNotificationPolicy();
+    form.value = base ? policyFromRevision(base) : createDefaultNotificationPolicy();
     preview.value = null;
     previewFingerprint.value = null;
     previewStale.value = false;
@@ -241,17 +216,12 @@ export function createSupportCaseNotificationPolicyController(
     signal?: AbortSignal,
   ): Promise<boolean> {
     try {
-      const result = await source.lookup(
-        scope.projectId,
-        command.operation,
-        command.key,
-        signal,
-      );
+      const result = await source.lookup(scope.projectId, command.operation, command.key, signal);
       if (signal?.aborted || !isCurrent(scope, run)) return false;
       if (
         result.found &&
         result.operation === command.operation &&
-        typeof result.receiptId === "string" &&
+        typeof result.receiptId === 'string' &&
         uuidPattern.test(result.receiptId) &&
         result.policy
       ) {
@@ -261,7 +231,7 @@ export function createSupportCaseNotificationPolicyController(
         initializeForm(snapshot);
         storageWrite(scope, null);
         pending.value = null;
-        success.value = "Сервер подтвердил результат предыдущей команды.";
+        success.value = 'Сервер подтвердил результат предыдущей команды.';
         return true;
       }
       pending.value = command;
@@ -271,11 +241,11 @@ export function createSupportCaseNotificationPolicyController(
       const apiError =
         cause instanceof ApiError
           ? cause
-          : new ApiError(0, "Не удалось проверить результат команды");
+          : new ApiError(0, 'Не удалось проверить результат команды');
       if (await handleAccess(apiError, scope)) return false;
       pending.value = command;
       error.value =
-        "Результат команды пока неизвестен. Новые изменения заблокированы до сверки с сервером.";
+        'Результат команды пока неизвестен. Новые изменения заблокированы до сверки с сервером.';
       return false;
     }
   }
@@ -305,9 +275,8 @@ export function createSupportCaseNotificationPolicyController(
         source.listTeams(scope.projectId, abort.signal),
       ]);
       if (!isCurrent(scope, run)) return;
-      metrics.value =
-        metricsResult.status === "fulfilled" ? metricsResult.value : null;
-      teams.value = teamsResult.status === "fulfilled" ? teamsResult.value : [];
+      metrics.value = metricsResult.status === 'fulfilled' ? metricsResult.value : null;
+      teams.value = teamsResult.status === 'fulfilled' ? teamsResult.value : [];
       const retained = storageRead(scope);
       pending.value = retained;
       if (retained) await reconcile(scope, retained, run, abort.signal);
@@ -316,10 +285,9 @@ export function createSupportCaseNotificationPolicyController(
       const apiError =
         cause instanceof ApiError
           ? cause
-          : new ApiError(0, "Не удалось загрузить политику уведомлений");
+          : new ApiError(0, 'Не удалось загрузить политику уведомлений');
       if (!(await handleAccess(apiError, scope)))
-        error.value =
-          "Не удалось загрузить политику. Проверьте соединение и повторите.";
+        error.value = 'Не удалось загрузить политику. Проверьте соединение и повторите.';
     } finally {
       if (isCurrent(scope, run)) loading.value = false;
     }
@@ -351,11 +319,9 @@ export function createSupportCaseNotificationPolicyController(
     } catch (cause) {
       if (abort.signal.aborted || !isCurrent(scope, run)) return;
       const apiError =
-        cause instanceof ApiError
-          ? cause
-          : new ApiError(0, "Не удалось выполнить проверку");
+        cause instanceof ApiError ? cause : new ApiError(0, 'Не удалось выполнить проверку');
       if (!(await handleAccess(apiError, scope)))
-        error.value = "Не удалось рассчитать влияние политики.";
+        error.value = 'Не удалось рассчитать влияние политики.';
     } finally {
       if (isCurrent(scope, run)) previewing.value = false;
     }
@@ -389,21 +355,21 @@ export function createSupportCaseNotificationPolicyController(
     success.value = null;
     try {
       const result =
-        operation === "SAVE_DRAFT"
+        operation === 'SAVE_DRAFT'
           ? await source.saveDraft(
               scope.projectId,
               body as SaveSupportCaseNotificationDraftDto,
               command.key,
               mutationAbort.signal,
             )
-          : operation === "PUBLISH"
+          : operation === 'PUBLISH'
             ? await source.publish(
                 scope.projectId,
                 body as PublishSupportCaseNotificationPolicyDto,
                 command.key,
                 mutationAbort.signal,
               )
-            : operation === "DISABLE"
+            : operation === 'DISABLE'
               ? await source.disable(
                   scope.projectId,
                   body as DisableSupportCaseNotificationPolicyDto,
@@ -418,25 +384,22 @@ export function createSupportCaseNotificationPolicyController(
                 );
       if (!isCurrent(scope, run)) return;
       if (!uuidPattern.test(result.receiptId) || !result.policy)
-        throw new ApiError(0, "Сервер вернул неполное подтверждение");
+        throw new ApiError(0, 'Сервер вернул неполное подтверждение');
       current.value = result.policy;
       initializeForm(result.policy);
       storageWrite(scope, null);
       pending.value = null;
       success.value =
-        operation === "SAVE_DRAFT"
-          ? "Черновик сохранён."
-          : operation === "PUBLISH"
-            ? "Политика опубликована."
-            : operation === "DISABLE"
-              ? "Политика выключена."
-              : "Версия восстановлена.";
+        operation === 'SAVE_DRAFT'
+          ? 'Черновик сохранён.'
+          : operation === 'PUBLISH'
+            ? 'Политика опубликована.'
+            : operation === 'DISABLE'
+              ? 'Политика выключена.'
+              : 'Версия восстановлена.';
     } catch (cause) {
       if (mutationAbort.signal.aborted || !isCurrent(scope, run)) return;
-      const apiError =
-        cause instanceof ApiError
-          ? cause
-          : new ApiError(0, "Команда не завершена");
+      const apiError = cause instanceof ApiError ? cause : new ApiError(0, 'Команда не завершена');
       if ([401, 403, 404, 428].includes(apiError.status)) {
         storageWrite(scope, null);
         pending.value = null;
@@ -454,7 +417,7 @@ export function createSupportCaseNotificationPolicyController(
             previewFingerprint.value = null;
             previewStale.value = false;
             error.value =
-              "Политика изменилась на сервере. Ваши поля сохранены локально — проверьте их, снова сохраните черновик и выполните проверку.";
+              'Политика изменилась на сервере. Ваши поля сохранены локально — проверьте их, снова сохраните черновик и выполните проверку.';
           }
         }
       } else if (
@@ -467,11 +430,11 @@ export function createSupportCaseNotificationPolicyController(
         await reconcile(scope, command, run, mutationAbort.signal);
         if (pending.value)
           error.value =
-            "Результат команды пока неизвестен. Проверьте его, не создавая новую команду.";
+            'Результат команды пока неизвестен. Проверьте его, не создавая новую команду.';
       } else {
         storageWrite(scope, null);
         pending.value = null;
-        error.value = "Сервер отклонил изменение. Проверьте заполненные поля.";
+        error.value = 'Сервер отклонил изменение. Проверьте заполненные поля.';
       }
     } finally {
       if (isCurrent(scope, run)) mutating.value = false;
@@ -480,7 +443,7 @@ export function createSupportCaseNotificationPolicyController(
 
   const saveDraft = () =>
     current.value &&
-    execute("SAVE_DRAFT", {
+    execute('SAVE_DRAFT', {
       ...clonePolicyForm(form.value),
       expectedVersion: current.value.version,
     });
@@ -494,20 +457,20 @@ export function createSupportCaseNotificationPolicyController(
       !preview.value?.publishable
     )
       return;
-    return execute("PUBLISH", {
+    return execute('PUBLISH', {
       revisionId: snapshot.draft.id,
       expectedVersion: snapshot.version,
     });
   };
   const disable = () =>
     current.value &&
-    execute("DISABLE", {
+    execute('DISABLE', {
       expectedVersion: current.value.version,
       reason: form.value.reason.trim(),
     });
   const restore = (revisionId: string) =>
     current.value &&
-    execute("RESTORE", {
+    execute('RESTORE', {
       revisionId,
       expectedVersion: current.value.version,
       reason: form.value.reason.trim(),

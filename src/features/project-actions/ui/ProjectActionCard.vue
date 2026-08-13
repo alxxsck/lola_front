@@ -1,34 +1,28 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import type { ProjectAction } from "../model/project-action";
+import { computed } from 'vue';
+import type { ProjectAction } from '../model/project-action';
 import {
   actionExecutorLabel,
   actionOriginLabel,
   actionRiskLabel,
   projectActionDescription,
   projectActionName,
-} from "../model/project-action-presentation";
+} from '../model/project-action-presentation';
 
 const props = defineProps<{ action: ProjectAction }>();
 const emit = defineEmits<{ select: [action: ProjectAction] }>();
 
 const name = computed(() => projectActionName(props.action));
 const description = computed(() => projectActionDescription(props.action));
-const origin = computed(() =>
-  actionOriginLabel(props.action.actionType.origin),
-);
+const origin = computed(() => actionOriginLabel(props.action.actionType.origin));
 const supportsScenario = computed(() =>
-  props.action.actionTypeRevision.supportedSurfaces.includes("SCENARIO"),
+  props.action.actionTypeRevision.supportedSurfaces.includes('SCENARIO'),
 );
-const supportsAi = computed(() =>
-  props.action.actionTypeRevision.supportedSurfaces.includes("AI"),
-);
+const supportsAi = computed(() => props.action.actionTypeRevision.supportedSurfaces.includes('AI'));
 const executor = computed(() =>
   actionExecutorLabel(props.action.actionTypeRevision.executorAdapter),
 );
-const risk = computed(() =>
-  actionRiskLabel(props.action.actionTypeRevision.risk),
-);
+const risk = computed(() => actionRiskLabel(props.action.actionTypeRevision.risk));
 </script>
 
 <template>
@@ -44,9 +38,7 @@ const risk = computed(() =>
       <span class="identity">
         <span class="tag-row"
           ><span class="origin-tag">{{ origin }}</span
-          ><span class="revision-tag"
-            >Версия {{ action.actionTypeRevision.version }}</span
-          ></span
+          ><span class="revision-tag">Версия {{ action.actionTypeRevision.version }}</span></span
         >
         <strong>{{ name }}</strong>
       </span>
@@ -61,11 +53,7 @@ const risk = computed(() =>
         <span class="surface-details">
           <span class="surface-label">Сценарии</span>
           <strong :class="action.scenarioEnabled ? 'enabled' : 'disabled'">{{
-            supportsScenario
-              ? action.scenarioEnabled
-                ? "Включено"
-                : "Выключено"
-              : "Недоступно"
+            supportsScenario ? (action.scenarioEnabled ? 'Включено' : 'Выключено') : 'Недоступно'
           }}</strong>
         </span>
       </span>
@@ -74,11 +62,7 @@ const risk = computed(() =>
         <span class="surface-details">
           <span class="surface-label">Для помощника</span>
           <strong :class="action.aiEnabled ? 'enabled' : 'disabled'">{{
-            supportsAi
-              ? action.aiEnabled
-                ? "Включено"
-                : "Выключено"
-              : "Недоступно"
+            supportsAi ? (action.aiEnabled ? 'Включено' : 'Выключено') : 'Недоступно'
           }}</strong>
         </span>
       </span>
@@ -86,7 +70,7 @@ const risk = computed(() =>
 
     <span class="card-footer">
       <span><i class="pi pi-cog" /> {{ executor }}</span>
-      <span>{{ action.lifecycle === "ARCHIVED" ? "В архиве" : risk }}</span>
+      <span>{{ action.lifecycle === 'ARCHIVED' ? 'В архиве' : risk }}</span>
     </span>
   </button>
 </template>
@@ -113,8 +97,7 @@ const risk = computed(() =>
 }
 .project-action-card:hover {
   border-color: var(--action-primary);
-  box-shadow: 0 14px 34px
-    color-mix(in srgb, var(--text-primary) 8%, transparent);
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--text-primary) 8%, transparent);
   transform: translateY(-2px);
 }
 .project-action-card:focus-visible {

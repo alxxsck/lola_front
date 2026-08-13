@@ -1,31 +1,24 @@
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  watch,
-} from "vue";
-import { useRoute, useRouter } from "vue-router";
-import Button from "primevue/button";
-import Drawer from "primevue/drawer";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import { useAuthStore } from "@/features/auth/auth.store";
-import { hasProjectPermission } from "@/features/auth/permission-access";
-import { type EndUserCaseFilters as EndUserCaseFiltersModel } from "@/features/end-user-cases/model/end-user-case";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Button from 'primevue/button';
+import Drawer from 'primevue/drawer';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
+import { type EndUserCaseFilters as EndUserCaseFiltersModel } from '@/features/end-user-cases/model/end-user-case';
 import {
   endUserCaseFiltersFromRoute,
   endUserCaseRouteQuery,
-} from "@/features/end-user-cases/model/end-user-case-route";
-import { useEndUserCasesStore } from "@/features/end-user-cases/model/end-user-cases.store";
-import EndUserCaseCard from "@/features/end-user-cases/ui/EndUserCaseCard.vue";
-import EndUserCaseDetail from "@/features/end-user-cases/ui/EndUserCaseDetail.vue";
-import EndUserCaseDialogs from "@/features/end-user-cases/ui/EndUserCaseDialogs.vue";
-import EndUserCaseEscalationDialogs from "@/features/end-user-cases/ui/EndUserCaseEscalationDialogs.vue";
-import EndUserCaseFilters from "@/features/end-user-cases/ui/EndUserCaseFilters.vue";
-import type { CaseVerificationRunResponseDto } from "@/shared/api/generated/models";
+} from '@/features/end-user-cases/model/end-user-case-route';
+import { useEndUserCasesStore } from '@/features/end-user-cases/model/end-user-cases.store';
+import EndUserCaseCard from '@/features/end-user-cases/ui/EndUserCaseCard.vue';
+import EndUserCaseDetail from '@/features/end-user-cases/ui/EndUserCaseDetail.vue';
+import EndUserCaseDialogs from '@/features/end-user-cases/ui/EndUserCaseDialogs.vue';
+import EndUserCaseEscalationDialogs from '@/features/end-user-cases/ui/EndUserCaseEscalationDialogs.vue';
+import EndUserCaseFilters from '@/features/end-user-cases/ui/EndUserCaseFilters.vue';
+import type { CaseVerificationRunResponseDto } from '@/shared/api/generated/models';
 
 const route = useRoute();
 const router = useRouter();
@@ -33,43 +26,33 @@ const auth = useAuthStore();
 const store = useEndUserCasesStore();
 const isMobile = ref(false);
 const dialogs = ref<InstanceType<typeof EndUserCaseDialogs> | null>(null);
-const escalationDialogs = ref<InstanceType<
-  typeof EndUserCaseEscalationDialogs
-> | null>(null);
+const escalationDialogs = ref<InstanceType<typeof EndUserCaseEscalationDialogs> | null>(null);
 const latestVerification = ref<{
   caseId: string;
   run: CaseVerificationRunResponseDto;
 } | null>(null);
 
-const permissions = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
-const canRead = computed(() =>
-  hasProjectPermission(permissions.value, "project.cases.read"),
-);
-const canManage = computed(() =>
-  hasProjectPermission(permissions.value, "project.cases.manage"),
-);
-const canAssign = computed(() =>
-  hasProjectPermission(permissions.value, "project.cases.assign"),
-);
+const permissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
+const canRead = computed(() => hasProjectPermission(permissions.value, 'project.cases.read'));
+const canManage = computed(() => hasProjectPermission(permissions.value, 'project.cases.manage'));
+const canAssign = computed(() => hasProjectPermission(permissions.value, 'project.cases.assign'));
 const canEscalate = computed(() =>
-  hasProjectPermission(permissions.value, "project.cases.escalate"),
+  hasProjectPermission(permissions.value, 'project.cases.escalate'),
 );
 const canConfigure = computed(() =>
-  hasProjectPermission(permissions.value, "project.cases.settings.manage"),
+  hasProjectPermission(permissions.value, 'project.cases.settings.manage'),
 );
 const canReadEndUser = computed(() =>
-  hasProjectPermission(permissions.value, "project.profiles.read"),
+  hasProjectPermission(permissions.value, 'project.profiles.read'),
 );
 const canReadConversations = computed(() =>
-  hasProjectPermission(permissions.value, "project.conversations.read"),
+  hasProjectPermission(permissions.value, 'project.conversations.read'),
 );
 const canVerifyEvents = computed(() =>
-  hasProjectPermission(permissions.value, "project.end_user_cases.verify"),
+  hasProjectPermission(permissions.value, 'project.end_user_cases.verify'),
 );
 const canPreviewEvents = computed(() =>
-  hasProjectPermission(permissions.value, "project.event_query_policy.preview"),
+  hasProjectPermission(permissions.value, 'project.event_query_policy.preview'),
 );
 const selectedVisible = computed(() => Boolean(store.selectedId));
 const selectedVerificationRun = computed(() => {
@@ -80,8 +63,7 @@ const selectedVerificationRun = computed(() => {
 const counts = computed(() => ({
   active: store.summary?.openCount ?? 0,
   attention: store.summary?.attentionCount ?? 0,
-  resolved:
-    (store.summary?.resolvedCount ?? 0) + (store.summary?.unresolvedCount ?? 0),
+  resolved: (store.summary?.resolvedCount ?? 0) + (store.summary?.unresolvedCount ?? 0),
 }));
 
 async function applyFilters(filters: EndUserCaseFiltersModel): Promise<void> {
@@ -91,36 +73,31 @@ async function applyFilters(filters: EndUserCaseFiltersModel): Promise<void> {
 
 async function openCase(id: string): Promise<void> {
   await router.push({
-    name: "end-user-case-detail",
+    name: 'end-user-case-detail',
     params: { caseId: id },
     query: endUserCaseRouteQuery(store.filters),
   });
   if (store.selectedId !== id) await store.open(id);
   await nextTick();
-  document.querySelector<HTMLElement>(".case-detail h2")?.focus();
+  document.querySelector<HTMLElement>('.case-detail h2')?.focus();
 }
 
 async function closeDetail(): Promise<void> {
   const id = store.selectedId;
   store.close();
   await router.push({
-    name: "end-user-cases",
+    name: 'end-user-cases',
     query: endUserCaseRouteQuery(store.filters),
   });
   await nextTick();
-  if (id)
-    document
-      .querySelector<HTMLElement>(`[data-case-id="${id}"] button`)
-      ?.focus();
+  if (id) document.querySelector<HTMLElement>(`[data-case-id="${id}"] button`)?.focus();
 }
 
 function updateViewport(): void {
   isMobile.value = window.innerWidth <= 1180;
 }
 
-async function handleVerificationCompleted(
-  run: CaseVerificationRunResponseDto,
-): Promise<void> {
+async function handleVerificationCompleted(run: CaseVerificationRunResponseDto): Promise<void> {
   if (!store.selectedId) return;
   latestVerification.value = { caseId: store.selectedId, run };
   await store.open(store.selectedId);
@@ -128,24 +105,22 @@ async function handleVerificationCompleted(
 
 onMounted(async () => {
   updateViewport();
-  window.addEventListener("resize", updateViewport);
+  window.addEventListener('resize', updateViewport);
   if (!canRead.value || !auth.project?.id) return;
   await store.activateProject(auth.project.id);
   const initialFilters = endUserCaseFiltersFromRoute(route.query);
   if (JSON.stringify(initialFilters) !== JSON.stringify(store.filters))
     await store.setFilters(initialFilters);
   const caseId = route.params.caseId;
-  if (typeof caseId === "string")
-    await store.open(caseId);
+  if (typeof caseId === 'string') await store.open(caseId);
 });
 
-onBeforeUnmount(() => window.removeEventListener("resize", updateViewport));
+onBeforeUnmount(() => window.removeEventListener('resize', updateViewport));
 
 watch(
   () => route.params.caseId,
   async (caseId) => {
-    if (typeof caseId === "string" && caseId !== store.selectedId)
-      await store.open(caseId);
+    if (typeof caseId === 'string' && caseId !== store.selectedId) await store.open(caseId);
     else if (!caseId && store.selectedId) store.close();
   },
 );
@@ -159,10 +134,8 @@ watch(canRead, async (allowed) => {
   if (!projectId) return;
   await store.activateProject(projectId);
   const caseId = route.params.caseId;
-  if (typeof caseId === "string")
-    await store.open(caseId);
+  if (typeof caseId === 'string') await store.open(caseId);
 });
-
 </script>
 
 <template>
@@ -172,15 +145,12 @@ watch(canRead, async (allowed) => {
         <div class="eyebrow">Качество поддержки Retenive</div>
         <h1>Обращения пользователей</h1>
         <p class="subtitle">
-          Цели и проблемы пользователей — от первого сообщения до проверенного
-          результата, включая возвраты и повторные обращения.
+          Цели и проблемы пользователей — от первого сообщения до проверенного результата, включая
+          возвраты и повторные обращения.
         </p>
       </div>
       <div class="header-actions">
-        <span
-          v-if="store.realtimeState === 'DEGRADED'"
-          class="realtime degraded"
-        >
+        <span v-if="store.realtimeState === 'DEGRADED'" class="realtime degraded">
           <i class="pi pi-cloud" /> Автообновление недоступно
         </span>
         <Button
@@ -206,11 +176,7 @@ watch(canRead, async (allowed) => {
       Для просмотра обращений требуется разрешение проекта.
     </Message>
     <template v-else>
-      <div
-        v-if="store.summary"
-        class="summary-grid"
-        aria-label="Сводка обращений"
-      >
+      <div v-if="store.summary" class="summary-grid" aria-label="Сводка обращений">
         <div>
           <span>Всего</span><strong>{{ store.summary.totalCount }}</strong>
         </div>
@@ -221,12 +187,10 @@ watch(canRead, async (allowed) => {
           <span>Решены</span><strong>{{ store.summary.resolvedCount }}</strong>
         </div>
         <div>
-          <span>Требуют внимания</span
-          ><strong>{{ store.summary.attentionCount }}</strong>
+          <span>Требуют внимания</span><strong>{{ store.summary.attentionCount }}</strong>
         </div>
         <div>
-          <span>Критичные</span
-          ><strong>{{ store.summary.criticalCount }}</strong>
+          <span>Критичные</span><strong>{{ store.summary.criticalCount }}</strong>
         </div>
       </div>
 
@@ -236,13 +200,8 @@ watch(canRead, async (allowed) => {
         @update:model-value="applyFilters"
       />
 
-      <Message
-        v-if="store.realtimeState === 'DEGRADED'"
-        severity="info"
-        :closable="false"
-      >
-        Данные остаются доступны через REST. Используйте «Обновить» для сверки с
-        сервером.
+      <Message v-if="store.realtimeState === 'DEGRADED'" severity="info" :closable="false">
+        Данные остаются доступны через REST. Используйте «Обновить» для сверки с сервером.
       </Message>
 
       <div class="cases-layout card">
@@ -256,11 +215,7 @@ watch(canRead, async (allowed) => {
             :closable="false"
           >
             {{ store.error }}
-            <Button
-              label="Повторить"
-              text
-              @click="store.loadPage({ replace: true })"
-            />
+            <Button label="Повторить" text @click="store.loadPage({ replace: true })" />
           </Message>
           <div v-else-if="!store.items.length" class="empty">
             <i class="pi pi-check-circle" />
@@ -268,11 +223,7 @@ watch(canRead, async (allowed) => {
             <p>Измените фильтры или обновите список.</p>
           </div>
           <template v-else>
-            <div
-              v-for="item in store.items"
-              :key="item.id"
-              :data-case-id="item.id"
-            >
+            <div v-for="item in store.items" :key="item.id" :data-case-id="item.id">
               <EndUserCaseCard
                 :item="item"
                 :selected="store.selectedId === item.id"
@@ -308,14 +259,10 @@ watch(canRead, async (allowed) => {
             :can-preview-events="canPreviewEvents"
             :verification-run="selectedVerificationRun"
             :error="store.detailError"
-            @retry="
-              store.selectedId && store.open(store.selectedId)
-            "
+            @retry="store.selectedId && store.open(store.selectedId)"
             @request-transition="dialogs?.requestTransition($event)"
             @request-assignment="dialogs?.requestAssignment()"
-            @request-escalation-action="
-              escalationDialogs?.requestEscalationAction($event)
-            "
+            @request-escalation-action="escalationDialogs?.requestEscalationAction($event)"
             @request-classification="dialogs?.requestClassification()"
             @request-unlink="dialogs?.requestUnlink($event)"
             @request-merge="dialogs?.requestMerge()"
@@ -353,9 +300,7 @@ watch(canRead, async (allowed) => {
       :error="store.detailError"
       @request-transition="dialogs?.requestTransition($event)"
       @request-assignment="dialogs?.requestAssignment()"
-      @request-escalation-action="
-        escalationDialogs?.requestEscalationAction($event)
-      "
+      @request-escalation-action="escalationDialogs?.requestEscalationAction($event)"
       @request-classification="dialogs?.requestClassification()"
       @request-unlink="dialogs?.requestUnlink($event)"
       @request-merge="dialogs?.requestMerge()"

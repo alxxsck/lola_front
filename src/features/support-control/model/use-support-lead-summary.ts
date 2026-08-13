@@ -1,9 +1,9 @@
-import { ref } from "vue";
-import { ApiError } from "@/shared/api/http/api-error";
+import { ref } from 'vue';
+import { ApiError } from '@/shared/api/http/api-error';
 import type {
   SupportLeadSummarySource,
   SupportLeadSummary,
-} from "@/features/support-control/api/support-lead-source";
+} from '@/features/support-control/api/support-lead-source';
 
 export interface SupportLeadSummaryContext {
   projectId(): string | undefined;
@@ -18,7 +18,7 @@ export function createSupportLeadSummaryController(
 ) {
   const summary = ref<SupportLeadSummary | null>(null);
   const loading = ref(false);
-  const error = ref("");
+  const error = ref('');
   let generation = 0;
   let requestAbort: AbortController | null = null;
 
@@ -28,7 +28,7 @@ export function createSupportLeadSummaryController(
     requestAbort = null;
     summary.value = null;
     loading.value = false;
-    error.value = "";
+    error.value = '';
   }
 
   async function load(): Promise<void> {
@@ -37,7 +37,7 @@ export function createSupportLeadSummaryController(
     const requestGeneration = ++generation;
     const abort = new AbortController();
     requestAbort = abort;
-    error.value = "";
+    error.value = '';
     if (!projectId || !context.canRead()) {
       loading.value = false;
       requestAbort = null;
@@ -66,7 +66,7 @@ export function createSupportLeadSummaryController(
         await context.onForbidden?.();
         return;
       }
-      error.value = "Не удалось загрузить операционный обзор";
+      error.value = 'Не удалось загрузить операционный обзор';
     } finally {
       if (requestGeneration === generation) {
         loading.value = false;

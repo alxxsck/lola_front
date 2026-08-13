@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from 'vue';
 
 import {
   parseEventSchema,
@@ -7,16 +7,16 @@ import {
   validateEventSchemaDraft,
   type EventSchemaDraft as EventSchemaEditorDraft,
   type EventSchemaDraftIssue,
-} from "@/features/event-schema/model/event-schema";
-import EventPayloadStudio from "@/features/event-schema/ui/EventPayloadStudio.vue";
-import { ApiError } from "@/shared/api/http/api-error";
+} from '@/features/event-schema/model/event-schema';
+import EventPayloadStudio from '@/features/event-schema/ui/EventPayloadStudio.vue';
+import { ApiError } from '@/shared/api/http/api-error';
 import {
   eventCatalogRepository,
   type EventCatalogDefinition,
   type EventSchemaDraft,
   type EventSchemaImpact,
   type EventSchemaPublishResult,
-} from "@/shared/api/repository/event-catalog";
+} from '@/shared/api/repository/event-catalog';
 
 const props = defineProps<{
   projectId: string;
@@ -38,59 +38,44 @@ const editorIssues = ref<EventSchemaDraftIssue[]>([]);
 const technicalDraftDirty = ref(false);
 const conflictChecked = ref(false);
 const conflictDraft = ref<EventSchemaDraft | null>(null);
-const serverSchemaText = ref("");
+const serverSchemaText = ref('');
 const loading = ref(true);
-const pendingAction = ref<
-  "save" | "analyze" | "publish" | "discard" | "create" | null
->(null);
-const error = ref("");
-const success = ref("");
-const publishReason = ref("");
+const pendingAction = ref<'save' | 'analyze' | 'publish' | 'discard' | 'create' | null>(null);
+const error = ref('');
+const success = ref('');
+const publishReason = ref('');
 const confirmBreakingChange = ref(false);
 const producerMigrationConfirmed = ref(false);
 const lastPublishResult = ref<EventSchemaPublishResult | null>(null);
 const confirmingDiscard = ref(false);
-const discardReason = ref("");
+const discardReason = ref('');
 const newEventName = ref(`${props.event.metadata.name} — новое событие`);
-const newEventCode = ref("");
+const newEventCode = ref('');
 let requestGeneration = 0;
 
-const serializedEditorSchema = computed(() =>
-  serializeEventSchema(editorDraft.value),
-);
+const serializedEditorSchema = computed(() => serializeEventSchema(editorDraft.value));
 const isDirty = computed(
   () =>
     JSON.stringify(serializedEditorSchema.value) !== serverSchemaText.value ||
     technicalDraftDirty.value,
 );
 const isReadOnly = computed(
-  () =>
-    !props.canEdit ||
-    props.event.readOnly ||
-    props.event.lifecycle === "ARCHIVED",
+  () => !props.canEdit || props.event.readOnly || props.event.lifecycle === 'ARCHIVED',
 );
-const nextRevisionNumber = computed(
-  () => props.event.currentSchema.revisionNumber + 1,
-);
-const classification = computed(
-  () => impact.value?.compatibility.classification,
-);
+const nextRevisionNumber = computed(() => props.event.currentSchema.revisionNumber + 1);
+const classification = computed(() => impact.value?.compatibility.classification);
 const blockingCount = computed(
   () =>
     (impact.value?.impact.summary.blockingConsumerCount ?? 0) +
     (impact.value?.impact.summary.blockingActiveWaitCount ?? 0),
 );
 const requiresBreakingConfirmation = computed(() =>
-  Boolean(
-    classification.value && classification.value !== "FULL_TRANSITIVE_SAFE",
-  ),
+  Boolean(classification.value && classification.value !== 'FULL_TRANSITIVE_SAFE'),
 );
 const requiresProducerConfirmation = computed(
-  () => impact.value?.compatibility.producerCompatibility === "BREAKING",
+  () => impact.value?.compatibility.producerCompatibility === 'BREAKING',
 );
-const semanticBreak = computed(
-  () => classification.value === "SEMANTIC_BREAKING",
-);
+const semanticBreak = computed(() => classification.value === 'SEMANTIC_BREAKING');
 const publishDisabled = computed(
   () =>
     isReadOnly.value ||
@@ -108,19 +93,15 @@ const publishDisabled = computed(
 
 onMounted(loadDraft);
 watch(
-  () => [
-    props.projectId,
-    props.event.definitionKeyId,
-    props.event.currentSchema.revisionId,
-  ],
+  () => [props.projectId, props.event.definitionKeyId, props.event.currentSchema.revisionId],
   () => void loadDraft(),
 );
 
 async function loadDraft() {
   const generation = ++requestGeneration;
   loading.value = true;
-  error.value = "";
-  success.value = "";
+  error.value = '';
+  success.value = '';
   impact.value = null;
   conflictChecked.value = false;
   conflictDraft.value = null;
@@ -132,12 +113,10 @@ async function loadDraft() {
     );
     if (generation !== requestGeneration) return;
     draft.value = loaded;
-    setServerSchema(
-      loaded?.payloadSchema ?? props.event.currentSchema.payloadSchema,
-    );
+    setServerSchema(loaded?.payloadSchema ?? props.event.currentSchema.payloadSchema);
   } catch (cause) {
     if (generation !== requestGeneration) return;
-    error.value = errorMessage(cause, "Не удалось загрузить черновик схемы");
+    error.value = errorMessage(cause, 'Не удалось загрузить черновик схемы');
   } finally {
     if (generation === requestGeneration) loading.value = false;
   }
@@ -152,13 +131,12 @@ function setServerSchema(value: Record<string, unknown>) {
 
 function parseSchema(): Record<string, unknown> | null {
   if (technicalDraftDirty.value) {
-    error.value =
-      "Сначала примените или отмените изменения в расширенном JSON-режиме.";
+    error.value = 'Сначала примените или отмените изменения в расширенном JSON-режиме.';
     return null;
   }
   editorIssues.value = validateEventSchemaDraft(editorDraft.value);
   if (editorIssues.value.length) {
-    error.value = "Исправьте отмеченные поля перед сохранением черновика.";
+    error.value = 'Исправьте отмеченные поля перед сохранением черновика.';
     return null;
   }
   return serializedEditorSchema.value;
@@ -166,20 +144,18 @@ function parseSchema(): Record<string, unknown> | null {
 
 async function saveDraft() {
   if (isReadOnly.value || pendingAction.value) return;
-  error.value = "";
-  success.value = "";
+  error.value = '';
+  success.value = '';
   const payloadSchema = parseSchema();
   if (!payloadSchema) return;
-  pendingAction.value = "save";
+  pendingAction.value = 'save';
   try {
     const saved = await eventCatalogRepository.saveSchemaDraft(
       props.projectId,
       props.event.definitionKeyId,
       {
         payloadSchema,
-        ...(draft.value
-          ? { expectedDraftVersion: draft.value.draftVersion }
-          : {}),
+        ...(draft.value ? { expectedDraftVersion: draft.value.draftVersion } : {}),
       },
     );
     draft.value = saved;
@@ -190,10 +166,10 @@ async function saveDraft() {
     setServerSchema(saved.payloadSchema);
     success.value = saved.changed
       ? `Черновик v${saved.draftVersion} сохранён. Опубликованная версия не изменилась.`
-      : "Изменений в черновике нет.";
+      : 'Изменений в черновике нет.';
     clearConflict();
   } catch (cause) {
-    error.value = errorMessage(cause, "Не удалось сохранить черновик");
+    error.value = errorMessage(cause, 'Не удалось сохранить черновик');
     await recoverMutationFailure(cause);
   } finally {
     pendingAction.value = null;
@@ -202,9 +178,9 @@ async function saveDraft() {
 
 async function analyzeDraft() {
   if (!draft.value || isDirty.value || pendingAction.value) return;
-  error.value = "";
-  success.value = "";
-  pendingAction.value = "analyze";
+  error.value = '';
+  success.value = '';
+  pendingAction.value = 'analyze';
   try {
     impact.value = await eventCatalogRepository.analyzeSchemaDraft(
       props.projectId,
@@ -214,7 +190,7 @@ async function analyzeDraft() {
     confirmBreakingChange.value = false;
     producerMigrationConfirmed.value = false;
   } catch (cause) {
-    error.value = errorMessage(cause, "Не удалось проверить влияние схемы");
+    error.value = errorMessage(cause, 'Не удалось проверить влияние схемы');
     await recoverMutationFailure(cause);
   } finally {
     pendingAction.value = null;
@@ -225,9 +201,9 @@ async function publishDraft() {
   const currentDraft = draft.value;
   const currentImpact = impact.value;
   if (!currentDraft || !currentImpact || publishDisabled.value) return;
-  error.value = "";
-  success.value = "";
-  pendingAction.value = "publish";
+  error.value = '';
+  success.value = '';
+  pendingAction.value = 'publish';
   try {
     const result = await eventCatalogRepository.publishSchemaDraft(
       props.projectId,
@@ -236,28 +212,21 @@ async function publishDraft() {
         expectedDraftVersion: currentDraft.draftVersion,
         expectedBaseRevisionId: currentDraft.baseRevisionId,
         reason: publishReason.value.trim(),
-        ...(requiresBreakingConfirmation.value
-          ? { confirmBreakingChange: true }
-          : {}),
-        ...(requiresProducerConfirmation.value
-          ? { producerMigrationConfirmed: true }
-          : {}),
+        ...(requiresBreakingConfirmation.value ? { confirmBreakingChange: true } : {}),
+        ...(requiresProducerConfirmation.value ? { producerMigrationConfirmed: true } : {}),
       },
     );
     acceptPublishResult(result);
   } catch (cause) {
-    const observedRevisionNumber = await inspectAmbiguousPublish(
-      cause,
-      currentDraft,
-    );
+    const observedRevisionNumber = await inspectAmbiguousPublish(cause, currentDraft);
     if (observedRevisionNumber !== null) {
       draft.value = null;
       impact.value = null;
       lastPublishResult.value = null;
       error.value = `Текущая схема уже v${observedRevisionNumber} и совпадает с отправленным черновиком, но ответ publish потерян. Нельзя надёжно установить автора операции: проверьте историю и audit log перед повтором.`;
-      emit("publicationUncertain", observedRevisionNumber);
+      emit('publicationUncertain', observedRevisionNumber);
     } else {
-      error.value = errorMessage(cause, "Не удалось опубликовать новую версию");
+      error.value = errorMessage(cause, 'Не удалось опубликовать новую версию');
       await recoverMutationFailure(cause);
     }
   } finally {
@@ -268,10 +237,10 @@ async function publishDraft() {
 function acceptPublishResult(result: EventSchemaPublishResult) {
   draft.value = null;
   impact.value = null;
-  publishReason.value = "";
+  publishReason.value = '';
   lastPublishResult.value = result;
   success.value = `Опубликована версия ${result.revisionNumber}.`;
-  emit("published", result);
+  emit('published', result);
 }
 
 async function inspectAmbiguousPublish(
@@ -288,8 +257,7 @@ async function inspectAmbiguousPublish(
     );
     if (
       current.currentSchema.revisionId === currentDraft.baseRevisionId ||
-      current.currentSchema.revisionNumber !==
-        props.event.currentSchema.revisionNumber + 1 ||
+      current.currentSchema.revisionNumber !== props.event.currentSchema.revisionNumber + 1 ||
       canonicalJson(current.currentSchema.payloadSchema) !==
         canonicalJson(currentDraft.payloadSchema)
     ) {
@@ -312,38 +280,36 @@ function remainingPublishWarnings(result: EventSchemaPublishResult): number {
 }
 
 function canonicalJson(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
-  if (!value || typeof value !== "object")
-    return JSON.stringify(value) ?? "undefined";
-  const entries = Object.entries(value as Record<string, unknown>).sort(
-    ([left], [right]) => left.localeCompare(right),
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  if (!value || typeof value !== 'object') return JSON.stringify(value) ?? 'undefined';
+  const entries = Object.entries(value as Record<string, unknown>).sort(([left], [right]) =>
+    left.localeCompare(right),
   );
   return `{${entries
     .map(([key, nested]) => `${JSON.stringify(key)}:${canonicalJson(nested)}`)
-    .join(",")}}`;
+    .join(',')}}`;
 }
 
 async function discardDraft() {
   const currentDraft = draft.value;
   const reason = discardReason.value.trim();
   if (!currentDraft || !reason || pendingAction.value) return;
-  error.value = "";
-  success.value = "";
-  pendingAction.value = "discard";
+  error.value = '';
+  success.value = '';
+  pendingAction.value = 'discard';
   try {
-    await eventCatalogRepository.discardSchemaDraft(
-      props.projectId,
-      props.event.definitionKeyId,
-      { expectedDraftVersion: currentDraft.draftVersion, reason },
-    );
+    await eventCatalogRepository.discardSchemaDraft(props.projectId, props.event.definitionKeyId, {
+      expectedDraftVersion: currentDraft.draftVersion,
+      reason,
+    });
     draft.value = null;
     impact.value = null;
     confirmingDiscard.value = false;
-    discardReason.value = "";
+    discardReason.value = '';
     setServerSchema(props.event.currentSchema.payloadSchema);
-    success.value = "Черновик удалён. Опубликованная версия не изменилась.";
+    success.value = 'Черновик удалён. Опубликованная версия не изменилась.';
   } catch (cause) {
-    error.value = errorMessage(cause, "Не удалось удалить черновик");
+    error.value = errorMessage(cause, 'Не удалось удалить черновик');
     await recoverMutationFailure(cause);
   } finally {
     pendingAction.value = null;
@@ -352,7 +318,7 @@ async function discardDraft() {
 
 async function recoverMutationFailure(cause: unknown) {
   if (!(cause instanceof ApiError) || cause.status !== 409) return;
-  if (cause.code !== "EVENT_SCHEMA_DRAFT_STALE") {
+  if (cause.code !== 'EVENT_SCHEMA_DRAFT_STALE') {
     recoverImpact(cause);
     return;
   }
@@ -369,15 +335,15 @@ async function recoverMutationFailure(cause: unknown) {
 
 function recoverImpact(cause: ApiError) {
   if (
-    cause.code !== "EVENT_SCHEMA_PUBLISH_BLOCKED" &&
-    cause.code !== "EVENT_SCHEMA_REQUIRES_NEW_DEFINITION"
+    cause.code !== 'EVENT_SCHEMA_PUBLISH_BLOCKED' &&
+    cause.code !== 'EVENT_SCHEMA_REQUIRES_NEW_DEFINITION'
   ) {
     return;
   }
   const details = cause.details;
-  if (!draft.value || !details || typeof details !== "object") return;
-  const compatibility = Reflect.get(details, "compatibility");
-  const dependencyImpact = Reflect.get(details, "impact");
+  if (!draft.value || !details || typeof details !== 'object') return;
+  const compatibility = Reflect.get(details, 'compatibility');
+  const dependencyImpact = Reflect.get(details, 'impact');
   if (!compatibility || !dependencyImpact) return;
   impact.value = {
     definitionKeyId: props.event.definitionKeyId,
@@ -396,28 +362,24 @@ function clearConflict() {
 
 function useServerDraft() {
   draft.value = conflictDraft.value;
-  setServerSchema(
-    conflictDraft.value?.payloadSchema ??
-      props.event.currentSchema.payloadSchema,
-  );
+  setServerSchema(conflictDraft.value?.payloadSchema ?? props.event.currentSchema.payloadSchema);
   impact.value = null;
   clearConflict();
-  error.value = "";
+  error.value = '';
 }
 
 function rebaseLocalDraft() {
   draft.value = conflictDraft.value;
   serverSchemaText.value = JSON.stringify(
-    conflictDraft.value?.payloadSchema ??
-      props.event.currentSchema.payloadSchema,
+    conflictDraft.value?.payloadSchema ?? props.event.currentSchema.payloadSchema,
   );
   impact.value = null;
   const serverVersion = conflictDraft.value?.draftVersion;
   clearConflict();
-  error.value = "";
+  error.value = '';
   success.value = serverVersion
     ? `Локальные изменения готовы к сохранению поверх черновика v${serverVersion}.`
-    : "Локальные изменения готовы к созданию нового черновика.";
+    : 'Локальные изменения готовы к созданию нового черновика.';
 }
 
 async function createDefinitionFromDraft() {
@@ -432,9 +394,9 @@ async function createDefinitionFromDraft() {
     pendingAction.value
   )
     return;
-  error.value = "";
-  success.value = "";
-  pendingAction.value = "create";
+  error.value = '';
+  success.value = '';
+  pendingAction.value = 'create';
   try {
     const created = await eventCatalogRepository.createSchemaSuccessor(
       props.projectId,
@@ -446,9 +408,9 @@ async function createDefinitionFromDraft() {
         expectedBaseRevisionId: currentDraft.baseRevisionId,
       },
     );
-    emit("created", created);
+    emit('created', created);
   } catch (cause) {
-    error.value = errorMessage(cause, "Не удалось создать новое событие");
+    error.value = errorMessage(cause, 'Не удалось создать новое событие');
   } finally {
     pendingAction.value = null;
   }
@@ -456,32 +418,32 @@ async function createDefinitionFromDraft() {
 
 function compatibilityTitle() {
   switch (classification.value) {
-    case "FULL_TRANSITIVE_SAFE":
-      return "Безопасное изменение";
-    case "PRODUCER_BREAKING":
-      return "Требуется миграция producers";
-    case "CONSUMER_BREAKING":
-      return "Затронуты consumers";
-    case "SEMANTIC_BREAKING":
-      return "Нужен новый код события";
+    case 'FULL_TRANSITIVE_SAFE':
+      return 'Безопасное изменение';
+    case 'PRODUCER_BREAKING':
+      return 'Требуется миграция producers';
+    case 'CONSUMER_BREAKING':
+      return 'Затронуты consumers';
+    case 'SEMANTIC_BREAKING':
+      return 'Нужен новый код события';
     default:
-      return "Требуется проверка";
+      return 'Требуется проверка';
   }
 }
 
 function reasonTitle(code: string) {
   return (
     {
-      OPTIONAL_FIELD_ADDED: "Добавлено необязательное поле",
-      FIELD_REMOVED: "Удалено поле",
-      FIELD_PATH_RENAMED: "Изменён путь поля",
-      REQUIRED_FIELD_ADDED: "Добавлено обязательное поле",
-      FIELD_TYPE_CHANGED: "Изменён тип данных",
-      CONSTRAINT_TIGHTENED: "Усилено ограничение",
-      FIELD_KEY_CHANGED: "Изменён технический идентификатор",
-      SEMANTIC_TYPE_CHANGED: "Изменён смысл данных",
-      UNIT_CHANGED: "Изменена единица хранения",
-      SENSITIVITY_CHANGED: "Изменена чувствительность данных",
+      OPTIONAL_FIELD_ADDED: 'Добавлено необязательное поле',
+      FIELD_REMOVED: 'Удалено поле',
+      FIELD_PATH_RENAMED: 'Изменён путь поля',
+      REQUIRED_FIELD_ADDED: 'Добавлено обязательное поле',
+      FIELD_TYPE_CHANGED: 'Изменён тип данных',
+      CONSTRAINT_TIGHTENED: 'Усилено ограничение',
+      FIELD_KEY_CHANGED: 'Изменён технический идентификатор',
+      SEMANTIC_TYPE_CHANGED: 'Изменён смысл данных',
+      UNIT_CHANGED: 'Изменена единица хранения',
+      SENSITIVITY_CHANGED: 'Изменена чувствительность данных',
     }[code] ?? code
   );
 }
@@ -489,11 +451,11 @@ function reasonTitle(code: string) {
 function resolutionTitle(action: string) {
   return (
     {
-      DISABLE: "Приостановить правило",
-      MIGRATE: "Мигрировать binding",
-      REPUBLISH: "Перепубликовать сценарий",
-      DRAIN: "Дождаться завершения",
-      CANCEL: "Отменить ожидание",
+      DISABLE: 'Приостановить правило',
+      MIGRATE: 'Мигрировать binding',
+      REPUBLISH: 'Перепубликовать сценарий',
+      DRAIN: 'Дождаться завершения',
+      CANCEL: 'Отменить ожидание',
     }[action] ?? action
   );
 }
@@ -501,9 +463,9 @@ function resolutionTitle(action: string) {
 function externalConsumerTitle(kind: string) {
   return (
     {
-      "integration.route.inbound": "Правило приёма события",
-      "integration.route.outbound": "Правило передачи события",
-      "ai-allowance.accrual-rule": "Правило AI allowance",
+      'integration.route.inbound': 'Правило приёма события',
+      'integration.route.outbound': 'Правило передачи события',
+      'ai-allowance.accrual-rule': 'Правило AI allowance',
     }[kind] ?? kind
   );
 }
@@ -511,9 +473,9 @@ function externalConsumerTitle(kind: string) {
 function externalConsumerState(state: string) {
   return (
     {
-      ACTIVE: "Активно",
-      PAUSED: "Приостановлено",
-      UNKNOWN: "Статус неизвестен",
+      ACTIVE: 'Активно',
+      PAUSED: 'Приостановлено',
+      UNKNOWN: 'Статус неизвестен',
     }[state] ?? state
   );
 }
@@ -521,20 +483,20 @@ function externalConsumerState(state: string) {
 function migrationStepTitle(step: string) {
   return (
     {
-      DISABLE_CONSUMER: "Приостановить правило",
-      PUBLISH_EVENT_SCHEMA: "Опубликовать новую схему события",
-      EDIT_CONSUMER_FOR_CURRENT_REVISION: "Обновить событие и поля в правиле",
-      REPUBLISH_CONSUMER: "Опубликовать новую версию правила",
-      ENABLE_CONSUMER: "Снова включить правило",
+      DISABLE_CONSUMER: 'Приостановить правило',
+      PUBLISH_EVENT_SCHEMA: 'Опубликовать новую схему события',
+      EDIT_CONSUMER_FOR_CURRENT_REVISION: 'Обновить событие и поля в правиле',
+      REPUBLISH_CONSUMER: 'Опубликовать новую версию правила',
+      ENABLE_CONSUMER: 'Снова включить правило',
     }[step] ?? step
   );
 }
 
 function fieldDependencyTitle(dependency: Record<string, unknown>) {
-  for (const key of ["fieldKey", "path", "sourcePath"]) {
-    if (typeof dependency[key] === "string") return dependency[key];
+  for (const key of ['fieldKey', 'path', 'sourcePath']) {
+    if (typeof dependency[key] === 'string') return dependency[key];
   }
-  return "payload";
+  return 'payload';
 }
 
 function errorMessage(cause: unknown, fallback: string) {
@@ -551,29 +513,22 @@ function errorMessage(cause: unknown, fallback: string) {
       <div>
         <span class="eyebrow">Контракт payload</span>
         <strong>Версия {{ event.currentSchema.revisionNumber }}</strong>
-        <p>
-          Изменения сохраняются в отдельный черновик и не влияют на ingestion до
-          публикации.
-        </p>
+        <p>Изменения сохраняются в отдельный черновик и не влияют на ingestion до публикации.</p>
       </div>
-      <span v-if="draft" class="draft-badge">
-        Черновик v{{ draft.draftVersion }}
-      </span>
+      <span v-if="draft" class="draft-badge"> Черновик v{{ draft.draftVersion }} </span>
       <span v-else class="published-badge">Опубликовано</span>
     </div>
 
-    <p v-if="loading" class="schema-state" aria-live="polite">
-      Загружаем черновик…
-    </p>
+    <p v-if="loading" class="schema-state" aria-live="polite">Загружаем черновик…</p>
 
     <template v-else>
       <div v-if="isReadOnly" class="readonly-note">
         <i class="pi pi-lock" />
         <span>
           {{
-            event.lifecycle === "ARCHIVED"
-              ? "Архивное событие доступно только для чтения."
-              : "У вас нет права изменять схему этого события."
+            event.lifecycle === 'ARCHIVED'
+              ? 'Архивное событие доступно только для чтения.'
+              : 'У вас нет права изменять схему этого события.'
           }}
         </span>
       </div>
@@ -592,8 +547,8 @@ function errorMessage(cause: unknown, fallback: string) {
           />
         </fieldset>
         <p class="editor-help">
-          Технический идентификатор поля остаётся стабильным при переименовании.
-          Изменение business meaning требует нового события.
+          Технический идентификатор поля остаётся стабильным при переименовании. Изменение business
+          meaning требует нового события.
         </p>
       </template>
 
@@ -604,7 +559,7 @@ function errorMessage(cause: unknown, fallback: string) {
           :disabled="!isDirty || pendingAction !== null"
           @click="saveDraft"
         >
-          {{ pendingAction === "save" ? "Сохраняем…" : "Сохранить черновик" }}
+          {{ pendingAction === 'save' ? 'Сохраняем…' : 'Сохранить черновик' }}
         </button>
         <button
           type="button"
@@ -612,7 +567,7 @@ function errorMessage(cause: unknown, fallback: string) {
           :disabled="!draft || isDirty || pendingAction !== null"
           @click="analyzeDraft"
         >
-          {{ pendingAction === "analyze" ? "Проверяем…" : "Проверить влияние" }}
+          {{ pendingAction === 'analyze' ? 'Проверяем…' : 'Проверить влияние' }}
         </button>
         <button
           v-if="draft"
@@ -640,9 +595,7 @@ function errorMessage(cause: unknown, fallback: string) {
       >
         <div>
           <span class="eyebrow">Опубликовано</span>
-          <strong
-            >Версия {{ lastPublishResult.revisionNumber }} — текущая</strong
-          >
+          <strong>Версия {{ lastPublishResult.revisionNumber }} — текущая</strong>
         </div>
         <dl>
           <div>
@@ -666,37 +619,22 @@ function errorMessage(cause: unknown, fallback: string) {
         <div>
           <strong>Черновик изменился на сервере</strong>
           <p v-if="conflictDraft">
-            На сервере уже черновик v{{ conflictDraft.draftVersion }}. Локальные
-            поля сохранены в редакторе — выберите, какую версию продолжить.
+            На сервере уже черновик v{{ conflictDraft.draftVersion }}. Локальные поля сохранены в
+            редакторе — выберите, какую версию продолжить.
           </p>
-          <p v-else>
-            Серверного черновика больше нет. Локальные поля сохранены в
-            редакторе.
-          </p>
+          <p v-else>Серверного черновика больше нет. Локальные поля сохранены в редакторе.</p>
         </div>
         <div class="conflict-actions">
-          <button
-            type="button"
-            class="secondary-button"
-            @click="useServerDraft"
-          >
+          <button type="button" class="secondary-button" @click="useServerDraft">
             Открыть серверную версию
           </button>
-          <button
-            type="button"
-            class="primary-button"
-            @click="rebaseLocalDraft"
-          >
+          <button type="button" class="primary-button" @click="rebaseLocalDraft">
             Продолжить с локальными полями
           </button>
         </div>
       </section>
 
-      <section
-        v-if="impact"
-        class="impact-review"
-        aria-labelledby="event-schema-impact-title"
-      >
+      <section v-if="impact" class="impact-review" aria-labelledby="event-schema-impact-title">
         <div class="impact-heading">
           <div>
             <span class="eyebrow">Проверка перед публикацией</span>
@@ -726,26 +664,15 @@ function errorMessage(cause: unknown, fallback: string) {
         </div>
 
         <div class="impact-summary" data-test="impact-summary">
-          <span
-            >Зависимых consumers:
-            {{ impact.impact.summary.consumerCount }}</span
-          >
-          <span
-            >Активных ожиданий:
-            {{ impact.impact.summary.activeWaitCount }}</span
-          >
-          <span :class="{ danger: blockingCount > 0 }">
-            Блокеров: {{ blockingCount }}
-          </span>
+          <span>Зависимых consumers: {{ impact.impact.summary.consumerCount }}</span>
+          <span>Активных ожиданий: {{ impact.impact.summary.activeWaitCount }}</span>
+          <span :class="{ danger: blockingCount > 0 }"> Блокеров: {{ blockingCount }} </span>
         </div>
 
         <ul v-if="impact.compatibility.reasons.length" class="reason-list">
-          <li
-            v-for="reason in impact.compatibility.reasons"
-            :key="`${reason.code}-${reason.path}`"
-          >
+          <li v-for="reason in impact.compatibility.reasons" :key="`${reason.code}-${reason.path}`">
             <strong>{{ reasonTitle(reason.code) }}</strong>
-            <span>{{ reason.path || reason.fieldKey || "Вся схема" }}</span>
+            <span>{{ reason.path || reason.fieldKey || 'Вся схема' }}</span>
           </li>
         </ul>
 
@@ -778,19 +705,13 @@ function errorMessage(cause: unknown, fallback: string) {
             <div class="dependency-evidence">
               <span v-if="consumer.fieldDependencies.length">
                 Поля:
-                {{
-                  consumer.fieldDependencies
-                    .map(fieldDependencyTitle)
-                    .join(", ")
-                }}
+                {{ consumer.fieldDependencies.map(fieldDependencyTitle).join(', ') }}
               </span>
               <span v-if="consumer.resolutionActions.length">
-                {{
-                  consumer.resolutionActions.map(resolutionTitle).join(" · ")
-                }}
+                {{ consumer.resolutionActions.map(resolutionTitle).join(' · ') }}
               </span>
               <span v-if="consumer.reasonCodes.length">
-                Причины: {{ consumer.reasonCodes.map(reasonTitle).join(" · ") }}
+                Причины: {{ consumer.reasonCodes.map(reasonTitle).join(' · ') }}
               </span>
               <strong v-if="consumer.blocking">Блокирует публикацию</strong>
             </div>
@@ -802,9 +723,7 @@ function errorMessage(cause: unknown, fallback: string) {
           class="dependency-group"
           aria-labelledby="schema-external-consumers-title"
         >
-          <h4 id="schema-external-consumers-title">
-            Интеграции и внешние правила
-          </h4>
+          <h4 id="schema-external-consumers-title">Интеграции и внешние правила</h4>
           <article
             v-for="consumer in impact.impact.externalConsumers ?? []"
             :key="consumer.dependencyId"
@@ -813,8 +732,7 @@ function errorMessage(cause: unknown, fallback: string) {
           >
             <div>
               <strong>{{
-                consumer.displayName ||
-                externalConsumerTitle(consumer.consumerKind)
+                consumer.displayName || externalConsumerTitle(consumer.consumerKind)
               }}</strong>
               <span>
                 {{ externalConsumerTitle(consumer.consumerKind) }} ·
@@ -825,11 +743,7 @@ function errorMessage(cause: unknown, fallback: string) {
             <div class="dependency-evidence">
               <span v-if="consumer.fieldDependencies.length">
                 Поля:
-                {{
-                  consumer.fieldDependencies
-                    .map(fieldDependencyTitle)
-                    .join(", ")
-                }}
+                {{ consumer.fieldDependencies.map(fieldDependencyTitle).join(', ') }}
               </span>
               <ol v-if="consumer.resolutionPlan.length" class="migration-plan">
                 <li v-for="step in consumer.resolutionPlan" :key="step">
@@ -881,37 +795,30 @@ function errorMessage(cause: unknown, fallback: string) {
               <span>{{ wait.type }} · {{ wait.matchingMode }}</span>
             </div>
             <div class="dependency-evidence">
-              <span>{{
-                wait.resolutionActions.map(resolutionTitle).join(" · ")
-              }}</span>
+              <span>{{ wait.resolutionActions.map(resolutionTitle).join(' · ') }}</span>
               <strong v-if="wait.blocking">Блокирует публикацию</strong>
             </div>
           </article>
         </section>
 
         <div v-if="blockingCount > 0" class="publish-blocker" role="alert">
-          Сначала разрешите зависимости в сценариях или активных ожиданиях, а
-          также в интеграциях, затем обновите проверку влияния.
+          Сначала разрешите зависимости в сценариях или активных ожиданиях, а также в интеграциях,
+          затем обновите проверку влияния.
         </div>
         <div v-else-if="semanticBreak" class="publish-blocker" role="alert">
-          Смысл события изменился. Создайте новую Event Definition с новым
-          кодом.
+          Смысл события изменился. Создайте новую Event Definition с новым кодом.
         </div>
 
         <section v-if="semanticBreak" class="new-definition-panel">
           <div>
             <strong>Новая Event Definition из этого черновика</strong>
             <p>
-              Схема станет первой ревизией нового события. Ingestion останется
-              выключенным до отдельной проверки producers.
+              Схема станет первой ревизией нового события. Ingestion останется выключенным до
+              отдельной проверки producers.
             </p>
           </div>
           <label for="semantic-event-name">Название</label>
-          <input
-            id="semantic-event-name"
-            v-model="newEventName"
-            maxlength="120"
-          />
+          <input id="semantic-event-name" v-model="newEventName" maxlength="120" />
           <label for="semantic-event-code">Новый стабильный код</label>
           <input
             id="semantic-event-code"
@@ -930,17 +837,15 @@ function errorMessage(cause: unknown, fallback: string) {
             "
             @click="createDefinitionFromDraft"
           >
-            {{
-              pendingAction === "create" ? "Создаём…" : "Создать новое событие"
-            }}
+            {{ pendingAction === 'create' ? 'Создаём…' : 'Создать новое событие' }}
           </button>
         </section>
 
         <div v-if="!semanticBreak" class="publish-form">
           <p v-if="!canPublish" class="readonly-note">
             <i class="pi pi-lock" />
-            У вас нет отдельного права публиковать версии схемы. Черновик можно
-            сохранить и передать на публикацию администратору.
+            У вас нет отдельного права публиковать версии схемы. Черновик можно сохранить и передать
+            на публикацию администратору.
           </p>
           <label for="event-schema-publish-reason">Причина публикации</label>
           <textarea
@@ -965,8 +870,8 @@ function errorMessage(cause: unknown, fallback: string) {
             @click="publishDraft"
           >
             {{
-              pendingAction === "publish"
-                ? "Публикуем…"
+              pendingAction === 'publish'
+                ? 'Публикуем…'
                 : `Опубликовать версию ${nextRevisionNumber}`
             }}
           </button>
@@ -989,11 +894,7 @@ function errorMessage(cause: unknown, fallback: string) {
           placeholder="Почему черновик больше не нужен"
         />
         <div class="discard-actions">
-          <button
-            type="button"
-            class="secondary-button"
-            @click="confirmingDiscard = false"
-          >
+          <button type="button" class="secondary-button" @click="confirmingDiscard = false">
             Оставить черновик
           </button>
           <button
@@ -1002,7 +903,7 @@ function errorMessage(cause: unknown, fallback: string) {
             :disabled="!discardReason.trim() || pendingAction !== null"
             @click="discardDraft"
           >
-            {{ pendingAction === "discard" ? "Удаляем…" : "Удалить черновик" }}
+            {{ pendingAction === 'discard' ? 'Удаляем…' : 'Удалить черновик' }}
           </button>
         </div>
       </section>

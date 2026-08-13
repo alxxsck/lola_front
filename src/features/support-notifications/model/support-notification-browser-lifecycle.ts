@@ -1,4 +1,4 @@
-import type { BrowserPushSubscriptionResponseDto } from "@/shared/api/generated/models";
+import type { BrowserPushSubscriptionResponseDto } from '@/shared/api/generated/models';
 
 export interface TrackedSupportNotificationRegistrationInput {
   endpoint: string;
@@ -29,9 +29,7 @@ function registrationKey(actorId: string, idempotencyKey: string): string {
   return `${actorId}\u0000${idempotencyKey}`;
 }
 
-export function runSupportNotificationBrowserLifecycle<T>(
-  operation: () => Promise<T>,
-): Promise<T> {
+export function runSupportNotificationBrowserLifecycle<T>(operation: () => Promise<T>): Promise<T> {
   const result = browserLifecycle.then(operation);
   browserLifecycle = result.then(
     () => undefined,
@@ -52,7 +50,7 @@ export async function runSupportNotificationBrowserLifecycleUntil(
   await Promise.race([
     settled,
     new Promise<void>((resolve) =>
-      signal.addEventListener("abort", () => resolve(), { once: true }),
+      signal.addEventListener('abort', () => resolve(), { once: true }),
     ),
   ]);
 }
@@ -97,16 +95,14 @@ export async function quarantineSupportNotificationRegistrations(
   signal: AbortSignal,
 ): Promise<QuarantinedSupportNotificationRegistration[]> {
   if (!actorId) return [];
-  const tracked = [...registrations.entries()].filter(
-    ([, item]) => item.actorId === actorId,
-  );
+  const tracked = [...registrations.entries()].filter(([, item]) => item.actorId === actorId);
   tracked.forEach(([, item]) => item.controller.abort());
   const settled = Promise.allSettled(tracked.map(([, item]) => item.promise));
   if (!signal.aborted) {
     await Promise.race([
       settled,
       new Promise<void>((resolve) =>
-        signal.addEventListener("abort", () => resolve(), { once: true }),
+        signal.addEventListener('abort', () => resolve(), { once: true }),
       ),
     ]);
   }

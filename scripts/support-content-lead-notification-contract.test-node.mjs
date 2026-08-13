@@ -1,20 +1,14 @@
-import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import test from "node:test";
-import { fileURLToPath } from "node:url";
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
-const repositoryRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-);
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 async function pinnedContract() {
   return JSON.parse(
-    await readFile(
-      path.join(repositoryRoot, "openapi/retenive-backend.json"),
-      "utf8",
-    ),
+    await readFile(path.join(repositoryRoot, 'openapi/retenive-backend.json'), 'utf8'),
   );
 }
 
@@ -33,304 +27,231 @@ function assertMutationRejected(validate, baseline, mutate) {
   assert.throws(() => validate(contract));
 }
 
-test("Support content contracts retain separate authority, revisions and safe lifecycle", async () => {
+test('Support content contracts retain separate authority, revisions and safe lifecycle', async () => {
   const { validateSupportContentLeadNotificationContract } =
-    await import("./support-content-lead-notification-contract.mjs");
+    await import('./support-content-lead-notification-contract.mjs');
   const baseline = await pinnedContract();
-  assert.doesNotThrow(() =>
-    validateSupportContentLeadNotificationContract(baseline),
-  );
+  assert.doesNotThrow(() => validateSupportContentLeadNotificationContract(baseline));
 
   const mutations = [
     (contract) => {
-      delete operation(contract, "SupportInternalNote_list")[
-        "x-iam-permission"
-      ];
+      delete operation(contract, 'SupportInternalNote_list')['x-iam-permission'];
     },
     (contract) => {
-      operation(contract, "SupportInternalNote_revisions")[
-        "x-iam-all-permissions"
-      ] = [];
+      operation(contract, 'SupportInternalNote_revisions')['x-iam-all-permissions'] = [];
     },
     (contract) => {
-      operation(contract, "SupportInternalNote_create").parameters.find(
-        (parameter) => parameter.name === "Idempotency-Key",
+      operation(contract, 'SupportInternalNote_create').parameters.find(
+        (parameter) => parameter.name === 'Idempotency-Key',
       ).required = false;
     },
     (contract) => {
-      operation(contract, "SupportInternalNote_correct").parameters.find(
-        (parameter) => parameter.name === "If-Match",
+      operation(contract, 'SupportInternalNote_correct').parameters.find(
+        (parameter) => parameter.name === 'If-Match',
       ).required = false;
     },
     (contract) => {
       const target = contract.components.schemas.SupportInternalNoteResponseDto;
-      target.required = target.required.filter(
-        (field) => field !== "hasUnavailableReferences",
-      );
+      target.required = target.required.filter((field) => field !== 'hasUnavailableReferences');
     },
     (contract) => {
-      delete operation(contract, "SupportMacro_catalog")["x-iam-permission"];
+      delete operation(contract, 'SupportMacro_catalog')['x-iam-permission'];
     },
     (contract) => {
-      operation(contract, "SupportMacro_publish").parameters.find(
-        (parameter) => parameter.name === "If-Match",
+      operation(contract, 'SupportMacro_publish').parameters.find(
+        (parameter) => parameter.name === 'If-Match',
       ).required = false;
     },
     (contract) => {
-      operation(contract, "SupportMacroReplyDraft_create")[
-        "x-iam-all-permissions"
-      ] = [];
+      operation(contract, 'SupportMacroReplyDraft_create')['x-iam-all-permissions'] = [];
     },
     (contract) => {
-      const target =
-        contract.components.schemas.SupportMacroReplyDraftResponseDto;
-      target.required = target.required.filter(
-        (field) => field !== "macroRevisionId",
-      );
+      const target = contract.components.schemas.SupportMacroReplyDraftResponseDto;
+      target.required = target.required.filter((field) => field !== 'macroRevisionId');
     },
     (contract) => {
-      operation(contract, "SupportInternalKnowledge_search")[
-        "x-iam-all-permissions"
-      ] = [];
+      operation(contract, 'SupportInternalKnowledge_search')['x-iam-all-permissions'] = [];
     },
     (contract) => {
-      operation(contract, "SupportInternalKnowledge_search").parameters.find(
-        (parameter) => parameter.name === "caseId",
+      operation(contract, 'SupportInternalKnowledge_search').parameters.find(
+        (parameter) => parameter.name === 'caseId',
       ).required = false;
     },
     (contract) => {
-      const target =
-        contract.components.schemas.SupportKnowledgeSearchItemResponseDto;
-      target.required = target.required.filter(
-        (field) => field !== "revisionId",
-      );
+      const target = contract.components.schemas.SupportKnowledgeSearchItemResponseDto;
+      target.required = target.required.filter((field) => field !== 'revisionId');
     },
   ];
 
   for (const mutate of mutations) {
-    assertMutationRejected(
-      validateSupportContentLeadNotificationContract,
-      baseline,
-      mutate,
-    );
+    assertMutationRejected(validateSupportContentLeadNotificationContract, baseline, mutate);
   }
 });
 
-test("Lead Control contracts retain freshness, drill-down and audited command evidence", async () => {
+test('Lead Control contracts retain freshness, drill-down and audited command evidence', async () => {
   const { validateSupportContentLeadNotificationContract } =
-    await import("./support-content-lead-notification-contract.mjs");
+    await import('./support-content-lead-notification-contract.mjs');
   const baseline = await pinnedContract();
 
   const mutations = [
     (contract) => {
-      delete operation(contract, "SupportLead_summary")["x-iam-permission"];
+      delete operation(contract, 'SupportLead_summary')['x-iam-permission'];
     },
     (contract) => {
       contract.components.schemas.SupportLeadSummaryResponseDto.properties.freshnessState.enum =
         contract.components.schemas.SupportLeadSummaryResponseDto.properties.freshnessState.enum.filter(
-          (value) => value !== "STALE",
+          (value) => value !== 'STALE',
         );
     },
     (contract) => {
-      const target =
-        contract.components.schemas.SupportLeadInvestigationDataDto;
-      target.required = target.required.filter(
-        (field) => field !== "actionTokens",
-      );
+      const target = contract.components.schemas.SupportLeadInvestigationDataDto;
+      target.required = target.required.filter((field) => field !== 'actionTokens');
     },
     (contract) => {
       const target = contract.components.schemas.SupportLeadCaseRiskItemDto;
-      target.required = target.required.filter(
-        (field) => field !== "deliveryVersion",
-      );
+      target.required = target.required.filter((field) => field !== 'deliveryVersion');
     },
     (contract) => {
-      delete operation(contract, "SupportLead_activity")["x-iam-permission"];
+      delete operation(contract, 'SupportLead_activity')['x-iam-permission'];
     },
     (contract) => {
-      delete operation(contract, "SupportOperationalAlert_list")[
-        "x-iam-permission"
-      ];
+      delete operation(contract, 'SupportOperationalAlert_list')['x-iam-permission'];
     },
     (contract) => {
-      operation(
-        contract,
-        "SupportOperationalAlertCommand_acknowledge",
-      ).parameters.find(
-        (parameter) => parameter.name === "Idempotency-Key",
+      operation(contract, 'SupportOperationalAlertCommand_acknowledge').parameters.find(
+        (parameter) => parameter.name === 'Idempotency-Key',
       ).required = false;
     },
     (contract) => {
-      operation(
-        contract,
-        "SupportOperationalAlertCommand_resolve",
-      ).parameters.find((parameter) => parameter.name === "If-Match").required =
-        false;
+      operation(contract, 'SupportOperationalAlertCommand_resolve').parameters.find(
+        (parameter) => parameter.name === 'If-Match',
+      ).required = false;
     },
     (contract) => {
-      const conflict = operation(
-        contract,
-        "SupportOperationalAlertCommand_changeOwner",
-      ).responses["409"].content["application/json"].schema.properties.error
-        .properties.code;
+      const conflict = operation(contract, 'SupportOperationalAlertCommand_changeOwner').responses[
+        '409'
+      ].content['application/json'].schema.properties.error.properties.code;
       conflict.enum = conflict.enum.filter(
-        (value) => value !== "SUPPORT_OPERATIONAL_ALERT_VERSION_CONFLICT",
+        (value) => value !== 'SUPPORT_OPERATIONAL_ALERT_VERSION_CONFLICT',
       );
     },
     (contract) => {
-      const target =
-        contract.components.schemas.SupportOperationalAlertCommandReceiptDto;
-      target.required = target.required.filter((field) => field !== "replayed");
+      const target = contract.components.schemas.SupportOperationalAlertCommandReceiptDto;
+      target.required = target.required.filter((field) => field !== 'replayed');
     },
     (contract) => {
       contract.components.schemas.SupportOperationalAlertItemDto.properties.state.enum =
         contract.components.schemas.SupportOperationalAlertItemDto.properties.state.enum.filter(
-          (value) => value !== "RESOLVED",
+          (value) => value !== 'RESOLVED',
         );
     },
     (contract) => {
       contract.components.schemas.SupportOperationalAlertCommandReceiptDto.properties.state.enum =
         contract.components.schemas.SupportOperationalAlertCommandReceiptDto.properties.state.enum.filter(
-          (value) => value !== "NEW",
+          (value) => value !== 'NEW',
         );
     },
     (contract) => {
       contract.components.schemas.SupportOperationalAlertMaterializationDto.properties.state.enum =
         contract.components.schemas.SupportOperationalAlertMaterializationDto.properties.state.enum.filter(
-          (value) => value !== "DEGRADED",
+          (value) => value !== 'DEGRADED',
         );
     },
   ];
 
   for (const mutate of mutations) {
-    assertMutationRejected(
-      validateSupportContentLeadNotificationContract,
-      baseline,
-      mutate,
-    );
+    assertMutationRejected(validateSupportContentLeadNotificationContract, baseline, mutate);
   }
 });
 
-test("retention and notification boundaries stay explicit and fail closed", async () => {
+test('retention and notification boundaries stay explicit and fail closed', async () => {
   const { validateSupportContentLeadNotificationContract } =
-    await import("./support-content-lead-notification-contract.mjs");
+    await import('./support-content-lead-notification-contract.mjs');
   const baseline = await pinnedContract();
 
   const mutations = [
     (contract) => {
-      delete operation(contract, "SupportContentGovernance_retention")[
-        "x-iam-permission"
-      ];
+      delete operation(contract, 'SupportContentGovernance_retention')['x-iam-permission'];
     },
     (contract) => {
-      operation(
-        contract,
-        "SupportContentGovernance_replaceRetentionDraft",
-      ).parameters.find((parameter) => parameter.name === "If-Match").required =
-        false;
+      operation(contract, 'SupportContentGovernance_replaceRetentionDraft').parameters.find(
+        (parameter) => parameter.name === 'If-Match',
+      ).required = false;
     },
     (contract) => {
-      const target =
-        contract.components.schemas.SupportContentLegalHoldResponseDto;
-      target.required = target.required.filter(
-        (field) => field !== "actionEtag",
-      );
+      const target = contract.components.schemas.SupportContentLegalHoldResponseDto;
+      target.required = target.required.filter((field) => field !== 'actionEtag');
     },
     (contract) => {
-      delete operation(
-        contract,
-        "PersonalSupportNotification_updatePreference",
-      ).parameters.find((parameter) => parameter.name === "Idempotency-Key")
-        .required;
+      delete operation(contract, 'PersonalSupportNotification_updatePreference').parameters.find(
+        (parameter) => parameter.name === 'Idempotency-Key',
+      ).required;
     },
     (contract) => {
-      delete operation(contract, "PersonalBrowserPush_registerSubscription")
-        .requestBody;
+      delete operation(contract, 'PersonalBrowserPush_registerSubscription').requestBody;
     },
     (contract) => {
-      delete operation(contract, "PersonalSupportNotification_resolveDeepLink")
-        .responses["200"];
+      delete operation(contract, 'PersonalSupportNotification_resolveDeepLink').responses['200'];
     },
   ];
 
   for (const mutate of mutations) {
-    assertMutationRejected(
-      validateSupportContentLeadNotificationContract,
-      baseline,
-      mutate,
-    );
+    assertMutationRejected(validateSupportContentLeadNotificationContract, baseline, mutate);
   }
 });
 
-test("new Case notifications retain exact Project authority, safe preview and receipt recovery", async () => {
+test('new Case notifications retain exact Project authority, safe preview and receipt recovery', async () => {
   const { validateSupportContentLeadNotificationContract } =
-    await import("./support-content-lead-notification-contract.mjs");
+    await import('./support-content-lead-notification-contract.mjs');
   const baseline = await pinnedContract();
-  assert.doesNotThrow(() =>
-    validateSupportContentLeadNotificationContract(baseline),
-  );
+  assert.doesNotThrow(() => validateSupportContentLeadNotificationContract(baseline));
 
   const mutations = [
     (contract) => {
-      delete operation(
-        contract,
-        "SupportCaseNotificationPolicy_listAvailableTeams",
-      )["x-iam-permission"];
+      delete operation(contract, 'SupportCaseNotificationPolicy_listAvailableTeams')[
+        'x-iam-permission'
+      ];
     },
     (contract) => {
-      operation(
-        contract,
-        "SupportCaseNotificationPolicy_saveDraft",
-      ).parameters.find(
-        (parameter) => parameter.name === "Idempotency-Key",
+      operation(contract, 'SupportCaseNotificationPolicy_saveDraft').parameters.find(
+        (parameter) => parameter.name === 'Idempotency-Key',
       ).required = false;
     },
     (contract) => {
-      const target =
-        contract.components.schemas
-          .SupportCaseNotificationPolicyPreviewResponseDto;
-      target.required = target.required.filter((field) => field !== "examples");
+      const target = contract.components.schemas.SupportCaseNotificationPolicyPreviewResponseDto;
+      target.required = target.required.filter((field) => field !== 'examples');
     },
     (contract) => {
       contract.components.schemas.SupportCaseNotificationPolicyPreviewResponseDto.properties.examples.maxItems = 6;
     },
     (contract) => {
       contract.components.schemas.SupportCaseNotificationPolicyPreviewExampleDto.properties.caseId =
-        { type: "string", format: "uuid" };
+        { type: 'string', format: 'uuid' };
     },
     (contract) => {
-      const target =
-        contract.components.schemas
-          .SupportCaseNotificationPolicyReceiptResponseDto;
-      target.required = target.required.filter(
-        (field) => field !== "receiptId",
-      );
+      const target = contract.components.schemas.SupportCaseNotificationPolicyReceiptResponseDto;
+      target.required = target.required.filter((field) => field !== 'receiptId');
     },
     (contract) => {
       contract.components.schemas.ReadSupportCaseNotificationCommandResultDto.properties.operation.enum =
         contract.components.schemas.ReadSupportCaseNotificationCommandResultDto.properties.operation.enum.filter(
-          (value) => value !== "RESTORE",
+          (value) => value !== 'RESTORE',
         );
     },
     (contract) => {
       contract.components.schemas.UpdatePersonalSupportNotificationPreferenceDto.properties.topic.enum =
         contract.components.schemas.UpdatePersonalSupportNotificationPreferenceDto.properties.topic.enum.filter(
-          (value) => value !== "SUPPORT_CASE_CREATED",
+          (value) => value !== 'SUPPORT_CASE_CREATED',
         );
     },
     (contract) => {
       const target =
-        contract.components.schemas
-          .PersonalSupportNotificationAdmissionCapabilitiesDto;
-      target.required = target.required.filter((field) => field !== "newCases");
+        contract.components.schemas.PersonalSupportNotificationAdmissionCapabilitiesDto;
+      target.required = target.required.filter((field) => field !== 'newCases');
     },
   ];
 
   for (const mutate of mutations) {
-    assertMutationRejected(
-      validateSupportContentLeadNotificationContract,
-      baseline,
-      mutate,
-    );
+    assertMutationRejected(validateSupportContentLeadNotificationContract, baseline, mutate);
   }
 });

@@ -2,25 +2,25 @@
 import type {
   ScenarioGraphLayoutMode,
   ScenarioGraphNudgeDirection,
-} from './model/scenario-graph-layout'
+} from './model/scenario-graph-layout';
 
 const props = defineProps<{
-  mode: ScenarioGraphLayoutMode
-  canArrange: boolean
-  layouting?: boolean
-  layoutFailed?: boolean
-  selectedNodeLabel?: string
-}>()
+  mode: ScenarioGraphLayoutMode;
+  canArrange: boolean;
+  layouting?: boolean;
+  layoutFailed?: boolean;
+  selectedNodeLabel?: string;
+}>();
 
 const emit = defineEmits<{
-  modeChange: [mode: ScenarioGraphLayoutMode]
-  autoLayout: []
-  nudge: [direction: ScenarioGraphNudgeDirection]
-}>()
+  modeChange: [mode: ScenarioGraphLayoutMode];
+  autoLayout: [];
+  nudge: [direction: ScenarioGraphNudgeDirection];
+}>();
 
 function selectMode(mode: ScenarioGraphLayoutMode) {
-  if (mode === 'manual' && !props.canArrange) return
-  emit('modeChange', mode)
+  if (mode === 'manual' && !props.canArrange) return;
+  emit('modeChange', mode);
 }
 </script>
 
@@ -34,7 +34,9 @@ function selectMode(mode: ScenarioGraphLayoutMode) {
           aria-label="Автоматическая раскладка"
           :aria-pressed="mode === 'auto'"
           @click="selectMode('auto')"
-        ><i class="pi pi-sparkles" /><span>Авто</span></button>
+        >
+          <i class="pi pi-sparkles" /><span>Авто</span>
+        </button>
         <button
           type="button"
           data-layout-mode="manual"
@@ -43,17 +45,27 @@ function selectMode(mode: ScenarioGraphLayoutMode) {
           :disabled="!canArrange"
           :title="!canArrange ? 'Ручное перемещение недоступно в режиме просмотра' : undefined"
           @click="selectMode('manual')"
-        ><i class="pi pi-arrows-alt" /><span>Ручная</span></button>
+        >
+          <i class="pi pi-arrows-alt" /><span>Ручная</span>
+        </button>
       </div>
       <button
         type="button"
         class="layout-auto-command"
         :class="{ failed: layoutFailed }"
-        :aria-label="layouting ? 'Выполняется автоматическая раскладка' : 'Выровнять схему автоматически'"
-        :title="layoutFailed ? 'Последняя автораскладка не выполнена — показана резервная схема' : undefined"
+        :aria-label="
+          layouting ? 'Выполняется автоматическая раскладка' : 'Выровнять схему автоматически'
+        "
+        :title="
+          layoutFailed
+            ? 'Последняя автораскладка не выполнена — показана резервная схема'
+            : undefined
+        "
         :disabled="layouting"
         @click="emit('autoLayout')"
-      ><i :class="layouting ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'" /><span>Выровнять</span></button>
+      >
+        <i :class="layouting ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'" /><span>Выровнять</span>
+      </button>
       <span v-if="mode === 'manual'" class="personal-layout-note">
         <i class="pi pi-user" />Только для вас
       </span>
@@ -77,7 +89,9 @@ function selectMode(mode: ScenarioGraphLayoutMode) {
         type="button"
         :aria-label="`Сдвинуть узел «${selectedNodeLabel}» ${item.label}`"
         @click="emit('nudge', item.direction as ScenarioGraphNudgeDirection)"
-      ><i class="pi" :class="item.icon" /></button>
+      >
+        <i class="pi" :class="item.icon" />
+      </button>
     </div>
   </div>
 </template>
@@ -125,7 +139,7 @@ button {
   gap: 6px;
   border: 0;
   color: var(--text-secondary);
-  font: 700 .7rem/1 var(--font-display);
+  font: 700 0.7rem/1 var(--font-display);
   cursor: pointer;
 }
 button:focus-visible {
@@ -134,16 +148,19 @@ button:focus-visible {
 }
 button:disabled {
   cursor: not-allowed;
-  opacity: .48;
+  opacity: 0.48;
 }
 .layout-mode-switch button {
   min-height: 40px;
   padding: 0 10px;
   border-radius: 8px;
   background: transparent;
-  transition: background-color .16s ease, color .16s ease, box-shadow .16s ease;
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease,
+    box-shadow 0.16s ease;
 }
-.layout-mode-switch button[aria-pressed="true"] {
+.layout-mode-switch button[aria-pressed='true'] {
   background: var(--status-accent-soft);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--status-accent-text) 18%, transparent);
   color: var(--status-accent-text);
@@ -160,7 +177,7 @@ button:disabled {
   gap: 6px;
   padding: 0 10px;
   color: var(--text-secondary);
-  font: 700 .66rem/1 var(--font-display);
+  font: 700 0.66rem/1 var(--font-display);
 }
 .layout-nudge-row {
   width: max-content;
@@ -168,13 +185,13 @@ button:disabled {
   gap: 3px;
   padding: 4px;
   border-radius: 12px;
-  animation: layout-tools-in .16s ease-out;
+  animation: layout-tools-in 0.16s ease-out;
 }
 .layout-nudge-row > span {
   padding: 0 7px;
   overflow: hidden;
   color: var(--text-secondary);
-  font: 700 .66rem/1 var(--font-display);
+  font: 700 0.66rem/1 var(--font-display);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -190,21 +207,44 @@ button:disabled {
   color: var(--status-accent-text);
 }
 @keyframes layout-tools-in {
-  from { opacity: 0; transform: translateY(-4px); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }
 @media (max-width: 1024px) {
-  .scenario-layout-toolbar { width: 100%; }
+  .scenario-layout-toolbar {
+    width: 100%;
+  }
   .layout-mode-switch,
   .layout-auto-command,
-  .personal-layout-note { min-height: 52px; }
-  .layout-mode-switch button { min-height: 44px; padding-inline: 9px; }
-  .layout-auto-command { padding-inline: 11px; }
-  .layout-nudge-row { width: 100%; }
-  .layout-nudge-row > span { margin-right: auto; }
-  .layout-nudge-row button { width: 44px; height: 44px; }
+  .personal-layout-note {
+    min-height: 52px;
+  }
+  .layout-mode-switch button {
+    min-height: 44px;
+    padding-inline: 9px;
+  }
+  .layout-auto-command {
+    padding-inline: 11px;
+  }
+  .layout-nudge-row {
+    width: 100%;
+  }
+  .layout-nudge-row > span {
+    margin-right: auto;
+  }
+  .layout-nudge-row button {
+    width: 44px;
+    height: 44px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .layout-mode-switch button { transition: none; }
-  .layout-nudge-row { animation: none; }
+  .layout-mode-switch button {
+    transition: none;
+  }
+  .layout-nudge-row {
+    animation: none;
+  }
 }
 </style>

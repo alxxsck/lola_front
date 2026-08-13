@@ -7,7 +7,7 @@ export interface ConversationSurfaceScrollAnchor {
 const anchors = new Map<string, ConversationSurfaceScrollAnchor>();
 const projectGenerations = new Map<string, number>();
 const MAX_ANCHORS = 100;
-const SEPARATOR = "\u001f";
+const SEPARATOR = '\u001f';
 
 function currentProjectGeneration(projectId: string): number {
   return projectGenerations.get(projectId) ?? 0;
@@ -57,9 +57,7 @@ export function writeConversationSurfaceScrollAnchor(
   }
 }
 
-export function clearConversationSurfaceProjectSession(
-  projectId: string,
-): void {
+export function clearConversationSurfaceProjectSession(projectId: string): void {
   const prefix = `${projectId}${SEPARATOR}`;
   for (const key of anchors.keys()) {
     if (key.startsWith(prefix)) anchors.delete(key);

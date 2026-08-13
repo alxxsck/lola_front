@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   uiRegistryCreate,
   uiRegistryRemove,
@@ -35,14 +35,11 @@ import {
   conversationAISuspensionsExtend,
   conversationAISuspensionsResume,
   conversationAISuspensionsHistory,
-} from "@/shared/api/generated/retenive-backend";
-import type {
-  ProjectResponseDto,
-  UiElementResponseDto,
-} from "@/shared/api/generated/models";
-import { apiRepository } from "./api-repository";
+} from '@/shared/api/generated/retenive-backend';
+import type { ProjectResponseDto, UiElementResponseDto } from '@/shared/api/generated/models';
+import { apiRepository } from './api-repository';
 
-vi.mock("@/shared/api/generated/retenive-backend", () => ({
+vi.mock('@/shared/api/generated/retenive-backend', () => ({
   uiRegistryCreate: vi.fn(),
   uiRegistryList: vi.fn(),
   uiRegistryRemove: vi.fn(),
@@ -84,60 +81,60 @@ vi.mock("@/shared/api/generated/retenive-backend", () => ({
 }));
 
 const uiResponse = {
-  id: "ui-1",
-  projectId: "project-1",
-  code: "deposit",
-  name: "Deposit",
-  kind: "BUTTON" as const,
-  selector: "#deposit",
+  id: 'ui-1',
+  projectId: 'project-1',
+  code: 'deposit',
+  name: 'Deposit',
+  kind: 'BUTTON' as const,
+  selector: '#deposit',
   config: {},
   enabled: true,
-  createdAt: "now",
-  updatedAt: "now",
+  createdAt: 'now',
+  updatedAt: 'now',
 } as unknown as UiElementResponseDto;
 
-describe("api repository adapter", () => {
+describe('api repository adapter', () => {
   beforeEach(() => vi.clearAllMocks());
   afterEach(() => vi.restoreAllMocks());
 
-  it("routes UI create, update and delete through the generated client", async () => {
+  it('routes UI create, update and delete through the generated client', async () => {
     vi.mocked(uiRegistryCreate).mockResolvedValue(uiResponse);
     vi.mocked(uiRegistryUpdate).mockResolvedValue(uiResponse);
     vi.mocked(uiRegistryRemove).mockResolvedValue(uiResponse);
 
-    await apiRepository.createElement("project-1", {
-      code: "deposit",
-      name: "Deposit",
-      kind: "ELEMENT",
-      selector: "#deposit",
+    await apiRepository.createElement('project-1', {
+      code: 'deposit',
+      name: 'Deposit',
+      kind: 'ELEMENT',
+      selector: '#deposit',
     });
-    await apiRepository.updateElement("project-1", "ui-1", {
-      name: "Deposit updated",
+    await apiRepository.updateElement('project-1', 'ui-1', {
+      name: 'Deposit updated',
     });
-    await apiRepository.deleteElement("project-1", "ui-1");
+    await apiRepository.deleteElement('project-1', 'ui-1');
 
     expect(uiRegistryCreate).toHaveBeenCalledWith(
-      "project-1",
-      expect.objectContaining({ code: "deposit", selector: "#deposit" }),
+      'project-1',
+      expect.objectContaining({ code: 'deposit', selector: '#deposit' }),
     );
-    expect(uiRegistryUpdate).toHaveBeenCalledWith("project-1", "ui-1", {
-      name: "Deposit updated",
+    expect(uiRegistryUpdate).toHaveBeenCalledWith('project-1', 'ui-1', {
+      name: 'Deposit updated',
     });
-    expect(uiRegistryRemove).toHaveBeenCalledWith("project-1", "ui-1");
+    expect(uiRegistryRemove).toHaveBeenCalledWith('project-1', 'ui-1');
   });
 
-  it("exposes current cursor pages and activity settings through generated target contracts", async () => {
+  it('exposes current cursor pages and activity settings through generated target contracts', async () => {
     vi.mocked(platformOperationsUsersPage).mockResolvedValue({
       items: [],
-      nextCursor: "user-2" as never,
+      nextCursor: 'user-2' as never,
     });
     vi.mocked(scenarioRunsPage).mockResolvedValue({
       items: [],
-      nextCursor: "run-2",
+      nextCursor: 'run-2',
     });
     const settings = {
       projectVersion: 2,
-      timezone: "Europe/Madrid",
+      timezone: 'Europe/Madrid',
       visitInactivitySeconds: 1800,
       reconnectGraceSeconds: 30,
       limits: {
@@ -145,43 +142,41 @@ describe("api repository adapter", () => {
         reconnectGraceSeconds: { min: 1, max: 300 },
       },
       semantics: {
-        timezone: "activity_day",
-        visitInactivitySeconds: "visit_boundary",
-        reconnectGraceSeconds: "reconnect",
+        timezone: 'activity_day',
+        visitInactivitySeconds: 'visit_boundary',
+        reconnectGraceSeconds: 'reconnect',
       },
     } as never;
     vi.mocked(platformOperationsActivitySettings).mockResolvedValue(settings);
-    vi.mocked(platformOperationsUpdateActivitySettings).mockResolvedValue(
-      settings,
-    );
+    vi.mocked(platformOperationsUpdateActivitySettings).mockResolvedValue(settings);
 
     await expect(
-      apiRepository.getUsersPage("project-1", { cursor: "user-1", limit: 50 }),
-    ).resolves.toEqual({ items: [], nextCursor: "user-2" });
+      apiRepository.getUsersPage('project-1', { cursor: 'user-1', limit: 50 }),
+    ).resolves.toEqual({ items: [], nextCursor: 'user-2' });
     await expect(
-      apiRepository.getScenarioRunsPage("project-1", {
-        cursor: "run-1",
+      apiRepository.getScenarioRunsPage('project-1', {
+        cursor: 'run-1',
         limit: 50,
       }),
-    ).resolves.toEqual({ items: [], nextCursor: "run-2" });
-    await apiRepository.getActivitySettings("project-1");
-    await apiRepository.updateActivitySettings("project-1", {
+    ).resolves.toEqual({ items: [], nextCursor: 'run-2' });
+    await apiRepository.getActivitySettings('project-1');
+    await apiRepository.updateActivitySettings('project-1', {
       expectedVersion: 2,
-      timezone: "Europe/Madrid",
+      timezone: 'Europe/Madrid',
       visitInactivitySeconds: 1800,
       reconnectGraceSeconds: 30,
     });
 
-    expect(platformOperationsUsersPage).toHaveBeenCalledWith("project-1", {
-      cursor: "user-1",
+    expect(platformOperationsUsersPage).toHaveBeenCalledWith('project-1', {
+      cursor: 'user-1',
       limit: 50,
     });
-    expect(scenarioRunsPage).toHaveBeenCalledWith("project-1", {
-      cursor: "run-1",
+    expect(scenarioRunsPage).toHaveBeenCalledWith('project-1', {
+      cursor: 'run-1',
       limit: 50,
     });
     expect(platformOperationsUpdateActivitySettings).toHaveBeenCalledWith(
-      "project-1",
+      'project-1',
       expect.objectContaining({
         expectedVersion: 2,
         visitInactivitySeconds: 1800,
@@ -189,27 +184,27 @@ describe("api repository adapter", () => {
     );
   });
 
-  it("returns canonical audit-event cursor pages with server-side filters", async () => {
+  it('returns canonical audit-event cursor pages with server-side filters', async () => {
     vi.mocked(projectAuditEventsList).mockResolvedValue({
       items: [
         {
-          id: "audit-1",
-          eventType: "iam.project_resource.changed",
+          id: 'audit-1',
+          eventType: 'iam.project_resource.changed',
           eventVersion: 1,
-          occurredAt: "2026-07-23T10:00:00.000Z",
+          occurredAt: '2026-07-23T10:00:00.000Z',
           actor: {
-            type: "CMS_USER",
-            id: "admin-1",
-            email: "owner@retenive.dev",
-            displayName: "Owner",
+            type: 'CMS_USER',
+            id: 'admin-1',
+            email: 'owner@retenive.dev',
+            displayName: 'Owner',
           },
-          target: { kind: "PROJECT", id: "project-1" },
-          requiredPermissionCode: "project.scenarios.write",
-          outcome: "SUCCESS",
+          target: { kind: 'PROJECT', id: 'project-1' },
+          requiredPermissionCode: 'project.scenarios.write',
+          outcome: 'SUCCESS',
           authorizationEvidence: {},
           reasonCode: null,
-          auditReason: "Save draft",
-          requestId: "request-1",
+          auditReason: 'Save draft',
+          requestId: 'request-1',
           correlationId: null,
           ipAddress: null,
           userAgent: null,
@@ -217,294 +212,280 @@ describe("api repository adapter", () => {
           after: null,
           metadata: {
             details: {
-              operation: "SAVE_DRAFT",
-              resourceType: "SCENARIO",
-              resourceId: "scenario-1",
+              operation: 'SAVE_DRAFT',
+              resourceType: 'SCENARIO',
+              resourceId: 'scenario-1',
             },
           },
         },
       ],
-      nextCursor: "audit-1",
+      nextCursor: 'audit-1',
     });
 
     await expect(
-      apiRepository.getAuditEventsPage("project-1", {
-        cursor: "audit-2",
+      apiRepository.getAuditEventsPage('project-1', {
+        cursor: 'audit-2',
         limit: 25,
-        search: "draft",
-        outcome: "SUCCESS",
+        search: 'draft',
+        outcome: 'SUCCESS',
       }),
     ).resolves.toMatchObject({
       items: [
         {
-          id: "audit-1",
-          operation: "SAVE_DRAFT",
-          resourceType: "SCENARIO",
+          id: 'audit-1',
+          operation: 'SAVE_DRAFT',
+          resourceType: 'SCENARIO',
         },
       ],
-      nextCursor: "audit-1",
+      nextCursor: 'audit-1',
     });
-    expect(projectAuditEventsList).toHaveBeenCalledWith("project-1", {
-      cursor: "audit-2",
+    expect(projectAuditEventsList).toHaveBeenCalledWith('project-1', {
+      cursor: 'audit-2',
       limit: 25,
-      search: "draft",
-      outcome: "SUCCESS",
+      search: 'draft',
+      outcome: 'SUCCESS',
     });
   });
 
-  it("returns Product API request cursor pages and loads payload only from detail", async () => {
+  it('returns Product API request cursor pages and loads payload only from detail', async () => {
     const item = {
-      id: "request-log-1",
-      credentialId: "sk_live_abcd",
-      requestId: "request-1",
-      externalUserId: "user-1",
-      method: "POST",
-      path: "/interaction-sessions",
+      id: 'request-log-1',
+      credentialId: 'sk_live_abcd',
+      requestId: 'request-1',
+      externalUserId: 'user-1',
+      method: 'POST',
+      path: '/interaction-sessions',
       payloadBytes: 128,
       statusCode: 201,
-      outcome: "SUCCEEDED" as const,
+      outcome: 'SUCCEEDED' as const,
       durationMs: 24,
-      receivedAt: "2026-07-27T10:00:00.000Z",
-      retainUntil: "2026-08-26T10:00:00.000Z",
+      receivedAt: '2026-07-27T10:00:00.000Z',
+      retainUntil: '2026-08-26T10:00:00.000Z',
     };
     vi.mocked(productApiRequestLogList).mockResolvedValue({
       items: [item],
-      pageInfo: { hasMore: true, nextCursor: "opaque-product-api-cursor" },
+      pageInfo: { hasMore: true, nextCursor: 'opaque-product-api-cursor' },
     });
     vi.mocked(productApiRequestLogGet).mockResolvedValue({
       ...item,
-      payload: { externalUserId: "user-1" },
+      payload: { externalUserId: 'user-1' },
     });
 
     await expect(
-      apiRepository.getProductApiRequestLogsPage("project-1", {
-        cursor: "previous-cursor",
+      apiRepository.getProductApiRequestLogsPage('project-1', {
+        cursor: 'previous-cursor',
         limit: 25,
-        path: "sessions",
-        outcome: "SUCCEEDED",
+        path: 'sessions',
+        outcome: 'SUCCEEDED',
       }),
     ).resolves.toEqual({
       items: [item],
-      nextCursor: "opaque-product-api-cursor",
+      nextCursor: 'opaque-product-api-cursor',
     });
     await expect(
-      apiRepository.getProductApiRequestLog("project-1", "request-log-1"),
+      apiRepository.getProductApiRequestLog('project-1', 'request-log-1'),
     ).resolves.toMatchObject({
-      id: "request-log-1",
-      payload: { externalUserId: "user-1" },
+      id: 'request-log-1',
+      payload: { externalUserId: 'user-1' },
     });
-    expect(productApiRequestLogList).toHaveBeenCalledWith("project-1", {
-      cursor: "previous-cursor",
+    expect(productApiRequestLogList).toHaveBeenCalledWith('project-1', {
+      cursor: 'previous-cursor',
       limit: 25,
-      path: "sessions",
-      outcome: "SUCCEEDED",
+      path: 'sessions',
+      outcome: 'SUCCEEDED',
     });
-    expect(productApiRequestLogGet).toHaveBeenCalledWith(
-      "project-1",
-      "request-log-1",
-    );
+    expect(productApiRequestLogGet).toHaveBeenCalledWith('project-1', 'request-log-1');
   });
 
-  it("sends only backend-editable project settings", async () => {
+  it('sends only backend-editable project settings', async () => {
     const response: ProjectResponseDto = {
-      id: "project-1",
+      id: 'project-1',
       version: 1,
-      organizationId: "org-1",
-      name: "Updated",
-      slug: "retenive",
-      status: "ACTIVE",
-      publicKey: "public",
-      serverKeyPrefix: "secret",
-      defaultLocale: "ru",
-      supportedLocales: ["ru"],
-      assistantName: "Retenive",
-      systemPrompt: "Help",
-      voiceInstructions: "",
+      organizationId: 'org-1',
+      name: 'Updated',
+      slug: 'retenive',
+      status: 'ACTIVE',
+      publicKey: 'public',
+      serverKeyPrefix: 'secret',
+      defaultLocale: 'ru',
+      supportedLocales: ['ru'],
+      assistantName: 'Retenive',
+      systemPrompt: 'Help',
+      voiceInstructions: '',
       settings: {},
-      createdAt: "now",
-      updatedAt: "now",
+      createdAt: 'now',
+      updatedAt: 'now',
     };
     vi.mocked(platformOperationsProjectSettings).mockResolvedValue(response);
-    vi.mocked(platformOperationsUpdateProjectSettings).mockResolvedValue(
-      response,
-    );
-    await expect(apiRepository.getProject("project-1")).resolves.toMatchObject({
-      id: "project-1",
-      name: "Updated",
+    vi.mocked(platformOperationsUpdateProjectSettings).mockResolvedValue(response);
+    await expect(apiRepository.getProject('project-1')).resolves.toMatchObject({
+      id: 'project-1',
+      name: 'Updated',
     });
-    await apiRepository.updateProject("project-1", {
-      id: "ignored",
+    await apiRepository.updateProject('project-1', {
+      id: 'ignored',
       version: 1,
-      slug: "ignored",
-      name: "Updated",
+      slug: 'ignored',
+      name: 'Updated',
     });
-    expect(platformOperationsUpdateProjectSettings).toHaveBeenCalledWith(
-      "project-1",
-      { expectedVersion: 1, name: "Updated" },
-    );
-    expect(platformOperationsProjectSettings).toHaveBeenCalledWith("project-1");
+    expect(platformOperationsUpdateProjectSettings).toHaveBeenCalledWith('project-1', {
+      expectedVersion: 1,
+      name: 'Updated',
+    });
+    expect(platformOperationsProjectSettings).toHaveBeenCalledWith('project-1');
   });
 
-  it("uses generated event catalog list, create, revision and archive endpoints", async () => {
+  it('uses generated event catalog list, create, revision and archive endpoints', async () => {
     const definition = {
-      id: "event-revision-1",
-      revisionId: "event-revision-1",
-      projectId: "project-1",
-      definitionKeyId: "event-key-1",
-      currentRevisionId: "event-revision-1",
+      id: 'event-revision-1',
+      revisionId: 'event-revision-1',
+      projectId: 'project-1',
+      definitionKeyId: 'event-key-1',
+      currentRevisionId: 'event-revision-1',
       isCurrent: true,
-      code: "deposit",
-      name: "Deposit",
+      code: 'deposit',
+      name: 'Deposit',
       description: null,
       version: 1,
-      payloadSchema: { type: "object" },
+      payloadSchema: { type: 'object' },
       enabled: true,
       clientIngestible: false,
       countsAsActivity: true,
       policyVersion: 1,
-      policyUpdatedAt: "2026-07-20T10:00:00.000Z",
-      metadataUpdatedAt: "2026-07-20T10:00:00.000Z",
-      origin: "CUSTOM",
+      policyUpdatedAt: '2026-07-20T10:00:00.000Z',
+      metadataUpdatedAt: '2026-07-20T10:00:00.000Z',
+      origin: 'CUSTOM',
       readOnly: false,
-      createdAt: "2026-07-20T10:00:00.000Z",
-      updatedAt: "2026-07-20T10:00:00.000Z",
-      lifecycle: "ACTIVE",
+      createdAt: '2026-07-20T10:00:00.000Z',
+      updatedAt: '2026-07-20T10:00:00.000Z',
+      lifecycle: 'ACTIVE',
       archivedAt: null,
     } as const;
     const catalogDefinition = {
-      id: "event-key-1",
-      projectId: "project-1",
-      code: "deposit",
-      name: "Deposit",
+      id: 'event-key-1',
+      projectId: 'project-1',
+      code: 'deposit',
+      name: 'Deposit',
       description: null,
-      lifecycle: "ACTIVE" as const,
+      lifecycle: 'ACTIVE' as const,
       lifecycleVersion: 1,
-      lifecycleUpdatedAt: "2026-07-20T10:00:00.000Z",
-      metadataUpdatedAt: "2026-07-20T10:00:00.000Z",
-      origin: "CUSTOM" as const,
+      lifecycleUpdatedAt: '2026-07-20T10:00:00.000Z',
+      metadataUpdatedAt: '2026-07-20T10:00:00.000Z',
+      origin: 'CUSTOM' as const,
       readOnly: false,
       policy: {
         version: 1,
-        updatedAt: "2026-07-20T10:00:00.000Z",
+        updatedAt: '2026-07-20T10:00:00.000Z',
         enabled: true,
         clientIngestible: false,
         countsAsActivity: true,
       },
       currentRevision: {
-        id: "event-revision-1",
+        id: 'event-revision-1',
         number: 1,
-        payloadSchema: { type: "object" },
-        publishedAt: "2026-07-20T10:00:00.000Z",
+        payloadSchema: { type: 'object' },
+        publishedAt: '2026-07-20T10:00:00.000Z',
       },
     };
     const revision = {
-      id: "event-revision-1",
-      projectId: "project-1",
-      definitionKeyId: "event-key-1",
+      id: 'event-revision-1',
+      projectId: 'project-1',
+      definitionKeyId: 'event-key-1',
       isCurrent: true,
-      code: "deposit",
+      code: 'deposit',
       number: 1,
-      payloadSchema: { type: "object" },
-      publishedAt: "2026-07-20T10:00:00.000Z",
+      payloadSchema: { type: 'object' },
+      publishedAt: '2026-07-20T10:00:00.000Z',
       pinnedScenarioRevisionCount: 0,
-      compatibility: "CURRENT" as const,
+      compatibility: 'CURRENT' as const,
     };
     vi.mocked(eventCatalogList).mockResolvedValue([catalogDefinition]);
     vi.mocked(eventCatalogCreate).mockResolvedValue(definition);
     vi.mocked(eventCatalogDetail).mockResolvedValue(catalogDefinition);
     vi.mocked(eventCatalogRevisions).mockResolvedValue({
       items: [revision],
-      nextCursor: "next",
+      nextCursor: 'next',
     });
     vi.mocked(eventCatalogRevision).mockResolvedValue(revision);
     vi.mocked(eventCatalogArchive).mockResolvedValue({
       ...catalogDefinition,
-      lifecycle: "ARCHIVED",
+      lifecycle: 'ARCHIVED',
     });
 
-    await expect(apiRepository.getEvents("project-1")).resolves.toEqual([
+    await expect(apiRepository.getEvents('project-1')).resolves.toEqual([
       expect.objectContaining({
-        definitionKeyId: "event-key-1",
+        definitionKeyId: 'event-key-1',
         policyVersion: 1,
       }),
     ]);
-    await apiRepository.saveEvent("project-1", {
-      name: "Deposit",
-      code: "deposit",
-      payloadSchema: { type: "object" },
+    await apiRepository.saveEvent('project-1', {
+      name: 'Deposit',
+      code: 'deposit',
+      payloadSchema: { type: 'object' },
     });
     await expect(
-      apiRepository.getEventDefinitionRevisions("project-1", "event-key-1", {
-        cursor: "cursor",
+      apiRepository.getEventDefinitionRevisions('project-1', 'event-key-1', {
+        cursor: 'cursor',
         limit: 25,
       }),
-    ).resolves.toMatchObject({ nextCursor: "next" });
+    ).resolves.toMatchObject({ nextCursor: 'next' });
     await expect(
-      apiRepository.getEventDefinitionRevision(
-        "project-1",
-        "event-key-1",
-        "event-revision-1",
-      ),
-    ).resolves.toMatchObject({ compatibility: "CURRENT" });
-    await apiRepository.deleteEvent("project-1", "event-key-1", {
+      apiRepository.getEventDefinitionRevision('project-1', 'event-key-1', 'event-revision-1'),
+    ).resolves.toMatchObject({ compatibility: 'CURRENT' });
+    await apiRepository.deleteEvent('project-1', 'event-key-1', {
       expectedLifecycleVersion: 1,
       expectedPolicyVersion: 1,
-      reason: "Archive obsolete event",
+      reason: 'Archive obsolete event',
     });
 
     expect(eventCatalogCreate).toHaveBeenCalledWith(
-      "project-1",
-      expect.objectContaining({ code: "deposit" }),
+      'project-1',
+      expect.objectContaining({ code: 'deposit' }),
     );
-    expect(eventCatalogRevisions).toHaveBeenCalledWith(
-      "project-1",
-      "event-key-1",
-      { cursor: "cursor", limit: 25 },
-    );
-    expect(eventCatalogArchive).toHaveBeenCalledWith(
-      "project-1",
-      "event-key-1",
-      {
-        expectedLifecycleVersion: 1,
-        expectedPolicyVersion: 1,
-        reason: "Archive obsolete event",
-      },
-    );
+    expect(eventCatalogRevisions).toHaveBeenCalledWith('project-1', 'event-key-1', {
+      cursor: 'cursor',
+      limit: 25,
+    });
+    expect(eventCatalogArchive).toHaveBeenCalledWith('project-1', 'event-key-1', {
+      expectedLifecycleVersion: 1,
+      expectedPolicyVersion: 1,
+      reason: 'Archive obsolete event',
+    });
   });
 
-  it("updates event ingestion policy with caller concurrency evidence", async () => {
+  it('updates event ingestion policy with caller concurrency evidence', async () => {
     const current = {
-      id: "event-revision-1",
-      projectId: "project-1",
-      definitionKeyId: "event-key-1",
-      currentRevisionId: "event-revision-1",
+      id: 'event-revision-1',
+      projectId: 'project-1',
+      definitionKeyId: 'event-key-1',
+      currentRevisionId: 'event-revision-1',
       isCurrent: true,
-      code: "deposit",
-      name: "Deposit",
+      code: 'deposit',
+      name: 'Deposit',
       description: null,
       version: 1,
-      payloadSchema: { type: "object" },
+      payloadSchema: { type: 'object' },
       enabled: true,
       clientIngestible: false,
       countsAsActivity: true,
       policyVersion: 7,
-      policyUpdatedAt: "now",
-      metadataUpdatedAt: "now",
-      origin: "CUSTOM",
+      policyUpdatedAt: 'now',
+      metadataUpdatedAt: 'now',
+      origin: 'CUSTOM',
       readOnly: false,
-      createdAt: "now",
-      updatedAt: "now",
-      lifecycle: "ACTIVE",
+      createdAt: 'now',
+      updatedAt: 'now',
+      lifecycle: 'ACTIVE',
       archivedAt: null,
     } as const;
     vi.mocked(eventCatalogUpdatePolicy).mockResolvedValue({
-      definitionKeyId: "event-key-1",
-      currentRevisionId: "event-revision-1",
+      definitionKeyId: 'event-key-1',
+      currentRevisionId: 'event-revision-1',
       policyChanged: true,
       schemaRevisionUnchanged: true,
       policy: {
         version: 8,
-        updatedAt: "later",
+        updatedAt: 'later',
         enabled: false,
         clientIngestible: false,
         countsAsActivity: true,
@@ -516,15 +497,15 @@ describe("api repository adapter", () => {
       code: current.code,
       name: current.name,
       description: current.description,
-      lifecycle: "ACTIVE" as const,
+      lifecycle: 'ACTIVE' as const,
       lifecycleVersion: 1,
-      lifecycleUpdatedAt: "now",
+      lifecycleUpdatedAt: 'now',
       metadataUpdatedAt: current.metadataUpdatedAt,
       origin: current.origin,
       readOnly: current.readOnly,
       policy: {
         version: 7,
-        updatedAt: "now",
+        updatedAt: 'now',
         enabled: true,
         clientIngestible: false,
         countsAsActivity: true,
@@ -533,7 +514,7 @@ describe("api repository adapter", () => {
         id: current.id,
         number: 1,
         payloadSchema: current.payloadSchema,
-        publishedAt: "now",
+        publishedAt: 'now',
       },
     };
     vi.mocked(eventCatalogDetail)
@@ -543,110 +524,100 @@ describe("api repository adapter", () => {
         policy: { ...currentDetail.policy, enabled: false, version: 8 },
       });
 
-    await apiRepository.saveEvent("project-1", {
+    await apiRepository.saveEvent('project-1', {
       ...current,
       description: undefined,
       enabled: false,
     });
-    expect(eventCatalogUpdatePolicy).toHaveBeenCalledWith(
-      "project-1",
-      "event-key-1",
-      {
-        enabled: false,
-        clientIngestible: false,
-        countsAsActivity: true,
-        expectedVersion: 7,
-      },
-    );
+    expect(eventCatalogUpdatePolicy).toHaveBeenCalledWith('project-1', 'event-key-1', {
+      enabled: false,
+      clientIngestible: false,
+      countsAsActivity: true,
+      expectedVersion: 7,
+    });
   });
 
-  it("uses generated Scenario Authoring list, metadata and archive endpoints", async () => {
+  it('uses generated Scenario Authoring list, metadata and archive endpoints', async () => {
     const scenario = {
-      id: "scenario-1",
-      projectId: "project-1",
-      eventDefinitionId: "event-revision-1",
-      code: "welcome",
-      name: "Welcome",
+      id: 'scenario-1',
+      projectId: 'project-1',
+      eventDefinitionId: 'event-revision-1',
+      code: 'welcome',
+      name: 'Welcome',
       description: null,
-      status: "ACTIVE",
-      conversationPolicy: "create_new",
+      status: 'ACTIVE',
+      conversationPolicy: 'create_new',
       priority: 0,
-      currentRevisionId: "scenario-revision-1",
+      currentRevisionId: 'scenario-revision-1',
       cooldownSeconds: 0,
       maxRunsPerUser: null,
       activeFrom: null,
       activeTo: null,
-      createdAt: "2026-07-20T10:00:00.000Z",
-      updatedAt: "2026-07-20T11:00:00.000Z",
+      createdAt: '2026-07-20T10:00:00.000Z',
+      updatedAt: '2026-07-20T11:00:00.000Z',
       actions: [],
     } as const;
-    vi.mocked(scenarioAuthoringListScenarios).mockResolvedValue([
-      scenario as never,
-    ]);
+    vi.mocked(scenarioAuthoringListScenarios).mockResolvedValue([scenario as never]);
     vi.mocked(scenarioAuthoringUpdateScenarioMetadata).mockResolvedValue({
       ...scenario,
-      status: "PAUSED",
+      status: 'PAUSED',
     } as never);
     vi.mocked(scenarioAuthoringArchiveScenario).mockResolvedValue({
       ...scenario,
-      status: "ARCHIVED",
+      status: 'ARCHIVED',
     } as never);
 
-    await expect(apiRepository.getScenarios("project-1")).resolves.toEqual([
-      expect.objectContaining({ id: "scenario-1" }),
+    await expect(apiRepository.getScenarios('project-1')).resolves.toEqual([
+      expect.objectContaining({ id: 'scenario-1' }),
     ]);
-    await apiRepository.updateScenarioMetadata("project-1", "scenario-1", {
-      status: "PAUSED",
+    await apiRepository.updateScenarioMetadata('project-1', 'scenario-1', {
+      status: 'PAUSED',
       expectedUpdatedAt: scenario.updatedAt,
-      reason: "Pause from scenario list",
+      reason: 'Pause from scenario list',
     });
-    await apiRepository.deleteScenario("project-1", "scenario-1", {
+    await apiRepository.deleteScenario('project-1', 'scenario-1', {
       expectedUpdatedAt: scenario.updatedAt,
-      reason: "Archive obsolete scenario",
+      reason: 'Archive obsolete scenario',
     });
 
     expect(scenarioAuthoringUpdateScenarioMetadata).toHaveBeenCalledWith(
-      "project-1",
-      "scenario-1",
+      'project-1',
+      'scenario-1',
       {
-        status: "PAUSED",
+        status: 'PAUSED',
         expectedUpdatedAt: scenario.updatedAt,
-        reason: "Pause from scenario list",
+        reason: 'Pause from scenario list',
       },
     );
-    expect(scenarioAuthoringArchiveScenario).toHaveBeenCalledWith(
-      "project-1",
-      "scenario-1",
-      {
-        expectedUpdatedAt: scenario.updatedAt,
-        reason: "Archive obsolete scenario",
-      },
+    expect(scenarioAuthoringArchiveScenario).toHaveBeenCalledWith('project-1', 'scenario-1', {
+      expectedUpdatedAt: scenario.updatedAt,
+      reason: 'Archive obsolete scenario',
+    });
+  });
+
+  it('fails closed for authoring capabilities that still have no target endpoint', async () => {
+    await expect(apiRepository.getUserAttributeSchema('project-1')).rejects.toThrow(
+      'userAttributes',
     );
   });
 
-  it("fails closed for authoring capabilities that still have no target endpoint", async () => {
-    await expect(
-      apiRepository.getUserAttributeSchema("project-1"),
-    ).rejects.toThrow("userAttributes");
-  });
-
-  it("sends admin messages with a UUID idempotency header and a bounded API payload", async () => {
+  it('sends admin messages with a UUID idempotency header and a bounded API payload', async () => {
     vi.mocked(adminMessagingSend).mockResolvedValue({
       duplicate: true,
-      commandIds: ["command-1"],
-      message: { id: "message-1", threadId: "thread-1", status: "COMPLETED" },
-      delivery: { status: "PENDING" },
+      commandIds: ['command-1'],
+      message: { id: 'message-1', threadId: 'thread-1', status: 'COMPLETED' },
+      delivery: { status: 'PENDING' },
       aiSuspension: {
         replayed: false,
         state: {
-          mode: "SUSPENDED",
-          lifecycle: "ACTIVE",
-          version: "1",
-          suspendedUntil: "2026-07-20T14:00:00.000Z",
-          serverTime: "2026-07-20T13:00:00.000Z",
-          startedAt: "2026-07-20T13:00:00.000Z",
+          mode: 'SUSPENDED',
+          lifecycle: 'ACTIVE',
+          version: '1',
+          suspendedUntil: '2026-07-20T14:00:00.000Z',
+          serverTime: '2026-07-20T13:00:00.000Z',
+          startedAt: '2026-07-20T13:00:00.000Z',
           startedBy: null,
-          reason: "OPERATOR_TAKEOVER",
+          reason: 'OPERATOR_TAKEOVER',
           note: null,
           resumedAt: null,
           resumedBy: null,
@@ -654,116 +625,112 @@ describe("api repository adapter", () => {
       },
     } as never);
 
-    const result = await apiRepository.sendAdminMessage("project-1", "user-1", {
-      text: "Welcome",
-      conversationId: "conversation-7",
-      interactionSessionId: "session-1",
-      actions: [{ type: "OPEN_PAGE", config: { pageId: "home" } }],
-      aiSuspension: { durationSeconds: 3600, reason: "OPERATOR_TAKEOVER" },
-      macroReplyDraftId: "macro-draft-1",
-      supportKnowledgeCitationDraftId: "citation-draft-1",
-      idempotencyKey: "2d77b597-1bc0-4b0f-a783-77597bb71483",
+    const result = await apiRepository.sendAdminMessage('project-1', 'user-1', {
+      text: 'Welcome',
+      conversationId: 'conversation-7',
+      interactionSessionId: 'session-1',
+      actions: [{ type: 'OPEN_PAGE', config: { pageId: 'home' } }],
+      aiSuspension: { durationSeconds: 3600, reason: 'OPERATOR_TAKEOVER' },
+      macroReplyDraftId: 'macro-draft-1',
+      supportKnowledgeCitationDraftId: 'citation-draft-1',
+      idempotencyKey: '2d77b597-1bc0-4b0f-a783-77597bb71483',
     });
 
     expect(adminMessagingSend).toHaveBeenCalledWith(
-      "project-1",
-      "user-1",
+      'project-1',
+      'user-1',
       {
-        text: "Welcome",
-        conversationId: "conversation-7",
-        interactionSessionId: "session-1",
-        actions: [{ type: "OPEN_PAGE", config: { pageId: "home" } }],
-        aiSuspension: { durationSeconds: 3600, reason: "OPERATOR_TAKEOVER" },
-        macroReplyDraftId: "macro-draft-1",
-        supportKnowledgeCitationDraftId: "citation-draft-1",
+        text: 'Welcome',
+        conversationId: 'conversation-7',
+        interactionSessionId: 'session-1',
+        actions: [{ type: 'OPEN_PAGE', config: { pageId: 'home' } }],
+        aiSuspension: { durationSeconds: 3600, reason: 'OPERATOR_TAKEOVER' },
+        macroReplyDraftId: 'macro-draft-1',
+        supportKnowledgeCitationDraftId: 'citation-draft-1',
       },
       {
-        headers: { "Idempotency-Key": "2d77b597-1bc0-4b0f-a783-77597bb71483" },
+        headers: { 'Idempotency-Key': '2d77b597-1bc0-4b0f-a783-77597bb71483' },
       },
     );
     expect(result).toMatchObject({
       duplicate: true,
-      messageId: "message-1",
-      commandIds: ["command-1"],
-      deliveryStatus: "PENDING",
-      aiSuspension: { state: { version: "1" } },
+      messageId: 'message-1',
+      commandIds: ['command-1'],
+      deliveryStatus: 'PENDING',
+      aiSuspension: { state: { version: '1' } },
     });
   });
 
-  it("omits text for an attachment-only admin message", async () => {
+  it('omits text for an attachment-only admin message', async () => {
     vi.mocked(adminMessagingSend).mockResolvedValue({
       duplicate: false,
       commandIds: [],
-      message: { id: "message-attachment", threadId: "conversation-7", status: "COMPLETED" },
-      delivery: { status: "PENDING" },
+      message: { id: 'message-attachment', threadId: 'conversation-7', status: 'COMPLETED' },
+      delivery: { status: 'PENDING' },
     } as never);
 
-    await apiRepository.sendAdminMessage("project-1", "user-1", {
-      conversationId: "conversation-7",
-      attachmentIds: ["attachment-1"],
-      attachmentDraftKey: "draft-1",
-      idempotencyKey: "2d77b597-1bc0-4b0f-a783-77597bb71483",
+    await apiRepository.sendAdminMessage('project-1', 'user-1', {
+      conversationId: 'conversation-7',
+      attachmentIds: ['attachment-1'],
+      attachmentDraftKey: 'draft-1',
+      idempotencyKey: '2d77b597-1bc0-4b0f-a783-77597bb71483',
     });
 
     expect(adminMessagingSend).toHaveBeenCalledWith(
-      "project-1",
-      "user-1",
+      'project-1',
+      'user-1',
       {
-        attachmentIds: ["attachment-1"],
-        attachmentDraftKey: "draft-1",
-        conversationId: "conversation-7",
+        attachmentIds: ['attachment-1'],
+        attachmentDraftKey: 'draft-1',
+        conversationId: 'conversation-7',
       },
       {
-        headers: { "Idempotency-Key": "2d77b597-1bc0-4b0f-a783-77597bb71483" },
+        headers: { 'Idempotency-Key': '2d77b597-1bc0-4b0f-a783-77597bb71483' },
       },
     );
   });
 
-  it("looks up an ambiguous admin-message outcome with the original idempotency key", async () => {
+  it('looks up an ambiguous admin-message outcome with the original idempotency key', async () => {
     vi.mocked(adminMessagingLookupOutcome).mockResolvedValue({
       duplicate: true,
       commandIds: [],
       message: {
-        id: "message-1",
-        threadId: "conversation-1",
-        status: "COMPLETED",
+        id: 'message-1',
+        threadId: 'conversation-1',
+        status: 'COMPLETED',
       },
-      delivery: { status: "PENDING" },
+      delivery: { status: 'PENDING' },
     } as never);
 
     const result = await apiRepository.lookupAdminMessageOutcome(
-      "project-1",
-      "user-1",
-      "2d77b597-1bc0-4b0f-a783-77597bb71483",
+      'project-1',
+      'user-1',
+      '2d77b597-1bc0-4b0f-a783-77597bb71483',
     );
 
-    expect(adminMessagingLookupOutcome).toHaveBeenCalledWith(
-      "project-1",
-      "user-1",
-      {
-        headers: {
-          "Idempotency-Key": "2d77b597-1bc0-4b0f-a783-77597bb71483",
-        },
+    expect(adminMessagingLookupOutcome).toHaveBeenCalledWith('project-1', 'user-1', {
+      headers: {
+        'Idempotency-Key': '2d77b597-1bc0-4b0f-a783-77597bb71483',
       },
-    );
+    });
     expect(result).toMatchObject({
       duplicate: true,
-      messageId: "message-1",
-      threadId: "conversation-1",
-      deliveryStatus: "PENDING",
+      messageId: 'message-1',
+      threadId: 'conversation-1',
+      deliveryStatus: 'PENDING',
     });
   });
 
-  it("управляет приостановкой AI только через выбранный диалог и сохраняет ключ команды", async () => {
+  it('управляет приостановкой AI только через выбранный диалог и сохраняет ключ команды', async () => {
     const state = {
-      mode: "SUSPENDED",
-      lifecycle: "ACTIVE",
-      version: "12",
-      suspendedUntil: "2026-07-20T14:00:00.000Z",
-      serverTime: "2026-07-20T13:00:00.000Z",
-      startedAt: "2026-07-20T13:00:00.000Z",
-      startedBy: { id: "admin-1", displayName: "Алексей" },
-      reason: "OPERATOR_TAKEOVER",
+      mode: 'SUSPENDED',
+      lifecycle: 'ACTIVE',
+      version: '12',
+      suspendedUntil: '2026-07-20T14:00:00.000Z',
+      serverTime: '2026-07-20T13:00:00.000Z',
+      startedAt: '2026-07-20T13:00:00.000Z',
+      startedBy: { id: 'admin-1', displayName: 'Алексей' },
+      reason: 'OPERATOR_TAKEOVER',
       note: null,
       resumedAt: null,
       resumedBy: null,
@@ -774,15 +741,15 @@ describe("api repository adapter", () => {
       replayed: false,
     });
     vi.mocked(conversationAISuspensionsExtend).mockResolvedValue({
-      state: { ...state, version: "13" },
+      state: { ...state, version: '13' },
       replayed: false,
     });
     vi.mocked(conversationAISuspensionsResume).mockResolvedValue({
       state: {
         ...state,
-        mode: "AUTOMATIC",
-        lifecycle: "RESUMED",
-        version: "14",
+        mode: 'AUTOMATIC',
+        lifecycle: 'RESUMED',
+        version: '14',
         suspendedUntil: null,
       },
       replayed: false,
@@ -793,246 +760,242 @@ describe("api repository adapter", () => {
     });
 
     await expect(
-      apiRepository.getConversationAISuspension(
-        "project-1",
-        "user-1",
-        "conversation-7",
-      ),
-    ).resolves.toMatchObject({ version: "12" });
+      apiRepository.getConversationAISuspension('project-1', 'user-1', 'conversation-7'),
+    ).resolves.toMatchObject({ version: '12' });
     await apiRepository.startConversationAISuspension(
-      "project-1",
-      "user-1",
-      "conversation-7",
+      'project-1',
+      'user-1',
+      'conversation-7',
       {
         durationSeconds: 3600,
-        reason: "OPERATOR_TAKEOVER",
+        reason: 'OPERATOR_TAKEOVER',
       },
-      "start-key",
+      'start-key',
     );
     await apiRepository.extendConversationAISuspension(
-      "project-1",
-      "user-1",
-      "conversation-7",
+      'project-1',
+      'user-1',
+      'conversation-7',
       {
         additionalSeconds: 1800,
-        expectedVersion: "12",
+        expectedVersion: '12',
       },
-      "extend-key",
+      'extend-key',
     );
     await apiRepository.resumeConversationAI(
-      "project-1",
-      "user-1",
-      "conversation-7",
+      'project-1',
+      'user-1',
+      'conversation-7',
       {
-        expectedVersion: "13",
-        reason: "Вопрос решён",
+        expectedVersion: '13',
+        reason: 'Вопрос решён',
       },
-      "resume-key",
+      'resume-key',
     );
     await apiRepository.getConversationAISuspensionHistory(
-      "project-1",
-      "user-1",
-      "conversation-7",
+      'project-1',
+      'user-1',
+      'conversation-7',
       { limit: 20 },
     );
 
     expect(conversationAISuspensionsStart).toHaveBeenCalledWith(
-      "project-1",
-      "user-1",
-      "conversation-7",
+      'project-1',
+      'user-1',
+      'conversation-7',
       {
         durationSeconds: 3600,
-        reason: "OPERATOR_TAKEOVER",
+        reason: 'OPERATOR_TAKEOVER',
       },
-      { headers: { "Idempotency-Key": "start-key" } },
+      { headers: { 'Idempotency-Key': 'start-key' } },
     );
     expect(conversationAISuspensionsExtend).toHaveBeenCalledWith(
-      "project-1",
-      "user-1",
-      "conversation-7",
+      'project-1',
+      'user-1',
+      'conversation-7',
       {
         additionalSeconds: 1800,
-        expectedVersion: "12",
+        expectedVersion: '12',
       },
-      { headers: { "Idempotency-Key": "extend-key" } },
+      { headers: { 'Idempotency-Key': 'extend-key' } },
     );
     expect(conversationAISuspensionsResume).toHaveBeenCalledWith(
-      "project-1",
-      "user-1",
-      "conversation-7",
+      'project-1',
+      'user-1',
+      'conversation-7',
       {
-        expectedVersion: "13",
-        reason: "Вопрос решён",
+        expectedVersion: '13',
+        reason: 'Вопрос решён',
       },
-      { headers: { "Idempotency-Key": "resume-key" } },
+      { headers: { 'Idempotency-Key': 'resume-key' } },
     );
     expect(conversationAISuspensionsHistory).toHaveBeenCalledWith(
-      "project-1",
-      "user-1",
-      "conversation-7",
+      'project-1',
+      'user-1',
+      'conversation-7',
       { limit: 20 },
     );
   });
 
-  it("maps active backend users to selectable interaction sessions", async () => {
+  it('maps active backend users to selectable interaction sessions', async () => {
     vi.mocked(presenceList).mockResolvedValue([
       {
-        id: "user-1",
-        externalId: "customer-1",
+        id: 'user-1',
+        externalId: 'customer-1',
         isGuest: false,
-        presence: "online",
-        profile: { name: "Анна" },
-        lastSeenAt: "2026-07-11T10:00:00.000Z",
+        presence: 'online',
+        profile: { name: 'Анна' },
+        lastSeenAt: '2026-07-11T10:00:00.000Z',
         activeConnectionCount: 2,
         activeSessionCount: 1,
         connections: [
           {
-            id: "connection-old",
-            sessionId: "session-1",
-            transport: "SOCKET_IO",
-            connectedAt: "2026-07-11T09:00:00.000Z",
-            lastHeartbeatAt: "2026-07-11T09:59:00.000Z",
+            id: 'connection-old',
+            sessionId: 'session-1',
+            transport: 'SOCKET_IO',
+            connectedAt: '2026-07-11T09:00:00.000Z',
+            lastHeartbeatAt: '2026-07-11T09:59:00.000Z',
           },
           {
-            id: "connection-new",
-            sessionId: "session-1",
-            transport: "ANY_CABLE",
-            connectedAt: "2026-07-11T09:30:00.000Z",
-            lastHeartbeatAt: "2026-07-11T10:00:00.000Z",
+            id: 'connection-new',
+            sessionId: 'session-1',
+            transport: 'ANY_CABLE',
+            connectedAt: '2026-07-11T09:30:00.000Z',
+            lastHeartbeatAt: '2026-07-11T10:00:00.000Z',
           },
         ],
       },
     ]);
 
-    await expect(apiRepository.getSessions("project-1")).resolves.toEqual([
+    await expect(apiRepository.getSessions('project-1')).resolves.toEqual([
       expect.objectContaining({
-        id: "session-1",
-        userId: "user-1",
-        userName: "Анна",
-        device: "AnyCable",
+        id: 'session-1',
+        userId: 'user-1',
+        userName: 'Анна',
+        device: 'AnyCable',
         connectionCount: 2,
       }),
     ]);
-    expect(presenceList).toHaveBeenCalledWith("project-1");
+    expect(presenceList).toHaveBeenCalledWith('project-1');
   });
 
-  it("loads conversations and messages through cursor-paginated CMS endpoints", async () => {
+  it('loads conversations and messages through cursor-paginated CMS endpoints', async () => {
     vi.mocked(adminConversationsList).mockResolvedValue({
       items: [
         {
-          id: "conversation-1",
-          projectId: "project-1",
-          endUserId: "user-1",
-          title: "Deposit",
-          status: "OPEN",
-          createdAt: "2026-07-13T08:00:00.000Z",
-          updatedAt: "2026-07-13T09:00:00.000Z",
-          sessionId: "session-1",
+          id: 'conversation-1',
+          projectId: 'project-1',
+          endUserId: 'user-1',
+          title: 'Deposit',
+          status: 'OPEN',
+          createdAt: '2026-07-13T08:00:00.000Z',
+          updatedAt: '2026-07-13T09:00:00.000Z',
+          sessionId: 'session-1',
           isCurrent: true,
           currentInteractionSessionCount: 1,
           aiSuspension: {
-            mode: "AUTOMATIC",
-            lifecycle: "NONE",
-            version: "0",
+            mode: 'AUTOMATIC',
+            lifecycle: 'NONE',
+            version: '0',
             suspendedUntil: null,
-            serverTime: "2026-07-20T13:00:00.000Z",
+            serverTime: '2026-07-20T13:00:00.000Z',
           },
           _count: { messages: 42 },
           messages: [
             {
-              id: "message-last",
-              role: "ASSISTANT",
-              text: "Done",
-              createdAt: "2026-07-13T09:00:00.000Z",
+              id: 'message-last',
+              role: 'ASSISTANT',
+              text: 'Done',
+              createdAt: '2026-07-13T09:00:00.000Z',
             },
           ],
         },
       ],
-      nextCursor: "conversation-1",
+      nextCursor: 'conversation-1',
     });
     vi.mocked(adminConversationsListMessages).mockResolvedValue({
       items: [
         {
-          id: "message-1",
-          threadId: "conversation-1",
+          id: 'message-1',
+          threadId: 'conversation-1',
           author: null,
           ordinal: 1,
-          role: "USER",
-          status: "COMPLETED",
-          text: "Hello",
-          contentState: "ACTIVE",
+          role: 'USER',
+          status: 'COMPLETED',
+          text: 'Hello',
+          contentState: 'ACTIVE',
           contentVersion: 1,
           revisionNumber: 1,
           attachments: [],
           macroProvenance: null,
           knowledgeProvenance: null,
-          createdAt: "2026-07-13T08:59:00.000Z",
-          updatedAt: "2026-07-13T08:59:00.000Z",
+          createdAt: '2026-07-13T08:59:00.000Z',
+          updatedAt: '2026-07-13T08:59:00.000Z',
         },
       ],
-      nextCursor: "message-1",
+      nextCursor: 'message-1',
     });
 
     await expect(
-      apiRepository.getConversations("project-1", "user-1", {
-        cursor: "previous",
+      apiRepository.getConversations('project-1', 'user-1', {
+        cursor: 'previous',
         limit: 20,
       }),
     ).resolves.toEqual({
       items: [
         expect.objectContaining({
-          id: "conversation-1",
+          id: 'conversation-1',
           messageCount: 42,
-          status: "ACTIVE",
+          status: 'ACTIVE',
           isCurrent: true,
           currentInteractionSessionCount: 1,
         }),
       ],
-      nextCursor: "conversation-1",
+      nextCursor: 'conversation-1',
     });
     await expect(
-      apiRepository.getMessages("project-1", "user-1", "conversation-1", {
-        cursor: "older",
+      apiRepository.getMessages('project-1', 'user-1', 'conversation-1', {
+        cursor: 'older',
       }),
     ).resolves.toEqual({
       items: [
         expect.objectContaining({
-          id: "message-1",
-          author: "USER",
-          conversationId: "conversation-1",
+          id: 'message-1',
+          author: 'USER',
+          conversationId: 'conversation-1',
         }),
       ],
-      nextCursor: "message-1",
+      nextCursor: 'message-1',
     });
-    expect(adminConversationsList).toHaveBeenCalledWith("project-1", "user-1", {
-      cursor: "previous",
+    expect(adminConversationsList).toHaveBeenCalledWith('project-1', 'user-1', {
+      cursor: 'previous',
       limit: 20,
     });
     expect(adminConversationsListMessages).toHaveBeenCalledWith(
-      "project-1",
-      "user-1",
-      "conversation-1",
-      { cursor: "older", limit: 50 },
+      'project-1',
+      'user-1',
+      'conversation-1',
+      { cursor: 'older', limit: 50 },
     );
   });
 
-  it("maps the project-wide inbox through the generated support endpoint", async () => {
+  it('maps the project-wide inbox through the generated support endpoint', async () => {
     vi.mocked(adminProjectConversationsList).mockResolvedValue({
       items: [
         {
-          id: "conversation-1",
-          projectId: "project-1",
-          endUserId: "user-1",
-          endUser: { id: "user-1", externalId: "user_89421" },
-          title: "Deposit",
-          status: "OPEN",
-          createdAt: "2026-08-06T09:00:00.000Z",
-          updatedAt: "2026-08-06T10:00:00.000Z",
+          id: 'conversation-1',
+          projectId: 'project-1',
+          endUserId: 'user-1',
+          endUser: { id: 'user-1', externalId: 'user_89421' },
+          title: 'Deposit',
+          status: 'OPEN',
+          createdAt: '2026-08-06T09:00:00.000Z',
+          updatedAt: '2026-08-06T10:00:00.000Z',
           messageCount: 4,
           isCurrent: true,
           currentInteractionSessionCount: 1,
           readState: {
-            conversationId: "conversation-1",
+            conversationId: 'conversation-1',
             lastReadOrdinal: 3,
             highestOrdinal: 4,
             firstUnreadOrdinal: 4,
@@ -1041,160 +1004,152 @@ describe("api repository adapter", () => {
             updatedAt: null,
           },
           lastMessage: {
-            id: "message-4",
-            role: "ADMIN",
-            text: "Проверяю результат",
-            createdAt: "2026-08-06T10:00:00.000Z",
+            id: 'message-4',
+            role: 'ADMIN',
+            text: 'Проверяю результат',
+            createdAt: '2026-08-06T10:00:00.000Z',
           },
         },
       ],
-      nextCursor: "conversation-1",
+      nextCursor: 'conversation-1',
     });
 
     await expect(
-      apiRepository.getProjectConversations("project-1", {
-        cursor: "previous",
+      apiRepository.getProjectConversations('project-1', {
+        cursor: 'previous',
         limit: 20,
       }),
     ).resolves.toEqual({
       items: [
         expect.objectContaining({
-          id: "conversation-1",
-          endUser: { id: "user-1", externalId: "user_89421" },
-          lastMessage: expect.objectContaining({ id: "message-4" }),
+          id: 'conversation-1',
+          endUser: { id: 'user-1', externalId: 'user_89421' },
+          lastMessage: expect.objectContaining({ id: 'message-4' }),
         }),
       ],
-      nextCursor: "conversation-1",
+      nextCursor: 'conversation-1',
     });
-    expect(adminProjectConversationsList).toHaveBeenCalledWith("project-1", {
-      cursor: "previous",
+    expect(adminProjectConversationsList).toHaveBeenCalledWith('project-1', {
+      cursor: 'previous',
       limit: 20,
     });
   });
 
-  it("uses the snapshot cursor CMS endpoint for filtered event logs and detail", async () => {
+  it('uses the snapshot cursor CMS endpoint for filtered event logs and detail', async () => {
     const eventLog = {
-      id: "log-1",
-      projectId: "project-1",
-      eventDefinitionId: "event-1",
-      eventDefinitionKeyId: "event-key-1",
-      endUserId: "user-1",
-      source: "FRONTEND" as const,
-      status: "PROCESSED" as const,
-      occurredAt: "2026-07-16T10:00:00.000Z",
-      receivedAt: "2026-07-16T10:00:00.100Z",
+      id: 'log-1',
+      projectId: 'project-1',
+      eventDefinitionId: 'event-1',
+      eventDefinitionKeyId: 'event-key-1',
+      endUserId: 'user-1',
+      source: 'FRONTEND' as const,
+      status: 'PROCESSED' as const,
+      occurredAt: '2026-07-16T10:00:00.000Z',
+      receivedAt: '2026-07-16T10:00:00.100Z',
       payload: { amount: 25 },
-      context: { route: "/wallet" },
+      context: { route: '/wallet' },
       ingestionPolicyVersion: 3,
-      ingestionPolicySnapshot: { enabled: true, source: "FRONTEND" },
+      ingestionPolicySnapshot: { enabled: true, source: 'FRONTEND' },
       eventDefinition: {
-        id: "event-1",
-        code: "deposit",
-        name: "Deposit",
+        id: 'event-1',
+        code: 'deposit',
+        name: 'Deposit',
         version: 2,
       },
-      endUser: { id: "user-1", externalId: "customer-1" },
-      externalEventId: "browser-1",
+      endUser: { id: 'user-1', externalId: 'customer-1' },
+      externalEventId: 'browser-1',
     };
     vi.mocked(adminEventLogsList).mockResolvedValue({
       items: [eventLog],
-      pageInfo: { hasMore: true, nextCursor: "cursor-2" },
+      pageInfo: { hasMore: true, nextCursor: 'cursor-2' },
     });
     vi.mocked(adminEventLogsGet).mockResolvedValue(eventLog);
     await expect(
-      apiRepository.getEventLogPage("project-1", {
-        eventCode: ["deposit", "purchase"],
-        status: ["FAILED", "PROCESSED"],
-        cursor: "cursor-1",
+      apiRepository.getEventLogPage('project-1', {
+        eventCode: ['deposit', 'purchase'],
+        status: ['FAILED', 'PROCESSED'],
+        cursor: 'cursor-1',
         limit: 25,
       }),
     ).resolves.toEqual({
       items: [
         expect.objectContaining({
-          id: "log-1",
-          eventCode: "deposit",
+          id: 'log-1',
+          eventCode: 'deposit',
           eventVersion: 2,
-          externalEventId: "browser-1",
+          externalEventId: 'browser-1',
         }),
       ],
-      nextCursor: "cursor-2",
+      nextCursor: 'cursor-2',
     });
-    await expect(
-      apiRepository.getEventLog("project-1", "log-1"),
-    ).resolves.toEqual(
-      expect.objectContaining({ userExternalId: "customer-1" }),
+    await expect(apiRepository.getEventLog('project-1', 'log-1')).resolves.toEqual(
+      expect.objectContaining({ userExternalId: 'customer-1' }),
     );
     expect(adminEventLogsList).toHaveBeenCalledWith(
-      "project-1",
+      'project-1',
       {
-        eventCode: ["deposit", "purchase"],
-        status: ["FAILED", "PROCESSED"],
-        cursor: "cursor-1",
+        eventCode: ['deposit', 'purchase'],
+        status: ['FAILED', 'PROCESSED'],
+        cursor: 'cursor-1',
         limit: 25,
       },
       { paramsSerializer: { indexes: null } },
     );
-    expect(adminEventLogsGet).toHaveBeenCalledWith("project-1", "log-1");
+    expect(adminEventLogsGet).toHaveBeenCalledWith('project-1', 'log-1');
   });
 
-  it("uses canonical cursor event-log pages for dashboard snapshots", async () => {
-    vi.spyOn(apiRepository, "getProject").mockResolvedValue({
+  it('uses canonical cursor event-log pages for dashboard snapshots', async () => {
+    vi.spyOn(apiRepository, 'getProject').mockResolvedValue({
       _count: undefined,
     } as never);
-    vi.spyOn(apiRepository, "getScenarios").mockResolvedValue([]);
-    vi.spyOn(apiRepository, "getUsers").mockResolvedValue([]);
-    vi.spyOn(apiRepository, "getSessions").mockResolvedValue([]);
+    vi.spyOn(apiRepository, 'getScenarios').mockResolvedValue([]);
+    vi.spyOn(apiRepository, 'getUsers').mockResolvedValue([]);
+    vi.spyOn(apiRepository, 'getSessions').mockResolvedValue([]);
     const getEventLogPage = vi
-      .spyOn(apiRepository, "getEventLogPage")
+      .spyOn(apiRepository, 'getEventLogPage')
       .mockResolvedValueOnce({
-        items: [{ id: "event-log-1" }] as never,
-        nextCursor: "event-log-2",
+        items: [{ id: 'event-log-1' }] as never,
+        nextCursor: 'event-log-2',
       })
       .mockResolvedValueOnce({
-        items: [{ id: "failed-event-log-1" }] as never,
-        nextCursor: "failed-event-log-2",
+        items: [{ id: 'failed-event-log-1' }] as never,
+        nextCursor: 'failed-event-log-2',
       });
-    vi.spyOn(apiRepository, "getScenarioRuns").mockResolvedValue([
-      { status: "FAILED" },
-      { status: "COMPLETED" },
+    vi.spyOn(apiRepository, 'getScenarioRuns').mockResolvedValue([
+      { status: 'FAILED' },
+      { status: 'COMPLETED' },
     ] as never);
 
-    await expect(apiRepository.getStats("project-1")).resolves.toEqual(
+    await expect(apiRepository.getStats('project-1')).resolves.toEqual(
       expect.objectContaining({
         events: 1,
         integrationErrors: 2,
       }),
     );
-    expect(getEventLogPage).toHaveBeenNthCalledWith(1, "project-1", {
+    expect(getEventLogPage).toHaveBeenNthCalledWith(1, 'project-1', {
       limit: 1,
     });
-    expect(getEventLogPage).toHaveBeenNthCalledWith(2, "project-1", {
-      status: ["FAILED"],
+    expect(getEventLogPage).toHaveBeenNthCalledWith(2, 'project-1', {
+      status: ['FAILED'],
       limit: 1,
     });
   });
 
-  it("loads dashboard sources only when their exact Project Permissions are effective", async () => {
+  it('loads dashboard sources only when their exact Project Permissions are effective', async () => {
     const getProject = vi
-      .spyOn(apiRepository, "getProject")
+      .spyOn(apiRepository, 'getProject')
       .mockResolvedValue({ _count: undefined } as never);
     const getScenarios = vi
-      .spyOn(apiRepository, "getScenarios")
-      .mockResolvedValue([{ status: "ACTIVE" }, { status: "DRAFT" }] as never);
-    const getUsers = vi.spyOn(apiRepository, "getUsers").mockResolvedValue([]);
-    const getSessions = vi
-      .spyOn(apiRepository, "getSessions")
-      .mockResolvedValue([]);
+      .spyOn(apiRepository, 'getScenarios')
+      .mockResolvedValue([{ status: 'ACTIVE' }, { status: 'DRAFT' }] as never);
+    const getUsers = vi.spyOn(apiRepository, 'getUsers').mockResolvedValue([]);
+    const getSessions = vi.spyOn(apiRepository, 'getSessions').mockResolvedValue([]);
     const getEventLogPage = vi
-      .spyOn(apiRepository, "getEventLogPage")
+      .spyOn(apiRepository, 'getEventLogPage')
       .mockResolvedValue({ items: [], nextCursor: null });
-    const getScenarioRuns = vi
-      .spyOn(apiRepository, "getScenarioRuns")
-      .mockResolvedValue([]);
+    const getScenarioRuns = vi.spyOn(apiRepository, 'getScenarioRuns').mockResolvedValue([]);
 
-    await expect(
-      apiRepository.getStats("project-1", ["project.scenarios.read"]),
-    ).resolves.toEqual(
+    await expect(apiRepository.getStats('project-1', ['project.scenarios.read'])).resolves.toEqual(
       expect.objectContaining({
         users: 0,
         online: 0,
@@ -1204,7 +1159,7 @@ describe("api repository adapter", () => {
       }),
     );
 
-    expect(getScenarios).toHaveBeenCalledWith("project-1");
+    expect(getScenarios).toHaveBeenCalledWith('project-1');
     expect(getProject).not.toHaveBeenCalled();
     expect(getUsers).not.toHaveBeenCalled();
     expect(getSessions).not.toHaveBeenCalled();
@@ -1212,14 +1167,14 @@ describe("api repository adapter", () => {
     expect(getScenarioRuns).not.toHaveBeenCalled();
   });
 
-  it("rejects direct actions without an active interaction session", async () => {
+  it('rejects direct actions without an active interaction session', async () => {
     await expect(
-      apiRepository.sendAdminMessage("project-1", "user-1", {
-        text: "Open",
-        conversationPolicy: "reuse_active",
-        actions: [{ type: "OPEN_PAGE", config: {} }],
+      apiRepository.sendAdminMessage('project-1', 'user-1', {
+        text: 'Open',
+        conversationPolicy: 'reuse_active',
+        actions: [{ type: 'OPEN_PAGE', config: {} }],
       }),
-    ).rejects.toThrow("активная сессия");
+    ).rejects.toThrow('активная сессия');
     expect(adminMessagingSend).not.toHaveBeenCalled();
   });
 });

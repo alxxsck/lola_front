@@ -1,67 +1,63 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import Button from 'primevue/button'
-import Tag from 'primevue/tag'
-import Skeleton from 'primevue/skeleton'
-import Message from 'primevue/message'
-import { repository } from '@/shared/api/repository'
-import { relativeTime } from '@/shared/lib/format'
-import type { ActiveSession } from '@/shared/types/domain'
-import UserWorkspaceDialog from '@/features/end-user-workspace/UserWorkspaceDialog.vue'
-import { useAuthStore } from '@/features/auth/auth.store'
-import { hasProjectPermission } from '@/features/auth/permission-access'
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import Button from 'primevue/button';
+import Tag from 'primevue/tag';
+import Skeleton from 'primevue/skeleton';
+import Message from 'primevue/message';
+import { repository } from '@/shared/api/repository';
+import { relativeTime } from '@/shared/lib/format';
+import type { ActiveSession } from '@/shared/types/domain';
+import UserWorkspaceDialog from '@/features/end-user-workspace/UserWorkspaceDialog.vue';
+import { useAuthStore } from '@/features/auth/auth.store';
+import { hasProjectPermission } from '@/features/auth/permission-access';
 
-const auth = useAuthStore()
-const projectPermissions = computed(() => auth.project?.effectivePermissionCodes ?? [])
-const canReadProfiles = computed(() => hasProjectPermission(projectPermissions.value, 'project.profiles.read'))
-const canReadConversations = computed(() => hasProjectPermission(projectPermissions.value, 'project.conversations.read'))
-const canOpenWorkspace = computed(() => canReadProfiles.value || canReadConversations.value)
-const sessions = ref<ActiveSession[]>([])
-const selected = ref<ActiveSession | null>(null)
-const workspaceVisible = ref(false)
-const loading = ref(true)
-const error = ref('')
-let timer: number | undefined
-const online = computed(() =>
-  sessions.value.filter((item) => item.status === 'ONLINE'),
-)
-const onlineUsers = computed(
-  () => new Set(online.value.map((item) => item.userId)).size,
-)
+const auth = useAuthStore();
+const projectPermissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
+const canReadProfiles = computed(() =>
+  hasProjectPermission(projectPermissions.value, 'project.profiles.read'),
+);
+const canReadConversations = computed(() =>
+  hasProjectPermission(projectPermissions.value, 'project.conversations.read'),
+);
+const canOpenWorkspace = computed(() => canReadProfiles.value || canReadConversations.value);
+const sessions = ref<ActiveSession[]>([]);
+const selected = ref<ActiveSession | null>(null);
+const workspaceVisible = ref(false);
+const loading = ref(true);
+const error = ref('');
+let timer: number | undefined;
+const online = computed(() => sessions.value.filter((item) => item.status === 'ONLINE'));
+const onlineUsers = computed(() => new Set(online.value.map((item) => item.userId)).size);
 const connections = computed(() => {
-  const byUser = new Map<string, number>()
-  for (const session of sessions.value)
-    byUser.set(session.userId, session.connectionCount ?? 1)
-  return [...byUser.values()].reduce((total, count) => total + count, 0)
-})
+  const byUser = new Map<string, number>();
+  for (const session of sessions.value) byUser.set(session.userId, session.connectionCount ?? 1);
+  return [...byUser.values()].reduce((total, count) => total + count, 0);
+});
 
 async function load(silent = false) {
-  if (!silent) loading.value = true
+  if (!silent) loading.value = true;
   try {
     sessions.value =
       auth.project && repository.capabilities.presence
         ? await repository.getSessions(auth.project.id)
-        : []
-    error.value = ''
+        : [];
+    error.value = '';
   } catch (cause) {
-    error.value =
-      cause instanceof Error
-        ? cause.message
-        : 'Не удалось получить активные сессии'
+    error.value = cause instanceof Error ? cause.message : 'Не удалось получить активные сессии';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 function openWorkspace(session: ActiveSession) {
-  if (!canOpenWorkspace.value) return
-  selected.value = session
-  workspaceVisible.value = true
+  if (!canOpenWorkspace.value) return;
+  selected.value = session;
+  workspaceVisible.value = true;
 }
 onMounted(() => {
-  load()
-  timer = window.setInterval(() => load(true), 15_000)
-})
-onUnmounted(() => window.clearInterval(timer))
+  load();
+  timer = window.setInterval(() => load(true), 15_000);
+});
+onUnmounted(() => window.clearInterval(timer));
 </script>
 
 <template>
@@ -71,39 +67,28 @@ onUnmounted(() => window.clearInterval(timer))
         <div class="eyebrow live-label"><i /> Онлайн</div>
         <h1>Сейчас онлайн</h1>
         <p class="subtitle">
-          Наблюдайте за активными сессиями и помогайте пользователям в нужный
-          момент.
+          Наблюдайте за активными сессиями и помогайте пользователям в нужный момент.
         </p>
       </div>
-      <Button
-        label="Обновить"
-        icon="pi pi-refresh"
-        severity="secondary"
-        outlined
-        @click="load()"
-      />
+      <Button label="Обновить" icon="pi pi-refresh" severity="secondary" outlined @click="load()" />
     </header>
     <Message v-if="error" severity="error" class="mb">{{ error }}</Message>
     <div class="summary-grid">
       <article class="summary-card lime">
         <div class="summary-head">
-          <span>Пользователи онлайн</span
-          ><span class="live-pill"><i /> Live</span>
+          <span>Пользователи онлайн</span><span class="live-pill"><i /> Live</span>
         </div>
         <div class="summary-main">
           <strong>{{ onlineUsers }}</strong>
           <div>
             <b>Сейчас в проекте</b
-            ><small
-              ><i class="pi pi-wifi" /> статус подтверждён сервером</small
-            >
+            ><small><i class="pi pi-wifi" /> статус подтверждён сервером</small>
           </div>
         </div>
       </article>
       <article class="summary-card connections-card">
         <div class="summary-head">
-          <span>Подключения</span
-          ><span class="summary-icon"><i class="pi pi-link" /></span>
+          <span>Подключения</span><span class="summary-icon"><i class="pi pi-link" /></span>
         </div>
         <div class="summary-main">
           <strong>{{ connections }}</strong>
@@ -114,9 +99,7 @@ onUnmounted(() => window.clearInterval(timer))
     <div class="section-title">
       <div>
         <h2>Активные сессии</h2>
-        <p>
-          {{ sessions.length }} подключений · автообновление каждые 15 секунд
-        </p>
+        <p>{{ sessions.length }} подключений · автообновление каждые 15 секунд</p>
       </div>
       <span class="updated"><i class="pi pi-sync" /> Live</span>
     </div>
@@ -138,9 +121,7 @@ onUnmounted(() => window.clearInterval(timer))
           @click="openWorkspace(session)"
         />
         <div class="session-top">
-          <div class="session-avatar">
-            {{ session.userName.slice(0, 1).toUpperCase() }}<i />
-          </div>
+          <div class="session-avatar">{{ session.userName.slice(0, 1).toUpperCase() }}<i /></div>
           <div>
             <strong>{{ session.userName }}</strong
             ><span class="mono">{{ session.externalId }}</span>
@@ -156,8 +137,7 @@ onUnmounted(() => window.clearInterval(timer))
             ><strong class="mono">{{ session.id }}</strong>
           </div>
           <div>
-            <i class="pi pi-desktop" /><span>Устройство</span
-            ><strong>{{ session.device }}</strong>
+            <i class="pi pi-desktop" /><span>Устройство</span><strong>{{ session.device }}</strong>
           </div>
         </div>
         <div class="session-footer">
@@ -174,9 +154,7 @@ onUnmounted(() => window.clearInterval(timer))
         </div>
       </article>
     </div>
-    <div v-else class="empty card">
-      <i class="pi pi-wifi" />Сейчас нет активных сессий.
-    </div>
+    <div v-else class="empty card"><i class="pi pi-wifi" />Сейчас нет активных сессий.</div>
   </section>
   <UserWorkspaceDialog
     v-if="auth.project && canOpenWorkspace"
@@ -234,17 +212,12 @@ onUnmounted(() => window.clearInterval(timer))
   bottom: -92px;
   width: 220px;
   height: 220px;
-  border: 42px solid
-    color-mix(in srgb, var(--text-on-emphasis) 28%, transparent);
+  border: 42px solid color-mix(in srgb, var(--text-on-emphasis) 28%, transparent);
   border-radius: 50%;
   pointer-events: none;
 }
 .connections-card {
-  background: linear-gradient(
-    145deg,
-    var(--surface-card) 0%,
-    var(--surface-subtle) 100%
-  );
+  background: linear-gradient(145deg, var(--surface-card) 0%, var(--surface-subtle) 100%);
 }
 .connections-card:after {
   content: '';

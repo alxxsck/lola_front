@@ -1,16 +1,14 @@
-import { computed, ref } from "vue";
+import { computed, ref } from 'vue';
 import type {
   SupportCaseAssignmentBatchItemRequestDto,
   SupportCaseAssignmentBatchResponseDto,
-} from "@/shared/api/generated/models";
-import { ApiError } from "@/shared/api/http/api-error";
-import type {
-  SupportLeadAssignmentSource,
-} from "@/features/support-lead-assignment/api/support-lead-assignment-source";
+} from '@/shared/api/generated/models';
+import { ApiError } from '@/shared/api/http/api-error';
+import type { SupportLeadAssignmentSource } from '@/features/support-lead-assignment/api/support-lead-assignment-source';
 
 export interface SupportLeadAssignmentBatchRow {
   caseId: string;
-  snapshot: Awaited<ReturnType<SupportLeadAssignmentSource["readCase"]>> | null;
+  snapshot: Awaited<ReturnType<SupportLeadAssignmentSource['readCase']>> | null;
   teamId: string;
   operatorId: string;
   error: string;
@@ -37,10 +35,7 @@ function eligibleOperators(row: SupportLeadAssignmentBatchRow) {
   if (!snapshot) return [];
   return snapshot.teams.flatMap((team) =>
     team.operators
-      .filter(
-        (operator) =>
-          operator.actions.assign || operator.actions.assignWithOverride,
-      )
+      .filter((operator) => operator.actions.assign || operator.actions.assignWithOverride)
       .map((operator) => ({ team, operator })),
   );
 }
@@ -53,23 +48,17 @@ export function createSupportLeadAssignmentBatchController(
   const preparing = ref(false);
   const mutating = ref(false);
   const reconciling = ref(false);
-  const error = ref("");
-  const reasonNote = ref("");
+  const error = ref('');
+  const reasonNote = ref('');
   const result = ref<SupportCaseAssignmentBatchResponseDto | null>(null);
   const unknownOutcome = ref(false);
   const pending = ref<PendingBatch | null>(null);
   let generation = 0;
   let abort: AbortController | null = null;
 
-  const hasAuthority = computed(
-    () => Boolean(context.projectId()) && context.canOverride(),
-  );
-  const hasForceAuthority = computed(
-    () => hasAuthority.value && context.canForce(),
-  );
-  const readyCount = computed(
-    () => rows.value.filter((row) => row.snapshot && !row.error).length,
-  );
+  const hasAuthority = computed(() => Boolean(context.projectId()) && context.canOverride());
+  const hasForceAuthority = computed(() => hasAuthority.value && context.canForce());
+  const readyCount = computed(() => rows.value.filter((row) => row.snapshot && !row.error).length);
 
   function scopeIsCurrent(projectId: string): boolean {
     return context.projectId() === projectId && context.canOverride();
@@ -82,12 +71,11 @@ export function createSupportLeadAssignmentBatchController(
   function selectInitialTarget(row: SupportLeadAssignmentBatchRow): void {
     const first = eligibleOperators(row).find(
       ({ operator }) =>
-        operator.actions.assign ||
-        (context.canForce() && operator.actions.assignWithOverride),
+        operator.actions.assign || (context.canForce() && operator.actions.assignWithOverride),
     );
-    row.teamId = first?.team.id ?? "";
-    row.operatorId = first?.operator.id ?? "";
-    row.error = first ? "" : "Нет доступного оператора для назначения";
+    row.teamId = first?.team.id ?? '';
+    row.operatorId = first?.operator.id ?? '';
+    row.error = first ? '' : 'Нет доступного оператора для назначения';
   }
 
   async function prepare(caseIds: string[]): Promise<void> {
@@ -96,8 +84,8 @@ export function createSupportLeadAssignmentBatchController(
     const requestGeneration = ++generation;
     rows.value = [];
     result.value = null;
-    error.value = "";
-    reasonNote.value = "";
+    error.value = '';
+    reasonNote.value = '';
     unknownOutcome.value = false;
     pending.value = null;
     if (!projectId || !context.canOverride() || caseIds.length < 1) return;
@@ -109,47 +97,39 @@ export function createSupportLeadAssignmentBatchController(
       const loaded = await Promise.all(
         uniqueCaseIds.map(async (caseId) => {
           try {
-            const snapshot = await source.readCase(
-              projectId,
-              caseId,
-              controller.signal,
-            );
+            const snapshot = await source.readCase(projectId, caseId, controller.signal);
             const row: SupportLeadAssignmentBatchRow = {
               caseId,
               snapshot,
-              teamId: "",
-              operatorId: "",
+              teamId: '',
+              operatorId: '',
               error:
-                snapshot.assignmentState === "UNASSIGNED"
-                  ? ""
-                  : "Обращение уже назначено или зарезервировано",
+                snapshot.assignmentState === 'UNASSIGNED'
+                  ? ''
+                  : 'Обращение уже назначено или зарезервировано',
             };
             if (!row.error) selectInitialTarget(row);
             return row;
           } catch (cause) {
-            if (
-              cause instanceof ApiError &&
-              (cause.status === 403 || cause.status === 404)
-            )
+            if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404))
               return {
                 caseId,
                 snapshot: null,
-                teamId: "",
-                operatorId: "",
-                error: "Обращение недоступно или скрыто",
+                teamId: '',
+                operatorId: '',
+                error: 'Обращение недоступно или скрыто',
               } satisfies SupportLeadAssignmentBatchRow;
             return {
               caseId,
               snapshot: null,
-              teamId: "",
-              operatorId: "",
-              error: "Не удалось проверить обращение",
+              teamId: '',
+              operatorId: '',
+              error: 'Не удалось проверить обращение',
             } satisfies SupportLeadAssignmentBatchRow;
           }
         }),
       );
-      if (requestGeneration === generation && scopeIsCurrent(projectId))
-        rows.value = loaded;
+      if (requestGeneration === generation && scopeIsCurrent(projectId)) rows.value = loaded;
     } finally {
       if (requestGeneration === generation) {
         preparing.value = false;
@@ -158,42 +138,40 @@ export function createSupportLeadAssignmentBatchController(
     }
   }
 
-  function setTarget(caseId: string, teamId: string, operatorId = ""): void {
+  function setTarget(caseId: string, teamId: string, operatorId = ''): void {
     const row = rows.value.find((item) => item.caseId === caseId);
     if (!row?.snapshot || mutating.value || unknownOutcome.value) return;
     row.teamId = teamId;
     const candidates = eligibleOperators(row).filter(
       ({ team, operator }) =>
         team.id === teamId &&
-        (operator.actions.assign ||
-          (context.canForce() && operator.actions.assignWithOverride)),
+        (operator.actions.assign || (context.canForce() && operator.actions.assignWithOverride)),
     );
     row.operatorId = candidates.some(({ operator }) => operator.id === operatorId)
       ? operatorId
-      : candidates[0]?.operator.id ?? "";
-    row.error = row.operatorId ? "" : "Нет доступного оператора в команде";
+      : (candidates[0]?.operator.id ?? '');
+    row.error = row.operatorId ? '' : 'Нет доступного оператора в команде';
   }
 
   function setReasonNote(value: string): void {
     if (mutating.value || unknownOutcome.value) return;
     reasonNote.value = value.slice(0, 500);
-    error.value = "";
+    error.value = '';
   }
 
   function buildItems(): SupportCaseAssignmentBatchItemRequestDto[] | null {
     if (!reasonNote.value.trim()) {
-      error.value = "Добавьте общее обоснование пакетного назначения";
+      error.value = 'Добавьте общее обоснование пакетного назначения';
       return null;
     }
     if (!rows.value.length || rows.value.some((row) => !row.snapshot || row.error)) {
-      error.value = "Исправьте ошибки по каждому обращению перед отправкой пакета";
+      error.value = 'Исправьте ошибки по каждому обращению перед отправкой пакета';
       return null;
     }
     const items = rows.value.map((row, index) => {
       const snapshot = row.snapshot!;
       const target = eligibleOperators(row).find(
-        ({ team, operator }) =>
-          team.id === row.teamId && operator.id === row.operatorId,
+        ({ team, operator }) => team.id === row.teamId && operator.id === row.operatorId,
       );
       if (!target) return null;
       const force = !target.operator.actions.assign;
@@ -208,26 +186,23 @@ export function createSupportLeadAssignmentBatchController(
         expectedCaseVersion: snapshot.caseVersion,
         caseReadToken: snapshot.caseReadToken,
         force,
-        bypassAvailability: force && required.has("AVAILABILITY"),
-        bypassCapacity: force && required.has("CAPACITY"),
-        reasonCode: force ? "INCIDENT_RESPONSE" : "LEAD_INTERVENTION",
+        bypassAvailability: force && required.has('AVAILABILITY'),
+        bypassCapacity: force && required.has('CAPACITY'),
+        reasonCode: force ? 'INCIDENT_RESPONSE' : 'LEAD_INTERVENTION',
         reasonNote: reasonNote.value.trim(),
       } satisfies SupportCaseAssignmentBatchItemRequestDto;
     });
     if (items.some((item) => item === null)) {
-      error.value = "Серверный список назначений изменился. Обновите пакет.";
+      error.value = 'Серверный список назначений изменился. Обновите пакет.';
       return null;
     }
     return items as SupportCaseAssignmentBatchItemRequestDto[];
   }
 
-  async function applyResult(
-    action: PendingBatch,
-    value: SupportCaseAssignmentBatchResponseDto,
-  ) {
+  async function applyResult(action: PendingBatch, value: SupportCaseAssignmentBatchResponseDto) {
     if (!actionScopeIsCurrent(action)) return;
     result.value = value;
-    if (value.status === "PROCESSING" || value.outcome === "PENDING") {
+    if (value.status === 'PROCESSING' || value.outcome === 'PENDING') {
       pending.value = action;
       unknownOutcome.value = true;
       return;
@@ -237,12 +212,10 @@ export function createSupportLeadAssignmentBatchController(
     await context.onChanged?.();
   }
 
-  async function reconcileUnknownOutcome(
-    action = pending.value,
-  ): Promise<void> {
+  async function reconcileUnknownOutcome(action = pending.value): Promise<void> {
     if (!action || reconciling.value || !actionScopeIsCurrent(action)) return;
     reconciling.value = true;
-    error.value = "";
+    error.value = '';
     const controller = new AbortController();
     try {
       await applyResult(
@@ -259,18 +232,15 @@ export function createSupportLeadAssignmentBatchController(
       if (
         cause instanceof ApiError &&
         cause.status === 404 &&
-        cause.code === "ASSIGNMENT_BATCH_OUTCOME_NOT_FOUND"
+        cause.code === 'ASSIGNMENT_BATCH_OUTCOME_NOT_FOUND'
       ) {
-        error.value = "Результат пакета пока не найден. Проверьте ещё раз.";
-      } else if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+        error.value = 'Результат пакета пока не найден. Проверьте ещё раз.';
+      } else if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         reset();
         await context.onForbidden?.();
         return;
       } else {
-        error.value = "Не удалось проверить пакет. Исходная команда не повторена.";
+        error.value = 'Не удалось проверить пакет. Исходная команда не повторена.';
       }
       unknownOutcome.value = true;
     } finally {
@@ -287,30 +257,21 @@ export function createSupportLeadAssignmentBatchController(
       generation,
       projectId,
       items,
-      idempotencyKey:
-        context.createIdempotencyKey?.() ?? globalThis.crypto.randomUUID(),
+      idempotencyKey: context.createIdempotencyKey?.() ?? globalThis.crypto.randomUUID(),
     };
     const controller = new AbortController();
     abort = controller;
     mutating.value = true;
     result.value = null;
-    error.value = "";
+    error.value = '';
     try {
       await applyResult(
         action,
-        await source.executeBatch(
-          projectId,
-          items,
-          action.idempotencyKey,
-          controller.signal,
-        ),
+        await source.executeBatch(projectId, items, action.idempotencyKey, controller.signal),
       );
     } catch (cause) {
       if (!actionScopeIsCurrent(action)) return;
-      if (
-        cause instanceof ApiError &&
-        (cause.status === 403 || cause.status === 404)
-      ) {
+      if (cause instanceof ApiError && (cause.status === 403 || cause.status === 404)) {
         reset();
         await context.onForbidden?.();
         return;
@@ -319,12 +280,12 @@ export function createSupportLeadAssignmentBatchController(
         cause instanceof ApiError &&
         (cause.status === 400 || cause.status === 409 || cause.status === 422)
       ) {
-        error.value = "Сервер не принял пакет. Состав пакета сохранён.";
+        error.value = 'Сервер не принял пакет. Состав пакета сохранён.';
         return;
       }
       pending.value = action;
       unknownOutcome.value = true;
-      error.value = "Результат пакета неизвестен. Проверяем серверный журнал…";
+      error.value = 'Результат пакета неизвестен. Проверяем серверный журнал…';
       await reconcileUnknownOutcome(action);
     } finally {
       mutating.value = false;
@@ -340,8 +301,8 @@ export function createSupportLeadAssignmentBatchController(
     preparing.value = false;
     mutating.value = false;
     reconciling.value = false;
-    error.value = "";
-    reasonNote.value = "";
+    error.value = '';
+    reasonNote.value = '';
     result.value = null;
     unknownOutcome.value = false;
     pending.value = null;

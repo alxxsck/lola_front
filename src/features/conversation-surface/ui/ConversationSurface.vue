@@ -1,19 +1,12 @@
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  watch,
-} from "vue";
-import Avatar from "primevue/avatar";
-import Button from "primevue/button";
-import ConversationAISuspensionHeaderActions from "@/features/conversation-ai-suspension/ui/ConversationAISuspensionHeaderActions.vue";
-import TranslatedMessageBody from "@/features/conversation-translation/ui/TranslatedMessageBody.vue";
-import { relativeTime } from "@/shared/lib/format";
-import ConversationComposer from "./ConversationComposer.vue";
-import ConversationCollaborationStatus from "./ConversationCollaborationStatus.vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import Avatar from 'primevue/avatar';
+import Button from 'primevue/button';
+import ConversationAISuspensionHeaderActions from '@/features/conversation-ai-suspension/ui/ConversationAISuspensionHeaderActions.vue';
+import TranslatedMessageBody from '@/features/conversation-translation/ui/TranslatedMessageBody.vue';
+import { relativeTime } from '@/shared/lib/format';
+import ConversationComposer from './ConversationComposer.vue';
+import ConversationCollaborationStatus from './ConversationCollaborationStatus.vue';
 import {
   conversationSurfaceDraftKey,
   type ConversationSurfaceAISuspensionCapability,
@@ -27,12 +20,12 @@ import {
   type ConversationSurfaceReconcileIssue,
   type ConversationSurfaceSendRequest,
   type ConversationSurfaceTranslation,
-} from "../model/conversation-surface-contract";
+} from '../model/conversation-surface-contract';
 import {
   conversationSurfaceSessionKey,
   readConversationSurfaceScrollAnchor,
   writeConversationSurfaceScrollAnchor,
-} from "../model/conversation-surface-session";
+} from '../model/conversation-surface-session';
 
 const props = defineProps<{
   title: string;
@@ -47,32 +40,32 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  "load-older": [];
-  "load-newer": [];
-  "visible-high-water": [ordinal: number];
-  "cancel-translation": [];
-  "change-translation-mode": [mode: "ORIGINAL" | "TRANSLATED"];
-  "reconcile-required": [issues: ConversationSurfaceReconcileIssue[]];
-  "draft-change": [request: ConversationSurfaceSendRequest];
+  'load-older': [];
+  'load-newer': [];
+  'visible-high-water': [ordinal: number];
+  'cancel-translation': [];
+  'change-translation-mode': [mode: 'ORIGINAL' | 'TRANSLATED'];
+  'reconcile-required': [issues: ConversationSurfaceReconcileIssue[]];
+  'draft-change': [request: ConversationSurfaceSendRequest];
   send: [request: ConversationSurfaceSendRequest];
-  "request-reply-translation": [];
-  "reconcile-reply-translation": [];
-  "retry-reply-translation": [];
-  "save-reply-translation": [text: string];
-  "send-reply-translation": [request: ConversationSurfaceSendRequest];
-  "check-send-outcome": [];
-  "discard-send-attempt": [];
-  "change-composer-mode": [mode: "PUBLIC_REPLY" | "INTERNAL_NOTE"];
-  "composer-action": [action: ConversationSurfaceComposerAction];
-  "start-ai-suspension": [];
-  "show-ai-suspension-history": [];
-  "retry-ai-suspension": [];
-  "retry-delivery": [messageId: string];
-  "open-internal-notes": [];
-  "add-attachments": [files: File[]];
-  "remove-attachment": [localId: string];
-  "retry-attachment": [localId: string];
-  "download-attachment": [request: ConversationSurfaceAttachmentDownloadRequest];
+  'request-reply-translation': [];
+  'reconcile-reply-translation': [];
+  'retry-reply-translation': [];
+  'save-reply-translation': [text: string];
+  'send-reply-translation': [request: ConversationSurfaceSendRequest];
+  'check-send-outcome': [];
+  'discard-send-attempt': [];
+  'change-composer-mode': [mode: 'PUBLIC_REPLY' | 'INTERNAL_NOTE'];
+  'composer-action': [action: ConversationSurfaceComposerAction];
+  'start-ai-suspension': [];
+  'show-ai-suspension-history': [];
+  'retry-ai-suspension': [];
+  'retry-delivery': [messageId: string];
+  'open-internal-notes': [];
+  'add-attachments': [files: File[]];
+  'remove-attachment': [localId: string];
+  'retry-attachment': [localId: string];
+  'download-attachment': [request: ConversationSurfaceAttachmentDownloadRequest];
 }>();
 
 const logElement = ref<HTMLElement | null>(null);
@@ -87,24 +80,20 @@ let messageVisibilityObserver: IntersectionObserver | null = null;
 let visibleHighWaterTimer: number | null = null;
 
 const draftKey = computed(() => conversationSurfaceDraftKey(props.composer));
-const scrollSessionKey = computed(() =>
-  conversationSurfaceSessionKey(props.composer.scope),
-);
+const scrollSessionKey = computed(() => conversationSurfaceSessionKey(props.composer.scope));
 const composerDisabled = computed(
   () =>
-    props.composer.visibility !== "ENABLED" ||
+    props.composer.visibility !== 'ENABLED' ||
     props.composer.sending ||
-    props.composer.sendCapability.kind === "BLOCKED",
+    props.composer.sendCapability.kind === 'BLOCKED',
 );
 const canSend = computed(
   () =>
     !composerDisabled.value &&
-    props.composer.sendCapability.kind === "SOURCE" &&
+    props.composer.sendCapability.kind === 'SOURCE' &&
     (Boolean(draft.value.trim()) ||
       Boolean(
-        props.composer.attachments?.items.some(
-          (item) => item.state === "READY" && item.canAttach,
-        ),
+        props.composer.attachments?.items.some((item) => item.state === 'READY' && item.canAttach),
       )) &&
     !props.composer.attachments?.busy,
 );
@@ -112,13 +101,13 @@ const translationSendDisabled = computed(() => {
   const preview = props.composer.replyPreview;
   return (
     composerDisabled.value ||
-    props.composer.sendCapability.kind !== "TRANSLATED_PREVIEW" ||
+    props.composer.sendCapability.kind !== 'TRANSLATED_PREVIEW' ||
     !preview ||
     preview.busy ||
     preview.stale ||
     preview.disabled ||
     props.composer.attachments?.busy ||
-    preview.draft?.status !== "READY"
+    preview.draft?.status !== 'READY'
   );
 });
 
@@ -134,15 +123,14 @@ const messageProjection = computed(() => {
         existing.author.displayName !== message.author.displayName ||
         existing.author.avatarUrl !== message.author.avatarUrl)
     ) {
-      issues.push({ kind: "MESSAGE_ID_CONFLICT", messageId: message.id });
+      issues.push({ kind: 'MESSAGE_ID_CONFLICT', messageId: message.id });
       continue;
     }
     byId.set(message.id, message);
   }
 
   const ordered = [...byId.values()].sort(
-    (left, right) =>
-      left.ordinal - right.ordinal || left.id.localeCompare(right.id),
+    (left, right) => left.ordinal - right.ordinal || left.id.localeCompare(right.id),
   );
   const idsByOrdinal = new Map<number, string[]>();
   for (const message of ordered) {
@@ -151,15 +139,14 @@ const messageProjection = computed(() => {
     idsByOrdinal.set(message.ordinal, ids);
   }
   for (const [ordinal, messageIds] of idsByOrdinal) {
-    if (messageIds.length > 1)
-      issues.push({ kind: "ORDINAL_COLLISION", ordinal, messageIds });
+    if (messageIds.length > 1) issues.push({ kind: 'ORDINAL_COLLISION', ordinal, messageIds });
   }
   const ordinals = [...idsByOrdinal.keys()].sort((left, right) => left - right);
   for (let index = 1; index < ordinals.length; index += 1) {
     const afterOrdinal = ordinals[index - 1]!;
     const beforeOrdinal = ordinals[index]!;
     if (beforeOrdinal - afterOrdinal > 1)
-      issues.push({ kind: "ORDINAL_GAP", afterOrdinal, beforeOrdinal });
+      issues.push({ kind: 'ORDINAL_GAP', afterOrdinal, beforeOrdinal });
   }
 
   return { messages: ordered, issues };
@@ -171,12 +158,12 @@ const newMessageLabel = computed(() => {
   const mod10 = count % 10;
   const noun =
     mod100 >= 11 && mod100 <= 14
-      ? "новых сообщений"
+      ? 'новых сообщений'
       : mod10 === 1
-        ? "новое сообщение"
+        ? 'новое сообщение'
         : mod10 >= 2 && mod10 <= 4
-          ? "новых сообщения"
-          : "новых сообщений";
+          ? 'новых сообщения'
+          : 'новых сообщений';
   return `${count} ${noun}`;
 });
 
@@ -185,12 +172,12 @@ function internalNoteCountLabel(count: number): string {
   const mod10 = count % 10;
   const noun =
     mod100 >= 11 && mod100 <= 14
-      ? "заметок"
+      ? 'заметок'
       : mod10 === 1
-        ? "заметка"
+        ? 'заметка'
         : mod10 >= 2 && mod10 <= 4
-          ? "заметки"
-          : "заметок";
+          ? 'заметки'
+          : 'заметок';
   return `${count} ${noun}`;
 }
 
@@ -201,25 +188,23 @@ function initials(value: string): string {
       .filter(Boolean)
       .slice(0, 2)
       .map((part) => part[0])
-      .join("") || "?"
+      .join('') || '?'
   ).toUpperCase();
 }
 
-function setViewMode(mode: "ORIGINAL" | "TRANSLATED"): void {
+function setViewMode(mode: 'ORIGINAL' | 'TRANSLATED'): void {
   if (mode === props.translation.mode) return;
   if (
-    mode === "TRANSLATED" &&
-    (!props.translation.available ||
-      props.translation.loading ||
-      props.translation.changing)
+    mode === 'TRANSLATED' &&
+    (!props.translation.available || props.translation.loading || props.translation.changing)
   )
     return;
-  emit("change-translation-mode", mode);
+  emit('change-translation-mode', mode);
 }
 
 function draftRequest(text = draft.value): ConversationSurfaceSendRequest {
   const ready = props.composer.attachments?.items.filter(
-    (item) => item.state === "READY" && item.canAttach,
+    (item) => item.state === 'READY' && item.canAttach,
   );
   return {
     scopeKey: draftKey.value,
@@ -237,30 +222,35 @@ function draftRequest(text = draft.value): ConversationSurfaceSendRequest {
 function updateDraft(value: string): void {
   draft.value = value;
   drafts.set(draftKey.value, value);
-  emit("draft-change", draftRequest(value));
+  emit('draft-change', draftRequest(value));
 }
 
 function requestSend(): void {
   const text = draft.value.trim();
-  if (!canSend.value || (!text && !props.composer.attachments?.items.some((item) => item.state === "READY" && item.canAttach))) return;
-  emit("send", draftRequest(text));
+  if (
+    !canSend.value ||
+    (!text &&
+      !props.composer.attachments?.items.some((item) => item.state === 'READY' && item.canAttach))
+  )
+    return;
+  emit('send', draftRequest(text));
 }
 
 function requestTranslatedSend(text?: string): void {
   const previewText =
-    props.composer.mode === "PUBLIC_REPLY"
+    props.composer.mode === 'PUBLIC_REPLY'
       ? (props.composer.replyPreview?.draft?.editedTranslatedText ??
         props.composer.replyPreview?.draft?.translatedText ??
-        "")
-      : "";
+        '')
+      : '';
   const selectedText = text ?? previewText;
   if (
-    props.composer.mode !== "PUBLIC_REPLY" ||
+    props.composer.mode !== 'PUBLIC_REPLY' ||
     translationSendDisabled.value ||
     !selectedText.trim()
   )
     return;
-  emit("send-reply-translation", draftRequest(selectedText));
+  emit('send-reply-translation', draftRequest(selectedText));
 }
 
 function nearLatest(element = logElement.value): boolean {
@@ -282,7 +272,7 @@ function scrollToLatest(smooth = true): void {
   if (!element) return;
   element.scrollTo?.({
     top: element.scrollHeight,
-    behavior: smooth ? "smooth" : "auto",
+    behavior: smooth ? 'smooth' : 'auto',
   });
   if (!element.scrollTo) element.scrollTop = element.scrollHeight;
   newMessageCount.value = 0;
@@ -293,9 +283,7 @@ function scrollToLatest(smooth = true): void {
 function scrollToOrdinal(ordinal: number): boolean {
   const element = logElement.value;
   if (!element) return false;
-  const message = element.querySelector<HTMLElement>(
-    `[data-message-ordinal="${ordinal}"]`,
-  );
+  const message = element.querySelector<HTMLElement>(`[data-message-ordinal="${ordinal}"]`);
   if (!message) return false;
   const logRect = element.getBoundingClientRect();
   element.scrollTop += message.getBoundingClientRect().top - logRect.top - 16;
@@ -305,9 +293,7 @@ function scrollToOrdinal(ordinal: number): boolean {
 
 function readingSurfaceIsAttended(): boolean {
   return (
-    typeof document !== "undefined" &&
-    document.visibilityState === "visible" &&
-    document.hasFocus()
+    typeof document !== 'undefined' && document.visibilityState === 'visible' && document.hasFocus()
   );
 }
 
@@ -318,13 +304,10 @@ function reportVisibleHighWater(): void {
   const logRect = element.getBoundingClientRect();
   if (logRect.height <= 0) return;
   let highWater = 0;
-  for (const message of element.querySelectorAll<HTMLElement>(
-    "[data-message-ordinal]",
-  )) {
+  for (const message of element.querySelectorAll<HTMLElement>('[data-message-ordinal]')) {
     const ordinal = Number(message.dataset.messageOrdinal);
     const rect = message.getBoundingClientRect();
-    const visibleHeight =
-      Math.min(rect.bottom, logRect.bottom) - Math.max(rect.top, logRect.top);
+    const visibleHeight = Math.min(rect.bottom, logRect.bottom) - Math.max(rect.top, logRect.top);
     const requiredHeight = Math.min(Math.max(rect.height, 0), 48);
     if (
       Number.isSafeInteger(ordinal) &&
@@ -335,7 +318,7 @@ function reportVisibleHighWater(): void {
       highWater = Math.max(highWater, ordinal);
     }
   }
-  if (highWater > 0) emit("visible-high-water", highWater);
+  if (highWater > 0) emit('visible-high-water', highWater);
 }
 
 function queueVisibleHighWater(): void {
@@ -349,17 +332,15 @@ function queueVisibleHighWater(): void {
 function syncMessageVisibilityObserver(): void {
   messageVisibilityObserver?.disconnect();
   const element = logElement.value;
-  if (!element || typeof IntersectionObserver === "undefined") {
+  if (!element || typeof IntersectionObserver === 'undefined') {
     messageVisibilityObserver = null;
     return;
   }
-  messageVisibilityObserver = new IntersectionObserver(
-    () => queueVisibleHighWater(),
-    { root: element, threshold: 0 },
-  );
-  for (const message of element.querySelectorAll<HTMLElement>(
-    "[data-message-ordinal]",
-  ))
+  messageVisibilityObserver = new IntersectionObserver(() => queueVisibleHighWater(), {
+    root: element,
+    threshold: 0,
+  });
+  for (const message of element.querySelectorAll<HTMLElement>('[data-message-ordinal]'))
     messageVisibilityObserver.observe(message);
 }
 
@@ -372,9 +353,9 @@ function captureScrollAnchor(key = scrollSessionKey.value): void {
   const element = logElement.value;
   if (!element) return;
   const logRect = element.getBoundingClientRect();
-  const message = [
-    ...element.querySelectorAll<HTMLElement>("[data-message-id]"),
-  ].find((candidate) => candidate.getBoundingClientRect().bottom > logRect.top);
+  const message = [...element.querySelectorAll<HTMLElement>('[data-message-id]')].find(
+    (candidate) => candidate.getBoundingClientRect().bottom > logRect.top,
+  );
   const messageId = message?.dataset.messageId;
   if (!message || !messageId) return;
   writeConversationSurfaceScrollAnchor(key, {
@@ -384,9 +365,7 @@ function captureScrollAnchor(key = scrollSessionKey.value): void {
   });
 }
 
-async function restoreScrollAnchor(
-  key = scrollSessionKey.value,
-): Promise<void> {
+async function restoreScrollAnchor(key = scrollSessionKey.value): Promise<void> {
   await nextTick();
   const element = logElement.value;
   if (!element) return;
@@ -410,16 +389,15 @@ async function restoreScrollAnchor(
     queueVisibleHighWater();
     return;
   }
-  const message = [
-    ...element.querySelectorAll<HTMLElement>("[data-message-id]"),
-  ].find((candidate) => candidate.dataset.messageId === saved.messageId);
+  const message = [...element.querySelectorAll<HTMLElement>('[data-message-id]')].find(
+    (candidate) => candidate.dataset.messageId === saved.messageId,
+  );
   if (!message) {
     scrollToLatest(false);
     return;
   }
   const logRect = element.getBoundingClientRect();
-  element.scrollTop +=
-    message.getBoundingClientRect().top - logRect.top - saved.offset;
+  element.scrollTop += message.getBoundingClientRect().top - logRect.top - saved.offset;
   queueVisibleHighWater();
 }
 
@@ -434,17 +412,12 @@ function requestOlder(): void {
   )
     return;
   anchor = { height: element.scrollHeight, top: element.scrollTop };
-  emit("load-older");
+  emit('load-older');
 }
 
 function requestNewer(): void {
-  if (
-    !props.history.hasNewer ||
-    props.history.loading ||
-    props.history.loadingNewer
-  )
-    return;
-  emit("load-newer");
+  if (!props.history.hasNewer || props.history.loading || props.history.loadingNewer) return;
+  emit('load-newer');
 }
 
 function handleLogScroll(): void {
@@ -470,20 +443,17 @@ function purgeSensitiveDrafts(): void {
   const { projectId, actorId } = props.composer.scope;
   const prefix = `${projectId}:${actorId}:`;
   for (const key of drafts.keys()) {
-    if (key.startsWith(prefix) && key.endsWith(":INTERNAL_NOTE"))
-      drafts.delete(key);
+    if (key.startsWith(prefix) && key.endsWith(':INTERNAL_NOTE')) drafts.delete(key);
   }
   skipPurgedSensitiveDraftCache = true;
-  if (props.composer.mode === "INTERNAL_NOTE")
-    draft.value = props.composer.initialDraft;
+  if (props.composer.mode === 'INTERNAL_NOTE') draft.value = props.composer.initialDraft;
 }
 
 function purgePublicDraft(): void {
   const { projectId, actorId, conversationId } = props.composer.scope;
   drafts.delete(`${projectId}:${actorId}:${conversationId}:PUBLIC_REPLY`);
   skipPurgedSensitiveDraftCache = true;
-  if (props.composer.mode === "PUBLIC_REPLY")
-    draft.value = props.composer.initialDraft;
+  if (props.composer.mode === 'PUBLIC_REPLY') draft.value = props.composer.initialDraft;
 }
 
 watch(
@@ -492,7 +462,7 @@ watch(
     if (revision === previousRevision) return;
     purgeSensitiveDrafts();
   },
-  { flush: "sync" },
+  { flush: 'sync' },
 );
 
 watch(
@@ -501,23 +471,20 @@ watch(
     if (revision === previousRevision) return;
     purgePublicDraft();
   },
-  { flush: "sync" },
+  { flush: 'sync' },
 );
 
 watch(
   () => JSON.stringify(messageProjection.value.issues),
   () => {
     if (messageProjection.value.issues.length)
-      emit("reconcile-required", messageProjection.value.issues);
+      emit('reconcile-required', messageProjection.value.issues);
   },
   { immediate: true },
 );
 
 watch(draftKey, (next, previous) => {
-  if (
-    previous &&
-    !(skipPurgedSensitiveDraftCache && previous.endsWith(":INTERNAL_NOTE"))
-  )
+  if (previous && !(skipPurgedSensitiveDraftCache && previous.endsWith(':INTERNAL_NOTE')))
     drafts.set(previous, draft.value);
   skipPurgedSensitiveDraftCache = false;
   draft.value = drafts.get(next) ?? props.composer.initialDraft;
@@ -531,8 +498,7 @@ function acceptExternalDraft(value: string): void {
 watch(
   () => [draftKey.value, props.composer.draftRevision] as const,
   ([nextKey], [previousKey]) => {
-    if (nextKey === previousKey)
-      acceptExternalDraft(props.composer.initialDraft);
+    if (nextKey === previousKey) acceptExternalDraft(props.composer.initialDraft);
   },
 );
 
@@ -575,8 +541,7 @@ watch(
     }
     const previousLast = previous.at(-1);
     const previousLastIndex = previousLast ? next.indexOf(previousLast) : -1;
-    const appended =
-      previousLastIndex >= 0 ? next.length - previousLastIndex - 1 : 0;
+    const appended = previousLastIndex >= 0 ? next.length - previousLastIndex - 1 : 0;
     if (!appended) return;
     const stickToBottom = atConversationLatest();
     await nextTick();
@@ -585,15 +550,15 @@ watch(
     else newMessageCount.value += appended;
     queueVisibleHighWater();
   },
-  { flush: "pre" },
+  { flush: 'pre' },
 );
 
 onMounted(() => {
-  window.addEventListener("focus", handleReadingAttentionChange);
-  document.addEventListener("visibilitychange", handleReadingAttentionChange);
+  window.addEventListener('focus', handleReadingAttentionChange);
+  document.addEventListener('visibilitychange', handleReadingAttentionChange);
   void nextTick(() => syncMessageVisibilityObserver());
   void restoreScrollAnchor();
-  if (typeof ResizeObserver === "undefined") return;
+  if (typeof ResizeObserver === 'undefined') return;
   surfaceResizeObserver = new ResizeObserver(() => {
     const shouldKeepLatest = stickToLatest || keepLatestOnResize;
     keepLatestOnResize = composerIsNearLatest();
@@ -608,11 +573,8 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
   captureScrollAnchor();
-  window.removeEventListener("focus", handleReadingAttentionChange);
-  document.removeEventListener(
-    "visibilitychange",
-    handleReadingAttentionChange,
-  );
+  window.removeEventListener('focus', handleReadingAttentionChange);
+  document.removeEventListener('visibilitychange', handleReadingAttentionChange);
   messageVisibilityObserver?.disconnect();
   messageVisibilityObserver = null;
   if (visibleHighWaterTimer !== null) {
@@ -734,24 +696,13 @@ onBeforeUnmount(() => {
         </span>
       </section>
 
-      <div
-        v-if="history.loading"
-        class="conversation-surface__skeletons"
-        aria-hidden="true"
-      >
+      <div v-if="history.loading" class="conversation-surface__skeletons" aria-hidden="true">
         <i v-for="index in 5" :key="index" />
       </div>
-      <p
-        v-else-if="history.error"
-        class="conversation-surface__error"
-        role="alert"
-      >
+      <p v-else-if="history.error" class="conversation-surface__error" role="alert">
         {{ history.error }}
       </p>
-      <div
-        v-else-if="!orderedMessages.length"
-        class="conversation-surface__empty"
-      >
+      <div v-else-if="!orderedMessages.length" class="conversation-surface__empty">
         <i class="pi pi-comments" aria-hidden="true" />
         <strong>Пока нет сообщений</strong>
         <span>Начните диалог, когда будете готовы.</span>
@@ -785,9 +736,7 @@ onBeforeUnmount(() => {
               />
               <strong>{{ message.author.displayName }}</strong>
             </span>
-            <time :datetime="message.createdAt">{{
-              relativeTime(message.createdAt)
-            }}</time>
+            <time :datetime="message.createdAt">{{ relativeTime(message.createdAt) }}</time>
           </div>
           <TranslatedMessageBody
             :message="message.content"
@@ -801,7 +750,7 @@ onBeforeUnmount(() => {
           >
             <i class="pi pi-file-edit" aria-hidden="true" />
             Шаблон · версия {{ message.macroProvenance.revisionNumber }}
-            {{ message.macroProvenance.edited ? "· изменён оператором" : "" }}
+            {{ message.macroProvenance.edited ? '· изменён оператором' : '' }}
           </span>
           <span
             v-if="message.knowledgeProvenance"
@@ -810,7 +759,7 @@ onBeforeUnmount(() => {
           >
             <i class="pi pi-book" aria-hidden="true" />
             Источник · версия {{ message.knowledgeProvenance.revisionNumber }}
-            {{ message.knowledgeProvenance.edited ? "· изменён оператором" : "" }}
+            {{ message.knowledgeProvenance.edited ? '· изменён оператором' : '' }}
           </span>
           <ul
             v-if="message.attachments?.length"
@@ -822,15 +771,27 @@ onBeforeUnmount(() => {
                 type="button"
                 :disabled="!canDownloadPublicAttachments"
                 :title="canDownloadPublicAttachments ? 'Скачать файл' : 'Скачивание недоступно'"
-                @click="emit('download-attachment', {
-                  attachmentId: attachment.id,
-                  visibility: 'PUBLIC_REPLY',
-                })"
+                @click="
+                  emit('download-attachment', {
+                    attachmentId: attachment.id,
+                    visibility: 'PUBLIC_REPLY',
+                  })
+                "
               >
-                <i :class="attachment.contentType.startsWith('image/') ? 'pi pi-image' : 'pi pi-file'" aria-hidden="true" />
+                <i
+                  :class="
+                    attachment.contentType.startsWith('image/') ? 'pi pi-image' : 'pi pi-file'
+                  "
+                  aria-hidden="true"
+                />
                 <span>
                   <strong>{{ attachment.filename }}</strong>
-                  <small>{{ Math.max(1, Math.ceil(attachment.sizeBytes / 1024)).toLocaleString('ru-RU') }} КБ</small>
+                  <small
+                    >{{
+                      Math.max(1, Math.ceil(attachment.sizeBytes / 1024)).toLocaleString('ru-RU')
+                    }}
+                    КБ</small
+                  >
                 </span>
                 <i class="pi pi-download" aria-hidden="true" />
               </button>
@@ -860,35 +821,23 @@ onBeforeUnmount(() => {
               />
               {{ message.delivery.label }}
             </span>
-            <span
-              v-if="message.delivery.detail"
-              class="conversation-surface__delivery-detail"
-              >{{ message.delivery.detail }}</span
-            >
+            <span v-if="message.delivery.detail" class="conversation-surface__delivery-detail">{{
+              message.delivery.detail
+            }}</span>
             <button
               v-if="message.delivery.action"
               type="button"
               class="conversation-surface__delivery-action"
               data-action="retry-delivery"
-              :disabled="
-                message.delivery.action.disabled || message.delivery.action.busy
-              "
+              :disabled="message.delivery.action.disabled || message.delivery.action.busy"
               :aria-busy="message.delivery.action.busy"
               @click="emit('retry-delivery', message.id)"
             >
               <i
-                :class="
-                  message.delivery.action.busy
-                    ? 'pi pi-spin pi-spinner'
-                    : 'pi pi-refresh'
-                "
+                :class="message.delivery.action.busy ? 'pi pi-spin pi-spinner' : 'pi pi-refresh'"
                 aria-hidden="true"
               />
-              {{
-                message.delivery.action.busy
-                  ? "Повторяем…"
-                  : message.delivery.action.label
-              }}
+              {{ message.delivery.action.busy ? 'Повторяем…' : message.delivery.action.label }}
             </button>
           </div>
         </article>
@@ -909,11 +858,7 @@ onBeforeUnmount(() => {
         @click="requestNewer"
       />
 
-      <p
-        v-if="history.readError"
-        class="conversation-surface__read-error"
-        role="status"
-      >
+      <p v-if="history.readError" class="conversation-surface__read-error" role="status">
         <i class="pi pi-cloud-upload" aria-hidden="true" />
         <span>{{ history.readError }}</span>
         <button type="button" @click="queueVisibleHighWater">Повторить</button>
@@ -946,9 +891,7 @@ onBeforeUnmount(() => {
             <span>
               <i class="pi pi-lock" aria-hidden="true" />
               <strong>Закрытая лента</strong>
-              <small>{{
-                internalNoteCountLabel(internalNotes.totalVisible)
-              }}</small>
+              <small>{{ internalNoteCountLabel(internalNotes.totalVisible) }}</small>
             </span>
             <Button
               type="button"
@@ -973,14 +916,12 @@ onBeforeUnmount(() => {
               <p>
                 {{
                   note.body ??
-                  (note.lifecycle === "TOMBSTONED"
-                    ? "Текст заметки удалён"
-                    : "Текст заметки недоступен")
+                  (note.lifecycle === 'TOMBSTONED'
+                    ? 'Текст заметки удалён'
+                    : 'Текст заметки недоступен')
                 }}
               </p>
-              <time :datetime="note.updatedAt">{{
-                relativeTime(note.updatedAt)
-              }}</time>
+              <time :datetime="note.updatedAt">{{ relativeTime(note.updatedAt) }}</time>
             </li>
           </ol>
         </section>
@@ -1005,10 +946,12 @@ onBeforeUnmount(() => {
         @add-attachments="emit('add-attachments', $event)"
         @remove-attachment="emit('remove-attachment', $event)"
         @retry-attachment="emit('retry-attachment', $event)"
-        @download-attachment="emit('download-attachment', {
-          attachmentId: $event,
-          visibility: composer.mode,
-        })"
+        @download-attachment="
+          emit('download-attachment', {
+            attachmentId: $event,
+            visibility: composer.mode,
+          })
+        "
       />
       <p
         v-else-if="composer.sendCapability.kind === 'BLOCKED'"
@@ -1079,17 +1022,27 @@ onBeforeUnmount(() => {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
-.conversation-surface__message-attachments button:disabled { cursor: not-allowed; opacity: 0.62; }
-.conversation-surface__message-attachments span { min-width: 0; }
+.conversation-surface__message-attachments button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+.conversation-surface__message-attachments span {
+  min-width: 0;
+}
 .conversation-surface__message-attachments strong,
-.conversation-surface__message-attachments small { display: block; }
+.conversation-surface__message-attachments small {
+  display: block;
+}
 .conversation-surface__message-attachments strong {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
 }
-.conversation-surface__message-attachments small { color: var(--text-muted); font-size: 10px; }
+.conversation-surface__message-attachments small {
+  color: var(--text-muted);
+  font-size: 10px;
+}
 .conversation-surface__macro-provenance,
 .conversation-surface__knowledge-provenance {
   display: inline-flex;
@@ -1116,11 +1069,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   border: 1px solid var(--status-warning-border, var(--border-default));
   border-radius: 12px;
-  background: color-mix(
-    in srgb,
-    var(--status-warning-soft) 22%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--status-warning-soft) 22%, var(--surface-card));
 }
 .conversation-surface__internal-notes > header {
   display: flex;
@@ -1296,7 +1245,7 @@ onBeforeUnmount(() => {
 }
 .conversation-surface__first-unread::before,
 .conversation-surface__first-unread::after {
-  content: "";
+  content: '';
   height: 1px;
   flex: 1;
   background: color-mix(in srgb, var(--status-accent-text) 26%, var(--line));
@@ -1305,11 +1254,7 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
   padding: 5px 9px;
   border-radius: 999px;
-  background: color-mix(
-    in srgb,
-    var(--status-accent-soft) 76%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--status-accent-soft) 76%, var(--surface-card));
 }
 .conversation-surface__read-error {
   position: sticky;
@@ -1322,15 +1267,10 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-warning-text) 24%, var(--line));
+  border: 1px solid color-mix(in srgb, var(--status-warning-text) 24%, var(--line));
   border-radius: 10px;
   color: var(--status-warning-text);
-  background: color-mix(
-    in srgb,
-    var(--status-warning-soft) 88%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--status-warning-soft) 88%, var(--surface-card));
   font-size: 0.72rem;
 }
 .conversation-surface__read-error button {
@@ -1351,14 +1291,9 @@ onBeforeUnmount(() => {
   width: min(620px, 100%);
   margin: 0 auto 18px;
   padding: 10px 12px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-accent-text) 20%, var(--line));
+  border: 1px solid color-mix(in srgb, var(--status-accent-text) 20%, var(--line));
   border-radius: 13px;
-  background: color-mix(
-    in srgb,
-    var(--status-accent-soft) 82%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--status-accent-soft) 82%, var(--surface-card));
   box-shadow: 0 8px 24px color-mix(in srgb, var(--text-primary) 8%, transparent);
 }
 .conversation-surface__translation-progress > div {
@@ -1420,11 +1355,7 @@ onBeforeUnmount(() => {
   margin-left: auto;
   border-color: color-mix(in srgb, var(--status-accent-text) 18%, var(--line));
   border-radius: 16px 16px 5px 16px;
-  background: color-mix(
-    in srgb,
-    var(--status-accent-soft) 45%,
-    var(--surface-card)
-  );
+  background: color-mix(in srgb, var(--status-accent-soft) 45%, var(--surface-card));
 }
 .conversation-surface__message.is-neutral,
 .conversation-surface__message.is-system,
@@ -1580,13 +1511,11 @@ onBeforeUnmount(() => {
   z-index: 3;
   min-height: 44px;
   padding: 0 14px;
-  border: 1px solid
-    color-mix(in srgb, var(--status-accent-text) 24%, var(--line));
+  border: 1px solid color-mix(in srgb, var(--status-accent-text) 24%, var(--line));
   border-radius: 999px;
   color: var(--status-accent-text);
   background: var(--surface-card);
-  box-shadow: 0 10px 30px
-    color-mix(in srgb, var(--text-primary) 16%, transparent);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--text-primary) 16%, transparent);
   font: inherit;
   font-size: 0.75rem;
   font-weight: 800;

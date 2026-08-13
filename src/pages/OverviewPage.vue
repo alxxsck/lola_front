@@ -1,113 +1,108 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import Tag from "primevue/tag";
-import { useAuthStore } from "@/features/auth/auth.store";
-import AICommandComposer from "@/features/cms-agent/ui/AICommandComposer.vue";
-import { repository } from "@/shared/api/repository";
-import { relativeTime } from "@/shared/lib/format";
-import type { DashboardStats, EventLog } from "@/shared/types/domain";
+import { computed, onMounted, ref } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import Tag from 'primevue/tag';
+import { useAuthStore } from '@/features/auth/auth.store';
+import AICommandComposer from '@/features/cms-agent/ui/AICommandComposer.vue';
+import { repository } from '@/shared/api/repository';
+import { relativeTime } from '@/shared/lib/format';
+import type { DashboardStats, EventLog } from '@/shared/types/domain';
 
 const auth = useAuthStore();
 const loading = ref(true);
-const error = ref("");
+const error = ref('');
 const stats = ref<DashboardStats | null>(null);
 const activity = ref<EventLog[]>([]);
 
-const numberFormatter = new Intl.NumberFormat("ru-RU");
-const permissions = computed(
-  () => auth.project?.effectivePermissionCodes ?? [],
-);
+const numberFormatter = new Intl.NumberFormat('ru-RU');
+const permissions = computed(() => auth.project?.effectivePermissionCodes ?? []);
 const can = (permission: string) => permissions.value.includes(permission);
 
 const statCards = computed(() =>
-  repository.mode === "api"
+  repository.mode === 'api'
     ? [
         {
-          label: "Пользователи",
+          label: 'Пользователи',
           value: stats.value?.users ?? 0,
-          icon: "pi pi-users",
-          tone: "lime",
-          hint: "Всего в проекте",
+          icon: 'pi pi-users',
+          tone: 'lime',
+          hint: 'Всего в проекте',
           suffix: undefined,
-          permissions: ["project.end_users.read"],
+          permissions: ['project.end_users.read'],
         },
         {
-          label: "Обработано событий",
+          label: 'Обработано событий',
           value: stats.value?.events ?? 0,
-          icon: "pi pi-bolt",
-          tone: "coral",
-          hint: "За всё время",
+          icon: 'pi pi-bolt',
+          tone: 'coral',
+          hint: 'За всё время',
           suffix: undefined,
-          permissions: ["project.event_logs.read"],
+          permissions: ['project.event_logs.read'],
         },
         {
-          label: "Активные сценарии",
+          label: 'Активные сценарии',
           value: stats.value?.scenarios ?? 0,
-          icon: "pi pi-sitemap",
-          tone: "accent",
-          hint: "Запущены сейчас",
+          icon: 'pi pi-sitemap',
+          tone: 'accent',
+          hint: 'Запущены сейчас',
           suffix: undefined,
-          permissions: ["project.scenarios.read"],
+          permissions: ['project.scenarios.read'],
         },
         {
-          label: "Ошибки выполнения",
+          label: 'Ошибки выполнения',
           value: stats.value?.integrationErrors ?? 0,
-          icon: "pi pi-exclamation-triangle",
-          tone: "green",
-          hint: "События и сценарии",
+          icon: 'pi pi-exclamation-triangle',
+          tone: 'green',
+          hint: 'События и сценарии',
           suffix: undefined,
-          permissions: [
-            "project.event_logs.read",
-            "project.scenario_runs.read",
-          ],
+          permissions: ['project.event_logs.read', 'project.scenario_runs.read'],
         },
       ].filter((item) => item.permissions.some(can))
     : [
         {
-          label: "Пользователи",
+          label: 'Пользователи',
           value: stats.value?.users ?? 0,
-          icon: "pi pi-users",
-          tone: "lime",
-          hint: "Всего в проекте",
+          icon: 'pi pi-users',
+          tone: 'lime',
+          hint: 'Всего в проекте',
         },
         {
-          label: "Диалоги",
+          label: 'Диалоги',
           value: stats.value?.conversations ?? 0,
-          icon: "pi pi-comments",
-          tone: "green",
-          hint: "История сохранена",
+          icon: 'pi pi-comments',
+          tone: 'green',
+          hint: 'История сохранена',
         },
         {
-          label: "Обработано событий",
+          label: 'Обработано событий',
           value: stats.value?.events ?? 0,
-          icon: "pi pi-bolt",
-          tone: "coral",
-          hint: "За всё время",
+          icon: 'pi pi-bolt',
+          tone: 'coral',
+          hint: 'За всё время',
         },
         {
-          label: "Активные сценарии",
+          label: 'Активные сценарии',
           value: stats.value?.scenarios ?? 0,
-          icon: "pi pi-sitemap",
-          tone: "accent",
-          hint: "Запущены сейчас",
+          icon: 'pi pi-sitemap',
+          tone: 'accent',
+          hint: 'Запущены сейчас',
         },
         {
-          label: "Конверсия CTA",
+          label: 'Конверсия CTA',
           value: stats.value?.ctaConversion ?? 0,
-          suffix: "%",
-          icon: "pi pi-chart-line",
-          tone: "lime",
-          hint: "За 30 дней",
+          suffix: '%',
+          icon: 'pi pi-chart-line',
+          tone: 'lime',
+          hint: 'За 30 дней',
         },
         {
-          label: "Ошибки интеграции",
+          label: 'Ошибки интеграции',
           value: stats.value?.integrationErrors ?? 0,
-          icon: "pi pi-shield",
-          tone: "green",
-          hint: "Контур стабилен",
+          icon: 'pi pi-shield',
+          tone: 'green',
+          hint: 'Контур стабилен',
         },
       ],
 );
@@ -115,81 +110,71 @@ const statCards = computed(() =>
 const quickLinks = computed(() =>
   [
     {
-      title: "Создать событие",
-      description: "Опишите сигнал от продукта и его поля",
-      icon: "pi pi-bolt",
-      to: "/events",
-      tone: "coral",
-      permission: "project.event_catalog.write",
+      title: 'Создать событие',
+      description: 'Опишите сигнал от продукта и его поля',
+      icon: 'pi pi-bolt',
+      to: '/events',
+      tone: 'coral',
+      permission: 'project.event_catalog.write',
     },
     {
-      title: "Собрать сценарий",
-      description: "Свяжите событие с действиями ассистента",
-      icon: "pi pi-sitemap",
-      to: "/scenarios",
-      tone: "accent",
-      permission: "project.scenarios.write",
+      title: 'Собрать сценарий',
+      description: 'Свяжите событие с действиями ассистента',
+      icon: 'pi pi-sitemap',
+      to: '/scenarios',
+      tone: 'accent',
+      permission: 'project.scenarios.write',
     },
     {
-      title: "Добавить элемент",
-      description: "Зарегистрируйте элемент, страницу или модалку",
-      icon: "pi pi-plus-circle",
-      to: "/interface",
-      tone: "lime",
-      permission: "project.ui_registry.write",
+      title: 'Добавить элемент',
+      description: 'Зарегистрируйте элемент, страницу или модалку',
+      icon: 'pi pi-plus-circle',
+      to: '/interface',
+      tone: 'lime',
+      permission: 'project.ui_registry.write',
     },
     {
-      title: "Проверить операции",
-      description: "Запуски сценариев и журнал аудита",
-      icon: "pi pi-chart-bar",
-      to: "/operations",
-      tone: "green",
-      permission: "project.scenario_runs.read",
+      title: 'Проверить операции',
+      description: 'Запуски сценариев и журнал аудита',
+      icon: 'pi pi-chart-bar',
+      to: '/operations',
+      tone: 'green',
+      permission: 'project.scenario_runs.read',
     },
   ].filter((item) => can(item.permission)),
 );
 
-const activitySeverity = (
-  status: EventLog["status"],
-): "success" | "warn" | "danger" =>
-  status === "PROCESSED" ? "success" : status === "FAILED" ? "danger" : "warn";
+const activitySeverity = (status: EventLog['status']): 'success' | 'warn' | 'danger' =>
+  status === 'PROCESSED' ? 'success' : status === 'FAILED' ? 'danger' : 'warn';
 
-const activityStatus = (status: EventLog["status"]) =>
+const activityStatus = (status: EventLog['status']) =>
   ({
-    PROCESSED: "Обработано",
-    FAILED: "Ошибка",
-    RECEIVED: "Получено",
+    PROCESSED: 'Обработано',
+    FAILED: 'Ошибка',
+    RECEIVED: 'Получено',
   })[status];
 
 async function loadDashboard() {
   const projectId = auth.project?.id;
   if (!projectId) {
-    error.value = "Текущий проект не найден. Войдите заново.";
+    error.value = 'Текущий проект не найден. Войдите заново.';
     loading.value = false;
     return;
   }
 
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const [nextStats, nextActivity] = await Promise.all([
-      repository.getStats(
-        projectId,
-        auth.project?.effectivePermissionCodes ?? [],
-      ),
-      (auth.project?.effectivePermissionCodes ?? []).includes(
-        "project.event_logs.read",
-      )
+      repository.getStats(projectId, auth.project?.effectivePermissionCodes ?? []),
+      (auth.project?.effectivePermissionCodes ?? []).includes('project.event_logs.read')
         ? repository.getEventLogPage(projectId, { limit: 6 })
         : Promise.resolve({ items: [], nextCursor: null }),
     ]);
     stats.value = nextStats;
     activity.value = nextActivity.items;
   } catch (cause) {
-    error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить обзор проекта";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить обзор проекта';
   } finally {
     loading.value = false;
   }
@@ -204,21 +189,16 @@ onMounted(loadDashboard);
       <div>
         <div class="eyebrow">Рабочее пространство</div>
         <h1>Добрый день, {{ auth.user?.name }}</h1>
-        <p class="subtitle">
-          Всё важное о проекте {{ auth.project?.name }} — в одном месте.
-        </p>
+        <p class="subtitle">Всё важное о проекте {{ auth.project?.name }} — в одном месте.</p>
       </div>
       <RouterLink
-        v-if="
-          repository.capabilities.presence && can('project.conversations.read')
-        "
+        v-if="repository.capabilities.presence && can('project.conversations.read')"
         to="/live"
         class="live-link"
       >
         <span class="live-indicator"><i /></span>
         <span
-          ><strong>{{ stats?.online ?? "—" }} онлайн</strong
-          ><small>Открыть live-центр</small></span
+          ><strong>{{ stats?.online ?? '—' }} онлайн</strong><small>Открыть live-центр</small></span
         >
         <i class="pi pi-arrow-up-right" />
       </RouterLink>
@@ -227,22 +207,12 @@ onMounted(loadDashboard);
     <Message v-if="error" severity="error" class="dashboard-error">
       <div class="error-row">
         <span>{{ error }}</span>
-        <Button
-          label="Повторить"
-          icon="pi pi-refresh"
-          size="small"
-          text
-          @click="loadDashboard"
-        />
+        <Button label="Повторить" icon="pi pi-refresh" size="small" text @click="loadDashboard" />
       </div>
     </Message>
 
     <AICommandComposer
-      v-if="
-        auth.project?.id &&
-        can('project.cms_agent.use') &&
-        can('project.ai_analyses.run')
-      "
+      v-if="auth.project?.id && can('project.cms_agent.use') && can('project.ai_analyses.run')"
       :key="auth.project.id"
       :project-id="auth.project.id"
     />
@@ -267,8 +237,7 @@ onMounted(loadDashboard);
             >
           </div>
           <strong class="stat-value"
-            >{{ numberFormatter.format(item.value)
-            }}{{ item.suffix ?? "" }}</strong
+            >{{ numberFormatter.format(item.value) }}{{ item.suffix ?? '' }}</strong
           >
           <div class="stat-copy">
             <span>{{ item.label }}</span
@@ -285,10 +254,7 @@ onMounted(loadDashboard);
             <div class="eyebrow">Поток проекта</div>
             <h2>Последняя активность</h2>
           </div>
-          <RouterLink
-            v-if="can('project.event_logs.read')"
-            to="/event-logs"
-            class="section-link"
+          <RouterLink v-if="can('project.event_logs.read')" to="/event-logs" class="section-link"
             >Открыть журнал <i class="pi pi-arrow-right"
           /></RouterLink>
         </div>
@@ -296,27 +262,13 @@ onMounted(loadDashboard);
         <div v-if="loading" class="activity-list">
           <div v-for="item in 4" :key="item" class="activity-skeleton">
             <Skeleton shape="circle" size="2.5rem" />
-            <div>
-              <Skeleton width="11rem" /><Skeleton
-                width="100%"
-                height="0.7rem"
-              />
-            </div>
+            <div><Skeleton width="11rem" /><Skeleton width="100%" height="0.7rem" /></div>
           </div>
         </div>
         <div v-else-if="activity.length" class="activity-list">
-          <article
-            v-for="item in activity"
-            :key="item.id"
-            class="activity-item"
-          >
+          <article v-for="item in activity" :key="item.id" class="activity-item">
             <span class="activity-icon" :class="item.status.toLowerCase()"
-              ><i
-                :class="
-                  item.status === 'FAILED'
-                    ? 'pi pi-exclamation-triangle'
-                    : 'pi pi-bolt'
-                "
+              ><i :class="item.status === 'FAILED' ? 'pi pi-exclamation-triangle' : 'pi pi-bolt'"
             /></span>
             <div class="activity-copy">
               <div class="activity-title">
@@ -332,9 +284,7 @@ onMounted(loadDashboard);
                 {{ item.source.toLowerCase() }}
               </p>
             </div>
-            <time :datetime="item.receivedAt">{{
-              relativeTime(item.receivedAt)
-            }}</time>
+            <time :datetime="item.receivedAt">{{ relativeTime(item.receivedAt) }}</time>
           </article>
         </div>
         <div v-else class="empty">
@@ -365,17 +315,13 @@ onMounted(loadDashboard);
             <i class="pi pi-arrow-up-right" />
           </RouterLink>
         </div>
-        <RouterLink
-          v-if="can('project.settings.read')"
-          to="/project"
-          class="project-note"
-        >
+        <RouterLink v-if="can('project.settings.read')" to="/project" class="project-note">
           <span class="assistant-avatar">{{
-            auth.project?.assistantName?.slice(0, 1).toUpperCase() || "L"
+            auth.project?.assistantName?.slice(0, 1).toUpperCase() || 'L'
           }}</span>
           <span
             ><small>Ваш ассистент</small
-            ><strong>{{ auth.project?.assistantName || "Retenive" }}</strong></span
+            ><strong>{{ auth.project?.assistantName || 'Retenive' }}</strong></span
           >
           <span class="project-note-action">Настроить</span>
         </RouterLink>
@@ -389,7 +335,7 @@ onMounted(loadDashboard);
   position: relative;
 }
 .overview-page:before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   right: 5%;
@@ -452,8 +398,7 @@ onMounted(loadDashboard);
   height: 7px;
   background: var(--status-success);
   border-radius: 50%;
-  box-shadow: 0 0 0 4px
-    color-mix(in srgb, var(--status-success) 13%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--status-success) 13%, transparent);
 }
 .dashboard-error {
   margin-bottom: 18px;
@@ -481,7 +426,7 @@ onMounted(loadDashboard);
   position: relative;
 }
 .stat-card:after {
-  content: "";
+  content: '';
   position: absolute;
   width: 110px;
   height: 110px;

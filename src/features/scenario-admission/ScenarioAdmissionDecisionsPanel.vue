@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import Button from "primevue/button";
-import Column from "primevue/column";
-import DataTable from "primevue/datatable";
-import Drawer from "primevue/drawer";
-import InputText from "primevue/inputtext";
-import Select from "primevue/select";
-import Tag from "primevue/tag";
+import { computed, onMounted, ref } from 'vue';
+import Button from 'primevue/button';
+import Column from 'primevue/column';
+import DataTable from 'primevue/datatable';
+import Drawer from 'primevue/drawer';
+import InputText from 'primevue/inputtext';
+import Select from 'primevue/select';
+import Tag from 'primevue/tag';
 import type {
   ScenarioAdmissionDecisionResponseDto,
   ScenarioAdmissionDecisionsPageParams,
-} from "@/shared/api/generated/models";
-import { formatDate, relativeTime } from "@/shared/lib/format";
-import { scenarioAdmissionApi } from "./scenario-admission.api";
-import { importanceClassPresentation } from "./scenario-admission.model";
+} from '@/shared/api/generated/models';
+import { formatDate, relativeTime } from '@/shared/lib/format';
+import { scenarioAdmissionApi } from './scenario-admission.api';
+import { importanceClassPresentation } from './scenario-admission.model';
 
 const props = defineProps<{ projectId: string }>();
 const emit = defineEmits<{ count: [value: number, hasMore: boolean] }>();
@@ -21,68 +21,59 @@ const items = ref<ScenarioAdmissionDecisionResponseDto[]>([]);
 const nextCursor = ref<string | null>(null);
 const loading = ref(true);
 const loadingMore = ref(false);
-const error = ref("");
-const search = ref("");
-const outcome = ref("ALL");
+const error = ref('');
+const search = ref('');
+const outcome = ref('ALL');
 const selected = ref<ScenarioAdmissionDecisionResponseDto | null>(null);
 
 const outcomeOptions = [
-  { label: "Все решения", value: "ALL" },
-  { label: "Запущен", value: "STARTED" },
-  { label: "Не запущен", value: "SUPPRESSED" },
+  { label: 'Все решения', value: 'ALL' },
+  { label: 'Запущен', value: 'STARTED' },
+  { label: 'Не запущен', value: 'SUPPRESSED' },
 ];
 const filtered = computed(() => {
   const query = search.value.trim().toLowerCase();
   return items.value.filter(
     (item) =>
-      (outcome.value === "ALL" || item.outcome === outcome.value) &&
+      (outcome.value === 'ALL' || item.outcome === outcome.value) &&
       (!query ||
-        [
-          item.scenarioName,
-          item.scenarioCode,
-          item.endUserExternalId,
-          item.eventLogId,
-        ]
-          .join(" ")
+        [item.scenarioName, item.scenarioCode, item.endUserExternalId, item.eventLogId]
+          .join(' ')
           .toLowerCase()
           .includes(query)),
   );
 });
 
 const reasonLabels: Record<string, string> = {
-  ADMITTED: "Запущен",
-  QUIET_HOURS: "Не запущен: тихие часы",
-  DAILY_LIMIT_REACHED: "Не запущен: суточный лимит",
-  VISIT_LIMIT_REACHED: "Не запущен: лимит визита",
-  MINIMUM_INTERVAL_ACTIVE: "Не запущен: минимальная пауза",
-  LOST_ARBITRATION: "Не запущен: выбран более приоритетный сценарий",
-  LEGACY_SCENARIO_LIMIT: "Не запущен: индивидуальное ограничение",
+  ADMITTED: 'Запущен',
+  QUIET_HOURS: 'Не запущен: тихие часы',
+  DAILY_LIMIT_REACHED: 'Не запущен: суточный лимит',
+  VISIT_LIMIT_REACHED: 'Не запущен: лимит визита',
+  MINIMUM_INTERVAL_ACTIVE: 'Не запущен: минимальная пауза',
+  LOST_ARBITRATION: 'Не запущен: выбран более приоритетный сценарий',
+  LEGACY_SCENARIO_LIMIT: 'Не запущен: индивидуальное ограничение',
 };
 
 function reasonLabel(reason: string) {
-  return reasonLabels[reason] ?? "Новый тип — обновите интерфейс";
+  return reasonLabels[reason] ?? 'Новый тип — обновите интерфейс';
 }
 
 async function load(cursor?: string) {
   if (cursor) loadingMore.value = true;
   else loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const params: ScenarioAdmissionDecisionsPageParams = {
       limit: 50,
       ...(cursor ? { cursor } : {}),
     };
-    const page = await scenarioAdmissionApi.decisionsPage(
-      props.projectId,
-      params,
-    );
+    const page = await scenarioAdmissionApi.decisionsPage(props.projectId, params);
     if (cursor) items.value.push(...page.items);
     else items.value = page.items;
     nextCursor.value = page.nextCursor ?? null;
-    emit("count", items.value.length, Boolean(nextCursor.value));
+    emit('count', items.value.length, Boolean(nextCursor.value));
   } catch (cause) {
-    error.value =
-      cause instanceof Error ? cause.message : "Не удалось загрузить решения";
+    error.value = cause instanceof Error ? cause.message : 'Не удалось загрузить решения';
   } finally {
     loading.value = false;
     loadingMore.value = false;
@@ -152,9 +143,7 @@ onMounted(() => void load());
         </Column>
         <Column header="Игрок"
           ><template #body="{ data }"
-            ><span class="mono compact">{{
-              data.endUserExternalId
-            }}</span></template
+            ><span class="mono compact">{{ data.endUserExternalId }}</span></template
           ></Column
         >
         <Column header="Решение">
@@ -173,16 +162,13 @@ onMounted(() => void load());
         </Column>
         <Column header="Локальное время">
           <template #body="{ data }"
-            ><span
-              :title="`${data.timezoneSnapshot} · ${formatDate(data.evaluatedAt)}`"
+            ><span :title="`${data.timezoneSnapshot} · ${formatDate(data.evaluatedAt)}`"
               >{{ data.localDate }} · {{ data.timezoneSnapshot }}</span
             ></template
           >
         </Column>
         <Column header="Когда"
-          ><template #body="{ data }">{{
-            relativeTime(data.evaluatedAt)
-          }}</template></Column
+          ><template #body="{ data }">{{ relativeTime(data.evaluatedAt) }}</template></Column
         >
         <Column
           ><template #body><i class="pi pi-chevron-right muted" /></template
@@ -221,8 +207,8 @@ onMounted(() => void load());
           <dd class="mono">{{ selected.eventLogId }}</dd>
           <dt>Важность</dt>
           <dd>
-            {{ importanceClassPresentation(selected.importanceClass).title }} ·
-            priority {{ selected.numericPriority }}
+            {{ importanceClassPresentation(selected.importanceClass).title }} · priority
+            {{ selected.numericPriority }}
           </dd>
           <dt>Локальное время</dt>
           <dd>
@@ -231,13 +217,13 @@ onMounted(() => void load());
             }})
           </dd>
           <dt>Retry at</dt>
-          <dd>{{ selected.retryAt ? formatDate(selected.retryAt) : "—" }}</dd>
+          <dd>{{ selected.retryAt ? formatDate(selected.retryAt) : '—' }}</dd>
           <dt>Run</dt>
           <dd class="mono">
-            {{ selected.scenarioRunId ?? "Run не создавался" }}
+            {{ selected.scenarioRunId ?? 'Run не создавался' }}
           </dd>
           <dt>Победитель</dt>
-          <dd class="mono">{{ selected.winnerScenarioId ?? "—" }}</dd>
+          <dd class="mono">{{ selected.winnerScenarioId ?? '—' }}</dd>
         </dl>
         <details>
           <summary>Что проверено</summary>

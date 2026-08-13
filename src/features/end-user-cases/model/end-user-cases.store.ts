@@ -1,17 +1,17 @@
-import { computed, ref } from "vue";
-import { defineStore } from "pinia";
+import { computed, ref } from 'vue';
+import { defineStore } from 'pinia';
 import type {
   ClassifyEndUserCaseDto,
   LinkEndUserCaseMessageDto,
   UnlinkEndUserCaseMessageDto,
-} from "@/shared/api/generated/models";
-import { cmsRealtimeClient } from "@/shared/realtime/cms-realtime-client";
-import type { CmsRealtimeState } from "@/shared/realtime/cms-realtime-contract";
+} from '@/shared/api/generated/models';
+import { cmsRealtimeClient } from '@/shared/realtime/cms-realtime-client';
+import type { CmsRealtimeState } from '@/shared/realtime/cms-realtime-contract';
 import {
   endUserCasesRepository,
   type EndUserCaseDetailBundle,
   type AssignEndUserCaseCommand,
-} from "../api/end-user-cases-repository";
+} from '../api/end-user-cases-repository';
 import {
   defaultEndUserCaseFilters,
   endUserCaseStatusesForPreset,
@@ -21,12 +21,12 @@ import {
   type EndUserCaseRealtimeEvent,
   type EndUserCaseStatus,
   type EndUserCaseSummary,
-} from "./end-user-case";
-import { activeEndUserCaseEscalation } from "./end-user-case-escalation";
+} from './end-user-case';
+import { activeEndUserCaseEscalation } from './end-user-case-escalation';
 
 type Unsubscribe = () => void;
 
-export const useEndUserCasesStore = defineStore("end-user-cases", () => {
+export const useEndUserCasesStore = defineStore('end-user-cases', () => {
   const projectId = ref<string | null>(null);
   const itemsById = ref(new Map<string, EndUserCase>());
   const orderedIds = ref<string[]>([]);
@@ -42,7 +42,7 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
   const mutating = ref(false);
   const error = ref<string | null>(null);
   const detailError = ref<string | null>(null);
-  const realtimeState = ref<CmsRealtimeState>("DISCONNECTED");
+  const realtimeState = ref<CmsRealtimeState>('DISCONNECTED');
   const lastAppliedSequence = ref(0n);
   let listRequest = 0;
   let detailRequest = 0;
@@ -67,21 +67,14 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
     const generation = reconciliationGeneration;
     unsubscribers = [
       cmsRealtimeClient.subscribe(
-        [
-          "end_user_case.created",
-          "end_user_case.updated",
-          "end_user_case.summary",
-        ],
+        ['end_user_case.created', 'end_user_case.updated', 'end_user_case.summary'],
         (value) => handleRealtimeValue(value, nextProjectId, generation),
       ),
       cmsRealtimeClient.onState((value) => {
-        if (isCurrentRealtimeScope(nextProjectId, generation))
-          realtimeState.value = value;
+        if (isCurrentRealtimeScope(nextProjectId, generation)) realtimeState.value = value;
       }),
       cmsRealtimeClient.reconcile(() =>
-        isCurrentRealtimeScope(nextProjectId, generation)
-          ? reconcile()
-          : Promise.resolve(),
+        isCurrentRealtimeScope(nextProjectId, generation) ? reconcile() : Promise.resolve(),
       ),
     ];
     await Promise.all([
@@ -94,13 +87,11 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
   function deactivate(): void {
     releaseRealtime();
     projectId.value = null;
-    realtimeState.value = "DISCONNECTED";
+    realtimeState.value = 'DISCONNECTED';
     clearState();
   }
 
-  async function loadPage({
-    replace = false,
-  }: { replace?: boolean } = {}): Promise<void> {
+  async function loadPage({ replace = false }: { replace?: boolean } = {}): Promise<void> {
     const activeProjectId = projectId.value;
     if (!activeProjectId || (!replace && !nextCursor.value)) return;
     const request = ++listRequest;
@@ -113,11 +104,8 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
         filters.value,
         replace ? undefined : (nextCursor.value ?? undefined),
       );
-      if (request !== listRequest || projectId.value !== activeProjectId)
-        return;
-      const nextItems = replace
-        ? new Map<string, EndUserCase>()
-        : new Map(itemsById.value);
+      if (request !== listRequest || projectId.value !== activeProjectId) return;
+      const nextItems = replace ? new Map<string, EndUserCase>() : new Map(itemsById.value);
       const nextOrder = replace ? [] : [...orderedIds.value];
       for (const value of page.items) {
         nextItems.set(value.id, value);
@@ -166,8 +154,7 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
       selected.value = value;
       itemsById.value = new Map(itemsById.value).set(id, value.case);
     } catch (cause) {
-      if (request === detailRequest)
-        detailError.value = caseErrorMessage(cause);
+      if (request === detailRequest) detailError.value = caseErrorMessage(cause);
     } finally {
       if (request === detailRequest) detailLoading.value = false;
     }
@@ -190,11 +177,7 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
     messagesLoading.value = true;
     detailError.value = null;
     try {
-      const page = await endUserCasesRepository.messages(
-        activeProjectId,
-        caseId,
-        cursor,
-      );
+      const page = await endUserCasesRepository.messages(activeProjectId, caseId, cursor);
       if (
         request !== messagesRequest ||
         projectId.value !== activeProjectId ||
@@ -202,9 +185,7 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
         !selected.value
       )
         return;
-      const known = new Set(
-        selected.value.messages.items.map((link) => link.message.id),
-      );
+      const known = new Set(selected.value.messages.items.map((link) => link.message.id));
       selected.value = {
         ...selected.value,
         messages: {
@@ -216,17 +197,13 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
         },
       };
     } catch (cause) {
-      if (request === messagesRequest)
-        detailError.value = caseErrorMessage(cause);
+      if (request === messagesRequest) detailError.value = caseErrorMessage(cause);
     } finally {
       if (request === messagesRequest) messagesLoading.value = false;
     }
   }
 
-  async function transition(
-    status: EndUserCaseStatus,
-    reason: string,
-  ): Promise<boolean> {
+  async function transition(status: EndUserCaseStatus, reason: string): Promise<boolean> {
     const activeProjectId = projectId.value;
     const value = selected.value?.case;
     if (!activeProjectId || !value || !reason.trim()) return false;
@@ -240,10 +217,7 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
     });
   }
 
-  async function assign(
-    assignedCmsUserId: string | null,
-    reason: string,
-  ): Promise<boolean> {
+  async function assign(assignedCmsUserId: string | null, reason: string): Promise<boolean> {
     const value = selected.value?.case;
     if (!value) return false;
     return versionedMutation((project, caseId) =>
@@ -256,10 +230,7 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
     );
   }
 
-  async function requestEscalation(
-    reasonCode: string,
-    summary: string,
-  ): Promise<boolean> {
+  async function requestEscalation(reasonCode: string, summary: string): Promise<boolean> {
     const value = selected.value?.case;
     if (!value || !reasonCode.trim() || !summary.trim()) return false;
     return versionedMutation((project, caseId) =>
@@ -277,110 +248,92 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
   }
 
   async function claimEscalation(reason: string): Promise<boolean> {
-    return mutateActiveEscalation(
-      reason,
-      (project, caseId, caseVersion, escalation, key) =>
-        endUserCasesRepository.claimEscalation(
-          project,
-          caseId,
-          escalation.id,
-          {
-            expectedCaseVersion: caseVersion,
-            expectedEscalationVersion: escalation.version,
-            reason: reason.trim(),
-          },
-          key,
-        ),
+    return mutateActiveEscalation(reason, (project, caseId, caseVersion, escalation, key) =>
+      endUserCasesRepository.claimEscalation(
+        project,
+        caseId,
+        escalation.id,
+        {
+          expectedCaseVersion: caseVersion,
+          expectedEscalationVersion: escalation.version,
+          reason: reason.trim(),
+        },
+        key,
+      ),
     );
   }
 
   async function releaseEscalation(reason: string): Promise<boolean> {
-    return mutateActiveEscalation(
-      reason,
-      (project, caseId, caseVersion, escalation, key) =>
-        endUserCasesRepository.releaseEscalation(
-          project,
-          caseId,
-          escalation.id,
-          {
-            expectedCaseVersion: caseVersion,
-            expectedEscalationVersion: escalation.version,
-            reason: reason.trim(),
-          },
-          key,
-        ),
+    return mutateActiveEscalation(reason, (project, caseId, caseVersion, escalation, key) =>
+      endUserCasesRepository.releaseEscalation(
+        project,
+        caseId,
+        escalation.id,
+        {
+          expectedCaseVersion: caseVersion,
+          expectedEscalationVersion: escalation.version,
+          reason: reason.trim(),
+        },
+        key,
+      ),
     );
   }
 
-  async function transferEscalation(
-    cmsUserId: string,
-    reason: string,
-  ): Promise<boolean> {
+  async function transferEscalation(cmsUserId: string, reason: string): Promise<boolean> {
     if (!cmsUserId.trim()) return false;
-    return mutateActiveEscalation(
-      reason,
-      (project, caseId, caseVersion, escalation, key) =>
-        endUserCasesRepository.transferEscalation(
-          project,
-          caseId,
-          escalation.id,
-          {
-            expectedCaseVersion: caseVersion,
-            expectedEscalationVersion: escalation.version,
-            cmsUserId: cmsUserId.trim(),
-            reason: reason.trim(),
-          },
-          key,
-        ),
+    return mutateActiveEscalation(reason, (project, caseId, caseVersion, escalation, key) =>
+      endUserCasesRepository.transferEscalation(
+        project,
+        caseId,
+        escalation.id,
+        {
+          expectedCaseVersion: caseVersion,
+          expectedEscalationVersion: escalation.version,
+          cmsUserId: cmsUserId.trim(),
+          reason: reason.trim(),
+        },
+        key,
+      ),
     );
   }
 
   async function closeEscalation(
-    nextCaseStatus:
-      | "OPEN"
-      | "WAITING_END_USER"
-      | "WAITING_SYSTEM"
-      | "RESOLVED"
-      | "UNRESOLVED",
+    nextCaseStatus: 'OPEN' | 'WAITING_END_USER' | 'WAITING_SYSTEM' | 'RESOLVED' | 'UNRESOLVED',
     reason: string,
   ): Promise<boolean> {
-    return mutateActiveEscalation(
-      reason,
-      (project, caseId, caseVersion, escalation, key) =>
-        endUserCasesRepository.closeEscalation(
-          project,
-          caseId,
-          escalation.id,
-          {
-            expectedCaseVersion: caseVersion,
-            expectedEscalationVersion: escalation.version,
-            nextCaseStatus,
-            reason: reason.trim(),
-          },
-          key,
-        ),
+    return mutateActiveEscalation(reason, (project, caseId, caseVersion, escalation, key) =>
+      endUserCasesRepository.closeEscalation(
+        project,
+        caseId,
+        escalation.id,
+        {
+          expectedCaseVersion: caseVersion,
+          expectedEscalationVersion: escalation.version,
+          nextCaseStatus,
+          reason: reason.trim(),
+        },
+        key,
+      ),
     );
   }
 
   async function cancelEscalation(
-    nextCaseStatus: "OPEN" | "WAITING_END_USER" | "WAITING_SYSTEM",
+    nextCaseStatus: 'OPEN' | 'WAITING_END_USER' | 'WAITING_SYSTEM',
     reason: string,
   ): Promise<boolean> {
-    return mutateActiveEscalation(
-      reason,
-      (project, caseId, caseVersion, escalation, key) =>
-        endUserCasesRepository.cancelEscalation(
-          project,
-          caseId,
-          escalation.id,
-          {
-            expectedCaseVersion: caseVersion,
-            expectedEscalationVersion: escalation.version,
-            nextCaseStatus,
-            reason: reason.trim(),
-          },
-          key,
-        ),
+    return mutateActiveEscalation(reason, (project, caseId, caseVersion, escalation, key) =>
+      endUserCasesRepository.cancelEscalation(
+        project,
+        caseId,
+        escalation.id,
+        {
+          expectedCaseVersion: caseVersion,
+          expectedEscalationVersion: escalation.version,
+          nextCaseStatus,
+          reason: reason.trim(),
+        },
+        key,
+      ),
     );
   }
 
@@ -395,9 +348,7 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
     ) => Promise<unknown>,
   ): Promise<boolean> {
     const caseVersion = selected.value?.case.version;
-    const active = activeEndUserCaseEscalation(
-      selected.value?.escalations.items ?? [],
-    );
+    const active = activeEndUserCaseEscalation(selected.value?.escalations.items ?? []);
     if (!active || caseVersion === undefined || !reason.trim()) return false;
     return versionedMutation((project, caseId) =>
       execute(project, caseId, caseVersion, active, crypto.randomUUID()),
@@ -405,7 +356,7 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
   }
 
   async function classify(
-    input: Omit<ClassifyEndUserCaseDto, "expectedVersion" | "idempotencyKey">,
+    input: Omit<ClassifyEndUserCaseDto, 'expectedVersion' | 'idempotencyKey'>,
   ): Promise<boolean> {
     const value = selected.value?.case;
     if (!value) return false;
@@ -419,10 +370,7 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
   }
 
   async function linkMessage(
-    input: Omit<
-      LinkEndUserCaseMessageDto,
-      "expectedVersion" | "idempotencyKey"
-    >,
+    input: Omit<LinkEndUserCaseMessageDto, 'expectedVersion' | 'idempotencyKey'>,
   ): Promise<boolean> {
     const value = selected.value?.case;
     if (!value) return false;
@@ -435,10 +383,7 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
     );
   }
 
-  async function unlinkMessage(
-    messageId: string,
-    reason: string,
-  ): Promise<boolean> {
+  async function unlinkMessage(messageId: string, reason: string): Promise<boolean> {
     const value = selected.value?.case;
     if (!value) return false;
     return versionedMutation((project, caseId) =>
@@ -456,8 +401,7 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
   ): Promise<boolean> {
     const activeProjectId = projectId.value;
     const value = selected.value?.case;
-    if (!activeProjectId || !value || !sources.length || !reason.trim())
-      return false;
+    if (!activeProjectId || !value || !sources.length || !reason.trim()) return false;
     return mutate(() =>
       endUserCasesRepository.merge(activeProjectId, value.id, {
         expectedVersion: value.version,
@@ -480,31 +424,21 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
   ): Promise<string | null> {
     const activeProjectId = projectId.value;
     const value = selected.value?.case;
-    if (
-      !activeProjectId ||
-      !value ||
-      !messageIds.length ||
-      !title.trim() ||
-      !reason.trim()
-    )
+    if (!activeProjectId || !value || !messageIds.length || !title.trim() || !reason.trim())
       return null;
     mutating.value = true;
     detailError.value = null;
     messagesLoading.value = false;
     try {
-      const result = await endUserCasesRepository.split(
-        activeProjectId,
-        value.id,
-        {
-          expectedVersion: value.version,
-          idempotencyKey: crypto.randomUUID(),
-          messageIds,
-          ...(evidenceIds.length ? { evidenceIds } : {}),
-          title: title.trim(),
-          ...(groupCode?.trim() ? { groupCode: groupCode.trim() } : {}),
-          reason: reason.trim(),
-        },
-      );
+      const result = await endUserCasesRepository.split(activeProjectId, value.id, {
+        expectedVersion: value.version,
+        idempotencyKey: crypto.randomUUID(),
+        messageIds,
+        ...(evidenceIds.length ? { evidenceIds } : {}),
+        title: title.trim(),
+        ...(groupCode?.trim() ? { groupCode: groupCode.trim() } : {}),
+        reason: reason.trim(),
+      });
       await Promise.all([loadPage({ replace: true }), refreshSummary()]);
       await open(result.newCaseId);
       return result.newCaseId;
@@ -534,11 +468,7 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
     detailError.value = null;
     try {
       await execute();
-      await Promise.all([
-        open(id),
-        loadPage({ replace: true }),
-        refreshSummary(),
-      ]);
+      await Promise.all([open(id), loadPage({ replace: true }), refreshSummary()]);
       return true;
     } catch (cause) {
       const mutationError = caseErrorMessage(cause);
@@ -564,9 +494,8 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
     if (!isCurrentRealtimeScope(expectedProjectId, expectedGeneration)) return;
     const sequence = BigInt(event.projectSequence);
     const hasGap =
-      sequence >
-      (lastAppliedSequence.value === 0n ? 1n : lastAppliedSequence.value + 1n);
-    if (event.type === "end_user_case.summary") {
+      sequence > (lastAppliedSequence.value === 0n ? 1n : lastAppliedSequence.value + 1n);
+    if (event.type === 'end_user_case.summary') {
       applySummary(event.data);
       if (hasGap) await reconcile();
     } else {
@@ -580,14 +509,11 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
         } else {
           itemsById.value = new Map(itemsById.value);
           itemsById.value.delete(incoming.id);
-          orderedIds.value = orderedIds.value.filter(
-            (id) => id !== incoming.id,
-          );
+          orderedIds.value = orderedIds.value.filter((id) => id !== incoming.id);
         }
         if (selectedId.value === incoming.id) await open(incoming.id);
       }
-      if (!isCurrentRealtimeScope(expectedProjectId, expectedGeneration))
-        return;
+      if (!isCurrentRealtimeScope(expectedProjectId, expectedGeneration)) return;
       // The realtime DTO intentionally does not contain every relation used by
       // server filters (channels, capability outcomes and active escalations).
       // Reconcile every Case event so a previously visible row cannot remain in
@@ -595,8 +521,7 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
       await reconcile();
     }
     if (!isCurrentRealtimeScope(expectedProjectId, expectedGeneration)) return;
-    if (sequence > lastAppliedSequence.value)
-      lastAppliedSequence.value = sequence;
+    if (sequence > lastAppliedSequence.value) lastAppliedSequence.value = sequence;
   }
 
   async function handleRealtimeValue(
@@ -653,14 +578,11 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
   }
 
   function applySummary(value: EndUserCaseSummary): void {
-    const current = summary.value
-      ? BigInt(summary.value.lastProjectSequence)
-      : -1n;
+    const current = summary.value ? BigInt(summary.value.lastProjectSequence) : -1n;
     const incoming = BigInt(value.lastProjectSequence);
     if (incoming < current) return;
     summary.value = value;
-    if (incoming > lastAppliedSequence.value)
-      lastAppliedSequence.value = incoming;
+    if (incoming > lastAppliedSequence.value) lastAppliedSequence.value = incoming;
   }
 
   function clearState(): void {
@@ -729,34 +651,24 @@ export const useEndUserCasesStore = defineStore("end-user-cases", () => {
   };
 });
 
-function caseMatchesFilters(
-  value: EndUserCase,
-  filters: EndUserCaseFilters,
-): boolean {
+function caseMatchesFilters(value: EndUserCase, filters: EndUserCaseFilters): boolean {
   const statuses = endUserCaseStatusesForPreset(filters.preset);
   if (statuses && !statuses.includes(value.status)) return false;
-  if (filters.priority?.length && !filters.priority.includes(value.priority))
-    return false;
+  if (filters.priority?.length && !filters.priority.includes(value.priority)) return false;
   if (filters.groupCode && value.groupCode !== filters.groupCode) return false;
-  if (filters.assignment === "ASSIGNED" && !value.assignee) return false;
-  if (filters.assignment === "UNASSIGNED" && value.assignee) return false;
-  if (filters.preset === "ATTENTION")
+  if (filters.assignment === 'ASSIGNED' && !value.assignee) return false;
+  if (filters.assignment === 'UNASSIGNED' && value.assignee) return false;
+  if (filters.preset === 'ATTENTION')
     return (
-      value.priority === "CRITICAL" ||
-      Boolean(value.staleAt) ||
-      value.status === "WAITING_ADMIN"
+      value.priority === 'CRITICAL' || Boolean(value.staleAt) || value.status === 'WAITING_ADMIN'
     );
   return true;
 }
 
 function caseErrorMessage(cause: unknown): string {
-  if (cause && typeof cause === "object" && "response" in cause) {
-    const response = (cause as { response?: { data?: { message?: unknown } } })
-      .response;
-    if (typeof response?.data?.message === "string")
-      return response.data.message;
+  if (cause && typeof cause === 'object' && 'response' in cause) {
+    const response = (cause as { response?: { data?: { message?: unknown } } }).response;
+    if (typeof response?.data?.message === 'string') return response.data.message;
   }
-  return cause instanceof Error
-    ? cause.message
-    : "Не удалось обновить обращение";
+  return cause instanceof Error ? cause.message : 'Не удалось обновить обращение';
 }

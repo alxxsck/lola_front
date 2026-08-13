@@ -1,19 +1,16 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
 import {
   compareDecimalStrings,
   formatDecimalMoney,
   type DecimalString,
-} from "@/shared/lib/decimal-money";
-import { aiAllowanceRepository } from "../api/ai-allowance-repository";
-import type {
-  AiAllowanceProjectPolicyView,
-  AiAllowanceUserBalance,
-} from "../model/ai-allowance";
-import { pluralizeRu } from "@/features/ai-usage/ai-usage.model";
+} from '@/shared/lib/decimal-money';
+import { aiAllowanceRepository } from '../api/ai-allowance-repository';
+import type { AiAllowanceProjectPolicyView, AiAllowanceUserBalance } from '../model/ai-allowance';
+import { pluralizeRu } from '@/features/ai-usage/ai-usage.model';
 
 const props = defineProps<{
   projectId: string;
@@ -25,117 +22,111 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  openDetails: [mode: "summary" | "grant" | "assignment"];
+  openDetails: [mode: 'summary' | 'grant' | 'assignment'];
   openJournal: [];
 }>();
 
 const balance = ref<AiAllowanceUserBalance | null>(null);
 const projectPolicy = ref<AiAllowanceProjectPolicyView | null>(null);
 const loading = ref(true);
-const error = ref("");
+const error = ref('');
 let generation = 0;
 const DECIMAL_SCALE = 1_000_000_000_000n;
 
 const allowanceStatus = computed(() => {
   const current = balance.value;
-  if (!current)
-    return { code: "POLICY_UNAVAILABLE", title: "Состояние недоступно" };
-  if (nonZero(current.account.overageUsd))
-    return { code: "OVERAGE", title: "Есть перерасход" };
+  if (!current) return { code: 'POLICY_UNAVAILABLE', title: 'Состояние недоступно' };
+  if (nonZero(current.account.overageUsd)) return { code: 'OVERAGE', title: 'Есть перерасход' };
   if (nonZero(current.account.unknownHeldUsd))
-    return { code: "UNKNOWN_HELD", title: "Есть неизвестное удержание" };
+    return { code: 'UNKNOWN_HELD', title: 'Есть неизвестное удержание' };
   if (!current.currentPeriod && nonZero(current.pendingBaseAllocationUsd))
     return {
-      code: "AVAILABLE",
-      title: "Доступно после первого начисления",
+      code: 'AVAILABLE',
+      title: 'Доступно после первого начисления',
     };
 
   const available = scaled(current.account.availableUsd);
   const recurring = scaled(
-    current.currentPeriod?.baseAllocatedUsd ??
-      current.pendingBaseAllocationUsd ??
-      "0",
+    current.currentPeriod?.baseAllocatedUsd ?? current.pendingBaseAllocationUsd ?? '0',
   );
-  if (available <= 0n) return { code: "EXHAUSTED", title: "Лимит исчерпан" };
+  if (available <= 0n) return { code: 'EXHAUSTED', title: 'Лимит исчерпан' };
 
   const policy = projectPolicy.value?.policy;
   if (policy && recurring > 0n) {
     const threshold = scaled(policy.lowThresholdValue);
     const low =
-      policy.lowThresholdMode === "ABSOLUTE_USD"
+      policy.lowThresholdMode === 'ABSOLUTE_USD'
         ? available <= threshold
         : available * 100n * DECIMAL_SCALE <= recurring * threshold;
-    if (low) return { code: "LOW", title: "Лимит почти исчерпан" };
+    if (low) return { code: 'LOW', title: 'Лимит почти исчерпан' };
   }
   return {
-    code: "AVAILABLE",
-    title: "Лимит доступен",
+    code: 'AVAILABLE',
+    title: 'Лимит доступен',
   };
 });
 
 const runtimeStatus = computed(() => {
-  const mode = projectPolicy.value?.policy?.enforcementMode ?? "DISABLED";
-  if (mode === "DISABLED") {
+  const mode = projectPolicy.value?.policy?.enforcementMode ?? 'DISABLED';
+  if (mode === 'DISABLED') {
     return {
-      tone: "neutral",
-      title: "Контроль выключен",
-      description: "AI доступен без блокировки по квоте.",
+      tone: 'neutral',
+      title: 'Контроль выключен',
+      description: 'AI доступен без блокировки по квоте.',
     };
   }
-  if (mode === "SHADOW") {
+  if (mode === 'SHADOW') {
     return {
-      tone: "info",
-      title: "Теневой режим",
-      description: "Расход журналируется, AI не блокируется.",
+      tone: 'info',
+      title: 'Теневой режим',
+      description: 'Расход журналируется, AI не блокируется.',
     };
   }
-  if (mode === "SOFT") {
+  if (mode === 'SOFT') {
     return {
-      tone: "info",
-      title: "Мягкий контроль",
-      description: "Перерасход журналируется, AI не блокируется.",
+      tone: 'info',
+      title: 'Мягкий контроль',
+      description: 'Перерасход журналируется, AI не блокируется.',
     };
   }
   if (projectPolicy.value?.runtimeGates.emergencyDisabled) {
     return {
-      tone: "warning",
-      title: "HARD временно отключён",
-      description: "Активен аварийный флаг; AI не блокируется квотой.",
+      tone: 'warning',
+      title: 'HARD временно отключён',
+      description: 'Активен аварийный флаг; AI не блокируется квотой.',
     };
   }
   if (!projectPolicy.value?.runtimeGates.hardEnforcementApproved) {
     return {
-      tone: "warning",
-      title: "HARD не активирован",
-      description: "Нет runtime-разрешения; действует мягкий контроль.",
+      tone: 'warning',
+      title: 'HARD не активирован',
+      description: 'Нет runtime-разрешения; действует мягкий контроль.',
     };
   }
   return {
-    tone: "success",
-    title: "HARD-контроль активен",
-    description: "Блокировка применяется по состоянию квоты.",
+    tone: 'success',
+    title: 'HARD-контроль активен',
+    description: 'Блокировка применяется по состоянию квоты.',
   };
 });
 
 const assignmentLabel = computed(() => {
   const personal = balance.value?.endUserAssignment;
-  if (personal)
-    return `Персональный план · ${personal.plan?.name ?? personal.planId}`;
+  if (personal) return `Персональный план · ${personal.plan?.name ?? personal.planId}`;
   const projectDefault = projectPolicy.value?.defaultAssignment;
   if (projectDefault)
     return `Базовый план проекта настроен · ${projectDefault.plan?.name ?? projectDefault.planId} · точный источник текущего плана API не сообщает`;
-  return "Персональный план не назначен · применяются правила проекта";
+  return 'Персональный план не назначен · применяются правила проекта';
 });
 
 const grantsLabel = computed(() => {
   const count = balance.value?.activeGrants.length ?? 0;
-  if (balance.value?.grantsPageInfo.hasMore)
-    return `${count}+ активных начислений · есть ещё`;
+  if (balance.value?.grantsPageInfo.hasMore) return `${count}+ активных начислений · есть ещё`;
   return `${count} ${pluralizeRu(
     count,
-    "активное начисление",
-    "активных начисления",
-    "активных начислений",
+    'активное начисление',
+    'активных начисления',
+    'активных начислений',
   )}`;
 });
 
@@ -144,7 +135,7 @@ async function load(): Promise<void> {
   const requestProjectId = props.projectId;
   const requestEndUserId = props.endUserId;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
     const [nextBalance, nextPolicy] = await Promise.all([
       aiAllowanceRepository.endUserBalance(requestProjectId, requestEndUserId, {
@@ -159,8 +150,7 @@ async function load(): Promise<void> {
     )
       return;
     if (nextBalance.projectPolicyVersion !== nextPolicy.projectPolicyVersion) {
-      error.value =
-        "Баланс и настройки лимита получены в разных версиях. Повторите загрузку.";
+      error.value = 'Баланс и настройки лимита получены в разных версиях. Повторите загрузку.';
       return;
     }
     balance.value = nextBalance;
@@ -168,23 +158,21 @@ async function load(): Promise<void> {
   } catch (cause) {
     if (requestGeneration !== generation) return;
     error.value =
-      cause instanceof Error
-        ? cause.message
-        : "Не удалось загрузить лимит пользователя";
+      cause instanceof Error ? cause.message : 'Не удалось загрузить лимит пользователя';
   } finally {
     if (requestGeneration === generation) loading.value = false;
   }
 }
 
 function money(value: DecimalString | undefined): string {
-  return formatDecimalMoney(value ?? "0", "USD");
+  return formatDecimalMoney(value ?? '0', 'USD');
 }
 
 function date(value: string, timeZone: string): string {
   try {
-    return new Intl.DateTimeFormat("ru-RU", {
-      dateStyle: "medium",
-      timeStyle: "short",
+    return new Intl.DateTimeFormat('ru-RU', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
       timeZone,
     }).format(new Date(value));
   } catch {
@@ -193,15 +181,12 @@ function date(value: string, timeZone: string): string {
 }
 
 function nonZero(value: DecimalString | undefined): boolean {
-  return Boolean(value && compareDecimalStrings(value, "0") !== 0);
+  return Boolean(value && compareDecimalStrings(value, '0') !== 0);
 }
 
 function scaled(value: DecimalString): bigint {
-  const [whole, fraction = ""] = value.split(".");
-  return (
-    BigInt(whole ?? "0") * DECIMAL_SCALE +
-    BigInt(`${fraction}000000000000`.slice(0, 12))
-  );
+  const [whole, fraction = ''] = value.split('.');
+  return BigInt(whole ?? '0') * DECIMAL_SCALE + BigInt(`${fraction}000000000000`.slice(0, 12));
 }
 
 watch(
@@ -289,9 +274,7 @@ onBeforeUnmount(() => {
           <dt>Текущий период</dt>
           <dd v-if="balance.currentPeriod">
             {{ money(balance.currentPeriod.baseAllocatedUsd) }} · до
-            {{
-              date(balance.currentPeriod.endsAt, balance.currentPeriod.timezone)
-            }}
+            {{ date(balance.currentPeriod.endsAt, balance.currentPeriod.timezone) }}
             ({{ balance.currentPeriod.timezone }})
           </dd>
           <dd v-else>
@@ -382,13 +365,13 @@ onBeforeUnmount(() => {
   border-radius: 12px;
   background: var(--surface-soft);
 }
-.runtime-status[data-tone="success"] {
+.runtime-status[data-tone='success'] {
   color: var(--status-success-text);
 }
-.runtime-status[data-tone="warning"] {
+.runtime-status[data-tone='warning'] {
   color: var(--status-warning-text);
 }
-.runtime-status[data-tone="danger"] {
+.runtime-status[data-tone='danger'] {
   color: var(--status-danger-text);
 }
 .runtime-status div,

@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import Button from "primevue/button";
-import Message from "primevue/message";
-import Skeleton from "primevue/skeleton";
-import { formatDecimalMoney } from "@/shared/lib/decimal-money";
-import { aiAllowanceAccrualRepository } from "../api/ai-allowance-accrual-repository";
-import type { AiAllowanceAccrualReceiptPage } from "../model/ai-allowance-accrual";
+import { ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Message from 'primevue/message';
+import Skeleton from 'primevue/skeleton';
+import { formatDecimalMoney } from '@/shared/lib/decimal-money';
+import { aiAllowanceAccrualRepository } from '../api/ai-allowance-accrual-repository';
+import type { AiAllowanceAccrualReceiptPage } from '../model/ai-allowance-accrual';
 
 const props = defineProps<{ projectId: string }>();
 const page = ref<AiAllowanceAccrualReceiptPage | null>(null);
-const endUserId = ref("");
-const status = ref<"" | "GRANTED" | "REJECTED">("");
+const endUserId = ref('');
+const status = ref<'' | 'GRANTED' | 'REJECTED'>('');
 const loading = ref(false);
 const loadingMore = ref(false);
-const error = ref("");
+const error = ref('');
 let generation = 0;
 
 watch(
@@ -30,20 +30,14 @@ async function load(): Promise<void> {
   const current = ++generation;
   const projectId = props.projectId;
   loading.value = true;
-  error.value = "";
+  error.value = '';
   try {
-    const next = await aiAllowanceAccrualRepository.listReceipts(
-      projectId,
-      query(),
-    );
-    if (current === generation && projectId === props.projectId)
-      page.value = next;
+    const next = await aiAllowanceAccrualRepository.listReceipts(projectId, query());
+    if (current === generation && projectId === props.projectId) page.value = next;
   } catch (cause) {
     if (current === generation)
       error.value =
-        cause instanceof Error
-          ? cause.message
-          : "Не удалось загрузить историю начислений";
+        cause instanceof Error ? cause.message : 'Не удалось загрузить историю начислений';
   } finally {
     if (current === generation) loading.value = false;
   }
@@ -72,9 +66,7 @@ async function loadMore(): Promise<void> {
   } catch (cause) {
     if (requestGeneration === generation && projectId === props.projectId)
       error.value =
-        cause instanceof Error
-          ? cause.message
-          : "Не удалось загрузить остальные начисления";
+        cause instanceof Error ? cause.message : 'Не удалось загрузить остальные начисления';
   } finally {
     if (requestGeneration === generation && projectId === props.projectId)
       loadingMore.value = false;
@@ -88,22 +80,20 @@ function query() {
   };
 }
 function date(value: string): string {
-  return new Intl.DateTimeFormat("ru-RU", {
-    dateStyle: "short",
-    timeStyle: "medium",
+  return new Intl.DateTimeFormat('ru-RU', {
+    dateStyle: 'short',
+    timeStyle: 'medium',
   }).format(new Date(value));
 }
-function statusLabel(value: "GRANTED" | "REJECTED"): string {
-  return value === "GRANTED" ? "Начислено" : "Отклонено";
+function statusLabel(value: 'GRANTED' | 'REJECTED'): string {
+  return value === 'GRANTED' ? 'Начислено' : 'Отклонено';
 }
-function sourceLabel(
-  value: "SERVER" | "FRONTEND" | "INTERNAL" | "INTEGRATION",
-): string {
+function sourceLabel(value: 'SERVER' | 'FRONTEND' | 'INTERNAL' | 'INTEGRATION'): string {
   return {
-    SERVER: "Сервер",
-    FRONTEND: "Интерфейс",
-    INTERNAL: "Внутренняя операция",
-    INTEGRATION: "Интеграция",
+    SERVER: 'Сервер',
+    FRONTEND: 'Интерфейс',
+    INTERNAL: 'Внутренняя операция',
+    INTEGRATION: 'Интеграция',
   }[value];
 }
 </script>
@@ -114,8 +104,7 @@ function sourceLabel(
       <div>
         <h3>История автоматических начислений</h3>
         <p>
-          Показывает, какое правило сработало, по какому событию и какой лимит
-          получил пользователь.
+          Показывает, какое правило сработало, по какому событию и какой лимит получил пользователь.
         </p>
       </div>
     </header>
@@ -134,9 +123,7 @@ function sourceLabel(
       ><Button label="Показать" type="submit" outlined />
     </form>
     <Skeleton v-if="loading && !page" height="100px" />
-    <Message v-if="error" severity="error" :closable="false">{{
-      error
-    }}</Message>
+    <Message v-if="error" severity="error" :closable="false">{{ error }}</Message>
     <div v-if="page?.items.length" class="table">
       <table>
         <thead>
@@ -165,20 +152,18 @@ function sourceLabel(
               <strong>{{ item.eventLog.eventDefinitionKey.name }}</strong
               ><small
                 >{{ item.eventLog.eventDefinitionKey.code }} ·
-                {{ sourceLabel(item.eventLog.source) }} ·
-                {{ item.eventLog.id }}</small
+                {{ sourceLabel(item.eventLog.source) }} · {{ item.eventLog.id }}</small
               >
             </td>
             <td>
-              <strong
-                :class="item.status === 'REJECTED' ? 'rejected' : 'granted'"
-                >{{ statusLabel(item.status) }}</strong
+              <strong :class="item.status === 'REJECTED' ? 'rejected' : 'granted'">{{
+                statusLabel(item.status)
+              }}</strong
               ><small>{{
-                item.rejectionReason ??
-                `Начисление ${item.grantId ?? "создано"}`
+                item.rejectionReason ?? `Начисление ${item.grantId ?? 'создано'}`
               }}</small>
             </td>
-            <td>{{ formatDecimalMoney(item.rewardUsd, "USD") }}</td>
+            <td>{{ formatDecimalMoney(item.rewardUsd, 'USD') }}</td>
           </tr>
         </tbody>
       </table>
