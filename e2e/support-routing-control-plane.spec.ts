@@ -46,6 +46,51 @@ test("shows the complete routing path on all six routes", async ({ page }) => {
   }
 });
 
+test("keeps every policy help tooltip fully visible above the dialog", async ({
+  page,
+}) => {
+  await page.goto("/support/settings/routing/policies");
+  await page.getByRole("button", { name: "Создать правило" }).first().click();
+
+  const dialog = page.getByRole("dialog", { name: "Новое правило назначения" });
+  const helpTriggers = dialog.getByTestId("field-help");
+  const triggerCount = await helpTriggers.count();
+
+  expect(triggerCount).toBeGreaterThan(0);
+
+  for (let index = 0; index < triggerCount; index += 1) {
+    const trigger = helpTriggers.nth(index);
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.focus();
+
+    const tooltip = page.getByRole("tooltip");
+    await expect(tooltip).toHaveCount(1);
+    await expect(tooltip).toBeVisible();
+
+    expect(
+      await tooltip.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const pointerEvents = element.style.pointerEvents;
+        element.style.pointerEvents = "auto";
+        const topmostElement = document.elementFromPoint(
+          rect.left + rect.width / 2,
+          rect.top + rect.height / 2,
+        );
+        element.style.pointerEvents = pointerEvents;
+
+        return {
+          fitsViewport:
+            rect.left >= 0 &&
+            rect.top >= 0 &&
+            rect.right <= window.innerWidth &&
+            rect.bottom <= window.innerHeight,
+          isTopmost: Boolean(topmostElement && element.contains(topmostElement)),
+        };
+      }),
+    ).toEqual({ fitsViewport: true, isTopmost: true });
+  }
+});
+
 test("creates identities, edits queue and policy, runs shadow and opens explain", async ({
   page,
 }) => {
