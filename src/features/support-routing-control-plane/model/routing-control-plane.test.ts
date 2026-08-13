@@ -3,12 +3,28 @@ import {
   emptyPolicyDraft,
   emptyQueueDraft,
   labelUnknown,
+  normalizeRoutingResourceCode,
+  routingResourceCodeError,
   routingQueueLabel,
   routingQueuePurpose,
   routingPolicyLabel,
 } from "./routing-control-plane";
 
 describe("routing control plane domain", () => {
+  it("normalizes an underscore in a routing identifier before it reaches the server", () => {
+    expect(normalizeRoutingResourceCode(" call_admin ")).toBe("call-admin");
+    expect(routingResourceCodeError("call_admin")).toBeNull();
+  });
+
+  it("explains identifiers that cannot satisfy the server format", () => {
+    expect(routingResourceCodeError("срочная-поддержка")).toBe(
+      "Используйте латинские буквы, цифры и дефис; первый символ — буква.",
+    );
+    expect(routingResourceCodeError("a")).toBe(
+      "Введите не меньше двух символов.",
+    );
+  });
+
   it("keeps retry attempts inside the backend contract", () => {
     const draft = emptyPolicyDraft();
     expect(draft.retry.maxAttempts).toBeGreaterThanOrEqual(1);

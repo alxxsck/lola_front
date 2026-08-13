@@ -19,18 +19,22 @@ import {
   emptyPolicyDraft,
   emptyQueueDraft,
   labelUnknown,
+  normalizeRoutingResourceCode,
+  routingResourceCodeError,
   routingPolicyLabel,
   routingQueueLabel,
   routingQueuePurpose,
   type PolicyDraft,
   type QueueDraft,
   type QueuePredicate,
+  type RoutingPolicy,
   type RoutingQueue,
   type RoutingSection,
   type WorkforceConfiguration,
 } from "@/features/support-routing-control-plane/model/routing-control-plane";
 import { useRoutingControlPlane } from "@/features/support-routing-control-plane/model/use-routing-control-plane";
 import QueuePredicateEditor from "@/features/support-routing-control-plane/ui/QueuePredicateEditor.vue";
+import FormFieldLabel from "@/shared/ui/FormFieldLabel.vue";
 
 const auth = useAuthStore();
 const route = useRoute();
@@ -118,7 +122,7 @@ const sections: Array<{
   },
   {
     id: "policies",
-    label: "Политики",
+    label: "Правила назначения",
     route: "/support/settings/routing/policies",
     icon: "pi pi-sliders-h",
   },
@@ -160,7 +164,9 @@ const identityEdit = ref<{
 } | null>(null);
 const activationDialog = ref(false);
 const revisionDialog = ref<"QUEUE" | "POLICY" | "WORKFORCE" | null>(null);
-const createResourceDialog = ref<"QUEUE" | "POLICY" | null>(null);
+const createResourceDialog = ref<"QUEUE" | null>(null);
+const policyDialogMode = ref<"CREATE" | "EDIT" | null>(null);
+const policyDialogError = ref<string | null>(null);
 const activationMode = ref<"OFFER" | "AUTO_ASSIGN">("OFFER");
 const activationReason = ref("ROUTING_CONFIGURATION_APPROVED");
 const queuePreview =
@@ -173,6 +179,8 @@ const identityForm = reactive({
 const resourceForm = reactive({ code: "", name: "" });
 const queueDraft = ref<QueueDraft>(emptyQueueDraft());
 const policyDraft = ref<PolicyDraft>(emptyPolicyDraft());
+const newPolicyCode = ref("");
+const newPolicyDraft = ref<PolicyDraft>(emptyPolicyDraft());
 const workforceDraft = ref<WorkforceConfiguration>({
   teams: [],
   operators: [],
@@ -225,10 +233,13 @@ const selectedQueuePresentation = computed(() =>
     : null,
 );
 const firstReadinessIssue = computed(
-  () => readiness.value?.checks.find((check) => check.status !== "PASS") ?? null,
+  () =>
+    readiness.value?.checks.find((check) => check.status !== "PASS") ?? null,
 );
 const passedReadinessChecks = computed(
-  () => readiness.value?.checks.filter((check) => check.status === "PASS").length ?? 0,
+  () =>
+    readiness.value?.checks.filter((check) => check.status === "PASS").length ??
+    0,
 );
 const filteredOperators = computed(() => {
   const query = workforceSearch.value.trim().toLocaleLowerCase("ru");
@@ -257,7 +268,8 @@ const policyOptions = computed(
   () =>
     snapshot.value?.policies
       .filter((item) => item.lifecycle === "ACTIVE" && item.published)
-      .map((item) => ({ label: routingPolicyLabel(item), value: item.id })) ?? [],
+      .map((item) => ({ label: routingPolicyLabel(item), value: item.id })) ??
+    [],
 );
 const activationModeOptions = computed(() =>
   [
@@ -302,16 +314,16 @@ const queueValid = computed(
       queueDraft.value.routing.primaryTeamIds.length > 0) &&
     queuePredicateValid(queueDraft.value.filter.predicate),
 );
-const policyValid = computed(
-  () =>
-    policyDraft.value.retry.maxAttempts >= 1 &&
-    policyDraft.value.retry.maxAttempts <= 5 &&
-    Object.values(policyDraft.value.weights).every(
-      (value) => value >= 0 && value <= 100,
-    ) &&
-    Object.values(policyDraft.value.queueWeights).every(
-      (value) => value >= 0 && value <= 100,
-    ),
+const policyFormDraft = computed(() =>
+  policyDialogMode.value === "CREATE"
+    ? newPolicyDraft.value
+    : policyDraft.value,
+);
+const policyFormValid = computed(() => policyDraftValid(policyFormDraft.value));
+const policyCodeError = computed(() =>
+  policyDialogMode.value === "CREATE"
+    ? routingResourceCodeError(newPolicyCode.value)
+    : null,
 );
 const skillOptions = computed(
   () =>
@@ -319,6 +331,82 @@ const skillOptions = computed(
       .filter((item) => item.lifecycle === "ACTIVE")
       .map((item) => ({ label: item.name, value: item.id })) ?? [],
 );
+
+const operatorWeightFields = [
+  {
+    key: "skill",
+    label: "Подходящие дополнительные навыки",
+    help: "За каждый совпавший дополнительный навык оператор получает больше баллов.",
+  },
+  {
+    key: "language",
+    label: "Подходящий дополнительный язык",
+    help: "Повышает оценку оператора, если он владеет одним из дополнительных языков.",
+  },
+  {
+    key: "load",
+    label: "Свободная ёмкость",
+    help: "Чем больше значение, тем сильнее система предпочитает менее занятого оператора.",
+  },
+  {
+    key: "continuity",
+    label: "Продолжение диалога",
+    help: "Повышает оценку оператора, который уже работал с этим обращением.",
+  },
+  {
+    key: "idle",
+    label: "Время без нового назначения",
+    help: "Повышает оценку оператора, который дольше других не получал новых обращений.",
+  },
+] as const;
+
+const queueWeightFields = [
+  {
+    key: "sla",
+    label: "Риск нарушения срока",
+    help: "Поднимает обращения, у которых скоро истечёт или уже истёк срок ответа.",
+  },
+  {
+    key: "priority",
+    label: "Приоритет обращения",
+    help: "Учитывает установленный в обращении приоритет: чем он выше, тем раньше назначение.",
+  },
+  {
+    key: "escalation",
+    label: "Передано руководителю",
+    help: "Поднимает обращения, которым уже потребовалось вмешательство руководителя.",
+  },
+  {
+    key: "age",
+    label: "Время ожидания",
+    help: "Поднимает обращения, которые дольше остаются без оператора.",
+  },
+] as const;
+
+function policyDraftValid(value: PolicyDraft): boolean {
+  return (
+    value.capacityWeightUnits >= 1 &&
+    value.capacityWeightUnits <= 10_000 &&
+    value.hardUtilizationPercent >= 1 &&
+    value.hardUtilizationPercent <= 100 &&
+    value.retry.maxAttempts >= 1 &&
+    value.retry.maxAttempts <= 5 &&
+    value.retry.cooldownSeconds >= 0 &&
+    value.retry.cooldownSeconds <= 86_400 &&
+    value.retry.fallbackDelaySeconds >= 0 &&
+    value.retry.fallbackDelaySeconds <= 86_400 &&
+    value.timeouts.offerSeconds >= 5 &&
+    value.timeouts.offerSeconds <= 600 &&
+    value.timeouts.reservationSeconds >= 5 &&
+    value.timeouts.reservationSeconds <= 600 &&
+    Object.values(value.weights).every(
+      (weight) => weight >= 0 && weight <= 10_000,
+    ) &&
+    Object.values(value.queueWeights).every(
+      (weight) => weight >= 0 && weight <= 10_000,
+    )
+  );
+}
 
 watch(
   snapshot,
@@ -466,7 +554,11 @@ function operatorName(id: string | null): string {
 }
 function queueName(id: string | null): string {
   const queue = snapshot.value?.queues.find((item) => item.id === id);
-  return queue ? routingQueueLabel(queue) : id ? "Неизвестная очередь" : "Без очереди";
+  return queue
+    ? routingQueueLabel(queue)
+    : id
+      ? "Неизвестная очередь"
+      : "Без очереди";
 }
 function modeLabel(mode: string): string {
   return labelUnknown(mode, {
@@ -489,17 +581,17 @@ function checkLabel(code: string): string {
   return labelUnknown(code, {
     WORKFORCE_PUBLISHED: "Рабочая сила опубликована",
     QUEUE_PUBLISHED: "Очередь опубликована",
-    POLICY_PUBLISHED: "Политика опубликована",
-    QUEUE_SLOT_CONFIGURED: "Очередь связана с политикой",
+    POLICY_PUBLISHED: "Правило назначения применено",
+    QUEUE_SLOT_CONFIGURED: "Очередь связана с правилом назначения",
     CANDIDATE_SET_AVAILABLE: "Есть подходящие операторы",
-    SLOT_MISSING: "Очередь не связана с политикой",
+    SLOT_MISSING: "Очередь не связана с правилом назначения",
     QUEUE_NOT_ACTIVE: "Очередь неактивна",
     QUEUE_NOT_PUBLISHED: "Нет опубликованной очереди",
     QUEUE_GENERATION_MISSING: "Выборка очереди ещё не построена",
     QUEUE_GENERATION_BUILDING: "Выборка очереди строится",
     QUEUE_GENERATION_DEGRADED: "Выборка очереди работает с ограничениями",
-    POLICY_NOT_ACTIVE: "Политика неактивна",
-    POLICY_NOT_PUBLISHED: "Нет опубликованной политики",
+    POLICY_NOT_ACTIVE: "Правило назначения неактивно",
+    POLICY_NOT_PUBLISHED: "Правило назначения ещё не применено",
     WORKFORCE_NOT_PUBLISHED: "Рабочая сила не опубликована",
     QUEUE_MODE_INCOMPATIBLE: "Режим очереди несовместим",
     ALGORITHM_REVISION_UNSUPPORTED: "Версия алгоритма не поддерживается",
@@ -510,19 +602,23 @@ function checkLabel(code: string): string {
 function checkDescription(code: string, status: string): string {
   if (status === "PASS") return "Готово";
   return labelUnknown(code, {
-    SLOT_MISSING: "Свяжите очередь с опубликованной политикой распределения",
+    SLOT_MISSING: "Свяжите очередь с применённым правилом назначения",
     QUEUE_NOT_ACTIVE: "Верните очередь в активное состояние",
     QUEUE_NOT_PUBLISHED: "Опубликуйте черновик очереди",
     QUEUE_GENERATION_MISSING: "Сохраните и опубликуйте условия выборки",
-    QUEUE_GENERATION_BUILDING: "Сервер ещё строит выборку — обновите состояние позже",
-    QUEUE_GENERATION_DEGRADED: "Проверьте условия выборки и диагностику сервера",
-    POLICY_NOT_ACTIVE: "Верните связанную политику в активное состояние",
-    POLICY_NOT_PUBLISHED: "Опубликуйте политику распределения",
-    WORKFORCE_NOT_PUBLISHED: "Опубликуйте состав команд и доступность операторов",
+    QUEUE_GENERATION_BUILDING:
+      "Сервер ещё строит выборку — обновите состояние позже",
+    QUEUE_GENERATION_DEGRADED:
+      "Проверьте условия выборки и диагностику сервера",
+    POLICY_NOT_ACTIVE: "Верните связанное правило назначения в активное состояние",
+    POLICY_NOT_PUBLISHED: "Сохраните и примените правило назначения",
+    WORKFORCE_NOT_PUBLISHED:
+      "Опубликуйте состав команд и доступность операторов",
     QUEUE_MODE_INCOMPATIBLE: "Согласуйте режим очереди с режимом назначения",
-    ALGORITHM_REVISION_UNSUPPORTED: "Обновите политику до поддерживаемой версии",
+    ALGORITHM_REVISION_UNSUPPORTED:
+      "Обновите правило назначения до поддерживаемой версии",
     WORKFORCE_TEAM_REFERENCE_MISSING: "Добавьте команду очереди в рабочую силу",
-    CANDIDATE_SET_TOO_LARGE: "Сузьте выборку операторов в политике",
+    CANDIDATE_SET_TOO_LARGE: "Сузьте выборку операторов в правиле назначения",
   });
 }
 function checkRoute(code: string): string {
@@ -555,11 +651,11 @@ async function createIdentity(): Promise<void> {
   const ok =
     identityDialog.value === "TEAM"
       ? await controller.createTeam(
-          identityForm.code.trim(),
+          normalizeRoutingResourceCode(identityForm.code),
           identityForm.name.trim(),
         )
       : await controller.createSkill(
-          identityForm.code.trim(),
+          normalizeRoutingResourceCode(identityForm.code),
           identityForm.name.trim(),
           identityForm.kind,
         );
@@ -609,12 +705,19 @@ async function publishQueue(): Promise<void> {
     await controller.publishQueue(selectedQueue.value.id);
 }
 async function savePolicy(): Promise<void> {
+  policyDialogError.value = null;
   if (selectedPolicy.value) {
     const ok = await controller.savePolicy(
       selectedPolicy.value.id,
       plain(policyDraft.value),
     );
-    if (ok) policyBaseline.value = JSON.stringify(toRaw(policyDraft.value));
+    if (ok) {
+      policyBaseline.value = JSON.stringify(toRaw(policyDraft.value));
+    } else {
+      policyDialogError.value =
+        controller.error.value ?? "Не удалось сохранить правило назначения.";
+      controller.error.value = null;
+    }
   }
 }
 async function saveWorkforce(): Promise<void> {
@@ -622,8 +725,21 @@ async function saveWorkforce(): Promise<void> {
   if (ok) workforceBaseline.value = JSON.stringify(toRaw(workforceDraft.value));
 }
 async function publishPolicy(): Promise<void> {
-  if (selectedPolicy.value)
-    await controller.publishPolicy(selectedPolicy.value.id);
+  policyDialogError.value = null;
+  if (!selectedPolicy.value) return;
+  const ok = await controller.publishPolicy(selectedPolicy.value.id);
+  if (!ok) {
+    policyDialogError.value =
+      controller.error.value ?? "Не удалось применить правило назначения.";
+    controller.error.value = null;
+  }
+}
+async function saveAndPublishPolicy(): Promise<void> {
+  if (!selectedPolicy.value) return;
+  await savePolicy();
+  if (policyDialogError.value) return;
+  await publishPolicy();
+  if (!policyDialogError.value) policyDialogMode.value = null;
 }
 async function saveBinding(): Promise<void> {
   if (selectedQueue.value && selectedPolicyId.value)
@@ -702,6 +818,49 @@ function scoreLabel(code: string): string {
     total: "Итог",
   });
 }
+function policyConfiguration(policy: RoutingPolicy): PolicyDraft | null {
+  return policy.draft?.configuration ?? policy.published?.configuration ?? null;
+}
+function policyQueueCount(policyId: string): number {
+  return (
+    snapshot.value?.slots.filter((slot) => slot.policyId === policyId).length ??
+    0
+  );
+}
+function policyStatus(policy: RoutingPolicy): string {
+  if (policy.draft && policy.published)
+    return "Есть изменения, которые ещё не применены";
+  if (policy.draft) return "Пока не применяется";
+  if (policy.published)
+    return `Применяется · версия ${policy.published.revisionNumber}`;
+  return "Пока не настроено";
+}
+function openPolicyCreate(): void {
+  newPolicyCode.value = "";
+  newPolicyDraft.value = emptyPolicyDraft();
+  policyDialogError.value = null;
+  controller.error.value = null;
+  policyDialogMode.value = "CREATE";
+}
+async function openPolicyEditor(policyId: string): Promise<void> {
+  selectedPolicyId.value = policyId;
+  policyDialogError.value = null;
+  controller.error.value = null;
+  const policy = snapshot.value?.policies.find((item) => item.id === policyId);
+  if (policy && !policy.detailLoaded) await controller.hydratePolicy(policyId);
+  policyDialogMode.value = "EDIT";
+}
+async function openPolicyHistory(policyId: string): Promise<void> {
+  selectedPolicyId.value = policyId;
+  await openRevisions("POLICY");
+}
+function closePolicyDialog(): void {
+  policyDialogMode.value = null;
+  policyDialogError.value = null;
+}
+function normalizePolicyCode(): void {
+  newPolicyCode.value = normalizeRoutingResourceCode(newPolicyCode.value);
+}
 async function openRevisions(
   kind: "QUEUE" | "POLICY" | "WORKFORCE",
 ): Promise<void> {
@@ -723,25 +882,44 @@ async function openRevisions(
   );
 }
 async function createResource(): Promise<void> {
-  const ok =
-    createResourceDialog.value === "QUEUE"
-      ? await controller.createQueue(resourceForm.code.trim(), {
-          ...emptyQueueDraft(resourceForm.name.trim()),
-          routing: {
-            mode: "MANUAL",
-            primaryTeamIds: [],
-            fallbackTeamIds: [],
-          },
-        })
-      : await controller.createPolicy(
-          resourceForm.code.trim(),
-          emptyPolicyDraft(),
-        );
+  const ok = await controller.createQueue(
+    normalizeRoutingResourceCode(resourceForm.code),
+    {
+      ...emptyQueueDraft(resourceForm.name.trim()),
+      routing: {
+        mode: "MANUAL",
+        primaryTeamIds: [],
+        fallbackTeamIds: [],
+      },
+    },
+  );
   if (ok) {
     createResourceDialog.value = null;
     resourceForm.code = "";
     resourceForm.name = "";
   }
+}
+async function createPolicy(): Promise<void> {
+  const codeError = routingResourceCodeError(newPolicyCode.value);
+  if (codeError) {
+    policyDialogError.value = codeError;
+    return;
+  }
+  const code = normalizeRoutingResourceCode(newPolicyCode.value);
+  newPolicyCode.value = code;
+  policyDialogError.value = null;
+  const ok = await controller.createPolicy(code, plain(newPolicyDraft.value));
+  if (!ok) {
+    policyDialogError.value =
+      controller.error.value ?? "Не удалось создать правило назначения.";
+    controller.error.value = null;
+    return;
+  }
+  const created = snapshot.value?.policies.find(
+    (policy) => policy.code === code,
+  );
+  if (created) selectedPolicyId.value = created.id;
+  closePolicyDialog();
 }
 async function restoreSelectedRevision(revisionId: string): Promise<void> {
   if (!revisionDialog.value) return;
@@ -767,7 +945,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
         <span class="routing-eyebrow">Настройки поддержки</span>
         <h1>Маршрутизация обращений</h1>
         <p>
-          Настройте команды, очереди и правила назначения — от черновика до
+          Настройте команды, очереди и правила назначения — от условий до
           объяснимого решения.
         </p>
       </div>
@@ -960,11 +1138,17 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
               />
             </section>
 
-            <section class="readiness-checklist" aria-label="Проверки готовности">
+            <section
+              class="readiness-checklist"
+              aria-label="Проверки готовности"
+            >
               <header>
                 <div>
                   <h3>Что уже проверено</h3>
-                  <p>{{ passedReadinessChecks }} из {{ readiness.checks.length }} условий готовы</p>
+                  <p>
+                    {{ passedReadinessChecks }} из
+                    {{ readiness.checks.length }} условий готовы
+                  </p>
                 </div>
               </header>
               <ol>
@@ -986,7 +1170,9 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
                   </span>
                   <span>
                     <strong>{{ checkLabel(check.code) }}</strong>
-                    <small>{{ checkDescription(check.code, check.status) }}</small>
+                    <small>{{
+                      checkDescription(check.code, check.status)
+                    }}</small>
                   </span>
                   <span class="readiness-check__state">
                     {{ check.status === "PASS" ? "Готово" : "Нужно действие" }}
@@ -994,7 +1180,11 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
                 </li>
                 <li :data-status="readiness.activation ? 'PASS' : 'PENDING'">
                   <span class="readiness-check__mark">
-                    <i :class="readiness.activation ? 'pi pi-check' : 'pi pi-circle'" />
+                    <i
+                      :class="
+                        readiness.activation ? 'pi pi-check' : 'pi pi-circle'
+                      "
+                    />
                   </span>
                   <span>
                     <strong>Режим назначения</strong>
@@ -1018,7 +1208,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
               ><strong>{{ readiness?.candidateCount ?? "—" }}</strong>
             </div>
             <div>
-              <span>Политика</span
+              <span>Правило назначения</span
               ><strong>{{
                 routingPolicyLabel(
                   snapshot.policies.find(
@@ -1033,7 +1223,10 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
             </div>
           </div>
 
-          <div v-if="canManageRouting" class="surface-actions surface-actions--overview">
+          <div
+            v-if="canManageRouting"
+            class="surface-actions surface-actions--overview"
+          >
             <Button
               label="Проверочный запуск"
               icon="pi pi-play"
@@ -1640,10 +1833,10 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
           <section class="binding-panel">
             <div>
               <span class="routing-eyebrow">Связь и порядок</span>
-              <h3>Политика назначения</h3>
+              <h3>Правило назначения</h3>
             </div>
             <label class="field"
-              ><span>Политика</span
+              ><span>Правило</span
               ><Select
                 v-model="selectedPolicyId"
                 :options="policyOptions"
@@ -1743,272 +1936,116 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
         </div>
       </section>
 
-      <section v-else-if="section === 'policies'" class="routing-workbench">
-        <aside class="routing-catalog">
-          <div class="panel-heading">
-            <div>
-              <h2>Политики</h2>
-              <p>Неизменяемые опубликованные версии</p>
-            </div>
-            <Button
-              v-if="canManageRouting"
-              icon="pi pi-plus"
-              rounded
-              text
-              aria-label="Создать политику"
-              :disabled="!canManageRouting"
-              @click="createResourceDialog = 'POLICY'"
-            />
+      <section
+        v-else-if="section === 'policies'"
+        class="policy-catalog-surface"
+      >
+        <header class="policy-catalog-header">
+          <div>
+            <span class="routing-eyebrow">Автоматическое распределение</span>
+            <h2>Правила назначения операторов</h2>
+            <p>
+              Правило определяет, кто может получить обращение, кого система
+              выберет первым и что произойдёт, если назначение не состоялось.
+            </p>
           </div>
-          <button
+          <Button
+            v-if="canManageRouting"
+            label="Создать правило"
+            icon="pi pi-plus"
+            @click="openPolicyCreate"
+          />
+        </header>
+
+        <ol
+          class="assignment-flow"
+          aria-label="Как работает правило назначения"
+        >
+          <li>
+            <span>1</span><strong>Отбирает подходящих</strong
+            ><small>по навыкам, языкам и занятости</small>
+          </li>
+          <li>
+            <span>2</span><strong>Выбирает следующего</strong
+            ><small>по важности обращения и оценке операторов</small>
+          </li>
+          <li>
+            <span>3</span><strong>Повторяет попытку</strong
+            ><small>если оператор не ответил или отказался</small>
+          </li>
+        </ol>
+
+        <div v-if="snapshot.policies.length" class="policy-card-list">
+          <article
             v-for="policy in snapshot.policies"
             :key="policy.id"
-            type="button"
-            :class="[
-              'catalog-row',
-              { 'catalog-row--selected': selectedPolicyId === policy.id },
-            ]"
-            @click="selectedPolicyId = policy.id"
+            class="policy-card"
           >
-            <span
-              ><strong>{{ routingPolicyLabel(policy) }}</strong
-              ><small>{{
-                policy.draft
-                  ? "Отдельный черновик"
-                  : policy.published
-                    ? `Версия ${policy.published.revisionNumber}`
-                    : "Не опубликована"
-              }}</small></span
-            ><i class="pi pi-angle-right" />
-          </button>
-        </aside>
-        <div
-          v-if="
-            selectedPolicy && canManageRouting && selectedPolicy.detailLoaded
-          "
-          class="routing-surface routing-editor"
-        >
-          <div class="surface-title">
-            <div>
-              <span class="routing-eyebrow">Политика назначения</span>
-              <h2>{{ routingPolicyLabel(selectedPolicy) }}</h2>
-              <p>Числа сопровождаются объяснением влияния на выбор.</p>
+            <div class="policy-card__identity">
+              <span class="policy-card__icon"
+                ><i class="pi pi-directions"
+              /></span>
+              <div>
+                <h3>{{ routingPolicyLabel(policy) }}</h3>
+                <code>{{ policy.code }}</code>
+              </div>
             </div>
-            <div class="surface-title__actions">
+            <div class="policy-card__status">
+              <span
+                class="status-dot"
+                :data-status="
+                  policy.draft ? 'DEGRADED' : policy.published ? 'READY' : 'UNKNOWN'
+                "
+              />
+              <span>{{ policyStatus(policy) }}</span>
+            </div>
+            <dl v-if="policyConfiguration(policy)" class="policy-card__facts">
+              <div>
+                <dt>Очередей использует</dt>
+                <dd>{{ policyQueueCount(policy.id) }}</dd>
+              </div>
+              <div>
+                <dt>Предел занятости</dt>
+                <dd>
+                  {{ policyConfiguration(policy)?.hardUtilizationPercent }}%
+                </dd>
+              </div>
+              <div>
+                <dt>Попыток назначения</dt>
+                <dd>{{ policyConfiguration(policy)?.retry.maxAttempts }}</dd>
+              </div>
+            </dl>
+            <div class="policy-card__actions">
               <Button
                 label="История"
                 icon="pi pi-history"
                 severity="secondary"
                 text
-                @click="openRevisions('POLICY')"
-              /><Button
-                label="Сохранить черновик"
-                :disabled="!policyValid"
-                @click="savePolicy"
-              /><Button
-                label="Опубликовать"
-                icon="pi pi-send"
-                :disabled="!canManageRouting || !selectedPolicy.draft"
-                @click="publishPolicy"
+                @click="openPolicyHistory(policy.id)"
+              />
+              <Button
+                :label="canManageRouting ? 'Настроить' : 'Посмотреть'"
+                icon="pi pi-sliders-h"
+                severity="secondary"
+                outlined
+                @click="openPolicyEditor(policy.id)"
               />
             </div>
-          </div>
-          <section class="policy-section">
-            <h3>Обязательные условия</h3>
-            <div class="form-grid">
-              <label class="field"
-                ><span>Обязательные навыки</span
-                ><MultiSelect
-                  v-model="policyDraft.mandatorySkills"
-                  :options="skillOptions"
-                  option-label="label"
-                  option-value="value"
-                  display="chip"
-                  :disabled="!canManageRouting" /></label
-              ><label class="field"
-                ><span>Желаемые навыки</span
-                ><MultiSelect
-                  v-model="policyDraft.preferredSkills"
-                  :options="skillOptions"
-                  option-label="label"
-                  option-value="value"
-                  display="chip"
-                  :disabled="!canManageRouting" /></label
-              ><label class="field"
-                ><span>Обязательные языки</span
-                ><InputText
-                  :model-value="policyDraft.mandatoryLanguages.join(', ')"
-                  :disabled="!canManageRouting"
-                  @update:model-value="
-                    policyDraft.mandatoryLanguages = String($event)
-                      .split(',')
-                      .map((item) => item.trim())
-                      .filter(Boolean)
-                  " /></label
-              ><label class="field"
-                ><span>Желаемые языки</span
-                ><InputText
-                  :model-value="policyDraft.preferredLanguages.join(', ')"
-                  @update:model-value="
-                    policyDraft.preferredLanguages = String($event)
-                      .split(',')
-                      .map((item) => item.trim())
-                      .filter(Boolean)
-                  " /></label
-              ><label class="field"
-                ><span>Единиц ёмкости на назначение</span
-                ><InputNumber
-                  v-model="policyDraft.capacityWeightUnits"
-                  :min="1"
-                  :max="100" /></label
-              ><label class="field"
-                ><span>Предел занятости, %</span
-                ><InputNumber
-                  v-model="policyDraft.hardUtilizationPercent"
-                  :min="1"
-                  :max="100"
-                  suffix=" %"
-                  :disabled="!canManageRouting"
-                /><small
-                  >Операторы выше предела исключаются до ранжирования.</small
-                ></label
-              >
-            </div>
-          </section>
-          <section class="policy-section">
-            <h3>Веса выбора оператора</h3>
-            <div class="weight-grid">
-              <label
-                v-for="(label, key) in {
-                  skill: 'Навыки',
-                  language: 'Язык',
-                  load: 'Свободная ёмкость',
-                  continuity: 'Продолжение диалога',
-                  idle: 'Время без назначения',
-                }"
-                :key="key"
-                class="field"
-                ><span>{{ label }}</span
-                ><InputNumber
-                  v-model="
-                    policyDraft.weights[key as keyof typeof policyDraft.weights]
-                  "
-                  :min="0"
-                  :max="100"
-                  :disabled="!canManageRouting"
-              /></label>
-            </div>
-            <p class="impact-summary">
-              <i class="pi pi-info-circle" /> Сейчас навыки и язык дают
-              {{ policyDraft.weights.skill + policyDraft.weights.language }}%
-              оценки, а загрузка — {{ policyDraft.weights.load }}%.
-            </p>
-          </section>
-          <section class="policy-section">
-            <h3>Очередь, ожидание и повторы</h3>
-            <div class="weight-grid">
-              <label
-                v-for="(label, key) in {
-                  sla: 'Риск срока',
-                  priority: 'Приоритет',
-                  escalation: 'Эскалация',
-                  age: 'Возраст обращения',
-                }"
-                :key="key"
-                class="field"
-                ><span>{{ label }}</span
-                ><InputNumber
-                  v-model="
-                    policyDraft.queueWeights[
-                      key as keyof typeof policyDraft.queueWeights
-                    ]
-                  "
-                  :min="0"
-                  :max="100" /></label
-              ><label class="field"
-                ><span>Ответ на предложение, сек.</span
-                ><InputNumber
-                  v-model="policyDraft.timeouts.offerSeconds"
-                  :min="5"
-                  :max="3600"
-                  :disabled="!canManageRouting" /></label
-              ><label class="field"
-                ><span>Бронь назначения, сек.</span
-                ><InputNumber
-                  v-model="policyDraft.timeouts.reservationSeconds"
-                  :min="5"
-                  :max="3600"
-                  :disabled="!canManageRouting" /></label
-              ><label class="field"
-                ><span>Число попыток</span
-                ><InputNumber
-                  v-model="policyDraft.retry.maxAttempts"
-                  :min="1"
-                  :max="5"
-                  show-buttons
-                  :disabled="!canManageRouting"
-                /><small
-                  >Не более пяти — одинаково в форме и на сервере.</small
-                ></label
-              ><label class="field"
-                ><span>Пауза между попытками, сек.</span
-                ><InputNumber
-                  v-model="policyDraft.retry.cooldownSeconds"
-                  :min="0"
-                  :max="3600"
-                  :disabled="!canManageRouting" /></label
-              ><label class="field"
-                ><span>Задержка резерва, сек.</span
-                ><InputNumber
-                  v-model="policyDraft.retry.fallbackDelaySeconds"
-                  :min="0"
-                  :max="3600"
-                  :disabled="!canManageRouting"
-              /></label>
-            </div>
-            <Message v-if="!policyValid" severity="error" :closable="false"
-              >Проверьте веса и число попыток: допустимы значения от 0 до 100,
-              попыток — от 1 до 5.</Message
-            >
-          </section>
+          </article>
         </div>
-        <div
-          v-else-if="selectedPolicy && !selectedPolicy.detailLoaded"
-          class="routing-surface"
-        >
-          <Skeleton height="18rem" />
-        </div>
-        <div v-else-if="selectedPolicy" class="routing-surface">
-          <span class="routing-eyebrow">Опубликованная политика</span>
-          <h2>{{ routingPolicyLabel(selectedPolicy) }}</h2>
-          <Message severity="info" :closable="false"
-            >Черновик и команды изменения скрыты. Показана опубликованная версия
-            {{ selectedPolicy.published?.revisionNumber ?? "—" }}.</Message
-          >
-          <dl v-if="selectedPolicy.published" class="readonly-summary">
-            <div>
-              <dt>Предел занятости</dt>
-              <dd>
-                {{
-                  selectedPolicy.published.configuration.hardUtilizationPercent
-                }}%
-              </dd>
-            </div>
-            <div>
-              <dt>Число попыток</dt>
-              <dd>
-                {{ selectedPolicy.published.configuration.retry.maxAttempts }}
-              </dd>
-            </div>
-            <div>
-              <dt>Обязательные навыки</dt>
-              <dd>
-                {{
-                  selectedPolicy.published.configuration.mandatorySkills.length
-                }}
-              </dd>
-            </div>
-          </dl>
+        <div v-else class="policy-empty">
+          <span><i class="pi pi-directions" /></span>
+          <h3>Правил назначения пока нет</h3>
+          <p>
+            Создайте первое правило, чтобы система могла выбирать оператора для
+            очереди.
+          </p>
+          <Button
+            v-if="canManageRouting"
+            label="Создать правило"
+            icon="pi pi-plus"
+            @click="openPolicyCreate"
+          />
         </div>
       </section>
 
@@ -2089,7 +2126,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
           ><span>Код</span
           ><InputText
             v-model="identityForm.code"
-            placeholder="priority_support" /></label
+            placeholder="priority-support" /></label
         ><label class="field"
           ><span>Название</span
           ><InputText
@@ -2125,11 +2162,390 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
     </Dialog>
 
     <Dialog
-      :visible="Boolean(createResourceDialog)"
+      :visible="Boolean(policyDialogMode)"
       modal
       :header="
-        createResourceDialog === 'QUEUE' ? 'Новая очередь' : 'Новая политика'
+        policyDialogMode === 'CREATE'
+          ? 'Новое правило назначения'
+          : `Правило «${routingPolicyLabel(selectedPolicy)}»`
       "
+      :style="{ width: '68rem', maxWidth: 'calc(100vw - 32px)' }"
+      class="policy-dialog"
+      @update:visible="!$event && closePolicyDialog()"
+    >
+      <div class="policy-dialog-intro">
+        <span class="policy-dialog-intro__icon"
+          ><i class="pi pi-directions"
+        /></span>
+        <div>
+          <strong>Как система назначает оператора</strong>
+          <p>
+            Сначала она исключает неподходящих операторов, затем сравнивает
+            оставшихся и при необходимости повторяет попытку.
+          </p>
+        </div>
+      </div>
+
+      <Skeleton
+        v-if="policyDialogMode === 'EDIT' && !selectedPolicy?.detailLoaded"
+        height="28rem"
+      />
+      <form
+        v-else
+        class="policy-dialog-form"
+        @submit.prevent="
+          policyDialogMode === 'CREATE' ? createPolicy() : savePolicy()
+        "
+      >
+        <Message v-if="policyDialogError" severity="error" :closable="false">
+          {{ policyDialogError }}
+        </Message>
+
+        <section
+          v-if="policyDialogMode === 'CREATE'"
+          class="policy-form-section"
+        >
+          <div class="policy-form-section__number">1</div>
+          <div class="policy-form-section__content">
+            <header>
+              <h3>Назовите правило для системы</h3>
+              <p>
+                Идентификатор нужен для связи с очередями и журнала изменений.
+                После создания изменить его нельзя.
+              </p>
+            </header>
+            <label class="field field--wide">
+              <FormFieldLabel
+                text="Идентификатор правила"
+                help="Постоянное служебное имя. Используйте латинские буквы, цифры и дефис; например payments-ru."
+              />
+              <InputText
+                v-model="newPolicyCode"
+                placeholder="payments-ru"
+                autocomplete="off"
+                :invalid="Boolean(policyCodeError && newPolicyCode.trim())"
+                @blur="normalizePolicyCode"
+              />
+              <small
+                v-if="policyCodeError && newPolicyCode.trim()"
+                class="field-error"
+              >
+                {{ policyCodeError }}
+              </small>
+              <small v-else
+                >Нижнее подчёркивание автоматически заменится на дефис.</small
+              >
+            </label>
+          </div>
+        </section>
+
+        <section class="policy-form-section">
+          <div class="policy-form-section__number">
+            {{ policyDialogMode === "CREATE" ? 2 : 1 }}
+          </div>
+          <div class="policy-form-section__content">
+            <header>
+              <h3>Кто может получить обращение</h3>
+              <p>
+                Обязательные условия исключают оператора из выбора.
+                Дополнительные условия только помогают выбрать лучшего из
+                подходящих.
+              </p>
+            </header>
+            <div class="form-grid">
+              <label class="field">
+                <FormFieldLabel
+                  text="Обязательные навыки"
+                  help="Оператор должен иметь каждый выбранный навык, иначе система не будет его рассматривать. Навыки создаются в разделе «Команды и навыки»."
+                />
+                <MultiSelect
+                  v-model="policyFormDraft.mandatorySkills"
+                  :options="skillOptions"
+                  option-label="label"
+                  option-value="value"
+                  display="chip"
+                  placeholder="Не требуются"
+                  :disabled="!canManageRouting"
+                />
+              </label>
+              <label class="field">
+                <FormFieldLabel
+                  text="Дополнительные навыки"
+                  help="Совпадение повышает оценку оператора, но отсутствие навыка не исключает его из выбора."
+                />
+                <MultiSelect
+                  v-model="policyFormDraft.preferredSkills"
+                  :options="skillOptions"
+                  option-label="label"
+                  option-value="value"
+                  display="chip"
+                  placeholder="Не учитываются"
+                  :disabled="!canManageRouting"
+                />
+              </label>
+              <label class="field">
+                <FormFieldLabel
+                  text="Обязательные языки"
+                  help="Оператор должен владеть каждым указанным языком. Введите обозначения языков через запятую, например ru, en."
+                />
+                <InputText
+                  :model-value="policyFormDraft.mandatoryLanguages.join(', ')"
+                  placeholder="Например: ru, en"
+                  :disabled="!canManageRouting"
+                  @update:model-value="
+                    policyFormDraft.mandatoryLanguages = String($event)
+                      .split(',')
+                      .map((item) => item.trim())
+                      .filter(Boolean)
+                  "
+                />
+              </label>
+              <label class="field">
+                <FormFieldLabel
+                  text="Дополнительные языки"
+                  help="Совпадение повышает оценку оператора, но отсутствие языка не исключает его из выбора."
+                />
+                <InputText
+                  :model-value="policyFormDraft.preferredLanguages.join(', ')"
+                  placeholder="Например: ru, en"
+                  :disabled="!canManageRouting"
+                  @update:model-value="
+                    policyFormDraft.preferredLanguages = String($event)
+                      .split(',')
+                      .map((item) => item.trim())
+                      .filter(Boolean)
+                  "
+                />
+              </label>
+              <label class="field">
+                <FormFieldLabel
+                  text="Нагрузка от одного обращения"
+                  help="Столько единиц доступной ёмкости займёт одно назначенное обращение. Общая ёмкость оператора задаётся в разделе «Рабочая сила»."
+                />
+                <InputNumber
+                  v-model="policyFormDraft.capacityWeightUnits"
+                  :min="1"
+                  :max="10000"
+                  :disabled="!canManageRouting"
+                />
+              </label>
+              <label class="field">
+                <FormFieldLabel
+                  text="Максимальная занятость оператора"
+                  help="Если новое обращение поднимет занятость выше этого предела, оператор не попадёт в выбор."
+                />
+                <InputNumber
+                  v-model="policyFormDraft.hardUtilizationPercent"
+                  :min="1"
+                  :max="100"
+                  suffix=" %"
+                  :disabled="!canManageRouting"
+                />
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="policy-form-section">
+          <div class="policy-form-section__number">
+            {{ policyDialogMode === "CREATE" ? 3 : 2 }}
+          </div>
+          <div class="policy-form-section__content">
+            <header>
+              <h3>Какое обращение назначать первым</h3>
+              <p>
+                Чем больше число, тем сильнее признак поднимает обращение в
+                очереди. Значения сравниваются между собой; их сумма не обязана
+                равняться 100.
+              </p>
+            </header>
+            <div class="scoring-list">
+              <label
+                v-for="field in queueWeightFields"
+                :key="field.key"
+                class="score-field"
+              >
+                <span>
+                  <FormFieldLabel :text="field.label" :help="field.help" />
+                  <small>{{ field.help }}</small>
+                </span>
+                <InputNumber
+                  v-model="policyFormDraft.queueWeights[field.key]"
+                  :min="0"
+                  :max="10000"
+                  :disabled="!canManageRouting"
+                />
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="policy-form-section">
+          <div class="policy-form-section__number">
+            {{ policyDialogMode === "CREATE" ? 4 : 3 }}
+          </div>
+          <div class="policy-form-section__content">
+            <header>
+              <h3>Как выбрать оператора</h3>
+              <p>
+                Система начисляет баллы всем подходящим операторам. Чем больше
+                число, тем сильнее соответствующий признак влияет на итоговый
+                выбор.
+              </p>
+            </header>
+            <div class="scoring-list">
+              <label
+                v-for="field in operatorWeightFields"
+                :key="field.key"
+                class="score-field"
+              >
+                <span>
+                  <FormFieldLabel :text="field.label" :help="field.help" />
+                  <small>{{ field.help }}</small>
+                </span>
+                <InputNumber
+                  v-model="policyFormDraft.weights[field.key]"
+                  :min="0"
+                  :max="10000"
+                  :disabled="!canManageRouting"
+                />
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="policy-form-section">
+          <div class="policy-form-section__number">
+            {{ policyDialogMode === "CREATE" ? 5 : 4 }}
+          </div>
+          <div class="policy-form-section__content">
+            <header>
+              <h3>Если назначение не состоялось</h3>
+              <p>
+                Здесь задаётся время на ответ и поведение после отказа,
+                истечения времени или другого неудачного назначения.
+              </p>
+            </header>
+            <div class="form-grid form-grid--three">
+              <label class="field">
+                <FormFieldLabel
+                  text="Время на ответ оператора"
+                  help="Сколько секунд оператор может принять или отклонить предложение. После этого предложение считается просроченным."
+                />
+                <InputNumber
+                  v-model="policyFormDraft.timeouts.offerSeconds"
+                  :min="5"
+                  :max="600"
+                  suffix=" сек."
+                  :disabled="!canManageRouting"
+                />
+              </label>
+              <label class="field">
+                <FormFieldLabel
+                  text="Срок подтверждения назначения"
+                  help="Сколько секунд система удерживает место за оператором при автоматическом назначении."
+                />
+                <InputNumber
+                  v-model="policyFormDraft.timeouts.reservationSeconds"
+                  :min="5"
+                  :max="600"
+                  suffix=" сек."
+                  :disabled="!canManageRouting"
+                />
+              </label>
+              <label class="field">
+                <FormFieldLabel
+                  text="Максимум попыток"
+                  help="Сколько разных попыток назначения система сделает для одного обращения. Допустимо от 1 до 5."
+                />
+                <InputNumber
+                  v-model="policyFormDraft.retry.maxAttempts"
+                  :min="1"
+                  :max="5"
+                  show-buttons
+                  :disabled="!canManageRouting"
+                />
+              </label>
+              <label class="field">
+                <FormFieldLabel
+                  text="Не предлагать повторно тому же оператору"
+                  help="После отказа или пропущенного предложения этот оператор временно исключается из повторного выбора для обращения."
+                />
+                <InputNumber
+                  v-model="policyFormDraft.retry.cooldownSeconds"
+                  :min="0"
+                  :max="86400"
+                  suffix=" сек."
+                  :disabled="!canManageRouting"
+                />
+              </label>
+              <label class="field">
+                <FormFieldLabel
+                  text="Пауза перед новой попыткой"
+                  help="Базовая задержка перед выбором следующего оператора. При повторных неудачах система постепенно увеличивает эту паузу."
+                />
+                <InputNumber
+                  v-model="policyFormDraft.retry.fallbackDelaySeconds"
+                  :min="0"
+                  :max="86400"
+                  suffix=" сек."
+                  :disabled="!canManageRouting"
+                />
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <Message v-if="!policyFormValid" severity="error" :closable="false">
+          Проверьте числовые значения: одно или несколько полей выходят за
+          допустимый диапазон.
+        </Message>
+      </form>
+
+      <template #footer>
+        <div class="policy-dialog-footer">
+          <Button
+            label="Закрыть"
+            severity="secondary"
+            text
+            @click="closePolicyDialog"
+          />
+          <template v-if="policyDialogMode === 'CREATE'">
+            <Button
+              label="Создать правило"
+              icon="pi pi-plus"
+              :disabled="Boolean(policyCodeError) || !policyFormValid"
+              :loading="controller.saving.value"
+              @click="createPolicy"
+            />
+          </template>
+          <template
+            v-else-if="canManageRouting && selectedPolicy?.detailLoaded"
+          >
+            <Button
+              label="Сохранить"
+              severity="secondary"
+              outlined
+              :disabled="!policyFormValid"
+              :loading="controller.saving.value"
+              @click="savePolicy"
+            />
+            <Button
+              label="Сохранить и применить"
+              icon="pi pi-check"
+              :disabled="!policyFormValid"
+              :loading="controller.saving.value"
+              @click="saveAndPublishPolicy"
+            />
+          </template>
+        </div>
+      </template>
+    </Dialog>
+
+    <Dialog
+      :visible="Boolean(createResourceDialog)"
+      modal
+      header="Новая очередь"
       :style="{ width: '32rem', maxWidth: 'calc(100vw - 32px)' }"
       @update:visible="!$event && (createResourceDialog = null)"
     >
@@ -2138,8 +2554,8 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
           ><span>Код</span
           ><InputText
             v-model="resourceForm.code"
-            placeholder="urgent_support" /></label
-        ><label v-if="createResourceDialog === 'QUEUE'" class="field"
+            placeholder="urgent-support" /></label
+        ><label class="field"
           ><span>Название</span
           ><InputText
             v-model="resourceForm.name"
@@ -2158,8 +2574,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
           label="Создать черновик"
           :disabled="
             resourceForm.code.trim().length < 2 ||
-            (createResourceDialog === 'QUEUE' &&
-              resourceForm.name.trim().length < 2)
+            resourceForm.name.trim().length < 2
           "
           :loading="controller.saving.value"
           @click="createResource"
@@ -2282,8 +2697,9 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
     >
       <div class="activation-confirm">
         <Message severity="warn" :closable="false"
-          >Режим будет закреплён за опубликованными версиями очереди, политики и
-          рабочей силы. Новые публикации не заменят их автоматически.</Message
+          >Режим будет закреплён за применёнными версиями очереди, правила
+          назначения и рабочей силы. Новые версии не заменят их
+          автоматически.</Message
         >
         <div class="pin-list">
           <span
@@ -2299,7 +2715,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
                 ) ?? snapshot?.policies[0],
               )
             }}</strong
-            ><small>Политика</small></span
+            ><small>Правило назначения</small></span
           ><span
             ><i class="pi pi-users" /><strong
               >Версия {{ snapshot?.workforce.currentRevisionNumber }}</strong
@@ -2448,7 +2864,7 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
               </dd>
             </div>
             <div>
-              <dt>Политика</dt>
+              <dt>Правило назначения</dt>
               <dd>
                 …{{
                   controller.selectedDecision.value.pins.policyRevisionId?.slice(
@@ -2603,6 +3019,283 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
 }
 .routing-workbench--overview {
   grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+}
+.policy-catalog-surface {
+  padding: 24px;
+  border: 1px solid var(--surface-border);
+  border-radius: 14px;
+  background: var(--surface-card);
+}
+.policy-catalog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+.policy-catalog-header h2 {
+  margin: 4px 0 6px;
+  font-size: 1.24rem;
+}
+.policy-catalog-header p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.assignment-flow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 22px 0;
+  padding: 1px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--surface-border);
+  list-style: none;
+}
+.assignment-flow li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: center;
+  min-height: 72px;
+  padding: 12px 14px;
+  background: var(--surface-subtle);
+}
+.assignment-flow li > span {
+  grid-row: 1 / 3;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  color: var(--brand-primary);
+  background: var(--brand-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.assignment-flow strong,
+.assignment-flow small {
+  display: block;
+}
+.assignment-flow strong {
+  align-self: end;
+  font-size: 0.76rem;
+}
+.assignment-flow small {
+  align-self: start;
+  margin-top: 2px;
+  color: var(--text-tertiary);
+  font-size: 0.65rem;
+  line-height: 1.35;
+}
+.policy-card-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.policy-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px 18px;
+  padding: 16px;
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  background: var(--surface-card);
+}
+.policy-card__identity {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+.policy-card__icon,
+.policy-dialog-intro__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  color: var(--brand-primary);
+  background: var(--brand-soft);
+}
+.policy-card h3 {
+  margin: 0;
+  font-size: 0.88rem;
+}
+.policy-card code {
+  display: block;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+  color: var(--text-tertiary);
+  font-size: 0.64rem;
+}
+.policy-card__status {
+  display: flex;
+  align-items: center;
+  align-self: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 0.67rem;
+}
+.policy-card__facts {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--surface-border);
+  border-radius: 9px;
+  background: var(--surface-border);
+}
+.policy-card__facts > div {
+  padding: 9px 10px;
+  background: var(--surface-subtle);
+}
+.policy-card__facts dt {
+  color: var(--text-tertiary);
+  font-size: 0.62rem;
+}
+.policy-card__facts dd {
+  margin: 4px 0 0;
+  font-size: 0.77rem;
+  font-variant-numeric: tabular-nums;
+}
+.policy-card__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.policy-empty {
+  display: grid;
+  justify-items: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+.policy-empty > span {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--brand-primary);
+  background: var(--brand-soft);
+}
+.policy-empty h3 {
+  margin: 12px 0 4px;
+  font-size: 0.92rem;
+}
+.policy-empty p {
+  max-width: 480px;
+  margin: 0 0 16px;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+.policy-dialog-intro {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 13px 14px;
+  border-radius: 12px;
+  background: var(--brand-soft);
+}
+.policy-dialog-intro strong {
+  font-size: 0.8rem;
+}
+.policy-dialog-intro p {
+  margin: 3px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+.policy-dialog-form {
+  display: grid;
+  gap: 12px;
+}
+.policy-form-section {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--surface-border);
+  border-radius: 13px;
+  background: var(--surface-subtle);
+}
+.policy-form-section__number {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  color: var(--brand-primary);
+  background: var(--brand-soft);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.policy-form-section__content {
+  min-width: 0;
+}
+.policy-form-section__content > header {
+  margin-bottom: 14px;
+}
+.policy-form-section h3 {
+  margin: 0;
+  font-size: 0.88rem;
+}
+.policy-form-section header p {
+  max-width: 760px;
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.69rem;
+  line-height: 1.5;
+}
+.form-grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.scoring-list {
+  overflow: hidden;
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+  background: var(--surface-card);
+}
+.score-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px;
+  align-items: center;
+  gap: 16px;
+  min-height: 62px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--surface-border);
+}
+.score-field:last-child {
+  border-bottom: 0;
+}
+.score-field small {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-tertiary);
+  font-size: 0.62rem;
+  line-height: 1.35;
+}
+.score-field :deep(.p-inputnumber),
+.score-field :deep(input) {
+  width: 100%;
+}
+.policy-dialog-form :deep(.p-inputnumber-input) {
+  font-variant-numeric: tabular-nums;
+}
+.field-error {
+  color: var(--status-danger) !important;
+}
+.policy-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
 }
 .routing-catalog,
 .routing-surface {
@@ -2763,12 +3456,17 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
   gap: 14px;
   min-height: 100%;
   padding: 18px;
-  border: 1px solid color-mix(in srgb, var(--status-warning) 28%, var(--surface-border));
+  border: 1px solid
+    color-mix(in srgb, var(--status-warning) 28%, var(--surface-border));
   border-radius: 12px;
   background: color-mix(in srgb, var(--status-warning) 7%, var(--surface-card));
 }
 .next-action-card--ready {
-  border-color: color-mix(in srgb, var(--status-success) 28%, var(--surface-border));
+  border-color: color-mix(
+    in srgb,
+    var(--status-success) 28%,
+    var(--surface-border)
+  );
   background: color-mix(in srgb, var(--status-success) 7%, var(--surface-card));
 }
 .next-action-card__icon {
@@ -2838,7 +3536,11 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
 }
 .readiness-checklist li[data-status="PASS"] .readiness-check__mark {
   color: var(--status-success);
-  background: color-mix(in srgb, var(--status-success) 10%, var(--surface-card));
+  background: color-mix(
+    in srgb,
+    var(--status-success) 10%,
+    var(--surface-card)
+  );
 }
 .readiness-checklist li[data-status="BLOCKING"] .readiness-check__mark {
   color: var(--status-danger);
@@ -3444,6 +4146,12 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
   .readiness-layout {
     grid-template-columns: 1fr;
   }
+  .policy-card-list {
+    grid-template-columns: 1fr;
+  }
+  .form-grid--three {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @media (max-width: 760px) {
   .routing-page {
@@ -3469,6 +4177,52 @@ async function restoreSelectedRevision(revisionId: string): Promise<void> {
   }
   .routing-surface {
     padding: 15px;
+  }
+  .policy-catalog-surface {
+    padding: 15px;
+  }
+  .policy-catalog-header {
+    flex-direction: column;
+  }
+  .policy-catalog-header :deep(.p-button) {
+    width: 100%;
+  }
+  .assignment-flow {
+    grid-template-columns: 1fr;
+  }
+  .policy-card {
+    grid-template-columns: 1fr;
+  }
+  .policy-card__status {
+    justify-self: start;
+  }
+  .policy-card__facts {
+    grid-template-columns: 1fr;
+  }
+  .policy-card__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .policy-card__actions :deep(.p-button) {
+    width: 100%;
+  }
+  .policy-form-section {
+    grid-template-columns: 1fr;
+    padding: 13px;
+  }
+  .form-grid--three {
+    grid-template-columns: 1fr;
+  }
+  .score-field {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .policy-dialog-footer {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .policy-dialog-footer :deep(.p-button) {
+    width: 100%;
   }
   .surface-title,
   .subheading {

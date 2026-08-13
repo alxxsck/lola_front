@@ -58,6 +58,11 @@ Project-scoped versioned пара Business Calendar и ordered SLA Policy, из 
 создаёт immutable revisions. Это не состояние clock отдельного Case и не команда его коррекции.
 _Avoid_: SLA clock, Case SLA, rollout switch
 
+**Правило назначения**:
+Набор условий и приоритетов, по которым обращения упорядочиваются, неподходящие операторы
+исключаются, а среди подходящих выбирается исполнитель.
+_Avoid_: политика, алгоритм, настройки маршрутизации
+
 **Support Macro**:
 Stable Project-owned identity шаблона ответа с mutable draft и immutable published revisions.
 Один Support Macro владеет всеми своими языковыми вариантами.

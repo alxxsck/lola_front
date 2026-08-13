@@ -57,6 +57,10 @@ p { line-height: 1.55; }
 .surface-soft { background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: 14px; }
 .p-button { min-height: var(--control-height); border-radius: 12px; font-size: var(--font-size-control); }
 .p-inputtext, .p-select, .p-textarea, .p-inputnumber { width: 100%; border-radius: 12px; }
+.p-inputtext,
+.p-inputnumber-input,
+.p-select-label,
+.p-multiselect-label { font-weight: 400; }
 .p-select .p-select-label { padding-inline: 0.875rem; }
 .p-select .p-select-dropdown { width: 2.75rem; flex: 0 0 2.75rem; }
 .p-toggleswitch { flex: 0 0 auto; }

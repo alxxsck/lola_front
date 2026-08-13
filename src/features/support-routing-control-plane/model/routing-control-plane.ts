@@ -259,6 +259,21 @@ export const emptyQueueDraft = (name = "Новая очередь"): QueueDraft 
   routing: { mode: "MANUAL", primaryTeamIds: [], fallbackTeamIds: [] },
 });
 
+const ROUTING_RESOURCE_CODE = /^[a-z][a-z0-9-]{1,63}$/u;
+
+export function normalizeRoutingResourceCode(value: string): string {
+  return value.normalize("NFKC").trim().toLowerCase().replaceAll("_", "-");
+}
+
+export function routingResourceCodeError(value: string): string | null {
+  const normalized = normalizeRoutingResourceCode(value);
+  if (normalized.length < 2) return "Введите не меньше двух символов.";
+  if (normalized.length > 64) return "Введите не больше 64 символов.";
+  if (!ROUTING_RESOURCE_CODE.test(normalized))
+    return "Используйте латинские буквы, цифры и дефис; первый символ — буква.";
+  return null;
+}
+
 export function labelUnknown(value: string, labels: Record<string, string>): string {
   return labels[value] ?? `Неизвестное состояние · ${value}`;
 }
